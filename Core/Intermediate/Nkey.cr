@@ -1,0 +1,5 @@
+
+enum LinCAS::NKey
+    LINE ID VALUE FILENAME NAME
+    PARENT VOID_VISIB
+end
