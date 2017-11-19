@@ -12,6 +12,43 @@ class LinCAS::Parser < LinCAS::MsgGenerator
       TkType::LOCAL_ID
     }
 
+    macro checkIDforReceiver
+        if @currentTk.ttype == TkType::LOCAL_ID
+            node = parseLocalID
+            node.setAttr(NKey::RECEIVER,baseName)
+            return node
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
+            node = makeDummyName
+             node.setAttr(NKey::RECEIVER,baseName)
+            return node
+        end
+    end
+
+    macro namespaceCheck
+        if @currentTk.ttype == TkType::LOCAL_ID
+            node.addBranch(parseLocalID)
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
+            node.addBranch(makeDummyName)
+        end
+    end
+
+    macro checkEol
+        if (@currentTk.ttype == TkType::SEMICOLON) || (@currentTk.is_a? EolTk)
+            shift
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_EOL,self)
+        end
+    end
+
+    macro parseArg
+       # TO IMPLEMENT
+
+       # if @nextTk.ttype == TkType::COLON_EQ
+       #     @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
+       #     node.addBranch(parseAssign)
+    end
 
     def initialize(@scanner : Scanner)
         @nestedVoids = 0
@@ -279,6 +316,27 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 node.addBranch(makeDummyName)
             end 
             return node
+        elsif @nextTk.ttype == TkType::COLON
+            baseName = parseNameSpace
+            sync(name_sync_set)
+            if @currentTk.ttype == TkType::DOT
+                shift
+                checkIDforReceiver
+            else
+                @errHandler.flag(@currentTk,ErrCode::MISSING_DOT,self)
+                checkIDforReceiver
+            end
+        elsif @nextTk.ttype == TkType::DOT
+            if @currentTk.ttype == TkType::LOCAL_ID
+                baseName = parseLocalID
+                shift
+                checkIDforReceiver
+            else
+                @errHandler.flag(@currentTk,ErrCode::MISSING_DOT,self)
+                baseName = makeDummyName
+                shift
+                checkIDforReceiver
+            end
         elsif @currentTk == TkType::LOCAL_ID
             return parseLocalID
         elsif ALLOWED_VOID_NAMES.includes? @currentTk.text
@@ -292,8 +350,29 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseVoidArgList
+        arg_sync_set = 
+        {
+            TkType::L_PAR, TkType::LOCAL_ID, TkType::COMMA, TkType::R_PAR, TkType::L_BRACE,
+            TkType::EOL
+        }
         node = @nodeFactory.makeNode(NodeType::ARG_LIST)
-        # To implement
+        sync(arg_sync_set)
+        if @currentTk.ttype == TkType::L_PAR
+            shift
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_L_PAR,self)
+        end
+        parseArg
+        while @currentTk.ttype == TkType::COMMA
+            shift
+            parseArg
+        end
+        if @currentTk.ttype == TkType::R_PAR
+            shift
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
+        end
+        return node
     end
 
     protected def parseBody : Node
@@ -322,21 +401,19 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseNameSpace : Node
         node = @nodeFactory.makeNode(NodeType::NAMESPACE)
-        # To Implement
+        namespaceCheck
+        while @currentTk.ttype == TkType::COLON
+            shift
+            namespaceCheck
+        end
+        return node
     end
 
     protected def parseLocalID : Node
         node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
         node.setAttr(NKey::ID,@currentTk.text)
+        shift
         return node
-    end
-
-    protected def checkEol : ::Nil
-        if (@currentTk.ttype == TkType::SEMICOLON) || (@currentTk.is_a? EolTk)
-            shift
-        else
-            @errHandler.flag(@currentTk,ErrCode::MISSING_EOL,self)
-        end
     end
 
     private def makeDummyName : Node

@@ -11,6 +11,8 @@ enum LinCAS::ErrCode
     MISSING_DOT 
     MISSING_L_BRACE
     MISSING_R_BRACE
+    MISSING_L_PAR
+    MISSING_R_PAR
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
@@ -30,6 +32,8 @@ module LinCAS
         ErrCode::MISSING_DOT         => "Missing '.'",
         ErrCode::MISSING_L_BRACE     => "Missing '{'",
         ErrCode::MISSING_R_BRACE     => "Missing '}'",
+        ErrCode::MISSING_L_PAR       => "Missing '('",
+        ErrCode::MISSING_R_PAR       => "Missing ')'",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
