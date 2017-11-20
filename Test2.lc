@@ -1,0 +1,14 @@
+
+module MyModule {
+    protected void MyClass:Lol.MyVoid(a,b,c) {
+
+    }
+
+    class NestedClass inherits MyClass {
+
+    }
+}
+
+class MyClass {
+
+}
