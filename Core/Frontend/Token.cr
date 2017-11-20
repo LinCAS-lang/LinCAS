@@ -177,7 +177,7 @@ module LinCAS
             nextChar
             case @text
                 when "$", "(", ")", "[", "]", "{", "}", ",", ";", ":", "'"
-                    nextChar
+                    # nextChar
                 when ":", "=", ">", "+", "-", "*", "^", "\\", "/", "%"
                     if currentChar == "="
                         @text += currentChar

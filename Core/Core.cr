@@ -26,12 +26,14 @@ require "./Intermediate/NodeType"
 require "./Intermediate/Nkey"
 require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
+require "../Util/AstPrinter"
 
 
 include LinCAS
 
 factory = FrontendFactory.new
-parser = factory.makeParser("/home/massimiliano/Documenti/GitHub/crLinCAS/Test1.lc")
-parser.displayTokens
-parser.parse
-
+parser = factory.makeParser("/home/massimiliano/Documenti/GitHub/crLinCAS/Test2.lc")
+#parser.displayTokens
+ast = parser.parse
+astPrinter = AstPrinter.new
+astPrinter.printAst(ast.as(Node)) if ast

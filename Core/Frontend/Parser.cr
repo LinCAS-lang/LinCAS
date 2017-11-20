@@ -3,7 +3,7 @@ enum VoidVisib
     PUBLIC PROTECTED PRIVATE 
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
-    
+        
     START_SYNC_SET = 
     { TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
       TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
@@ -20,7 +20,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         else
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
             node = makeDummyName
-             node.setAttr(NKey::RECEIVER,baseName)
+            node.setAttr(NKey::RECEIVER,baseName)
             return node
         end
     end
@@ -42,12 +42,23 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         end
     end
 
-    macro parseArg
-       # TO IMPLEMENT
+    macro setArity
+        node.setAttr(NKey::VOID_ARITY,arity)
+    end
 
-       # if @nextTk.ttype == TkType::COLON_EQ
-       #     @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
-       #     node.addBranch(parseAssign)
+    macro parseArg
+        if @nextTk.ttype == TkType::COLON_EQ
+            @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
+            node.addBranch(parseAssign)
+        elsif @currentTk.ttype == TkType::GLOBAL_ID
+            @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
+            node.addBranch(parseGlobalID)
+        elsif @currentTk.ttype == TkType::LOCAL_ID
+            node.addBranch(parseLocalID)
+            arity += 1
+        else
+            @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self)
+        end        
     end
 
     def initialize(@scanner : Scanner)
@@ -127,7 +138,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 shift
             end
         else
-            return parseProgram
+            program = parseProgram
         end
         if @withSummary
             time = Time.now.millisecond - nowTime
@@ -136,6 +147,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                                                    time.to_s])
             sendMsg(msg)
         end
+        return program if program
     end
 
     protected def parseProgram : Node
@@ -153,6 +165,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseStmts : Node
+        skipEol
         sync(START_SYNC_SET)
         tkType = @currentTk.ttype
         case tkType
@@ -181,7 +194,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return @nodeFactory.makeNode(NodeType::NOOP)
         end
     ensure
-        checkEol
+        checkEol unless @currentTk.is_a? EofTk 
     end
     
     protected def parseClass : Node
@@ -202,7 +215,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         name = parseName
         node.setAttr(NKey::NAME,name)
         sync(class_sync_set)
-        if @currentTk == TkType::INHERITS
+        if @currentTk.ttype == TkType::INHERITS
             shift
             sync(mid_sync_set)
             if @currentTk.ttype == TkType::LOCAL_ID
@@ -212,6 +225,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 parent = makeDummyName
             end
             node.setAttr(NKey::PARENT,parent)
+            node.addBranch(parseBody)
         else
             parent = @nodeFactory.makeNode(NodeType::LOCAL_ID)
             parent.setAttr(NKey::ID,"Object")
@@ -253,7 +267,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         void_sync_set =
         {
             TkType::SELF, TkType::LOCAL_ID, TkType::L_PAR, 
-            TkType::SEMICOLON, TkType::EOL
+            TkType::L_BRACE, TkType::EOL
         }
         @nestedVoids += 1
         node = @nodeFactory.makeNode(NodeType::VOID)
@@ -298,9 +312,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def parseVoidName : Node
         name_sync_set = 
         {
-            TkType::LOCAL_ID, TkType::L_PAR, TkType::SEMICOLON, TkType::EOL
+            TkType::LOCAL_ID, TkType::DOT, TkType::L_PAR, TkType::SEMICOLON, TkType::EOL
         }
-        if @currentTk == TkType::SELF
+        if @currentTk.ttype == TkType::SELF
             node = @nodeFactory.makeNode(NodeType::SELF)
             shift
             if @currentTk.ttype == TkType::DOT 
@@ -332,12 +346,12 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 shift
                 checkIDforReceiver
             else
-                @errHandler.flag(@currentTk,ErrCode::MISSING_DOT,self)
+                @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
                 baseName = makeDummyName
                 shift
                 checkIDforReceiver
             end
-        elsif @currentTk == TkType::LOCAL_ID
+        elsif @currentTk.ttype == TkType::LOCAL_ID
             return parseLocalID
         elsif ALLOWED_VOID_NAMES.includes? @currentTk.text
             node = @nodeFactory.makeNode(NodeType::OPERATOR)
@@ -355,23 +369,31 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             TkType::L_PAR, TkType::LOCAL_ID, TkType::COMMA, TkType::R_PAR, TkType::L_BRACE,
             TkType::EOL
         }
-        node = @nodeFactory.makeNode(NodeType::ARG_LIST)
+        node  = @nodeFactory.makeNode(NodeType::ARG_LIST)
+        arity = 0
         sync(arg_sync_set)
         if @currentTk.ttype == TkType::L_PAR
             shift
         else
             @errHandler.flag(@currentTk,ErrCode::MISSING_L_PAR,self)
         end
+        if @currentTk.ttype == TkType::R_PAR
+            shift
+            setArity
+            return node
+        end
         parseArg
         while @currentTk.ttype == TkType::COMMA
             shift
             parseArg
+            sync(arg_sync_set)
         end
         if @currentTk.ttype == TkType::R_PAR
             shift
         else
             @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
         end
+        setArity
         return node
     end
 
@@ -385,10 +407,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         else
             shift
         end
-        while (@currentTk.ttype != TkType::R_BRACE) && !(@currentTk.is_a? EofTk)
+        skipEol
+        while (@currentTk.ttype != TkType::R_BRACE) && (@currentTk.ttype != TkType::EOF)
             node.addBranch(parseStmts)
         end
-        if !(@currentTk.ttype == TkType::L_BRACE)
+        if !(@currentTk.ttype == TkType::R_BRACE)
             @errHandler.flag(@currentTk,ErrCode::MISSING_L_BRACE,self)
         elsif @currentTk.is_a? EofTk
             @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_EOF,self)
@@ -409,8 +432,19 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return node
     end
 
+    def parseAssign : Node
+        node = @nodeFactory.makeNode(NodeType::ASSIGN)
+    end
+
     protected def parseLocalID : Node
         node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+        node.setAttr(NKey::ID,@currentTk.text)
+        shift
+        return node
+    end
+
+    protected def parseGlobalID : Node
+        node = @nodeFactory.makeNode(NodeType::GLOBAL_ID)
         node.setAttr(NKey::ID,@currentTk.text)
         shift
         return node

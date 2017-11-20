@@ -15,9 +15,17 @@ class LinCAS::Node
         @parent
     end
 
+    def type
+        @type
+    end
+
     def addBranch(branch : Node)
         branch.parent(self)
         @branches << branch
+    end
+
+    def getBranches
+        @branches
     end
 
     def setAttr(key : NKey,value)
@@ -26,6 +34,14 @@ class LinCAS::Node
 
     def getAttr(key : NKey)
         return @attrs[key] if @attrs.keys.includes? key
+    end
+
+    def getAttrs
+        return @attrs
+    end
+
+    def to_s
+        return  @type.to_s
     end
 
 end
