@@ -13,10 +13,13 @@ enum LinCAS::ErrCode
     MISSING_R_BRACE
     MISSING_L_PAR
     MISSING_R_PAR
+    MISSING_EXPR
+    MISSING_COLON_EQ
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
     INVALID_VISIB_ARG
+    INVALID_ASSIGN
 end
 
 module LinCAS
@@ -34,10 +37,13 @@ module LinCAS
         ErrCode::MISSING_R_BRACE     => "Missing '}'",
         ErrCode::MISSING_L_PAR       => "Missing '('",
         ErrCode::MISSING_R_PAR       => "Missing ')'",
+        ErrCode::MISSING_EXPR        => "Missing expression",
+        ErrCode::MISSING_COLON_EQ    => "Missing ':='",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
-        ErrCode::INVALID_VISIB_ARG   => "Invalid argument for visibility keyword"
+        ErrCode::INVALID_VISIB_ARG   => "Invalid argument for visibility keyword",
+        ErrCode::INVALID_ASSIGN      => "Invalid assignment"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]

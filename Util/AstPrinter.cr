@@ -56,14 +56,14 @@ class AstPrinter
             append(">")
             printL
             oldIndent = @indentation
-            @indentation += @indent
+            #@indentation += @indent
             append("#{@indentation}<ATTR: #{key}>")
             printL
             @indentation += @indent
             printNode(value)
-            @indentation = oldIndent + @indent
+            @indentation = oldIndent# + @indent
             append("#{@indentation}</ATTR: #{key}>")
-            @indentation = oldIndent
+            #@indentation = oldIndent
             printL
         else
             other = "#{key.to_s}= \"#{value}\""

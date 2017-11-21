@@ -181,10 +181,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             #when TkType::DO
             #when TkType::IF 
             #when TkType::FOR
-            #when TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::FLOAT, TkType::INT,
-            #      TkType::TAN, TkType::ATAN, TkType::LOG, TkType::EXP, TkType::COS,
-            #      TkType::ACOS, TkType::SIN, TkType::ASIN, TkType::SQRT
-            #when 
+            when TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::FLOAT, TkType::INT,
+                  TkType::TAN, TkType::ATAN, TkType::LOG, TkType::EXP, TkType::COS,
+                  TkType::ACOS, TkType::SIN, TkType::ASIN, TkType::SQRT
+                return parseExpStmt
             #when TkType::CONST
             #when TkType::INCLUDE
             #when TkType::REQUIRE
@@ -302,7 +302,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 void.setAttr(NKey::VOID_VISIB,VoidVisib::PUBLIC)
             when TkType::PROTECTED
                 @errHandler.flag(visibility,ErrCode::UNALLOWED_PROTECTED,self) unless @cm > 0
-                void.setAttr(NKey::VOID_VISIB,VoidVisib::PUBLIC)
+                void.setAttr(NKey::VOID_VISIB,VoidVisib::PROTECTED)
             when TkType::PRIVATE
                 void.setAttr(NKey::VOID_VISIB,VoidVisib::PRIVATE)
         end
@@ -432,9 +432,71 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return node
     end
 
-    def parseAssign : Node
+    def parseAssign(var = nil) : Node
+        assign_sync_set = 
+        {
+            TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::COLON_EQ, 
+            TkType::SEMICOLON, TkType::EOL
+        }
+        sync(assign_sync_set)
         node = @nodeFactory.makeNode(NodeType::ASSIGN)
+        if @currentTk.ttype == TkType::COLON_EQ && !(var)
+            @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
+            node.addBranch(makeDummyName)
+        end
+        var = parseID unless var
+        if var.as(Node).type == NodeType::METHOD_CALL
+            if var.as(Node).getAttr(NKey::METHOD_NAME) != "[]"
+                @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
+            end
+        end
+        node.addBranch(var.as(Node))
+        sync(assign_sync_set)
+        if @currentTk.ttype == TkType::COLON_EQ
+            shift
+            skipEol
+            node.addBranch(parseExp)
+        elsif @currentTk.ttype == TkType::SEMICOLON || @currentTk.ttype == TkType::EOL
+            @errHandler.flag(@currentTk,ErrCode::MISSING_EXPR,self)
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_COLON_EQ,self)
+            node.addBranch(parseExp)
+        end
+        return node
     end
+
+    protected def parseExpStmt : Node
+        case @currentTk.ttype
+            when TkType::LOCAL_ID, TkType::GLOBAL_ID
+                nextTkType = @nextTk.ttype
+                if nextTkType == TkType::COLON_EQ
+                    return parseAssign
+                elsif nextTkType == TkType::COLON
+                    node = parseNameSpace
+                elsif nextTkType == TkType::DOT
+                    node = parseMethodCall
+                elsif nextTkType == TkType::L_PAR || nextTkType == TkType::L_BRACKET
+                    node = parseCall
+                else
+                    return parseExp
+                end
+                if @currentTk.ttype == TkType::COLON_EQ
+                    return parseAssign(node)
+                end
+            when TkType::INT, TkType::FLOAT
+
+        end
+    end
+
+    protected def parseExp : Node
+        
+    end
+
+
+    protected def parseID : Node
+        
+    end
+
 
     protected def parseLocalID : Node
         node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
