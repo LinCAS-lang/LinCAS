@@ -46,6 +46,12 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         node.setAttr(NKey::VOID_ARITY,arity)
     end
 
+    macro makeOpNode(nodeType,prevNode,expr)
+        expNode = @nodeFactory.makeNode({{nodeType}})
+        expNode.addBranch({{prevNode}})
+        expNode.addBranch({{expr}})
+    end
+
     macro parseArg
         if @nextTk.ttype == TkType::COLON_EQ
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
@@ -466,34 +472,107 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseExpStmt : Node
+        assign_ops =
+        {
+            TkType::PLUS_EQ, TkType::MINUS_EQ, TkType::STAR_EQ, 
+            TkType::SLASH_EQ, TkType::BSLASH_EQ, TkType::MOD_EQ, TkType::POWER_EQ
+        }
         case @currentTk.ttype
             when TkType::LOCAL_ID, TkType::GLOBAL_ID
-                nextTkType = @nextTk.ttype
-                if nextTkType == TkType::COLON_EQ
+                if @nextTk.ttype == TkType::COLON_EQ
                     return parseAssign
-                elsif nextTkType == TkType::COLON
-                    node = parseNameSpace
-                elsif nextTkType == TkType::DOT
-                    node = parseMethodCall
-                elsif nextTkType == TkType::L_PAR || nextTkType == TkType::L_BRACKET
-                    node = parseCall
                 else
-                    return parseExp
+                    node = parseID
                 end
                 if @currentTk.ttype == TkType::COLON_EQ
                     return parseAssign(node)
+                elsif assign_ops.includes? @currentTk.ttype
+                    return manageAssignOps(node)
+                else
+                    return parseExp(node)
                 end
             when TkType::INT, TkType::FLOAT
-
+                if {TkType::DOT_DOT, TkType::DOT_DOT_DOT}.includes? @nextTk.ttype
+                    node = parseRange
+                    return parseExp2(node)
+                elsif @nextTk.ttype == TkType::DOT
+                    node = parseMethodCall
+                    return parseExp2(node)
+                else
+                    return parseExp
+                end
         end
+       # return node.as(Node)
     end
 
-    protected def parseExp : Node
+    protected def manageAssignOps(prevNode : Node) : Node
+        opTkType = @currentTk.ttype
+        shift
+        expr = parseExp
+        node    = @nodeFactory.makeNode(NodeType::ASSIGN)
+        expNode = nil
+        node.addBranch(prevNode)
+        case opTkType
+            when TkType::PLUS_EQ
+                makeOpNode(NodeType::SUM,prevNode,expr)
+            when TkType::MINUS_EQ
+                makeOpNode(NodeType::SUB,prevNode,expr)
+            when TkType::STAR_EQ
+                makeOpNode(NodeType::MUL,prevNode,expr)
+            when TkType::SLASH_EQ
+                makeOpNode(NodeType::FDIV,prevNode,expr)
+            when TkType::BSLASH_EQ
+                makeOpNode(NodeType::IDIV,prevNode,expr)
+            when TkType::MOD_EQ
+                makeOpNode(NodeType::MOD,prevNode,expr)
+            when TkType::POWER_EQ
+                makeOpNode(NodeType::POWER,prevNode,expr)
+        end
+        node.addBranch(expNode.as(Node))
+        return  node
+    end
+
+    protected def parseExp(firstNode = nil) : Node
+        if firstNode
+            firstNode = parseSum
+        end
+        firstNode.as(Node)
+    end
+
+    protected def parseSum
+        @nodeFactory.makeNode(NodeType::SUM)
+    end
+
+    protected def parseExp2(prevNode) : Node
+        @nodeFactory.makeNode(NodeType::SUM)
+        # to implement
+    end
+
+    protected def parseRange
+        @nodeFactory.makeNode(NodeType::SUM)
+        # to Implement
+    end
+    protected def parseID : Node
+        nextTkType = @nextTk.ttype
+        if nextTkType == TkType::COLON
+            node = parseNameSpace
+        elsif nextTkType == TkType::DOT
+            node = parseMethodCall
+        elsif nextTkType == TkType::L_PAR || nextTkType == TkType::L_BRACKET
+            node = parseCall
+        elsif @currentTk.ttype = TkType::GLOBAL_ID
+            node = parseGlobalID
+        else
+            node = parseLocalID
+        end
+        return node.as(Node)
+    end
+
+    protected def parseMethodCall
         
     end
 
-
-    protected def parseID : Node
+    protected def parseCall
         
     end
 
@@ -518,6 +597,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return node
     end
 
+    @[AlwaysInline]
     private def setLine(node : Node) : ::Nil
         node.setAttr(NKey::LINE,@currentTk.line)
     end
