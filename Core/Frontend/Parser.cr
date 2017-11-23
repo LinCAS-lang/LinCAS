@@ -34,14 +34,6 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         end
     end
 
-    macro checkEol
-        if (@currentTk.ttype == TkType::SEMICOLON) || (@currentTk.is_a? EolTk)
-            shift
-        else
-            @errHandler.flag(@currentTk,ErrCode::MISSING_EOL,self)
-        end
-    end
-
     macro setArity
         node.setAttr(NKey::VOID_ARITY,arity)
     end
@@ -496,11 +488,14 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                     node = parseRange
                     return parseExp2(node)
                 elsif @nextTk.ttype == TkType::DOT
-                    node = parseMethodCall
+                    node = parseMethodCall(parseNumberAtom)
                     return parseExp2(node)
                 else
                     return parseExp
                 end
+            else
+                # Should never het here
+                return @nodeFactory.makeNode(NodeType::NOOP)
         end
        # return node.as(Node)
     end
@@ -508,7 +503,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def manageAssignOps(prevNode : Node) : Node
         opTkType = @currentTk.ttype
         shift
-        expr = parseExp
+        expr    = parseExp
         node    = @nodeFactory.makeNode(NodeType::ASSIGN)
         expNode = nil
         node.addBranch(prevNode)
@@ -533,19 +528,126 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseExp(firstNode = nil) : Node
-        if firstNode
-            firstNode = parseSum
+        root = parseSum(firstNode ? firstNode : nil)
+        tkType = @currentTk.ttype
+        while boolOpInclude? tkType
+            node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
+            shift
+            skipEol
+            node.addBranch(root)
+            node.addBranch(parseSubExp)
+            root   = node
+            tkType = @currentTk.ttype
         end
-        firstNode.as(Node)
+        return root
     end
 
-    protected def parseSum
-        @nodeFactory.makeNode(NodeType::SUM)
-    end
-
+    @[AlwaysInline]
     protected def parseExp2(prevNode) : Node
-        @nodeFactory.makeNode(NodeType::SUM)
-        # to implement
+        if @currentTk.ttype == TkType::DOT
+            call = parseMethodCall(prevNode)
+        end
+        parseExp(call ? call : prevNode)
+    end
+
+    protected def parseSubExp : Node
+        if @currentTk.ttype = TkType::L_PAR
+            shift
+            skipEol
+            root = parseExp
+            if @currentTk.ttype == TkType::R_PAR
+                shift
+            else
+                @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
+            end
+        else
+            root = parseRel
+        end
+        return root
+    end
+
+    protected def parseRel(prevNode = Nil) : Node
+        root = parseSum(prevNode ? prevNode : nil)
+        tkType = @currentTk.ttype
+        if opInclude? tkType
+            node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
+            shift
+            skipEol
+            node.addBranch(root)
+            node.addBranch(parseSum)
+            root = node
+        end
+        return root
+    end
+
+    protected def parseSum(prevNode = nil) : Node
+        add_op = {
+            TkType::PLUS, TkType::MINUS
+        }
+        if add_op.includes? @currentTk.ttype
+            sign = @currentTk.ttype
+            shift
+        end 
+        root = parseProd(prevNode ? prevNode : nil)
+        if sign == TkType::MINUS
+            node = @nodeFactory.makeNode(NodeType::INVERT)
+            node.addBranch(root)
+            root = node 
+        end
+        tkType = @currentTk.ttype  
+        while add_op.includes? tkType
+            node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
+            shift
+            skipEol
+            node.addBranch(root)
+            node.addBranch(parseProd)
+            root   = node
+            tkType = @currentTk.ttype
+        end
+        return root
+    end
+
+    protected def parseProd(prevNode = nil) : Node
+        root = parsePower(prevNode ? prevNode : nil)
+        tkType = @currentTk.ttype 
+        while opInclude? tkType
+            node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
+            shift
+            skipEol
+            node.addBranch(root)
+            node.addBranch(parsePower)
+            root   = node
+            tkType = @currentTk.ttype
+        end 
+        return root
+    end
+
+    protected def parsePower(prevNode = nil) : Node
+        stack = [] of Node
+        if prevNode 
+            prevNode = prevNode.as(Node) 
+            stack.push  prevNode
+        else
+            stack.push parseAtom
+        end
+        while @currentTk.ttype == TkType::POWER
+            shift
+            skipEol
+            stack.push parseAtom
+        end
+        while stack.size > 1
+            rightn = stack.pop
+            leftn  = stack.pop
+            node = @nodeFactory.makeNode(NodeType::POWER)
+            node.addBranch(leftn)
+            node.addBranch(rightn)
+            stack.push(node)
+        end 
+        return stack.pop
+    end
+
+    protected def parseAtom : Node
+        @nodeFactory.makeNode(NodeType::NOOP)
     end
 
     protected def parseRange
@@ -557,7 +659,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         if nextTkType == TkType::COLON
             node = parseNameSpace
         elsif nextTkType == TkType::DOT
-            node = parseMethodCall
+            node = parseMethodCall(parseID)
         elsif nextTkType == TkType::L_PAR || nextTkType == TkType::L_BRACKET
             node = parseCall
         elsif @currentTk.ttype = TkType::GLOBAL_ID
@@ -568,14 +670,23 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return node.as(Node)
     end
 
-    protected def parseMethodCall
-        
+    protected def parseMethodCall(receiver : Node) : Node
+        @nodeFactory.makeNode(NodeType::SUM)
     end
 
     protected def parseCall
         
     end
 
+    protected def parseNumberAtom : Node
+        if @currentTk.ttype == TkType::INT
+            node = @nodeFactory.makeNode(NodeType::INT)
+        else
+            node = @nodeFactory.makeNode(NodeType::FLOAT)
+        end
+        node.setAttr(NKey::VALUE, @currentTk.value.as(Int32 | Int64 | Float32 | Float64))
+        return node
+    end
 
     protected def parseLocalID : Node
         node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
@@ -589,6 +700,15 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         node.setAttr(NKey::ID,@currentTk.text)
         shift
         return node
+    end
+
+    @[AlwaysInline]
+    protected def checkEol
+        if (@currentTk.ttype == TkType::SEMICOLON) || (@currentTk.is_a? EolTk)
+            shift
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_EOL,self)
+        end
     end
 
     private def makeDummyName : Node

@@ -7,16 +7,19 @@ struct LinCAS::FrontendFactory
         return reader
     end
     
+    @[AlwaysInline]
     def makeSource(filename : String)
-        return Source.new(makeReader(filename))
+        Source.new(makeReader(filename))
     end
 
+    @[AlwaysInline]
     def makeSource(reader : Reader)
-        return Source.new(reader)
+        Source.new(reader)
     end
 
+    @[AlwaysInline]
     def makeScanner(filename : String)
-        return makeScanner(makeSource(filename))
+        makeScanner(makeSource(filename))
     end
     
     def makeScanner(source : Source)
@@ -25,8 +28,9 @@ struct LinCAS::FrontendFactory
         return scanner
     end
 
+    @[AlwaysInline]
     def makeParser(filename : String)
-        return makeParser(makeSource(filename))
+        makeParser(makeSource(filename))
     end
 
     def makeParser(source : Source)

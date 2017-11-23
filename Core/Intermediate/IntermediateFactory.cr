@@ -1,8 +1,9 @@
 
 struct LinCAS::IntermediateFactory
-
+    
+    @[AlwaysInline]
     def makeNode(nType : NodeType)
-        return Node.new(nType)
+        Node.new(nType)
     end
     
 end

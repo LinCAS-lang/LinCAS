@@ -105,13 +105,11 @@ module LinCAS
 
             }
 
-    protected def toTkType(tkName)
-        tkName = tkName.downcase
-        return TokenDictConverter[tkName] if TokenDictConverter.keys.includes? tkName
-        nil
+    protected def toTkType(tkName : String)
+        return TokenDictConverter[tkName.downcase]?
     end
 
     protected def isSpecialChar?(charTk)
-        TokenDictConverter.keys.includes? charTk
+        TokenDictConverter.has_key? charTk
     end
 end

@@ -116,7 +116,8 @@ module LinCAS
             end
 
         end
-
+        
+        @[AlwaysInline]
         private def extractNumbers
             while currentChar =~ /[0-9]/
                 @text += currentChar
