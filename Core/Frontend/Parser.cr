@@ -4,13 +4,15 @@ enum VoidVisib
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
         
-    START_SYNC_SET = 
-    { TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
-      TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
-      TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
-      TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::GLOBAL_ID,
-      TkType::LOCAL_ID
+    START_SYNC_SET = { 
+        TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
+        TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
+        TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
+        TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::GLOBAL_ID,
+        TkType::LOCAL_ID
     }
+    
+    NOOP = Node.new(NodeType::NOOP)
 
     macro checkIDforReceiver
         if @currentTk.ttype == TkType::LOCAL_ID
@@ -97,13 +99,14 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def sync(syncSet)
         if !(syncSet.includes? @currentTk.ttype)
             @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self)
-            while !(syncSet.includes? @currentTk.ttype)
+            while !(syncSet.includes? @currentTk.ttype) && !(@currentTk.is_a? EofTk)
                 shift
                 if @currentTk.ttype == TkType::ERROR
                     @errHandler.flag(@currentTk,@currentTk.value,self)
                     shift
                 end
-            end   
+            end  
+            @errHandler.abortProcess if @currentTk.is_a? EofTk 
         end
     end
 
@@ -189,7 +192,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             #when TkType::USE
             #when TkType::RETURN
             else
-                return @nodeFactory.makeNode(NodeType::NOOP)
+                return NOOP
         end
     ensure
         checkEol unless @currentTk.is_a? EofTk 
@@ -434,7 +437,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         assign_sync_set = 
         {
             TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::COLON_EQ, 
-            TkType::SEMICOLON, TkType::EOL
+            TkType::INT, TkType::FLOAT, TkType::SEMICOLON, TkType::EOL
         }
         sync(assign_sync_set)
         node = @nodeFactory.makeNode(NodeType::ASSIGN)
@@ -527,8 +530,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return  node
     end
 
-    protected def parseExp(firstNode = nil) : Node
-        root = parseSum(firstNode ? firstNode : nil)
+    protected def parseExp(firstNode = NOOP) : Node
+        root = parseSum(firstNode)
         tkType = @currentTk.ttype
         while boolOpInclude? tkType
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
@@ -566,8 +569,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return root
     end
 
-    protected def parseRel(prevNode = Nil) : Node
-        root = parseSum(prevNode ? prevNode : nil)
+    protected def parseRel(prevNode = NOOP) : Node
+        root = parseSum(prevNode)
         tkType = @currentTk.ttype
         if opInclude? tkType
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
@@ -580,7 +583,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return root
     end
 
-    protected def parseSum(prevNode = nil) : Node
+    protected def parseSum(prevNode = NOOP) : Node
         add_op = {
             TkType::PLUS, TkType::MINUS
         }
@@ -588,7 +591,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             sign = @currentTk.ttype
             shift
         end 
-        root = parseProd(prevNode ? prevNode : nil)
+        root = parseProd(prevNode)
         if sign == TkType::MINUS
             node = @nodeFactory.makeNode(NodeType::INVERT)
             node.addBranch(root)
@@ -607,8 +610,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return root
     end
 
-    protected def parseProd(prevNode = nil) : Node
-        root = parsePower(prevNode ? prevNode : nil)
+    protected def parseProd(prevNode = NOOP) : Node
+        root = parsePower(prevNode)
         tkType = @currentTk.ttype 
         while opInclude? tkType
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
@@ -622,14 +625,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return root
     end
 
-    protected def parsePower(prevNode = nil) : Node
+    protected def parsePower(prevNode = NOOP) : Node
         stack = [] of Node
-        if prevNode 
-            prevNode = prevNode.as(Node) 
-            stack.push  prevNode
-        else
-            stack.push parseAtom
-        end
+        stack.push (prevNode != NOOP) ? prevNode : parseAtom 
         while @currentTk.ttype == TkType::POWER
             shift
             skipEol
@@ -647,22 +645,50 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseAtom : Node
-        @nodeFactory.makeNode(NodeType::NOOP)
+        case @currentTk.ttype
+            when TkType::LOCAL_ID, TkType::GLOBAL_ID, TkType::SELF
+                root = parseID
+            when TkType::STRING
+                root = parseString
+            when TkType::INT, TkType::FLOAT
+                root = parseNumber
+            when TkType::L_PAR
+                shift
+                root = parseSum
+                if @currentTk.ttype == TkType::R_PAR
+                    shift
+                else
+                    @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
+                end
+            else
+                @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self)
+                root = NOOP
+        end
+        return root
     end
 
     protected def parseRange
         @nodeFactory.makeNode(NodeType::SUM)
         # to Implement
     end
+
+    @[AlwaysInline]
+    protected def parseString
+        root = @nodeFactory.makeNode(NodeType::STRING)
+        root.setAttr(NKey::VALUE,@currentTk.text)
+        shift
+        root
+    end
+
     protected def parseID : Node
         nextTkType = @nextTk.ttype
         if nextTkType == TkType::COLON
             node = parseNameSpace
         elsif nextTkType == TkType::DOT
-            node = parseMethodCall(parseID)
+            node = parseMethodCall(parseID) # !!!!!!!!!!!!!
         elsif nextTkType == TkType::L_PAR || nextTkType == TkType::L_BRACKET
             node = parseCall
-        elsif @currentTk.ttype = TkType::GLOBAL_ID
+        elsif @currentTk.ttype == TkType::GLOBAL_ID
             node = parseGlobalID
         else
             node = parseLocalID
@@ -678,6 +704,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         
     end
 
+    protected def parseNumber
+        parseNumberAtom
+    end
+
     protected def parseNumberAtom : Node
         if @currentTk.ttype == TkType::INT
             node = @nodeFactory.makeNode(NodeType::INT)
@@ -685,6 +715,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             node = @nodeFactory.makeNode(NodeType::FLOAT)
         end
         node.setAttr(NKey::VALUE, @currentTk.value.as(Int32 | Int64 | Float32 | Float64))
+        shift
         return node
     end
 

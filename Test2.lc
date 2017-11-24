@@ -1,4 +1,4 @@
-
+/*
 module MyModule {
     protected void MyClass:Lol.MyVoid(a,b,c) {
 
@@ -12,3 +12,6 @@ module MyModule {
 class MyClass {
 
 }
+*/
+
+a /= 3
