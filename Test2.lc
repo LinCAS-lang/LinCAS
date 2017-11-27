@@ -13,5 +13,8 @@ class MyClass {
 
 }
 */
+1..9.each(){
+    
+}
 
-a /= 3
+8.odd().even()

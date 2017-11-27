@@ -7,7 +7,7 @@ enum LinCAS::NodeType
     # Operations
     SUM SUB MUL FDIV IDIV MOD POWER AND OR NOT APPEND INVERT
 
-    # Comperisons
+    # Comparisons
     GR SM GE SE EQ NE
 
     # Statements
@@ -15,7 +15,11 @@ enum LinCAS::NodeType
     REQUIRE INCLUDE ASSIGN NOOP CALL METHOD_CALL PROC
     PROGRAM
 
+    # Math const
+    E PI NINF INF
+
     # Other stuff
     NAMESPACE BODY VOID_NAME ARG_LIST SELF OPERATOR
+    IRANGE ERANGE ARG
 
 end

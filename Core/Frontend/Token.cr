@@ -102,7 +102,7 @@ module LinCAS
         protected def extract
             
             extractNumbers
-            if currentChar == "."
+            if currentChar == "." && peekChar =~ /[0-9]/
                 @text += currentChar
                 nextChar
                 if currentChar =~ /[0-9]/

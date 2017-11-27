@@ -20,6 +20,7 @@ enum LinCAS::ErrCode
     UNALLOWED_PROTECTED
     INVALID_VISIB_ARG
     INVALID_ASSIGN
+    INF_CONST_OUT_SYM
 end
 
 module LinCAS
@@ -43,7 +44,8 @@ module LinCAS
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
         ErrCode::INVALID_VISIB_ARG   => "Invalid argument for visibility keyword",
-        ErrCode::INVALID_ASSIGN      => "Invalid assignment"
+        ErrCode::INVALID_ASSIGN      => "Invalid assignment",
+        ErrCode::INF_CONST_OUT_SYM   => "Infinity constant used out of a symbolic function"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]
