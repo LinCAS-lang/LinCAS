@@ -24,8 +24,7 @@ enum LinCAS::ErrCode
 end
 
 module LinCAS
-    private ErrDict =
-    {
+    private ErrDict = {
         ErrCode::STRING_MEETS_EOF    => "String meets end-of-line",
         ErrCode::ILLEGAL_EXPRESSION  => "Illegal expression",
         ErrCode::INVALID_ID          => "Invalid identifier format",

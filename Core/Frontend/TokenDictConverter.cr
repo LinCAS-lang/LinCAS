@@ -46,6 +46,7 @@ module LinCAS
                 "include"    => TkType::INCLUDE,
                 "use"        => TkType::USE,
                 "self"       => TkType::SELF,
+                "yield"      => TkType::YIELD,
 
                 # Internal values
                 "true"  => TkType::TRUE,
