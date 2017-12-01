@@ -33,7 +33,7 @@ require "../Util/AstPrinter"
 include LinCAS
 
 factory = FrontendFactory.new
-parser = factory.makeParser("/home/massimiliano/Documenti/GitHub/crLinCAS/Test2.lc")
+parser = factory.makeParser(File.expand_path("../Test2.lc"))
 #parser.displayTokens
 ast = parser.parse
 astPrinter = AstPrinter.new

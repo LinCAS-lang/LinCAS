@@ -13,14 +13,21 @@ enum LinCAS::ErrCode
     MISSING_R_BRACE
     MISSING_L_PAR
     MISSING_R_PAR
+    MISSING_L_BRACKET
+    MISSING_R_BRACKET
     MISSING_EXPR
+    MISSING_PIPE
     MISSING_COLON_EQ
+    MISSING_NAME
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
     INVALID_VISIB_ARG
     INVALID_ASSIGN
     INF_CONST_OUT_SYM
+    IRREGULAR_MATRIX
+    EMPTY_FUNCTION 
+    ALREADY_SYM  
 end
 
 module LinCAS
@@ -37,14 +44,21 @@ module LinCAS
         ErrCode::MISSING_R_BRACE     => "Missing '}'",
         ErrCode::MISSING_L_PAR       => "Missing '('",
         ErrCode::MISSING_R_PAR       => "Missing ')'",
+        ErrCode::MISSING_L_BRACKET   => "Missing '['",
+        ErrCode::MISSING_R_BRACKET   => "Missing ']'",
         ErrCode::MISSING_EXPR        => "Missing expression",
+        ErrCode::MISSING_PIPE        => "Missing '|'",
         ErrCode::MISSING_COLON_EQ    => "Missing ':='",
+        ErrCode::MISSING_NAME         => "Missing name or namespace",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
         ErrCode::INVALID_VISIB_ARG   => "Invalid argument for visibility keyword",
         ErrCode::INVALID_ASSIGN      => "Invalid assignment",
-        ErrCode::INF_CONST_OUT_SYM   => "Infinity constant used out of a symbolic function"
+        ErrCode::INF_CONST_OUT_SYM   => "Infinity constant used out of a symbolic function",
+        ErrCode::IRREGULAR_MATRIX    => "Irregular matrix row",
+        ErrCode::ALREADY_SYM         => "Already declaring a symbolic function",
+        ErrCode::EMPTY_FUNCTION      => "Declaring an empty symbolic function"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]

@@ -130,7 +130,7 @@ module LinCAS
     struct EolTk < Token
 
         protected def extract
-            @text = ""
+            @text = "\\n"
             @ttype = TkType::EOL
             nextChar
         end
@@ -140,7 +140,7 @@ module LinCAS
     struct EofTk < Token
 
         protected def extract
-            @text  = ""
+            @text  = "\\eof"
             @ttype = TkType::EOF
         end
         

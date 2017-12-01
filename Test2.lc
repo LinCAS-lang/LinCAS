@@ -12,8 +12,9 @@ module MyModule {
 class MyClass {
 
 }
-*/
 
-(1+3)..(4+5).each(){
+
+(1+3)..(4+5).each() { (a,b)
     
-}
+}*/
+
