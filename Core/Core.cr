@@ -4,7 +4,7 @@ module LinCAS
     ALLOWED_VOID_NAMES = 
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
-        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT
+        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::INDEX
     }
 end
 
@@ -33,7 +33,9 @@ require "../Util/AstPrinter"
 include LinCAS
 
 factory = FrontendFactory.new
-parser = factory.makeParser(File.expand_path("../Test2.lc"))
+ENV["filename"] = File.expand_path("../Test3.lc")
+ENV["libDir"] = ""
+parser = factory.makeParser(ENV["filename"])
 #parser.displayTokens
 ast = parser.parse
 astPrinter = AstPrinter.new

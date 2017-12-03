@@ -16,5 +16,34 @@ class MyClass {
 
 (1+3)..(4+5).each() { (a,b)
     
+}
+
+select a {
+    case 1,2,3+2 {
+        a := 1
+    }
+    case 4 {
+
+    }
+    else {
+        
+    }
+}
+
+do while a {
+  a := 0
+  b
+}
+
+if a {
+    b := 2
+}
+else {
+
 }*/
 
+const @a := 3
+
+/*for i : a downto b {
+
+}*/

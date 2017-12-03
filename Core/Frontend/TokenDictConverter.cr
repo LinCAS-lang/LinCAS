@@ -102,7 +102,8 @@ module LinCAS
                 "^="  => TkType::POWER_EQ,
                 "\""  => TkType::QUOTES,
                 "'"   => TkType::S_QUOTE,
-                "$"   => TkType::DOLLAR
+                "$"   => TkType::DOLLAR,
+                "[]"  => TkType::INDEX
 
             }
 

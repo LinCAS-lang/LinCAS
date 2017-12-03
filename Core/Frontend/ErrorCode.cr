@@ -19,6 +19,11 @@ enum LinCAS::ErrCode
     MISSING_PIPE
     MISSING_COLON_EQ
     MISSING_NAME
+    MISSING_UNTIL
+    MISSING_COLON
+    MISSING_DIR
+    MISSING_FILENAME
+    MISSING_LIBNAME
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
@@ -27,7 +32,10 @@ enum LinCAS::ErrCode
     INF_CONST_OUT_SYM
     IRREGULAR_MATRIX
     EMPTY_FUNCTION 
-    ALREADY_SYM  
+    ALREADY_SYM
+    EXPECTING_CASE  
+    INVALID_FILENAME
+    UNLOCATED_LIB
 end
 
 module LinCAS
@@ -49,7 +57,12 @@ module LinCAS
         ErrCode::MISSING_EXPR        => "Missing expression",
         ErrCode::MISSING_PIPE        => "Missing '|'",
         ErrCode::MISSING_COLON_EQ    => "Missing ':='",
-        ErrCode::MISSING_NAME         => "Missing name or namespace",
+        ErrCode::MISSING_NAME        => "Missing name or namespace",
+        ErrCode::MISSING_UNTIL       => "Missing keyword 'until'",
+        ErrCode::MISSING_COLON       => "Missing ':'",
+        ErrCode::MISSING_DIR         => "Missing keyword 'to' or 'downto'",
+        ErrCode::MISSING_FILENAME    => "Missing fileneme string token",
+        ErrCode::MISSING_LIBNAME     => "Missing library name string token",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
@@ -58,7 +71,10 @@ module LinCAS
         ErrCode::INF_CONST_OUT_SYM   => "Infinity constant used out of a symbolic function",
         ErrCode::IRREGULAR_MATRIX    => "Irregular matrix row",
         ErrCode::ALREADY_SYM         => "Already declaring a symbolic function",
-        ErrCode::EMPTY_FUNCTION      => "Declaring an empty symbolic function"
+        ErrCode::EMPTY_FUNCTION      => "Declaring an empty symbolic function",
+        ErrCode::EXPECTING_CASE      => "Unexpected token, expecting keyword 'case'",
+        ErrCode::INVALID_FILENAME    => "Invalid filename",
+        ErrCode::UNLOCATED_LIB       => "Library not found"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]
