@@ -27,7 +27,7 @@ require "./Intermediate/NodeType"
 require "./Intermediate/Nkey"
 require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
-require "../Util/AstPrinter"
+require "../util/AstPrinter"
 
 
 include LinCAS

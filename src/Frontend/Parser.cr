@@ -1,4 +1,27 @@
 
+# Copyright (c) 2017 Massimiliano Dal Mas
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 enum LinCAS::VoidVisib
     PUBLIC PROTECTED PRIVATE 
 end
@@ -281,9 +304,12 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return parseRequire
             when TkType::USE
                 return parseUse
-            #when TkType::RETURN
+            when TkType::RETURN
+                parseReturn
             #when TkType::YIELD
             #when TkType::PRINT, TkType::PRINTL
+            #when TkType::RAISE
+            #when TkType::TRY
             else
                 if EXP_SYNC_SET.includes? @currentTk.ttype
                     return parseExpStmt
@@ -1402,7 +1428,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             @errHandler.flag(@currentTk,ErrCode::MISSING_FILENAME,self)
             sync(require_sync_set)
         else
-            file = File.expand_path(@currentTk.text,File.dirname(ENV["filename"]))
+            file = @currentTk.text
+            file = File.expand_path(@currentTk.text,File.dirname(ENV["filename"])) unless File.exists? file
             if File.exists?(file)
                 parser = frontendFact.makeParser(file)
                 parser.noSummary
