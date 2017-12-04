@@ -1,4 +1,27 @@
 
+# Copyright (c) 2017 Massimiliano Dal Mas
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 enum LinCAS::ErrCode
     STRING_MEETS_EOF
     ILLEGAL_EXPRESSION
@@ -36,6 +59,8 @@ enum LinCAS::ErrCode
     EXPECTING_CASE  
     INVALID_FILENAME
     UNLOCATED_LIB
+    UNEXPECTED_RETURN
+    UNEXPECTED_YIELD
 end
 
 module LinCAS
@@ -74,7 +99,9 @@ module LinCAS
         ErrCode::EMPTY_FUNCTION      => "Declaring an empty symbolic function",
         ErrCode::EXPECTING_CASE      => "Unexpected token, expecting keyword 'case'",
         ErrCode::INVALID_FILENAME    => "Invalid filename",
-        ErrCode::UNLOCATED_LIB       => "Library not found"
+        ErrCode::UNLOCATED_LIB       => "Library not found",
+        ErrCode::UNEXPECTED_RETURN   => "'return' statement out of void or block",
+        ErrCode::UNEXPECTED_YIELD     => "'yield' statement out of void"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]

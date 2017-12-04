@@ -1,0 +1,16 @@
+/*
+void yielding_void() {
+    raise new Error()
+    a := __DIR__
+    printl a & b & 6
+    return yield(1,2)
+}
+
+try {
+
+} 
+catch exception {
+
+}*/
+
+a.[](1) := true

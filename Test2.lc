@@ -42,7 +42,7 @@ else {
 
 }*/
 
-const @a := 3
+const @a := null
 
 /*for i : a downto b {
 

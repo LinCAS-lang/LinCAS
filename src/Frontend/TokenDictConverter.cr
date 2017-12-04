@@ -70,6 +70,11 @@ module LinCAS
                 "use"        => TkType::USE,
                 "self"       => TkType::SELF,
                 "yield"      => TkType::YIELD,
+                "raise"      => TkType::RAISE,
+                "__file__"   => TkType::FILEMC,
+                "__dir__"    => TkType::DIRMC,
+                "try"        => TkType::TRY,
+                "catch"      => TkType::CATCH,
 
                 # Internal values
                 "true"  => TkType::TRUE,

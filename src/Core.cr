@@ -33,7 +33,7 @@ require "../util/AstPrinter"
 include LinCAS
 
 factory = FrontendFactory.new
-ENV["filename"] = File.expand_path("../Test3.lc")
+ENV["filename"] = File.expand_path("../Test5.lc")
 ENV["libDir"] = ""
 parser = factory.makeParser(ENV["filename"])
 #parser.displayTokens
