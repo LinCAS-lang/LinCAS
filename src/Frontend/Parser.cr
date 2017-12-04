@@ -1,5 +1,5 @@
 
-enum VoidVisib
+enum LinCAS::VoidVisib
     PUBLIC PROTECTED PRIVATE 
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
