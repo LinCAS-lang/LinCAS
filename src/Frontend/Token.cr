@@ -52,7 +52,7 @@ module LinCAS
         NOT ADD AND PIPE OR COLON SEMICOLON COMMA COLON_EQ APPEND
         L_PAR R_PAR L_BRACE R_BRACE L_BRACKET R_BRACKET PLUS_EQ
         MINUS_EQ STAR_EQ SLASH_EQ BSLASH_EQ MOD_EQ POWER_EQ QUOTES
-        S_QUOTE DOLLAR
+        S_QUOTE DOLLAR ASSIGN_INDEX
     end
     
     abstract struct Token
@@ -201,7 +201,7 @@ module LinCAS
             @text += currentChar
             nextChar
             case @text
-                when "$", "(", ")","[", "]", "{", "}", ",", ";", "'"
+                when "$", "(", ")", "]", "{", "}", ",", ";", "'"
                     # nextChar
                 when ":","=", ">", "+", "-", "*", "^", "\\", "/", "%"
                     if currentChar == "="
@@ -231,6 +231,11 @@ module LinCAS
                         @text += currentChar
                         nextChar
                     end
+                when "["
+                    if currentChar == "]" && peekChar == "="
+                        @text += currentChar + nextChar
+                        nextChar
+                    end 
                 else
                   @ttype = TkType::ERROR
                   @value = ErrCode::ILLEGAL_EXPRESSION

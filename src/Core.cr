@@ -4,7 +4,8 @@ module LinCAS
     ALLOWED_VOID_NAMES = 
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
-        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET
+        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
+        TkType::ASSIGN_INDEX
     }
 end
 
