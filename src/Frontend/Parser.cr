@@ -72,7 +72,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     macro assignCheck(node = NOOP)
         if {{node}}.type == NodeType::METHOD_CALL
-            if {{node}}.getAttr(NKey::METHOD_NAME) != "[]"
+            if {{node}}.getBranches[0].getAttr(NKey::ID) != "[]"
                 @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
             end
         elsif ! {NodeType::LOCAL_ID, NodeType::GLOBAL_ID}.includes? {{node}}.type
@@ -394,7 +394,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         void_sync_set = {
             TkType::SELF, TkType::LOCAL_ID, TkType::L_PAR, 
             TkType::L_BRACE, TkType::EOL
-        }
+        } + ALLOWED_VOID_NAMES
         @nestedVoids += 1
         node = @nodeFactory.makeNode(NodeType::VOID)
         setLine(node) 
@@ -433,7 +433,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def parseVoidName : Node
         name_sync_set = {
             TkType::LOCAL_ID, TkType::DOT, TkType::L_PAR, TkType::SEMICOLON, TkType::EOL
-        }
+        } + ALLOWED_VOID_NAMES
         if @currentTk.ttype == TkType::SELF
             node = @nodeFactory.makeNode(NodeType::SELF)
             shift
@@ -473,9 +473,22 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             end
         elsif @currentTk.ttype == TkType::LOCAL_ID
             return parseLocalID
-        elsif ALLOWED_VOID_NAMES.includes? @currentTk.text
-            node = @nodeFactory.makeNode(NodeType::OPERATOR)
-            node.setAttr(NKey::ID,@currentTk.text)
+        elsif ALLOWED_VOID_NAMES.includes? @currentTk.ttype
+            if @currentTk.ttype == TkType::L_BRACKET
+                shift 
+                if @currentTk.ttype != TkType::R_BRACKET
+                    @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) 
+                    return makeDummyName
+                else 
+                    shift 
+                    node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+                    node.setAttr(NKey::ID,"[]")
+                end 
+            else
+                node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+                node.setAttr(NKey::ID,@currentTk.text)
+                shift
+            end 
             return node
         else
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
@@ -898,12 +911,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def parseMethodCall(receiver : Node) : Node
         lock_index_call = false
         node = @nodeFactory.makeNode(NodeType::METHOD_CALL)
-        node.addBranch(receiver)
+        node.setAttr(NKey::RECEIVER,receiver)
         shift if @currentTk.ttype == TkType::DOT
         if @currentTk.ttype == TkType::LOCAL_ID
             node.addBranch(parseLocalID)
-            lock_index_call = true
-        elsif ALLOWED_VOID_NAMES.includes? @currentTk.ttype
+        elsif ALLOWED_VOID_NAMES.includes? @currentTk.ttype && !(@currentTk.ttype != TkType::L_BRACKET)
             id = @nodeFactory.makeNode(NodeType::LOCAL_ID)
             id.setAttr(NKey::ID,@currentTk.text)
             shift 
@@ -916,14 +928,20 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         end
         if @currentTk.ttype == TkType::L_BRACKET
             @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self) if lock_index_call
-            name = @nodeFactory.makeNode(NodeType::LOCAL_ID)
-            name.setAttr(NKey::ID,"[]")
-            node.addBranch(name)
-            node.addBranch(parseIndexArg)
+            if node.getBranches.size > 0
+                args = @nodeFactory.makeNode(NodeType::ARG)
+                node.addBranch(args)
+                node = parseMethodCall(node)
+            else
+                name = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+                name.setAttr(NKey::ID,"[]")
+                node.addBranch(name)
+                node.addBranch(parseIndexArg)
+            end
         else
             node.addBranch(parseCallArg)
         end
-       if  @currentTk.ttype == TkType::DOT 
+       if  {TkType::DOT, TkType::L_BRACKET}.includes? @currentTk.ttype
            node = parseMethodCall(node)
        elsif @currentTk.ttype == TkType::COLON
            node = parseNameSpace(node)

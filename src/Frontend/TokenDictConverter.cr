@@ -130,9 +130,7 @@ module LinCAS
                 "^="  => TkType::POWER_EQ,
                 "\""  => TkType::QUOTES,
                 "'"   => TkType::S_QUOTE,
-                "$"   => TkType::DOLLAR,
-                "[]"  => TkType::INDEX
-
+                "$"   => TkType::DOLLAR
             }
 
     protected def toTkType(tkName : String)
