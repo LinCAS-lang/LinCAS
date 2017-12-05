@@ -26,7 +26,7 @@ module LinCAS::Internal
 
     abstract struct Base
         @klass  = uninitialized LcClass
-        @frozen = false
+        @frozen = Pointer(Boolean).malloc(1,false)
         @vtable = uninitialized VTable 
         @data   = uninitialized Data
         setter klass
@@ -36,5 +36,5 @@ module LinCAS::Internal
         getter vtable
         getter data
     end
-    
+
 end
