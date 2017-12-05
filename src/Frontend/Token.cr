@@ -30,7 +30,7 @@ module LinCAS
         STRING ERROR INT FLOAT EOL EOF GLOBAL_ID LOCAL_ID
 
         # Math functions
-        LOG EXP TAN ATAN COS ACOS SIN ASIN SQRT
+        # LOG EXP TAN ATAN COS ACOS SIN ASIN SQRT
 
         # Math constants
         INF NINF E PI

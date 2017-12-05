@@ -13,6 +13,6 @@ catch exception {
 
 }*/
 
-a[1][2] := 1
-
-void []=(n) {}
+a.b[1][2] := 1
+/*
+void []=(n) {}*/

@@ -27,16 +27,17 @@ enum LinCAS::VoidVisib
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
 
-    MATH_FUNCT     = {
-        TkType::LOG, TkType::EXP, TkType::TAN, TkType::ATAN, TkType::COS, TkType::ACOS,
-        TkType::SIN, TkType::ASIN, TkType::SQRT
-    }
+#    MATH_FUNCT     = {
+#        TkType::LOG, TkType::EXP, TkType::TAN, TkType::ATAN, TkType::COS, TkType::ACOS,
+#        TkType::SIN, TkType::ASIN, TkType::SQRT
+#    }
 
     EXP_SYNC_SET   = {
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
-        TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC
-    } + MATH_FUNCT
+        TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
+        TkType::READS
+    } # + MATH_FUNCT
         
     START_SYNC_SET = { 
         TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
@@ -312,6 +313,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return  parseYield
             when TkType::PRINT, TkType::PRINTL
                 return parsePrint
+            when TkType::READS 
+                shift
+                return @nodeFactory.makeNode(NodeType::READS)
             when TkType::RAISE
                 return parseRaise
             when TkType::TRY
@@ -1491,7 +1495,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             sync(require_sync_set)
         else
             file = @currentTk.text
-            file = File.expand_path(@currentTk.text,File.dirname(ENV["filename"])) unless File.exists? file
+            file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename)) unless File.exists? file
             if File.exists?(file)
                 parser = frontendFact.makeParser(file)
                 parser.noSummary

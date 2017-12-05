@@ -26,15 +26,15 @@ module LinCAS
     private TokenDictConverter = 
             {
                 # Math functions
-                "log"   => TkType::LOG,
-                "exp"   => TkType::EXP,
-                "tan"   => TkType::TAN,
-                "atan"  => TkType::ATAN,
-                "cos"   => TkType::COS,
-                "acos"  => TkType::ACOS,
-                "sin"   => TkType::SIN,
-                "asin"  => TkType::ASIN,
-                "sqrt"  => TkType::SQRT,
+                # "log"   => TkType::LOG,
+                # "exp"   => TkType::EXP,
+                # "tan"   => TkType::TAN,
+                # "atan"  => TkType::ATAN,
+                # "cos"   => TkType::COS,
+                # "acos"  => TkType::ACOS,
+                # "sin"   => TkType::SIN,
+                # "asin"  => TkType::ASIN,
+                # "sqrt"  => TkType::SQRT,
 
                 # Math constants
                 "inf"  => TkType::INF,
