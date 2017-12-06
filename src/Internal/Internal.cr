@@ -37,4 +37,8 @@ module LinCAS::Internal
         getter data
     end
 
+    lib C
+        fun strstr(str1 : Char*, str2 : Char*) : Char*
+    end
+
 end

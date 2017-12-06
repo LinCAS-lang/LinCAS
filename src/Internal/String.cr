@@ -24,7 +24,7 @@
 
 module LinCAS::Internal
 
-    struct LcString #< Base
+    class LcString #< Base
         def initialize
             @str_ptr = Pointer(Char).null
             @size    = Pointer(UInt32).malloc(1,0.to_u32) 
@@ -54,7 +54,7 @@ module LinCAS::Internal
         if st_size < final_size
             {{lcStr}}.str_ptr = {{lcStr}}.str_ptr.realloc(final_size.to_i)
             set_size({{lcStr}},final_size)
-        end            
+        end 
     end
 
     macro str_add_char(lcStr,index,char)
@@ -79,7 +79,7 @@ module LinCAS::Internal
         # To implement: argument check
         resize_capacity(lcStr,value.size)
         value.each_char_with_index do |chr,i|
-            str_add_char(lcStr,i-1,chr)
+            str_add_char(lcStr,i,chr)
         end 
     end
 
@@ -103,11 +103,11 @@ module LinCAS::Internal
         strlen2      = str_size(str)
         strlen_tot   = strlen1 + strlen2
         resize_capacity(concated_str,strlen_tot)
-        (0..lc_str).each do |i|
-            str_add_char(concated_str,i,str_char_at(lc_str,i))
+        (0...strlen1).each do |i|
+            str_add_char(concated_str,i,str_char_at(lcStr,i))
         end 
-        ((strlen1 + 1)..strlen_tot).each do |i|
-            str_add_char(concated_str, i, str_char_at(str,i))
+        (strlen1...strlen_tot).each do |i|
+            str_add_char(concated_str, i, str_char_at(str,i - strlen1))
         end
         return concated_str
     end
@@ -117,13 +117,14 @@ module LinCAS::Internal
     # bark   = "Bark"
     # bark_3 = bark * 3 #=> "BarkBarkBark"
     def self.lc_str_multiply(lcStr : LcString,times)
-        new_str = build_str 
+        new_str = build_string 
         strlen  = str_size(lcStr)
         tms     = times #lc_num_to_i(times)
-        resize_capacity(new_str,tms)
+        resize_capacity(new_str,strlen * tms)
+        set_size(new_str,strlen * tms)
         tms.times do |n|
             (0...strlen).each do |i|
-                str_add_char(new_str,n + i,str_char_at(lcStr,i))
+                str_add_char(new_str,n * strlen + i ,str_char_at(lcStr,i))
             end 
         end
         return new_str
@@ -135,15 +136,15 @@ module LinCAS::Internal
     # * argument:: string struct
     def self.string_to_cr(lcStr : LcString)
         string = ""
-        (0...1).each do |i|
+        (0...str_size(lcStr)).each do |i|
             string += str_char_at(lcStr,i).to_s
         end 
         return string 
     end
 
-    str = build_string
-    self.lc_init_string(str,"ciao")
-    p str.str_ptr
-    #p self.string_to_cr(str)
+#    str = build_string
+#    self.lc_init_string(str,"ciao")
+#    c = lc_str_multiply(str,3)
+#    p self.string_to_cr(c)
 
 end
