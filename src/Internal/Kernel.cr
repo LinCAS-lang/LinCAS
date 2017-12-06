@@ -25,13 +25,42 @@
 module LinCAS::Internal
     
     module LcKernel
-        
-        def out()
 
+        macro internal 
+            LinCAS::Internal
+        end
+
+        macro obj_of(str_ptr)
+            {{str_ptr}}.value
+        end
+
+        def self.outl(arg)
+            if arg.is_a? LinCAS::Internal::LcString*
+                printl_str(arg)
+            end
         end 
 
-        def in
-            str = STDIN.gets            
+        def self.out(arg)
+            if arg.is_a? LinCAS::Internal::LcString*
+                print_str(arg)
+            end
+        end
+
+        def self.in
+            str = internal.build_string
+            internal.lc_init_str(str,STDIN.gets) 
+            return str 
+        end
+
+        private def self.print_str(arg)
+            (0...obj_of(arg).size).each do |i|
+                STDOUT.print(obj_of(arg).str_ptr[i])
+            end
+        end
+
+        private def self.printl_str(arg)
+            print_str(arg)
+            STDOUT.puts
         end
 
     end

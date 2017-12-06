@@ -22,47 +22,48 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+
 module LinCAS::Internal
 
-    class LcString #< Base
+    struct LcString #< Base
         def initialize
             @str_ptr = Pointer(Char).null
-            @size    = Pointer(UInt32).malloc(1,0.to_u32) 
+            @size    = 0
         end
         setter str_ptr
         setter size
         getter str_ptr
         getter size
-    end
-
-    macro build_string
-        # To implement
-        LcString.new 
     end 
 
     macro set_size(lcStr,size)
-        {{lcStr}}.size[0] = {{size}}
+        obj_of({{lcStr}}).size = {{size}}
     end
 
     macro str_size(lcStr)
-        {{lcStr}}.size[0]
+        obj_of({{lcStr}}).size
     end
 
-    macro resize_capacity(lcStr,value)
+    macro resize_str_capacity(lcStr,value)
         st_size  = str_size({{lcStr}})
         final_size = st_size + {{value}}
         if st_size < final_size
-            {{lcStr}}.str_ptr = {{lcStr}}.str_ptr.realloc(final_size.to_i)
+            obj_of({{lcStr}}).str_ptr = obj_of({{lcStr}}).str_ptr.realloc(final_size.to_i)
             set_size({{lcStr}},final_size)
         end 
     end
 
     macro str_add_char(lcStr,index,char)
-        {{lcStr}}.str_ptr[{{index}}] = {{char}}
+        obj_of({{lcStr}}).str_ptr[{{index}}] = {{char}}
     end
 
     macro str_char_at(lcStr,index)
-        {{lcStr}}.str_ptr[{{index}}]
+        obj_of({{lcStr}}).str_ptr[{{index}}]
+    end
+
+    def self.build_string
+        # To implement
+        return Pointer.malloc(instance_sizeof(LcString),LcString.new) 
     end
     
     # Initializes a new string trough the keyword 'new' or just
@@ -75,9 +76,9 @@ module LinCAS::Internal
     #
     # * argument:: string struct to initialize
     # * argument:: initial string value
-    def self.lc_init_string(lcStr : LcString, value)
+    def self.lc_init_string(lcStr : LcString*, value)
         # To implement: argument check
-        resize_capacity(lcStr,value.size)
+        resize_str_capacity(lcStr,value.size)
         value.each_char_with_index do |chr,i|
             str_add_char(lcStr,i,chr)
         end 
@@ -86,23 +87,23 @@ module LinCAS::Internal
     # Concatenates two strings.
     # This method can be invoked in two ways:
     # ```
-    # foo    = "Foo"
-    # bar    = "Bar"
-    # foobar = foo + bar
+    # foo    := "Foo"
+    # bar    := "Bar"
+    # foobar := foo + bar
     # # same as:
-    # foobar = foo.concat(bar)
+    # foobar := foo.concat(bar)
     # ```
     #
     # * argument:: first string struct to concatenate
     # * argument:: second string struct to concatenate
     # * returns:: new string struct
-    def self.lc_str_concat(lcStr : LcString, str)
+    def self.lc_str_concat(lcStr : LcString*, str)
         # To implement: argument check
         concated_str = build_string
         strlen1      = str_size(lcStr)
         strlen2      = str_size(str)
         strlen_tot   = strlen1 + strlen2
-        resize_capacity(concated_str,strlen_tot)
+        resize_str_capacity(concated_str,strlen_tot)
         (0...strlen1).each do |i|
             str_add_char(concated_str,i,str_char_at(lcStr,i))
         end 
@@ -114,13 +115,13 @@ module LinCAS::Internal
 
     # Performs a multiplication between a string and a number
     # ```
-    # bark   = "Bark"
-    # bark_3 = bark * 3 #=> "BarkBarkBark"
-    def self.lc_str_multiply(lcStr : LcString,times)
+    # bark   := "Bark"
+    # bark_3 := bark * 3 #=> "BarkBarkBark"
+    def self.lc_str_multiply(lcStr : LcString*,times)
         new_str = build_string 
         strlen  = str_size(lcStr)
         tms     = times #lc_num_to_i(times)
-        resize_capacity(new_str,strlen * tms)
+        resize_str_capacity(new_str,strlen * tms)
         set_size(new_str,strlen * tms)
         tms.times do |n|
             (0...strlen).each do |i|
@@ -129,6 +130,51 @@ module LinCAS::Internal
         end
         return new_str
     end 
+
+    # Checks if a substring is contained in another one.
+    # It works making a call like this:
+    # ```
+    # str := "A cat on the roof"
+    # cat := "Cat"
+    # str.include(cat)   #=> true
+    # str.include("bed") #=> false
+    # ```
+    #
+    # * argument:: string on which the method is called
+    # * argument:: string to be searched
+    # * returns:: true if the two strings equal; false else;
+    def self.lc_str_include(str1 : LcString* ,str2)
+        # To implement: argument check
+        s_ptr = libc.strstr(obj_of(str1).str_ptr,obj_of(str2).str_ptr)
+        if s_ptr.null?
+             return lcfalse
+        else 
+             return lctrue
+        end
+    end
+
+    # Compares two strings
+    # ```
+    # bar := "Bar"
+    # foo := "Foo"
+    # bar == bar #=> true
+    # bar == foo #=> false
+    # ```
+    #
+    # * argument:: string on which the method is called
+    # * argument:: string to be compared
+    # * returns:: true if the two strings equal; false else;
+    def self.lc_str_compare(str1 : LcString*, str2)
+        # To implement: argument check
+        return lcfalse if str_size(str1) != str_size(str2)
+        return internal.lc_str_include(str1,str2)
+    end
+
+    # Same as lc_str_compare, but it checks if two strings are not equal
+    def self.lc_str_icompare(str1 : LcString*, str2)
+        # To implement: argument check
+        return ! internal.lc_str_compare(str1,str2)
+    end
 
 
     # Converts a LinCAS string to a Crystal string
@@ -142,8 +188,13 @@ module LinCAS::Internal
         return string 
     end
 
+
 #    str = build_string
 #    self.lc_init_string(str,"ciao")
+#    LcKernel.outl(str)
+#    str2 = build_string
+#    self.lc_init_string(str2,"a tutti")
+#    p self.lc_str_include(str2,str)
 #    c = lc_str_multiply(str,3)
 #    p self.string_to_cr(c)
 

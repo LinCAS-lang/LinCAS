@@ -24,21 +24,45 @@
 
 module LinCAS::Internal
 
-    abstract struct Base
-        @klass  = uninitialized LcClass
-        @frozen = Pointer(Boolean).malloc(1,false)
-        @vtable = uninitialized VTable 
-        @data   = uninitialized Data
-        setter klass
-        setter frozen
-        getter klass 
-        getter frozen
-        getter vtable
-        getter data
-    end
+#    abstract struct Base
+#        @klass  = uninitialized LcClass
+#        @frozen = false
+#        @vtable = uninitialized VTable 
+#        @data   = uninitialized Data
+#        setter klass
+#        setter frozen
+#        getter klass 
+#        getter frozen
+#        getter vtable
+#        getter data
+#    end
 
-    lib C
+    LcFalse = false
+    LcTrue  = true
+
+    lib LibC
         fun strstr(str1 : Char*, str2 : Char*) : Char*
     end
+    
+    macro internal 
+        LinCAS::Internal
+    end
 
+    macro lcfalse
+        LinCAS::Internal::LcFalse
+    end
+
+    macro lctrue
+        LinCAS::Internal::LcTrue
+    end
+
+    macro libc 
+        LinCAS::Internal::LibC
+    end
+
+    macro obj_of(str_ptr)
+        {{str_ptr}}.value
+    end
 end
+require "./Kernel"
+require "./String"
