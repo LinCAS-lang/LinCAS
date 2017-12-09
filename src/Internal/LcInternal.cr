@@ -22,51 +22,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-module LinCAS::Internal
-
-    alias Value = (LcString* | LcBTrue | LcBFalse | LcInt | LcFloat )
-
-    abstract struct Base
-        @klass  = uninitialized ClassEntry
-        @data   = uninitialized Data
-        @frozen = false
-        setter klass
-        setter frozen
-        getter klass 
-        getter frozen
-        getter data
-    end
-
-    LcFalse = false
-    LcTrue  = true
-
-    lib LibC
-        fun strstr(str1 : Char*, str2 : Char*) : Char*
-    end
-    
-    macro internal 
-        LinCAS::Internal
-    end
-
-    macro lcfalse
-        LinCAS::Internal::LcFalse
-    end
-
-    macro lctrue
-        LinCAS::Internal::LcTrue
-    end
-
-    macro libc 
-        LinCAS::Internal::LibC
-    end
-
-    macro obj_of(str_ptr)
-        {{str_ptr}}.value
-    end
-
-    macro lc_free(ptr)
-        # GC.free({{ptr}})
-    end
-end
 require "./Kernel"
+require "./Internal"
+require "./Object"
+require "./Class"
+require "./Boolean"
+require "./Array"
+require "./Number"
+require "./Integer"
+require "./Float"
 require "./String"

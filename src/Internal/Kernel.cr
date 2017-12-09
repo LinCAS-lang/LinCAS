@@ -37,6 +37,10 @@ module LinCAS::Internal
         def self.outl(arg)
             if arg.is_a? LinCAS::Internal::LcString*
                 printl_str(arg)
+            elsif arg.is_a? LinCAS::Internal::LcBTrue
+                STDOUT.puts "true"
+            elsif arg.is_a? LinCAS::Internal::LcBFalse
+                STDOUT.puts "false"
             end
         end 
 

@@ -25,7 +25,9 @@
 
 module LinCAS::Internal
 
-    struct LcString #< Base
+    STR_MAX_CAPA = 3000
+
+    struct LcString < Base
         def initialize
             @str_ptr = Pointer(Char).null
             @size    = 0
@@ -47,6 +49,9 @@ module LinCAS::Internal
     macro resize_str_capacity(lcStr,value)
         st_size  = str_size({{lcStr}})
         final_size = st_size + {{value}}
+        if final_size > STR_MAX_CAPA
+            # internal.lc_raise()
+        end 
         if st_size < final_size
             obj_of({{lcStr}}).str_ptr = obj_of({{lcStr}}).str_ptr.realloc(final_size.to_i)
             set_size({{lcStr}},final_size)
@@ -61,9 +66,14 @@ module LinCAS::Internal
         obj_of({{lcStr}}).str_ptr[{{index}}]
     end
 
-    def self.build_string
-        # To implement
-        return Pointer.malloc(instance_sizeof(LcString),LcString.new) 
+    macro str_insert()
+        
+    end
+
+    def self.build_string(value) : LcString*
+        str = Pointer.malloc(instance_sizeof(LcString),LcString.new) 
+        internal.lc_init_string(str,value)
+        return str 
     end
     
     # Initializes a new string trough the keyword 'new' or just
@@ -78,9 +88,14 @@ module LinCAS::Internal
     # * argument:: initial string value
     def self.lc_init_string(lcStr : LcString*, value)
         # To implement: argument check
-        resize_str_capacity(lcStr,value.size)
-        value.each_char_with_index do |chr,i|
-            str_add_char(lcStr,i,chr)
+        if value.is_a? LcString*
+            resize_str_capacity(lcStr,obj_of(value).size)
+            obj_of(lcStr).str_ptr.copy_from(obj_of(value).str_ptr,obj_of(value).size)
+        else
+            resize_str_capacity(lcStr,value.size)
+            value.each_char_with_index do |chr,i|
+                str_add_char(lcStr,i,chr)
+            end 
         end 
     end
 
@@ -120,7 +135,7 @@ module LinCAS::Internal
     def self.lc_str_multiply(lcStr : LcString*,times)
         new_str = build_string 
         strlen  = str_size(lcStr)
-        tms     = times #lc_num_to_i(times)
+        tms     = times #internal.lc_num_to_cr_i(times)
         resize_str_capacity(new_str,strlen * tms)
         set_size(new_str,strlen * tms)
         tms.times do |n|
@@ -173,25 +188,56 @@ module LinCAS::Internal
     # Same as lc_str_compare, but it checks if two strings are not equal
     def self.lc_str_icompare(str1 : LcString*, str2)
         # To implement: argument check
-        return ! internal.lc_str_compare(str1,str2)
+        return lc_bool_invert(internal.lc_str_compare(str1,str2))
     end
 
+    def self.lc_str_index(str : LcString*, index)
+        x = internal.lc_num_to_cr_i(index)
+        if x > obj_of(str).size
+            return Null 
+        else
+            return internal.build_string(obj_of(str).str_ptr[x])
+        end
+    end
 
-    # Converts a LinCAS string to a Crystal string
-    #
-    # * argument:: string struct
-    def self.string_to_cr(lcStr : LcString)
-        string = ""
-        (0...str_size(lcStr)).each do |i|
-            string += str_char_at(lcStr,i).to_s
+    def self.lc_str_insert(str : LcString*, index, value)
+        x = internal.lc_num_to_cr_i(index)
+        if x > obj_of(str).size
+            # internal.lc_raise()
+        else 
+            # internal.lc_raise() unless value.is_a? LcString*
+            str_size   = str_size(str)
+            val_size   = str_size(value)
+            final_size = 0
+            resize_str_capacity(str,val_size)
+            final_size.downto x do |i|
+                str_add_char(str,i - 1,str_char_at(i - val_size -1))
+            end 
+            (x...val_size).each do |i|
+                str_add_char(str,i,str_char_at(value,i - val_size))
+            end 
+        end
+    end
+
+    def self.lc_str_set_index(str : LcString*,index,value)
+        x = internal.lc_num_to_cr_i(index)
+        if x > obj_of(str).size
+            # internal.lc_raise()
+        else
+            # internal.lc_raise() unless value.is_a? LcString*
+            if str_s(value) > 1
+                # internal.lc_str_insert(str,index,value)
+            else 
+                obj_of(str).str_ptr[i] = obj_of(value).str_ptr[0]
+            end
         end 
-        return string 
     end
 
 
-#    str = build_string
-#    self.lc_init_string(str,"ciao")
-#    LcKernel.outl(str)
+
+    str = build_string("ciao")
+    str2 = build_string(str)
+    LcKernel.outl(str2)
 #    str2 = build_string
 #    self.lc_init_string(str2,"a tutti")
 #    p self.lc_str_include(str2,str)

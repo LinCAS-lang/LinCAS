@@ -23,50 +23,15 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-
-    alias Value = (LcString* | LcBTrue | LcBFalse | LcInt | LcFloat )
-
-    abstract struct Base
-        @klass  = uninitialized ClassEntry
-        @data   = uninitialized Data
-        @frozen = false
-        setter klass
-        setter frozen
-        getter klass 
-        getter frozen
-        getter data
-    end
-
-    LcFalse = false
-    LcTrue  = true
-
-    lib LibC
-        fun strstr(str1 : Char*, str2 : Char*) : Char*
+    
+    def self.lc_num_to_cr_i(value)
+        if value.is_a? LinCAS::Internal::LcInt
+            return obj_of(value).value
+        elsif value.is_a? LinCAS::Internal::LcFloat
+            return obj_of(value).value.to_i
+        else
+            # internal.lc_raise()
+        end
     end
     
-    macro internal 
-        LinCAS::Internal
-    end
-
-    macro lcfalse
-        LinCAS::Internal::LcFalse
-    end
-
-    macro lctrue
-        LinCAS::Internal::LcTrue
-    end
-
-    macro libc 
-        LinCAS::Internal::LibC
-    end
-
-    macro obj_of(str_ptr)
-        {{str_ptr}}.value
-    end
-
-    macro lc_free(ptr)
-        # GC.free({{ptr}})
-    end
 end
-require "./Kernel"
-require "./String"

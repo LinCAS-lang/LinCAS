@@ -1350,8 +1350,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         while @currentTk.ttype == TkType::EOL && @nextTk.ttype == TkType::EOL
             shift 
         end 
-        shift if @nextTk.ttype == TkType::ELSE 
-        if @currentTk.ttype == TkType::ELSE 
+        shift if {TkType::ELSE, TkType::ELSIF} .includes? @nextTk.ttype
+        if @currentTk.ttype = TkType::ELSIF
+            node.addBranch(parseIf)
+        elsif @currentTk.ttype == TkType::ELSE 
             shift 
             node.addBranch(parseBody)
         end 
