@@ -1,4 +1,8 @@
 
+
+macro to_sym(name)
+    :{{name.id}}
+end
 module LinCAS
     EOF = "\u0003"
     ALLOWED_VOID_NAMES = 

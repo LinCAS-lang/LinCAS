@@ -41,6 +41,8 @@ module LinCAS::Internal
                 STDOUT.puts "true"
             elsif arg.is_a? LinCAS::Internal::LcBFalse
                 STDOUT.puts "false"
+            elsif arg.is_a? LinCAS::Internal::LcNull
+                STDOUT.puts "Null"
             end
         end 
 

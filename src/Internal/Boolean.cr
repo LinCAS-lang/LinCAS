@@ -24,10 +24,10 @@
 
 module LinCAS::Internal
 
-    struct LcBTrue # < Base
+    struct LcBTrue  < Base
     end
 
-    struct LcBFalse # < Base  
+    struct LcBFalse  < Base  
     end
 
     alias LcBool = (LcBTrue | LcBFalse)    

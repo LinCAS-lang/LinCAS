@@ -71,7 +71,10 @@ module LinCAS::Internal
     end
 
     def self.build_string(value) : LcString*
-        str = Pointer.malloc(instance_sizeof(LcString),LcString.new) 
+        str   = Pointer.malloc(instance_sizeof(LcString),LcString.new) 
+        klass = Id_Tab.lookUp("String")
+        str.value.klass = klass.as(ClassEntry)
+        str.value.data  = klass.as(ClassEntry).data.clone
         internal.lc_init_string(str,value)
         return str 
     end
@@ -91,11 +94,13 @@ module LinCAS::Internal
         if value.is_a? LcString*
             resize_str_capacity(lcStr,obj_of(value).size)
             obj_of(lcStr).str_ptr.copy_from(obj_of(value).str_ptr,obj_of(value).size)
-        else
-            resize_str_capacity(lcStr,value.size)
-            value.each_char_with_index do |chr,i|
+        elsif value.is_a? String
+            resize_str_capacity(lcStr,value.as(String).size)
+            value.as(String).each_char_with_index do |chr,i|
                 str_add_char(lcStr,i,chr)
             end 
+        else
+            # interbal.lc_rasise()
         end 
     end
 
@@ -185,18 +190,33 @@ module LinCAS::Internal
         return internal.lc_str_include(str1,str2)
     end
 
-    # Same as lc_str_compare, but it checks if two strings are not equal
+    # Same as lc_str_compare, but it checks if two strings are different
     def self.lc_str_icompare(str1 : LcString*, str2)
         # To implement: argument check
         return lc_bool_invert(internal.lc_str_compare(str1,str2))
     end
 
+    # Clones a string
+    #
+    # ```
+    # a := "Foo"
+    # b := a         # b and a are pointing to the same object
+    # # Now b and c are going to point to two different objects
+    # c := a.clone() #=> "Foo"
+    # ```
+    #
+    # * argument:: string to clone
+    # * returns:: new LcString*
+    def self.lc_str_clone(str : LcString*)
+        return internal.build_string(str)
+    end
+
     def self.lc_str_index(str : LcString*, index)
         x = internal.lc_num_to_cr_i(index)
-        if x > obj_of(str).size
+        if x > obj_of(str).size - 1
             return Null 
         else
-            return internal.build_string(obj_of(str).str_ptr[x])
+            return internal.build_string(obj_of(str).str_ptr[x].to_s)
         end
     end
 
@@ -234,14 +254,20 @@ module LinCAS::Internal
     end
 
 
+    klass = internal.lc_build_class_only("String")
 
-    str = build_string("ciao")
-    str2 = build_string(str)
-    LcKernel.outl(str2)
-#    str2 = build_string
-#    self.lc_init_string(str2,"a tutti")
-#    p self.lc_str_include(str2,str)
-#    c = lc_str_multiply(str,3)
-#    p self.string_to_cr(c)
+    internal.lc_add_internal(klass,"+",      :lc_str_concat,  1)
+    internal.lc_add_internal(klass,"concat", :lc_str_concat,  1)
+    internal.lc_add_internal(klass,"*",      :lc_str_multiply,1)
+    internal.lc_add_internal(klass,"include",:lc_str_include, 1)
+    internal.lc_add_internal(klass,"==",     :lc_str_compare, 1)
+    internal.lc_add_internal(klass, "<>",    :lc_str_icompare,1)
+    internal.lc_add_internal(klass,"clone",  :lc_str_clone,   0)
+    internal.lc_add_internal(klass,"[]",     :lc_str_index,   1)
+
+
+a = self.build_string("ciao")
+LcKernel.outl(lc_str_index(a,4))
+
 
 end

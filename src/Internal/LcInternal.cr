@@ -24,8 +24,11 @@
 
 require "./Kernel"
 require "./Internal"
-require "./Object"
+require "./Method"
 require "./Class"
+require "./Module"
+require "./Object"
+require "./Null"
 require "./Boolean"
 require "./Array"
 require "./Number"

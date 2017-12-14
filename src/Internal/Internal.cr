@@ -32,6 +32,7 @@ module LinCAS::Internal
         @frozen = false
         setter klass
         setter frozen
+        setter data
         getter klass 
         getter frozen
         getter data
@@ -64,9 +65,12 @@ module LinCAS::Internal
         {{str_ptr}}.value
     end
 
-    macro lc_free(ptr)
-        # GC.free({{ptr}})
+    def self.clone_val(obj)
+        if obj.is_a? LcString*
+            return internal.lc_str_clone(obj)
+        else
+            return obj
+        end
     end
+
 end
-require "./Kernel"
-require "./String"

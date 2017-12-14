@@ -23,16 +23,19 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    
-    def self.lc_num_to_cr_i(value)
-        if value.is_a? LinCAS::Internal::LcInt
-            return obj_of(value).value
-        elsif value.is_a? LinCAS::Internal::LcFloat
-            return obj_of(value).value.to_i
-        else
-            return value
-            # internal.lc_raise()
-        end
+
+    struct LcNull < Base; end
+
+    def self.lc_build_null
+        null  = LcNull.new
+        klass = Id_Tab.lookUp("Null")
+        null.klass = klass.as(ClassEntry)
+        null.data  = klass.as(ClassEntry).data.clone
+        return null
     end
+
+    internal.lc_build_class_only("Null")
+
+    Null = lc_build_null
     
 end

@@ -30,36 +30,43 @@ end
 module LinCAS
 
     struct Path
-       def initialize(@path = Tuple(String).new) 
+       def initialize(@path = ["Main"]) 
        end
 
        def addName(name)
-           @path += {name}
-       end
-       
-       def removeLast
-           @path = @path[0...(@path.size - 1)]
+           return Path.new(@path + [name])
        end
 
        def ==(path)
-           return @path == path
+           return @path == path.unsafe
        end
+
+       def unsafe
+          return @path
+       end
+
     end
 
-    class BaseEntry
-        def initialize(@path : Path, @prevScope : SymTab)
+    abstract class BaseEntry
+        def initialize(@name : String,@path : Path, @prevScope : SymTab?)
         end 
+        attr name
         attr path
         attr prevScope
     end
 
     class ClassEntry < BaseEntry
-        @name     = uninitialized String
-        @parent   = uninitialized ClassEntry
-        @included = uninitialized ModuleEntry
+        @parent   : ClassEntry  | ::Nil
+        @included : ModuleEntry | ::Nil
         @symTab   = SymTab.new
         @data     = Data.new
-        attr name
+
+        def initialize(name, path, prevScope)
+            super(name,path,prevScope)
+            @parent   = nil
+            @included = nil
+        end
+
         attr parent
         attr included
         attr symTab
@@ -67,28 +74,42 @@ module LinCAS
     end 
 
     class ModuleEntry < BaseEntry
-        @name     = uninitialized String
-        @included = uninitialized ModuleEntry
+        @included : ModuleEntry | ::Nil
         @symTab   = SymTab.new
         @data     = Data.new
-        attr name 
+
+        def initialize(name, path, prevScope)
+            super(name,path,prevScope)
+            @included = nil
+        end
+
         attr included
         attr symTab
         attr data
     end
 
     struct MethodEntry
-        #@args : Node
-        #@code : Node
-        @owner     = uninitialized (ClassEntry  | ModuleEntry)
-        @name      = uninitialized String
+        @args      : Node | ::Nil
+        @code      : Node | Symbol | ::Nil
+        @owner     : ClassEntry  | ModuleEntry | ::Nil
+        @arity     = 0
         @static    = false
+        @internal  = false
         @singleton = false
+
+        def initialize(@name : String)
+            @args = nil
+            @code = nil
+        end
+
         attr name
         attr args
-        attr static
-        attr singleton
         attr code
+        attr owner
+        attr arity
+        attr static
+        attr internal
+        attr singleton
     end 
 
     class Data
@@ -100,6 +121,10 @@ module LinCAS
             @data[var.to_sym] = value
         end
 
+        def addVar(var : Symbol,value)
+            @data[var] = value
+        end
+
         def getVar(var : String)
             @data[var.to_sym]?
         end
@@ -107,12 +132,107 @@ module LinCAS
         def removeVar(var : String)
             @data.remove(var.to_sym)
         end
+
+        def clone
+            newData = Data.new
+            @data.each_key do |key|
+                newData.addVar(key,Internal.clone_val(@data[key]))
+            end
+            return newData
+        end
+
     end
 
-    alias Entry = (MethodEntry | ClassEntry | ModuleEntry)
+    struct ConstEntry
+        def initialize(@val : Internal::Value); end
+    end
 
-    class SymTab < Hash(Symbol,Entry)
+    alias Entry     = MethodEntry | ClassEntry | ModuleEntry | ConstEntry
+    alias Structure = ModuleEntry | ClassEntry
+
+    class SymTab < Hash(Symbol,LinCAS::Entry)
+
+        def initialize
+            super()
+        end
         
+        def addEntry(name,entry : LinCAS::Entry)
+            self[to_sym(name)] = entry
+        end
+
+        def lookUp(name)
+            return self[to_sym(name)]?
+        end
+
+        def removeEntry(name)
+            self.delete(to_sym(name))
+        end
+
+    end 
+
+    class SymTabManager
+        
+        @currentScope = [] of LinCAS::Structure
+
+        macro currentScope
+            @currentScope.last
+        end
+
+        def initialize
+            @currentScope.push(ModuleEntry.new("Main",Path.new,nil))
+        end
+
+        @[AlwaysInline]
+        protected def path 
+            @currentScope.last.path
+        end
+
+        def addClass(name : String,exit = false)
+            klass = ClassEntry.new(name,path.addName(name),currentScope.symTab)
+            currentScope.symTab.addEntry(name,klass)
+            @currentScope.push(klass) unless exit
+            return klass
+        end
+
+        def addModule(name : String, exit = false)
+            mod = ModuleEntry.new(name,path.addName(name), currentScope.symTab)
+            currentScope.symTab.addEntry(name,mod)
+            @currentScope.push(mod) unless mod 
+            return mod
+        end
+
+        def addMethod(name : String,method : MethodEntry)
+            currentScope.symTab.addEntry(name,method)
+        end
+
+        def addConst(name,value)
+            const = ConstEntry.new(value)
+            currentScope.addEntry(name,value)
+        end
+
+        def exitScope
+            @currentScope.pop unless @currentScope.size = 1
+        end 
+
+        def lookUpLocal(name)
+            return currentScope.symTab.lookUp(name)
+        end
+
+        def lookUp(name)
+            size = @currentScope.size - 1
+            size.downto 0 do |i|
+                entry = @currentScope[i].symTab.lookUp(name)
+                return entry if entry
+            end
+            return nil
+        end
+
+        def deleteLocal(name)
+            currentScope.symTab.delete(name)
+        end
+
     end
+
+    Id_Tab = SymTabManager.new
 
 end
