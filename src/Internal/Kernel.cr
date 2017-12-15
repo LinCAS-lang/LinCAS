@@ -35,20 +35,19 @@ module LinCAS::Internal
         end
 
         def self.outl(arg)
-            if arg.is_a? LinCAS::Internal::LcString*
-                printl_str(arg)
-            elsif arg.is_a? LinCAS::Internal::LcBTrue
-                STDOUT.puts "true"
-            elsif arg.is_a? LinCAS::Internal::LcBFalse
-                STDOUT.puts "false"
-            elsif arg.is_a? LinCAS::Internal::LcNull
-                STDOUT.puts "Null"
-            end
+            self.out(arg)
+            STDOUT.puts "\n"
         end 
 
         def self.out(arg)
             if arg.is_a? LinCAS::Internal::LcString*
                 print_str(arg)
+            elsif arg.class == LinCAS::Internal::LcBTrue
+                STDOUT.print "true"
+            elsif arg.class ==  LinCAS::Internal::LcBFalse
+                STDOUT.print "false"
+            elsif arg.is_a? LinCAS::Internal::LcNull
+                STDOUT.print "Null"
             end
         end
 
@@ -62,11 +61,6 @@ module LinCAS::Internal
             (0...obj_of(arg).size).each do |i|
                 STDOUT.print(obj_of(arg).str_ptr[i])
             end
-        end
-
-        private def self.printl_str(arg)
-            print_str(arg)
-            STDOUT.puts
         end
 
     end

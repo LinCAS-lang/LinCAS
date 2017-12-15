@@ -38,9 +38,6 @@ module LinCAS::Internal
         getter data
     end
 
-    LcFalse = false
-    LcTrue  = true
-
     lib LibC
         fun strstr(str1 : Char*, str2 : Char*) : Char*
     end
@@ -63,6 +60,14 @@ module LinCAS::Internal
 
     macro obj_of(str_ptr)
         {{str_ptr}}.value
+    end
+
+    macro object
+        Id_Tab.lookUp("Object").as(ClassEntry)
+    end
+
+    macro lc_class
+        Id_Tab.lookUp("Class").as(ClassEntry)
     end
 
     def self.clone_val(obj)

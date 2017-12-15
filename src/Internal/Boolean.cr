@@ -30,12 +30,22 @@ module LinCAS::Internal
     struct LcBFalse  < Base  
     end
 
-    alias LcBool = (LcBTrue | LcBFalse)    
+    alias LcBool = LcBTrue | LcBFalse
 
     def self.buildTrue
+        lcTrue       = LcBTrue.new
+        klass        = Id_Tab.lookUp("Boolean")
+        lcTrue.klass = klass.as(ClassEntry)
+        lcTrue.data  = klass.as(ClassEntry).data.clone
+        return lcTrue
     end
 
     def self.buildFalse
+        lcFalse       = LcBFalse.new
+        klass         = Id_Tab.lookUp("Boolean")
+        lcFalse.klass = klass.as(ClassEntry)
+        lcFalse.data  = klass.as(ClassEntry).data.clone
+        return lcFalse
     end
 
     def self.lc_bool_invert(value : LcBool)
@@ -86,5 +96,17 @@ module LinCAS::Internal
         return lctrue if val1 == lctrue || val2 == lctrue
         return lcfalse 
     end
+
+    klass = internal.lc_build_class_only("Boolean")
+    internal.lc_set_parent_class(klass, object)
+
+    internal.lc_add_internal(klass,"!", :lc_bool_invert,0)
+    internal.lc_add_internal(klass,"==",:lc_bool_eq,    1)
+    internal.lc_add_internal(klass,"&&",:lc_bool_and,   1)
+    internal.lc_add_internal(klass,"||",:lc_bool_or,    1)
+
+    LcTrue  = internal.buildTrue
+    LcFalse = internal.buildFalse
+
 
 end

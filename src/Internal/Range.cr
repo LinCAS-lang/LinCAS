@@ -23,19 +23,8 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    
 
-    struct LcObject < Base; end
-
-    def self.lc_instantiate_obj(klass : ClassEntry)
-        obj Pointer.malloc(instance_sizeof(LcObject),LcObject.new)
-        obj_of(obj).klass = klass
-        obj_of(obj).data  = klass.data.clone
-        return obj 
-    end
-
-    klass = internal.lc_build_class_only("Object")
-    internal.lc_add_internal(klass,"instantiate",:lc_instantiate_obj,0)
-    internal.lc_set_parent_class(klass,lc_class)
-
+    struct LcRange < Base
+        
+    end    
 end

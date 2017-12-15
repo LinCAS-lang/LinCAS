@@ -66,8 +66,11 @@ module LinCAS::Internal
         obj_of({{lcStr}}).str_ptr[{{index}}]
     end
 
-    macro str_insert()
-        
+    macro str_shift(str,to,index,length)
+        (1..{{to}}).each do |i|
+            char = str_char_at({{str}},{{index}} + {{to}} - i)
+            str_add_char({{str}},{{length}} - i,char)
+        end 
     end
 
     def self.build_string(value) : LcString*
@@ -211,50 +214,78 @@ module LinCAS::Internal
         return internal.build_string(str)
     end
 
+    # Access the string characters at the given index
+    # ```
+    # str = "A quite long string"
+    # str[0]    #=> "A"
+    # str[8]    #=> "l"
+    # str[2..6] #=> "quite"
+    # ```
+    #
+    # * argument:: string to access
+    # * argument:: index
     def self.lc_str_index(str : LcString*, index)
-        x = internal.lc_num_to_cr_i(index)
-        if x > obj_of(str).size - 1
-            return Null 
+        if index.is_a? LcRange*
+            
         else
-            return internal.build_string(obj_of(str).str_ptr[x].to_s)
+            x = internal.lc_num_to_cr_i(index)
+            if x > obj_of(str).size - 1
+                return Null 
+            else
+                return internal.build_string(obj_of(str).str_ptr[x].to_s)
+            end
         end
     end
 
+    # Inserts a second string in the current one
+    # ```
+    # a = "0234"
+    # a.insert(1,"1") #=> "01234"
+    # a.insert(5,"5") #=> "012345"
+    # a.insert(7,"6") #=> Raises an error
+    # ```
+    # * argument:: string on which inserting the second one
+    # * argument:: index the second string must be inserted at
+    # * argument:: string to insert
     def self.lc_str_insert(str : LcString*, index, value)
         x = internal.lc_num_to_cr_i(index)
         if x > obj_of(str).size
             # internal.lc_raise()
         else 
             # internal.lc_raise() unless value.is_a? LcString*
-            str_size   = str_size(str)
+            st_size    = str_size(str)
             val_size   = str_size(value)
             final_size = 0
             resize_str_capacity(str,val_size)
-            final_size.downto x do |i|
-                str_add_char(str,i - 1,str_char_at(i - val_size -1))
-            end 
-            (x...val_size).each do |i|
-                str_add_char(str,i,str_char_at(value,i - val_size))
+            str_shift(str,(st_size - x).abs,x,final_size)
+            (1..val_size).each do |i|
+                char = str_char_at(value,i - 1)
+                str_add_char(str,x + i - 1,char)
             end 
         end
     end
 
-    def self.lc_str_set_index(str : LcString*,index,value)
+    def self.lc_str_set_index(str : LcString*,index,value)  #=> NOT TESTED YIET
         x = internal.lc_num_to_cr_i(index)
         if x > obj_of(str).size
             # internal.lc_raise()
         else
             # internal.lc_raise() unless value.is_a? LcString*
-            if str_s(value) > 1
-                # internal.lc_str_insert(str,index,value)
+            st_size  = str_size(str)
+            val_size = str_size(value)
+            if val_size > 1
+                final_size = 0
+                resize_str_capacity(str,val_size - 1)
+                str_shift(str,st_size - index,index + 1,final_size)
             else 
-                obj_of(str).str_ptr[i] = obj_of(value).str_ptr[0]
+                obj_of(str).str_ptr[index] = obj_of(value).str_ptr[0]
             end
         end 
     end
 
 
     klass = internal.lc_build_class_only("String")
+    internal.lc_set_parent_class(klass, object)
 
     internal.lc_add_internal(klass,"+",      :lc_str_concat,  1)
     internal.lc_add_internal(klass,"concat", :lc_str_concat,  1)
@@ -267,7 +298,11 @@ module LinCAS::Internal
 
 
 a = self.build_string("ciao")
-LcKernel.outl(lc_str_index(a,4))
+b = self.build_string("Hola")
+c = self.build_string("55")
+lc_str_insert(b,4,a)
+lc_str_set_index(b,3,c)
+LcKernel.outl(b)
 
 
 end
