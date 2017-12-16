@@ -52,8 +52,7 @@ module LinCAS::Internal
         end
 
         def self.in
-            str = internal.build_string
-            internal.lc_init_str(str,STDIN.gets) 
+            str = internal.build_string(STDIN.gets)
             return str 
         end
 

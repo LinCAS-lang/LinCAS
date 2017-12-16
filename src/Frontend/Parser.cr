@@ -162,6 +162,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                                                    @errHandler.errors.to_s,
                                                    time.to_s])
             sendMsg(msg)
+            puts
         end
     end
 

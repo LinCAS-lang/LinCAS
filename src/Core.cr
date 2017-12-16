@@ -9,7 +9,8 @@ module LinCAS
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
         TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
-        TkType::EQ, TkType::GR, TkType::SM, TkType::GE, TkType::NE, TkType::SE,
+        TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
+        TkType::NOT_EQ, TkType::SMALLER_EQ,
         TkType::ASSIGN_INDEX
     }
     alias Intnum = (Int32 | Int64)
@@ -38,6 +39,7 @@ require "./Intermediate/SymbolTab"
 require "./Internal/LcInternal"
 require "../util/AstPrinter"
 require "./Backend/CallStack"
+require "./Backend/Eval"
 
 
 include LinCAS
@@ -45,8 +47,10 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test5.lc"))
+parser = factory.makeParser(File.expand_path("../Test6.lc"))
 #parser.displayTokens
-#ast = parser.parse
+ast = parser.parse
 astPrinter = AstPrinter.new
-astPrinter.printAst(ast.as(Node)) if ast
+#astPrinter.printAst(ast.as(Node)) if ast
+evaluator = Eval.new
+evaluator.eval(ast)
