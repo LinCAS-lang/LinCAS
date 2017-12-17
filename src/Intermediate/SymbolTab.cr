@@ -211,8 +211,12 @@ module LinCAS
         end
 
         def exitScope
-            @currentScope.pop unless @currentScope.size = 1
+            @currentScope.pop unless @currentScope.size == 1
         end 
+
+        def enterScope(scope : Structure)
+            @currentScope.push(scope)
+        end
 
         def lookUpLocal(name)
             return currentScope.symTab.lookUp(name)

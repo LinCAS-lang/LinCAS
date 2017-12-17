@@ -8,4 +8,7 @@ module LinCAS::Internal
         getter value
     end
     
+    def self.num2float(num)
+    
+    end
 end

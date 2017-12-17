@@ -22,14 +22,36 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-module LinCAS::Internal
-
-    def self.lc_build_module_only(name : String)
-        return Id_Tab.addModule(name,true)
-    end
+module LinCAS
     
-    def self.lc_build_module(name : String)
-        return Id_Tab.addModule(name)
+    module Internal
+        
+        enum ErrType
+            TypeError
+            ArgumentError
+            RuntimeError
+            StandardError
+            InternalError
+        end
+
+        ERR_MESSAGE = {
+            :wrong_node_reached => "Wrong node reached",
+            :not_a_const    => "'%s' is not a constant",
+            :const_defined  => "constant '%s' already defined",
+            :not_a_struct   => "'%s' is not a class nor a module",
+            :not_a_class    => "'%s' is not a class",
+            :superclass_err => "Superclass missmatch in '%s'",
+        }
+
     end
 
+    LcTypeError     = Internal::ErrType::TypeError
+    LcArgumentError = Internal::ErrType::ArgumentEror
+    LcRuntimeError  = Internal::ErrType::RuntimeError
+    LcStandardError = Internal::ErrType::StandardError
+    LcInternalError = Internal::ErrType::InternalError
+
+    macro convert_error(name)
+        Internal::ERR_MESSAGE[{{name}}]
+    end
 end

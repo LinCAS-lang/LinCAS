@@ -6,5 +6,8 @@ module LinCAS::Internal
         setter value
         getter value
     end
+
+    def self.num2int(num)
+    end
     
 end
