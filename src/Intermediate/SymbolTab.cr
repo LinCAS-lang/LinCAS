@@ -50,42 +50,36 @@ module LinCAS
     abstract class BaseEntry
         def initialize(@name : String,@path : Path, @prevScope : SymTab?)
         end 
+        @included = [] of ModuleEntry
+        @symTab   = SymTab.new
+        @data     = Data.new
+        @methods  = SymTab.new 
         attr name
         attr path
         attr prevScope
+        attr included
+        attr symTab
+        attr data
+        getter methods
     end
 
     class ClassEntry < BaseEntry
         @parent   : ClassEntry  | ::Nil
-        @included : ModuleEntry | ::Nil
-        @symTab   = SymTab.new
-        @data     = Data.new
 
         def initialize(name, path, prevScope)
             super(name,path,prevScope)
             @parent   = nil
-            @included = nil
         end
 
         attr parent
-        attr included
-        attr symTab
-        attr data
     end 
 
     class ModuleEntry < BaseEntry
-        @included : ModuleEntry | ::Nil
-        @symTab   = SymTab.new
-        @data     = Data.new
-
+        
         def initialize(name, path, prevScope)
             super(name,path,prevScope)
-            @included = nil
         end
 
-        attr included
-        attr symTab
-        attr data
     end
 
     struct MethodEntry
@@ -118,7 +112,7 @@ module LinCAS
         end
 
         def addVar(var : String,value)
-            @data[var.to_sym] = value
+            @data[var] = value
         end
 
         def addVar(var : Symbol,value)
@@ -126,11 +120,11 @@ module LinCAS
         end
 
         def getVar(var : String)
-            @data[var.to_sym]?
+            @data[var]?
         end
 
         def removeVar(var : String)
-            @data.remove(var.to_sym)
+            @data.remove(var)
         end
 
         def clone
@@ -150,22 +144,22 @@ module LinCAS
     alias Entry     = MethodEntry | ClassEntry | ModuleEntry | ConstEntry
     alias Structure = ModuleEntry | ClassEntry
 
-    class SymTab < Hash(Symbol,LinCAS::Entry)
+    class SymTab < Hash(String,LinCAS::Entry)
 
         def initialize
             super()
         end
         
         def addEntry(name,entry : LinCAS::Entry)
-            self[to_sym(name)] = entry
+            self[name] = entry
         end
 
         def lookUp(name)
-            return self[to_sym(name)]?
+            return self[name]?
         end
 
         def removeEntry(name)
-            self.delete(to_sym(name))
+            self.delete(name)
         end
 
     end 
@@ -202,7 +196,7 @@ module LinCAS
         end
 
         def addMethod(name : String,method : MethodEntry)
-            currentScope.symTab.addEntry(name,method)
+            currentScope.methods.addEntry(name,method)
         end
 
         def addConst(name,value)
@@ -231,8 +225,25 @@ module LinCAS
             return nil
         end
 
+        def lookUpMethod(name)
+            size = @currentScope.size - 1
+            size.downto 0 do |i|
+                entry = @currentScope[i].methods.lookUp(name)
+                return entry if entry
+            end
+            return nil 
+        end
+
+        def lookUpMethodLocal(name)
+            return currentScope.methods.lookUp(name)
+        end
+
         def deleteLocal(name)
             currentScope.symTab.delete(name)
+        end
+
+        def getRoot
+            return @currentScope[0]
         end
 
     end

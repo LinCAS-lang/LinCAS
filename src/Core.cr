@@ -1,8 +1,4 @@
 
-
-macro to_sym(name)
-    :{{name.id}}
-end
 module LinCAS
     EOF = "\u0003"
     ALLOWED_VOID_NAMES = 
@@ -13,7 +9,8 @@ module LinCAS
         TkType::NOT_EQ, TkType::SMALLER_EQ,
         TkType::ASSIGN_INDEX
     }
-    alias Intnum = (Int32 | Int64)
+    alias Intnum   = Int32 | Int64
+    alias Floatnum = Float32 | Float64
 end
 
 require "./Listeners"
@@ -37,9 +34,10 @@ require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
 require "./Intermediate/SymbolTab"
 require "./Internal/LcInternal"
-require "../util/AstPrinter"
 require "./Backend/CallStack"
 require "./Backend/Eval"
+require "../util/AstPrinter"
+require "../util/SymTabPrinter"
 
 
 include LinCAS
@@ -47,10 +45,12 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test6.lc"))
+parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test2.lc"))
 #parser.displayTokens
 ast = parser.parse
 astPrinter = AstPrinter.new
 #astPrinter.printAst(ast.as(Node)) if ast
 evaluator = Eval.new
 evaluator.eval(ast)
+s_printer = SymTabPrinter.new 
+s_printer.printSTab(Id_Tab.getRoot)

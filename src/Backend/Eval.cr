@@ -54,6 +54,18 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         {{node}}.getAttr(NKey::ID)
     end
 
+    macro send_msg(msg)
+        sendMsg(Msg.new(MsgType::RUNTIME_ERROR,[{{msg}}]))
+    end
+
+    macro push_frame(filename,line,name)
+        @callstack.pushFrame({{filename}}.as(String),{{line}}.as(Intnum),{{name}}.as(String))
+    end 
+
+    macro pop_frame
+        @callstack.popFrame 
+    end
+
     macro call_internal(name,arg)
         internal.{{name.id}}({{arg}})
     end
@@ -81,7 +93,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     def eval(program : Node?)
-        eval_stmt(program) if program
+        if program
+            push_frame(find_file(program.as(Node)),0,"Main")
+            eval_stmt(program) 
+            pop_frame
+        end
         puts
     end
 
@@ -191,50 +207,53 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end 
 
     protected def eval_class(node : Node)
-        namespace   = node.getAttr(NKey::NAME)
+        namespace   = node.getAttr(NKey::NAME).as(Node)
         parent      = node.getAttr(NKey::PARENT)
         body        = node.getBranches[0]
         name        = namespace.as(Node).getBranches
         if name.size == 1
             name  = unpack_name(name[0])
+            push_frame(find_file(node),find_line(node),name)
             klass = find(name)
             klass = define_class(klass,name)
         else
             scope = eval_namespace(namespace.as(Node),false)
             reopen(scope)
             name  = unpack_name(name.last)
+            push_frame(find_file(node),find_line(node),name)
             klass = find_local(name)
             klass = define_class(klass,name)
         end
-        if klass && parent
+        if klass.as(ClassEntry).parent.nil? && parent
             parent = eval_namespace(parent.as(Node))
             lc_raise(
                 LcTypeError,convert(:not_a_class) % stringify_namespace(namespace),node
             ) unless parent.is_a? ClassEntry
             internal.lc_set_parent_class(klass.as(ClassEntry),parent.as(ClassEntry)) 
-        elsif parent 
-            # raise
+        elsif !klass.as(ClassEntry).parent.nil? && parent
+            lc_raise(LcTypeError,convert(:superclass_err) % name)
         end
         eval_body(body)
         exit_scope
+        pop_frame
     end
 
     protected def define_class(klass,name)
         if klass.is_a? ClassEntry
             reopen(klass)
         elsif !klass.nil?
-            # raise
+            lc_raise(LcTypeError,convert(:not_a_class) % name)
         else
             return internal.lc_build_class(name.as(String))
         end
         nil 
     end
 
-    macro check_name(name)
+    macro check_name(name,oldName)
         if {{name}}.nil?
-            # raise
+            lc_raise(LcNameError,convert(:undefined_const) % {{oldName}},node)
         elsif ! {{name}}.is_a? Structure
-            # raise
+            lc_raise(LcTypeError,convert(:not_a_struct) % {{oldName}},node)
         end 
     end
 
@@ -242,10 +261,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         names = node.getBranches
         first = unpack_name(names[0])
         name  = find(first)
-        check_name(name)
+        check_name(name,first)
         (1...names.size - 1).each do |n|
-           name = name.as(Structure).symTab.lookUp(unpack_name(names[n]))
-           check_name(name)
+           id   = unpack_name(names[n])
+           name = name.as(Structure).symTab.lookUp(id)
+           check_name(name,id)
         end
         name = name.as(Structure).symTab.lookUp(unpack_name(names.last)) if last
         return name 
@@ -295,22 +315,72 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         if @try == 0
             error = String.build do |err|
                 err << code
-                err << ':'
-                err << ' '
+                err << ": "
                 err << msg
                 err << '\n'
                 err << backtrace
             end
+            send_msg(error)
         else
         end
     end
 
-    protected def build_backtrace(node : Node)
-        
+    def lc_raise(code,msg)
+        if @try == 0
+            error = String.build do |str|
+                str << '\n'
+                str << code
+                str << ": "
+                str << msg 
+                str << @callstack.getBacktrace
+            end
+            send_msg(error)
+        else 
+        end 
     end
 
-    protected def stringify_namespace(node)
-        
+    protected def build_backtrace(node : Node)
+        line            = find_line(node)
+        file            = find_file(node)
+        callstack_trace = @callstack.getBacktrace
+        return String.build do |str|
+            str << '\n'
+            str << "Line: "
+            str << line 
+            str << '\n'
+            str << "In: "
+            str << file 
+            str << '\n'
+            str << callstack_trace
+        end
+    end
+
+    protected def find_line(node : Node)
+        line = node.getAttr(NKey::LINE)
+        while !line
+            node = node.parent 
+            line = node.getAttr(NKey::LINE)
+        end 
+        return line 
+    end
+
+    protected def find_file(node : Node)
+        filename = node.getAttr(NKey::FILENAME)
+        while !filename
+            node     = node.parent 
+            filename = node.getAttr(NKey::FILENAME)
+        end 
+        return filename
+    end
+
+    protected def stringify_namespace(node : Node)
+        str = ""
+        names = node.getBranches
+        return String.build do |str|
+            names.each do |el|
+                str << unpack_name(el)
+            end 
+        end
     end
     
 end

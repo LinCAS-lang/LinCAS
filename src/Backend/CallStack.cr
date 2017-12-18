@@ -67,7 +67,7 @@ module LinCAS
 
         def popFrame
             @depth -= 1
-            retur self.pop
+            return self.pop
         end
 
         def setVar(var,value)
@@ -80,6 +80,9 @@ module LinCAS
 
         def deleteVar(var)
             self.last.deleteVar(var)
+        end
+
+        def getBacktrace
         end
 
     end 

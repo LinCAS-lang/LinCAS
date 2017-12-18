@@ -32,6 +32,7 @@ module LinCAS
             RuntimeError
             StandardError
             InternalError
+            NameError
         end
 
         ERR_MESSAGE = {
@@ -41,6 +42,7 @@ module LinCAS
             :not_a_struct   => "'%s' is not a class nor a module",
             :not_a_class    => "'%s' is not a class",
             :superclass_err => "Superclass missmatch in '%s'",
+            :undefined_const=> "Undefined constant '%s'"
         }
 
     end
@@ -50,6 +52,7 @@ module LinCAS
     LcRuntimeError  = Internal::ErrType::RuntimeError
     LcStandardError = Internal::ErrType::StandardError
     LcInternalError = Internal::ErrType::InternalError
+    LcNameError     = Internal::ErrType::NameError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]
