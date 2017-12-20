@@ -83,6 +83,7 @@ module LinCAS
         end
 
         def getBacktrace
+            ""
         end
 
     end 

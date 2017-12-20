@@ -38,7 +38,7 @@ module LinCAS::Internal
     end
 
     def self.lc_add_method(receiver, name, method : LinCAS::MethodEntry)
-        receiver.symTab.addEntry(name,method)
+        receiver.methods.addEntry(name,method)
     end
 
     def self.lc_add_method_locally(name, method : LinCAS::MethodEntry)
@@ -47,22 +47,22 @@ module LinCAS::Internal
 
     def self.lc_add_internal(receiver,name,proc,arity)
         m = define_method(name,receiver,proc,arity)
-        receiver.symTab.addEntry(name,m)
+        receiver.methods.addEntry(name,m)
     end
 
     def self.lc_add_static(receiver,name,proc,arity)
         m = define_static(name,receiver,proc,arity)
-        receiver.symTab.addEntry(name,m)
+        receiver.methods.addEntry(name,m)
     end
 
     def self.lc_add_singleton(receiver, name, proc,arity)
         m = define_singleton(name,receiver,proc,arity)
-        receiver.symTab.addEntry(name,m)
+        receiver.methods.addEntry(name,m)
     end
 
     def self.lc_add_static_singleton(receiver, name, proc, arity)
         m = define_static_singleton(name,receiver,proc,arity)
-        receiver.symTab.addEntry(name,m)
+        receiver.methods.addEntry(name,m)
     end
 
     #########

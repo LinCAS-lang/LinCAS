@@ -232,6 +232,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             internal.lc_set_parent_class(klass.as(ClassEntry),parent.as(ClassEntry)) 
         elsif !klass.as(ClassEntry).parent.nil? && parent
             lc_raise(LcTypeError,convert(:superclass_err) % name)
+        else
+            internal.lc_set_parent_class(klass.as(ClassEntry),Internal::Obj)
         end
         eval_body(body)
         exit_scope
@@ -241,6 +243,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     protected def define_class(klass,name)
         if klass.is_a? ClassEntry
             reopen(klass)
+            return klass
         elsif !klass.nil?
             lc_raise(LcTypeError,convert(:not_a_class) % name)
         else
@@ -267,7 +270,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
            name = name.as(Structure).symTab.lookUp(id)
            check_name(name,id)
         end
-        name = name.as(Structure).symTab.lookUp(unpack_name(names.last)) if last
+        name = name.as(Structure).symTab.lookUp(unpack_name(names.last)) if last && names.size > 1
         return name 
     end
 
@@ -294,7 +297,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         if mod.is_a? ModuleEntry
             reopen(mod)
         elsif !mod.nil?
-            # raise
+            lc_raise(LcTypeError,convert(:not_a_module) % name)
         else
             return internal.lc_build_module(name.as(String))
         end 
@@ -302,7 +305,36 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     protected def eval_void(node : Node)
-        
+        name     = node.getAttr(NKey::NAME)
+        visib    = node.getAttr(NKey::VOID_VISIB)
+        branches = node.getBranches
+        args     = branches[0]
+        arity    = args.getAttr(NKey::VOID_ARITY)
+        body     = branches[1]
+        if name.type = NodeType::SELF
+            realName = unpack_name(name.getBranches[0])
+            if !{VoidVisib::PUBLIC,nil}.includes? visib
+                method = internal.define_static_usr_method(
+                    realName,args,current_scope,body,arity
+                )
+            else
+                method = internal.define_static_usr_method(
+                    realName,args,current_scope,body,arity,visib 
+                )
+            end 
+        else
+            receiver = name.getAttr(NKey::RECEIVER)
+            if receiver.type = NodeType::NAMESPACE
+                receiver = eval_namespace(receiver)
+            elsif receiver 
+                s_name = unpack_name(receiver)
+                receiver = find(s_name)
+                if !receiver
+                    lc_raise(LcNameError,convert(:undefined_const) % s_name,node)
+                    return
+                end
+            end 
+        end
     end
 
     protected def eval_body(node : Node)

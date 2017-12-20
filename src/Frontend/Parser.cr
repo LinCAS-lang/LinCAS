@@ -358,11 +358,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 parent = makeDummyName
             end
             node.setAttr(NKey::PARENT,parent)
- #       else
- #           parent = @nodeFactory.makeNode(NodeType::LOCAL_ID)
- #           parent.setAttr(NKey::ID,"Object")
- #           node.setAttr(NKey::PARENT,parent)
- #           node.addBranch(parseBody)
+     #       else
+     #   parent = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+     #   parent.setAttr(NKey::ID,"Object")
+     #   node.setAttr(NKey::PARENT,parent)
+     #   node.addBranch(parseBody)
         end
         node.addBranch(parseBody)
         @cm -= 1

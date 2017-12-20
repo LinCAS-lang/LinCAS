@@ -24,8 +24,11 @@
 
 module LinCAS::Internal
     
-    def self.lc_define_usr_method(name, args : Node, owner : LinCAS::Structure, code : Node, arity)
-        m       = LinCAS::MethodEntry.new(name)
+    def 
+    self.lc_define_usr_method(
+        name, args : Node, owner : LinCAS::Structure, code : Node, arity, visib : VoidVisib = VoidVisib::PUBLIC
+    )
+        m       = LinCAS::MethodEntry.new(name,visib)
         m.args  = args
         m.owner = owner
         m.code  = code
@@ -33,17 +36,21 @@ module LinCAS::Internal
         return m 
     end
 
-    def self.lc_define_static_usr_method(name,args : Node, owner : LinCAS::Structure, code : Node, arity)
-        m        = self.lc_define_usr_method(name,args,owner,code,arity)
+    def 
+    self.lc_define_static_usr_method(
+        name,args : Node, owner : LinCAS::Structure, code : Node, arity, visib : VoidVisib = VoidVisib::PUBLIC
+    )
+        m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
         m.static = true
         return m
     end
 
     def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity)
-        m       = LinCAS::MethodEntry.new(name)
-        m.owner = owner
-        m.code  = code
-        m.arity = arity 
+        m          = LinCAS::MethodEntry.new(name, VoidVisib::PUBLIC)
+        m.internal = true
+        m.owner    = owner
+        m.code     = code
+        m.arity    = arity 
         return m
     end
 
@@ -87,6 +94,18 @@ module LinCAS::Internal
         internal.lc_define_internal_static_singleton_method(
             {{name}},{{owner}},{{code}},{{arity}}
         )
+    end
+
+    def self.seek_method(entry : Structure, name)
+        method    = entry.methods.lookUp(name)
+        prevScope = entry.prevScope
+        if method
+            return method 
+        elsif !prevScope
+            return nil
+        else 
+            return self.seek_method(prevScope,name)
+        end
     end
 
 end

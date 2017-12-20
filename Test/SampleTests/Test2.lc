@@ -1,2 +1,7 @@
 
-class MyClass {}
+class MyClass {
+    class NestedClass {
+    }
+}
+
+class Class2 inherits MyClass {}

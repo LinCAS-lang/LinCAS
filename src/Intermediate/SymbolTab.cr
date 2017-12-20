@@ -30,6 +30,7 @@ end
 module LinCAS
 
     struct Path
+
        def initialize(@path = ["Main"]) 
        end
 
@@ -91,7 +92,7 @@ module LinCAS
         @internal  = false
         @singleton = false
 
-        def initialize(@name : String)
+        def initialize(@name : String,@visib : VoidVisib)
             @args = nil
             @code = nil
         end
@@ -104,6 +105,7 @@ module LinCAS
         attr static
         attr internal
         attr singleton
+        attr visib 
     end 
 
     class Data
@@ -138,7 +140,9 @@ module LinCAS
     end
 
     struct ConstEntry
-        def initialize(@val : Internal::Value); end
+        def initialize(@name : String,@val : Internal::Value); end
+        attr name 
+        attr val 
     end
 
     alias Entry     = MethodEntry | ClassEntry | ModuleEntry | ConstEntry
@@ -195,12 +199,12 @@ module LinCAS
             return mod
         end
 
-        def addMethod(name : String,method : MethodEntry)
+        def addMethod(name : String,method : MethodEntry)s
             currentScope.methods.addEntry(name,method)
         end
 
         def addConst(name,value)
-            const = ConstEntry.new(value)
+            const = ConstEntry.new(name,value)
             currentScope.addEntry(name,value)
         end
 
@@ -217,9 +221,8 @@ module LinCAS
         end
 
         def lookUp(name)
-            size = @currentScope.size - 1
-            size.downto 0 do |i|
-                entry = @currentScope[i].symTab.lookUp(name)
+            @currentScope.reverse_each do |layer|
+                entry = layer.symTab.lookUp(name)
                 return entry if entry
             end
             return nil
@@ -244,6 +247,10 @@ module LinCAS
 
         def getRoot
             return @currentScope[0]
+        end
+
+        def getCurrent
+            return currentScope
         end
 
     end

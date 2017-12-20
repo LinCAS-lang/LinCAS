@@ -38,9 +38,10 @@ module LinCAS
         ERR_MESSAGE = {
             :wrong_node_reached => "Wrong node reached",
             :not_a_const    => "'%s' is not a constant",
-            :const_defined  => "constant '%s' already defined",
             :not_a_struct   => "'%s' is not a class nor a module",
             :not_a_class    => "'%s' is not a class",
+            :not_a_module   => "'%s' is not a module",
+            :const_defined  => "constant '%s' already defined",
             :superclass_err => "Superclass missmatch in '%s'",
             :undefined_const=> "Undefined constant '%s'"
         }

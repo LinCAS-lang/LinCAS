@@ -55,6 +55,9 @@ class SymTabPrinter
         append(header + ">\n")
         indent = @indent
         @indent += @toIndent
+        parent = entry.as(ClassEntry).parent
+        append("#{@indent}<PARENT: #{parent.as(ClassEntry).name}/>") if parent
+        printL
         printIncluded(entry.included)
         printMethods(entry.methods)
         printSymTab(entry.symTab)
@@ -77,15 +80,36 @@ class SymTabPrinter
     end
 
     protected def printConst(entry)
-        
+        append("#{@indent}<CONST: #{entry.name}/>")
+        printL
     end
 
     protected def printMethods(symtab)
-        
+        symtab.each_key do |method|
+            printMethod(symtab[method])
+        end
+    end
+
+    protected def printMethod(method)
+        method = method.as(MethodEntry)
+        append("#{@indent}<METHOD: '#{method.name}'>\n")
+        indent = @indent
+        @indent += @toIndent
+        append("#{@indent}<INTERNAL:   #{method.internal}/>")
+        printL
+        append("#{@indent}<STATIC:     #{method.static}/>\n")
+        append("#{@indent}<SINGLETON:  #{method.singleton}/>")
+        printL
+        append("#{@indent}<VISIBILITY: #{method.visib}/>\n")
+        @indent = indent
+        append("#{indent}<#{method.name}/>")
+        printL
     end
 
     protected def printIncluded(array)
-        
+        array.each do |entry|
+            append("#{@indent}<INCLUDED: #{entry.name}/>")
+        end
     end
 
     protected def printSymTab(symtab)
