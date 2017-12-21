@@ -1,0 +1,28 @@
+/**
+* This file tests the thefinition of a void
+* in runtime
+*
+* To see the sumbol table the SymTabPrinter must be run
+*
+*/
+
+/* Defining a simple void */
+void myVoid(){
+}
+
+/* Defining a void with arguments (nothing should change) */
+void voidWithArgs(a1,a2){
+}
+
+/* Trying to define a method in a class */
+class MyClass{
+  
+  /* Defining a simple instance method */
+  void foo(){
+  }
+  
+  /* Defining a class (= static) method */
+  void Main.bar(){
+  }
+  
+}

@@ -45,7 +45,7 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test2.lc"))
+parser = factory.makeParser(File.expand_path("../Test/SampleTests/VoidTest.lc"))
 #parser.displayTokens
 ast = parser.parse
 astPrinter = AstPrinter.new

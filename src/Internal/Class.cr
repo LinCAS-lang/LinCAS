@@ -90,13 +90,11 @@ module LinCAS::Internal
         )
     end
 
-    klass = internal.lc_build_class_only("Class")
+    LcClass = internal.lc_build_class_only("Class")
 
-    internal.lc_add_internal(klass,"is_a", :lc_is_a       ,1)
-    internal.lc_add_internal(klass,"class",:lc_class_class,0)
-    internal.lc_add_internal(klass,"==",   :lc_class_eq,   1)
-    internal.lc_add_internal(klass,"<>",   :lc_class_ne,   1)
-
-    LcClass = klass
+    internal.lc_add_internal(LcClass,"is_a", :lc_is_a       ,1)
+    internal.lc_add_internal(LcClass,"class",:lc_class_class,0)
+    internal.lc_add_internal(LcClass,"==",   :lc_class_eq,   1)
+    internal.lc_add_internal(LcClass,"<>",   :lc_class_ne,   1)
 
 end

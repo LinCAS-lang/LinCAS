@@ -87,7 +87,7 @@ module LinCAS
         @args      : Node | ::Nil
         @code      : Node | Symbol | ::Nil
         @owner     : ClassEntry  | ModuleEntry | ::Nil
-        @arity     = 0
+        @arity     : Intnum = 0
         @static    = false
         @internal  = false
         @singleton = false
@@ -195,11 +195,11 @@ module LinCAS
         def addModule(name : String, exit = false)
             mod = ModuleEntry.new(name,path.addName(name), currentScope.symTab)
             currentScope.symTab.addEntry(name,mod)
-            @currentScope.push(mod) unless mod 
+            @currentScope.push(mod) unless exit 
             return mod
         end
 
-        def addMethod(name : String,method : MethodEntry)s
+        def addMethod(name : String,method : MethodEntry)
             currentScope.methods.addEntry(name,method)
         end
 
@@ -225,6 +225,7 @@ module LinCAS
                 entry = layer.symTab.lookUp(name)
                 return entry if entry
             end
+            return @currentScope[0] if @currentScope[0].name == name
             return nil
         end
 

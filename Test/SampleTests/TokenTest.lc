@@ -1,0 +1,14 @@
+/**
+* This is an invalid LinCAS program to test the lexer
+* performences
+*
+* This must not be used as program since it will raise
+* many parsing errors
+*
+*/
+  
+
+23
+/* this is a comment */
++= . .. ... £ 12 () [] {}
+12 122222 1234.12 if then else @var var

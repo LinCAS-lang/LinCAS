@@ -98,7 +98,7 @@ module LinCAS::Internal
     end
 
     klass = internal.lc_build_class_only("Boolean")
-    internal.lc_set_parent_class(klass, object)
+    internal.lc_set_parent_class(klass, Obj)
 
     internal.lc_add_internal(klass,"!", :lc_bool_invert,0)
     internal.lc_add_internal(klass,"==",:lc_bool_eq,    1)

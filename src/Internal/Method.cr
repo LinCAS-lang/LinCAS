@@ -26,9 +26,9 @@ module LinCAS::Internal
     
     def 
     self.lc_define_usr_method(
-        name, args : Node, owner : LinCAS::Structure, code : Node, arity, visib : VoidVisib = VoidVisib::PUBLIC
+        name, args : Node, owner : LinCAS::Structure, code : Node, arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
     )
-        m       = LinCAS::MethodEntry.new(name,visib)
+        m       = LinCAS::MethodEntry.new(name.as(String),visib)
         m.args  = args
         m.owner = owner
         m.code  = code
@@ -38,7 +38,7 @@ module LinCAS::Internal
 
     def 
     self.lc_define_static_usr_method(
-        name,args : Node, owner : LinCAS::Structure, code : Node, arity, visib : VoidVisib = VoidVisib::PUBLIC
+        name,args : Node, owner : LinCAS::Structure, code : Node, arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
     )
         m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
         m.static = true
@@ -106,6 +106,10 @@ module LinCAS::Internal
         else 
             return self.seek_method(prevScope,name)
         end
+    end
+
+    def self.seek_method(receiver, name)
+        return seek_method(receiver.as(Value).class.as(Structure),name)
     end
 
 end

@@ -285,7 +285,7 @@ module LinCAS::Internal
 
 
     klass = internal.lc_build_class_only("String")
-    internal.lc_set_parent_class(klass, object)
+    internal.lc_set_parent_class(klass, Obj)
 
     internal.lc_add_internal(klass,"+",      :lc_str_concat,  1)
     internal.lc_add_internal(klass,"concat", :lc_str_concat,  1)

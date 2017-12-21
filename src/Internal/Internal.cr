@@ -62,14 +62,6 @@ module LinCAS::Internal
         {{str_ptr}}.value
     end
 
-    macro object
-        Id_Tab.lookUp("Object").as(ClassEntry)
-    end
-
-    macro lc_class
-        Id_Tab.lookUp("Class").as(ClassEntry)
-    end
-
     def self.clone_val(obj)
         if obj.is_a? LcString*
             return internal.lc_str_clone(obj)

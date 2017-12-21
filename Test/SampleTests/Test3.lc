@@ -1,2 +1,0 @@
-require "Test4.lc"
-include @MyModule:MyNestedModule

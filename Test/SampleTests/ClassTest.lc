@@ -1,0 +1,25 @@
+/**
+* This test wants to see whether a class is correctly executed
+* in runtime. To see the symbol table, the SymbolTabPrinter must be run
+*
+* This is a valid LinCAS program
+*
+*/
+
+class MyClass {
+
+    /*
+    * Trying to nest a class
+    */
+    class NestedClass {
+    
+    }
+}
+
+/* Checking inheritance */
+class Class2 inherits MyClass {
+}
+
+/* This will raise an inheritance error */
+class Class2 inherits Object {
+}

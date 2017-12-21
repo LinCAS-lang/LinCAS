@@ -33,6 +33,7 @@ module LinCAS
             StandardError
             InternalError
             NameError
+            NoMethodError
         end
 
         ERR_MESSAGE = {
@@ -43,17 +44,20 @@ module LinCAS
             :not_a_module   => "'%s' is not a module",
             :const_defined  => "constant '%s' already defined",
             :superclass_err => "Superclass missmatch in '%s'",
-            :undefined_const=> "Undefined constant '%s'"
+            :undefined_const=> "Undefined constant '%s'",
+            :no_s_method    => "Undefined method for %s : %s",
+            :no_method      => "Undefined method for %s"
         }
 
     end
 
     LcTypeError     = Internal::ErrType::TypeError
-    LcArgumentError = Internal::ErrType::ArgumentEror
+    LcArgumentError = Internal::ErrType::ArgumentError
     LcRuntimeError  = Internal::ErrType::RuntimeError
     LcStandardError = Internal::ErrType::StandardError
     LcInternalError = Internal::ErrType::InternalError
     LcNameError     = Internal::ErrType::NameError
+    LcNoMethodError = Internal::ErrType::NoMethodError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

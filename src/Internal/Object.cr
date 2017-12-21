@@ -35,7 +35,8 @@ module LinCAS::Internal
     end
 
     Obj = internal.lc_build_class_only("Object")
+    internal.lc_set_parent_class(Obj,LcClass)
+
     internal.lc_add_internal(Obj,"instantiate",:lc_instantiate_obj,0)
-    internal.lc_set_parent_class(Obj,lc_class)
 
 end

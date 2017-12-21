@@ -28,7 +28,7 @@ class SymTabPrinter
 
     def initialize
         @indent   = ""
-        @toIndent = "   "
+        @toIndent = "    "
         @line     = ""
         @length   = 0
     end
@@ -69,6 +69,7 @@ class SymTabPrinter
     protected def printModule(entry)
         header = "#{@indent}<Module: #{entry.name}"
         append(header + ">\n")
+        printL
         indent = @indent
         @indent += @toIndent
         printIncluded(entry.included)

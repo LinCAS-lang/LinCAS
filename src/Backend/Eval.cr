@@ -50,6 +50,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         Id_Tab.exitScope
     end
 
+    macro current_scope
+        Id_Tab.getCurrent
+    end
+
     macro unpack_name(node)
         {{node}}.getAttr(NKey::ID)
     end
@@ -64,6 +68,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     macro pop_frame
         @callstack.popFrame 
+    end
+
+    macro bind_method(scope,name,method)
+        {{scope}}.methods.addEntry({{name}},{{method}})
     end
 
     macro call_internal(name,arg)
@@ -177,21 +185,69 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
+    macro calculate_binary(node)
+        branches = {{node}}.getBranches
+        left     = branches[0]
+        right    = branches[1]
+        l_val    = eval_exp(left).as(Internal::Value)
+        r_val    = eval_exp(right).as(Internal::Value)
+    end
+
     protected def eval_bin_op(node : Node)
         case node.type
             when NodeType::SUM
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value 
+                calculate_binary(node)
+                return call_binary(node,l_val,"+",r_val)
             when NodeType::SUB
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"-",r_val)
             when NodeType::MUL
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"*",r_val)
             when NodeType::FDIV
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"/",r_val)
             when NodeType::IDIV
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"\\",r_val)
+            when NodeType::MOD
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value 
+                calculate_binary(node)
+                return call_binary(node,l_val,"%",r_val)
             when NodeType::AND
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"&&",r_val)
             when NodeType::OR 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_binary(node,l_val,"||",r_val)
             when NodeType::NOT
-            when NodeType::APPEND
+                arg     = node.getBranches[0]
+                arg_val = eval_stmt(arg)
+                return call_single(node,arg,"!")
             when NodeType::INVERT
+                arg     = node.getBranches[0]
+                arg_val = eval_stmt(arg)
+                return call_single(node,arg,"invert")
         else
             lc_raise(LcInternalError,convert(:wrong_node),node)
         end
+        # Should never get here
+        nil
     end
 
     protected def eval_call(node : Node)
@@ -202,9 +258,52 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         
     end
 
-    def call_method(receiver,name,*args)
-
+    protected def call_binary(node : Node,receiver,name : String,arg)
+        push_frame(find_file(node),find_line(node),name)
+        static = receiver.is_a? Structure
+        method = internal.seek_method(receiver,name)
+        if method
+            method = method.as(MethodEntry)
+            arity = method.arity
+            if arity != 1
+                lc_raise(LcArgumentError,convert(:few_args) % {arity,1})
+                return nil
+            end
+            if static
+                unless method.static == true
+                    s_type = (receiver.is_a? ClassEntry) ? "Class" : "Module"
+                    lc_raise(LcNoMethodError,convert(:no_s_method) % {receiver.path.to_s,s_type})
+                end
+                # push_empty_data
+                if method.internal
+                    return call_internal(method,arg)
+                else 
+                    # To Implement
+                end 
+            else 
+                if method.static == true
+                    lc_raise(LcNoMethodError,convert(:no_method) % receiver.class.name)
+                end
+                if method.internal
+                    return call_internal(receiver,arg)
+                else 
+                    # To implement
+                end
+            end
+        else 
+            if static
+                s_type = (receiver.is_a? ClassEntry) ? "Class" : "Module"
+                lc_raise(LcNoMethodError,convert(:no_s_method) % {receiver.path.to_s,s_type})
+            else 
+                lc_raise(LcNoMethodError,convert(:no_method) % receiver.class.name)
+            end
+            return nil
+        end
     end 
+
+    protected def call_single(node,receiver,name)
+        
+    end
 
     protected def eval_class(node : Node)
         namespace   = node.getAttr(NKey::NAME).as(Node)
@@ -282,15 +381,18 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             name = unpack_name(name[0])
             mod  = find(name)
             mod  = define_module(mod,name)
+            push_frame(find_file(node),find_line(node),name)
         else
             scope = eval_namespace(namespace.as(Node),false)
             reopen(scope)
             name = unpack_name(name.last)
             mod  = find_local(name)
             mod  = define_module(mod,name)
+            push_frame(find_file(node),find_line(node),name)
         end 
         eval_body(body[0])
         exit_scope
+        pop_frame
     end
 
     protected def define_module(mod,name)
@@ -304,41 +406,71 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         nil
     end
 
-    protected def eval_void(node : Node)
-        name     = node.getAttr(NKey::NAME)
+    protected def eval_void(node : Node) : ::Nil
+        name     = node.getAttr(NKey::NAME).as(Node)
         visib    = node.getAttr(NKey::VOID_VISIB)
         branches = node.getBranches
         args     = branches[0]
-        arity    = args.getAttr(NKey::VOID_ARITY)
+        arity    = args.getAttr(NKey::VOID_ARITY).as(Intnum)
         body     = branches[1]
-        if name.type = NodeType::SELF
-            realName = unpack_name(name.getBranches[0])
-            if !{VoidVisib::PUBLIC,nil}.includes? visib
-                method = internal.define_static_usr_method(
-                    realName,args,current_scope,body,arity
-                )
-            else
-                method = internal.define_static_usr_method(
-                    realName,args,current_scope,body,arity,visib 
-                )
-            end 
+        static   = false
+        if name.type == NodeType::SELF
+            voidName = unpack_name(name.getBranches[0]).as(String)
+            receiver = current_scope
+            static   = true
         else
+            voidName = unpack_name(name).as(String)
             receiver = name.getAttr(NKey::RECEIVER)
-            if receiver.type = NodeType::NAMESPACE
-                receiver = eval_namespace(receiver)
-            elsif receiver 
-                s_name = unpack_name(receiver)
-                receiver = find(s_name)
-                if !receiver
-                    lc_raise(LcNameError,convert(:undefined_const) % s_name,node)
-                    return
+            if receiver 
+                if receiver.as(Node).type == NodeType::NAMESPACE
+                    receiver = eval_namespace(receiver.as(Node))
+                    static   = true
+                    return nil unless receiver
+                elsif receiver 
+                    r_name   = unpack_name(receiver.as(Node))
+                    receiver = find(r_name)
+                    if !receiver
+                        lc_raise(LcNameError,convert(:undefined_const) % r_name,node)
+                        return nil
+                    end
+                    static = true
                 end
+            else 
+                receiver = current_scope.as(Structure)
             end 
         end
+        if {VoidVisib::PUBLIC,nil}.includes? visib
+            if static
+                method = internal.lc_define_static_usr_method(
+                    voidName,args,receiver.as(Structure),body,arity
+                )
+            else 
+                method = internal.lc_define_usr_method(
+                    voidName,args,receiver.as(Structure),body,arity
+                )
+            end
+        else
+            visib = visib.as(VoidVisib)
+            if static
+                method = internal.lc_define_static_usr_method(
+                   voidName,args,receiver.as(Structure),body,arity,visib
+                )
+            else
+                method = internal.lc_define_usr_method(
+                    voidName,args,receiver.as(Structure),body,arity,visib
+                )
+            end
+        end 
+        bind_method(receiver.as(Structure),voidName,method)
+        p receiver.as(Structure).name; gets
+        p voidName
     end
 
     protected def eval_body(node : Node)
-        
+        branches = node.getBranches
+        branches.each do |branch|
+            eval_stmt(branch.as(Node))
+        end
     end
 
 
