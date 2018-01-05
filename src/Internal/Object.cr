@@ -23,9 +23,6 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    
-
-    struct LcObject < Base; end
 
     def self.lc_instantiate_obj(klass : ClassEntry)
         obj Pointer.malloc(instance_sizeof(LcObject),LcObject.new)

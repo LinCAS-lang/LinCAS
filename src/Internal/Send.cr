@@ -23,16 +23,24 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    
-    def self.lc_num_to_cr_i(value)
-        o_type = lc_typeof(value)
-        if lc_typeof(value) == int
-            return obj_of(value).hidden.as(Intnum)
-        elsif lc_typeof(value) == float
-            return obj_of(value).hidden.as(Floatnum).to_i
-        else
-            # internal.lc_raise()
-        end
+    macro send_to(name,args,arity)
+        {% if name == :lc_is_a %}
+            internal_call(:lc_is_a,args,arity)
+        {% elsif name == :lc_class_class %}
+            internal_call(:lc_class_class,args,arity)
+        {% elsif name == :lc_class_eq %}
+            internal_call(:lc_class_eq,args,arity)
+        {% elsif name == :lc_class_ne %}
+            internal_call(:lc_class_ne,args,arity)
+        {% elsif name == :lc_str_concat%}
+            internal_call(:lc_str_concat,args,arity)
+        {% elsif name == :lc_str_multiply %}
+            internal_call(:lc_str_multiply,args,arity)
+        {% else %}
+            puts "Unreached"
+        {% end %}
     end
-    
+    def self.send(name,args,arity)
+        call_internal_1(:lc_str_concat,args)
+    end
 end

@@ -29,23 +29,24 @@ module LinCAS
         getter filename
         getter line 
         getter callname
-        getter return_val
+        attr return_val
         
+        @return_val : Internal::Value
         def initialize(@filename : String,@line : Intnum, @callname : String)
-            @varSet = Hash(Symbol,Internal::Value).new
-            @return_val = uninitialized Internal::Value
+            @varSet     = Hash(String,Internal::Value).new
+            @return_val = Internal::Null
         end
                 
         def setVar(var, value)
-            @varSet[var.to_sym] = value
+            @varSet[var] = value
         end
         
         def getVar(var)
-            return @varSet[var.to_sym]?
+            return @varSet[var]?
         end
         
         def deleteVar(var)
-            @varSet.delete(var.to_sym)
+            @varSet.delete(var)
         end
                 
     end
@@ -60,7 +61,7 @@ module LinCAS
         end
 
         def pushFrame(filename,line,callname)
-            # LinCAS::Internal.lc_raise() if MAX_CALLSTACK_DEPTH == @depth
+            # Internal.lc_raise() if MAX_CALLSTACK_DEPTH == @depth
             @depth += 1
             self.push(StackFrame.new(filename,line,callname))
         end 

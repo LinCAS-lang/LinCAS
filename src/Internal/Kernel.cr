@@ -31,7 +31,7 @@ module LinCAS::Internal
         end
 
         macro obj_of(str_ptr)
-            {{str_ptr}}.value
+            {{str_ptr}}.as(LcObject*).value
         end
 
         def self.outl(arg)
@@ -40,13 +40,14 @@ module LinCAS::Internal
         end 
 
         def self.out(arg)
-            if arg.is_a? LinCAS::Internal::LcString*
-                print_str(arg)
-            elsif arg.class == LinCAS::Internal::LcBTrue
+            t_arg = internal.lc_typeof(arg)
+            if t_arg == Internal::ObjType::STRING
+                print_str(obj_of(arg).hidden.as(Internal::LcString))
+            elsif t_arg == Internal::ObjType::TRUE
                 STDOUT.print "true"
-            elsif arg.class ==  LinCAS::Internal::LcBFalse
+            elsif t_arg == Internal::ObjType::FALSE
                 STDOUT.print "false"
-            elsif arg.is_a? LinCAS::Internal::LcNull
+            elsif t_arg == Internal::ObjType::NULL
                 STDOUT.print "Null"
             end
         end
@@ -57,8 +58,10 @@ module LinCAS::Internal
         end
 
         private def self.print_str(arg)
-            (0...obj_of(arg).size).each do |i|
-                STDOUT.print(obj_of(arg).str_ptr[i])
+            size = arg.size 
+            ptr  = arg.str_ptr
+            (0...size).each do |i|
+                STDOUT.print(ptr[i])
             end
         end
 

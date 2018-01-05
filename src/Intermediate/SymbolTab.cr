@@ -49,7 +49,7 @@ module LinCAS
     end
 
     abstract class BaseEntry
-        def initialize(@name : String,@path : Path, @prevScope : SymTab?)
+        def initialize(@name : String,@path : Path, @prevScope : Structure?)
         end 
         @included = [] of ModuleEntry
         @symTab   = SymTab.new
@@ -186,14 +186,14 @@ module LinCAS
         end
 
         def addClass(name : String,exit = false)
-            klass = ClassEntry.new(name,path.addName(name),currentScope.symTab)
+            klass = ClassEntry.new(name,path.addName(name),currentScope)
             currentScope.symTab.addEntry(name,klass)
             @currentScope.push(klass) unless exit
             return klass
         end
 
         def addModule(name : String, exit = false)
-            mod = ModuleEntry.new(name,path.addName(name), currentScope.symTab)
+            mod = ModuleEntry.new(name,path.addName(name), currentScope)
             currentScope.symTab.addEntry(name,mod)
             @currentScope.push(mod) unless exit 
             return mod

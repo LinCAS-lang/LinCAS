@@ -1,2 +1,1 @@
-print  "Hola " & "Brackets "
-printl "Hello, world"
+print  "Hola " + "Brackets "

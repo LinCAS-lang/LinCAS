@@ -46,8 +46,13 @@ module LinCAS
             :superclass_err => "Superclass missmatch in '%s'",
             :undefined_const=> "Undefined constant '%s'",
             :no_s_method    => "Undefined method for %s : %s",
-            :no_method      => "Undefined method for %s"
+            :no_method      => "Undefined method for '%s' object",
+            :protected_method => "Protected method called for '%s' object",
+            :private_method => "Private method called for '%s' object"
         }
+
+        struct LcError < Base
+        end
 
     end
 

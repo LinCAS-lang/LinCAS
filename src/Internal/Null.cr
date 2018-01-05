@@ -24,18 +24,16 @@
 
 module LinCAS::Internal
 
-    struct LcNull < Base; end
-
     def self.lc_build_null
-        null  = LcNull.new
-        klass = Id_Tab.lookUp("Null")
-        null.klass = klass.as(ClassEntry)
-        null.data  = klass.as(ClassEntry).data.clone
+        null  = LcObject.new
+        null.klass = NullClass
+        null.data  = NullClass.data.clone
+        null.type  = null_type
         return null
     end
 
-    klass = internal.lc_build_class_only("Null")
-    internal.lc_set_parent_class(klass,Obj)
+    NullClass = internal.lc_build_class_only("Null")
+    internal.lc_set_parent_class(NullClass,Obj)
 
     Null = lc_build_null
     

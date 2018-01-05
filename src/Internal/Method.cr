@@ -96,20 +96,79 @@ module LinCAS::Internal
         )
     end
 
-    def self.seek_method(entry : Structure, name)
-        method    = entry.methods.lookUp(name)
-        prevScope = entry.prevScope
+    def self.seek_method(receiver, name)
+        method    = receiver.methods.lookUp(name)
+        prevScope = receiver.prevScope
         if method
             return method 
         elsif !prevScope
-            return nil
+            return 0
         else 
-            return self.seek_method(prevScope,name)
+            while prevScope
+                method = prevScope.methods.lookUp(name).as(MethodEntry)
+                if method
+                    case method.visib 
+                        when VoidVisib::PUBLIC
+                            return method 
+                        when VoidVisib::PROTECTED
+                            return 1
+                        when VoidVisib::PRIVATE 
+                            return 2
+                    end
+                end 
+                prevScope = prevScope.prevScope
+            end
+            return 0
         end
+        # Should never get here
+        return 0
     end
 
-    def self.seek_method(receiver, name)
-        return seek_method(receiver.as(Value).class.as(Structure),name)
+    def self.seek_static_method(receiver : Structure, name)
+        method    = receiver.methods.lookUp(name)
+        prevScope = receiver.prevScope
+        if method
+            return method 
+        elsif !prevScope 
+            return 0
+        else 
+            while prevScope
+                method    = prevScope.methods.lookUp(name)
+                return method if method 
+                prevScope = prevScope.prevScope
+            end
+            return 0
+        end
+        # Should never get here
+        return 0
+    end
+
+    macro internal_call(name,args,arity)
+        {%  if arity == 0 %}
+                call_internal({{name}},{{args}}[0])
+        {%  elsif arity == 1 %}
+                call_internal_1({{name}},{{args}})
+        {%  elsif arity == 2 %}
+                call_internal_2({{name}},{{args}})
+        {%  else %}
+                call_internal_n({{name}},{{args}})
+        {%  end %}
+    end
+
+    macro call_internal(name,arg)
+        internal.{{name.id}}({{arg}})
+    end
+
+    macro call_internal_1(name,arg)
+        internal.{{name.id}}({{arg}}[0],{{arg}}[1])
+    end 
+
+    macro call_internal_2(name,args)
+        internal.{{name.id}}({{arg[0]}},{{arg[1]}},{{arg[3]}})
+    end 
+
+    macro call_internal_n(name,args)
+        call_internal({{name}},{{args}})
     end
 
 end

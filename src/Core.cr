@@ -11,6 +11,7 @@ module LinCAS
     }
     alias Intnum   = Int32 | Int64
     alias Floatnum = Float32 | Float64
+    alias Num      = Intnum | Floatnum
 end
 
 require "./Listeners"
@@ -45,7 +46,7 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test/SampleTests/VoidTest.lc"))
+parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test6.lc"))
 #parser.displayTokens
 ast = parser.parse
 astPrinter = AstPrinter.new
@@ -53,4 +54,4 @@ astPrinter = AstPrinter.new
 evaluator = Eval.new
 evaluator.eval(ast)
 s_printer = SymTabPrinter.new 
-s_printer.printSTab(Id_Tab.getRoot)
+#s_printer.printSTab(Id_Tab.getRoot)
