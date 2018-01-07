@@ -24,59 +24,10 @@
 
 module LinCAS::Internal
 
-    enum ObjType
-        STRING LCINT LCFLOAT OBJECT ARRAY MATRIX SYMBOLIC
-        TRUE FALSE NULL RANGE 
-    end
+    alias Value  = BaseS | BaseC | Structure
+    alias ValueR = BaseS | BaseC
 
-    macro string 
-        ObjType::STRING
-    end 
-
-    macro int 
-        ObjType::LCINT 
-    end
-
-    macro float 
-        ObjType::LCFLOAT 
-    end 
-
-    macro object 
-        ObjType::OBJECT
-    end 
-
-    macro array 
-        ObjType::ARRAY 
-    end 
-
-    macro matrix 
-        ObjType::MATRIX 
-    end
-
-    macro symbolic 
-        ObjType::SYMBOLIC
-    end
-
-    macro true_type
-        ObjType::TRUE 
-    end 
-
-    macro false_type
-        ObjType::FALSE 
-    end
-
-    macro null_type
-        ObjType::NULL
-    end
-
-    macro range
-        ObjType::RANGE 
-    end
-
-    alias Value  = LcObject | LcObject*
-    alias Hidden = LcString | Intnum | Floatnum
-
-    abstract struct Base
+    abstract struct BaseS
         @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
@@ -87,13 +38,17 @@ module LinCAS::Internal
         getter frozen
         getter data
     end
-    struct LcObject < Base
-        @type   : ObjType = ObjType::OBJECT
-        @hidden : Hidden? = nil
-        setter hidden 
-        getter hidden 
-        setter type 
-        getter type 
+
+    abstract class BaseC
+        @klass  = uninitialized ClassEntry
+        @data   = uninitialized Data
+        @frozen = false
+        setter klass
+        setter frozen
+        setter data
+        getter klass 
+        getter frozen
+        getter data
     end
 
     lib LibC
@@ -116,22 +71,18 @@ module LinCAS::Internal
         Internal::LibC
     end
 
-    macro obj_of(str_ptr)
-        {{str_ptr}}.as(LcObject*).value
-    end
-
     @[AlwaysInline]
     def self.lc_typeof(value)
         if value.is_a? LcObject
             return value.type
-        elsif value.is_a? LcObject*
+        elsif value.is_a? LcObject
             return obj_of(value).type
         end
         return nil
     end
 
     def self.clone_val(obj)
-        if obj.is_a? LcString*
+        if obj.is_a? LcString
             return internal.lc_str_clone(obj)
         else
             return obj

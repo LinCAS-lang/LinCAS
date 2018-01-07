@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -24,15 +24,15 @@
 
 module LinCAS::Internal
 
-    struct LcBTrue  < Base
+    struct LcBTrue  < BaseS
     end
 
-    struct LcBFalse  < Base  
+    struct LcBFalse  < BaseS 
     end
 
     alias LcBool = LcBTrue | LcBFalse
 
-    def self.buildTrue
+    def self.buildTrue : LcBTrue
         lcTrue       = LcBTrue.new
         klass        = Id_Tab.lookUp("Boolean")
         lcTrue.klass = klass.as(ClassEntry)
@@ -40,7 +40,7 @@ module LinCAS::Internal
         return lcTrue
     end
 
-    def self.buildFalse
+    def self.buildFalse : LcBFalse
         lcFalse       = LcBFalse.new
         klass         = Id_Tab.lookUp("Boolean")
         lcFalse.klass = klass.as(ClassEntry)
@@ -55,6 +55,7 @@ module LinCAS::Internal
             return lctrue
         else 
             # internal.raise()
+            return Null
         end
     end
 

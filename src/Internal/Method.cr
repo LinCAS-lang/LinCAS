@@ -156,7 +156,7 @@ module LinCAS::Internal
     end
 
     macro call_internal(name,arg)
-        internal.{{name.id}}({{arg}})
+        internal.{{name.id}}({{arg}}[0])
     end
 
     macro call_internal_1(name,arg)
@@ -168,7 +168,7 @@ module LinCAS::Internal
     end 
 
     macro call_internal_n(name,args)
-        call_internal({{name}},{{args}})
+        internal.{{name.id}}({{args}})
     end
 
 end

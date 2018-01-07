@@ -75,16 +75,16 @@ module LinCAS::Internal
     def self.lc_class_class(obj : Value)
         return LcClass  if obj.is_a? ClassEntry
         return LcModule if obj.is_a? ModuleEntry
-        return obj_of(obj).klass
+        return obj.as(ValueR).klass
     end
 
-    def self.lc_class_eq(klass : Structure, other)
+    def self.lc_class_eq(klass : Value, other)
         return lcfalse unless klass.class == other.class
-        return lcfalse unless klass.path  == other.path 
+        return lcfalse unless klass.as(Structure).path  == other.as(Structure).path 
         return lctrue
     end
 
-    def self.lc_class_ne(klass : Structure, other)
+    def self.lc_class_ne(klass : Value, other)
         return internal.lc_bool_invert(
             internal.lc_class_eq(klass,other)
         )

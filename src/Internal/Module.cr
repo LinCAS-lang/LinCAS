@@ -32,4 +32,6 @@ module LinCAS::Internal
         return Id_Tab.addModule(name)
     end
 
+    LcModule = internal.lc_build_module_only("Module")
+
 end

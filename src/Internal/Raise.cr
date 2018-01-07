@@ -51,7 +51,7 @@ module LinCAS
             :private_method => "Private method called for '%s' object"
         }
 
-        struct LcError < Base
+        class LcError < BaseC
         end
 
     end

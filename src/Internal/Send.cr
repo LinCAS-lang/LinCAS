@@ -23,24 +23,26 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    macro send_to(name,args,arity)
-        {% if name == :lc_is_a %}
-            internal_call(:lc_is_a,args,arity)
-        {% elsif name == :lc_class_class %}
-            internal_call(:lc_class_class,args,arity)
-        {% elsif name == :lc_class_eq %}
-            internal_call(:lc_class_eq,args,arity)
-        {% elsif name == :lc_class_ne %}
-            internal_call(:lc_class_ne,args,arity)
-        {% elsif name == :lc_str_concat%}
-            internal_call(:lc_str_concat,args,arity)
-        {% elsif name == :lc_str_multiply %}
-            internal_call(:lc_str_multiply,args,arity)
-        {% else %}
-            puts "Unreached"
-        {% end %}
-    end
+
     def self.send(name,args,arity)
-        call_internal_1(:lc_str_concat,args)
+        args = args.to_a
+        if name == :lc_is_a
+            return call_internal_1(:lc_is_a,args)
+        elsif name == :lc_class_class
+            return call_internal(:lc_class_class,args)
+        elsif name == :lc_class_eq
+            return call_internal_1(:lc_class_eq,args)
+        elsif name == :lc_class_ne
+            return call_internal_1(:lc_class_ne,args)
+        elsif name == :lc_str_concat
+            return call_internal_1(:lc_str_concat,args)
+        elsif name == :lc_str_multiply
+            return call_internal_1(:lc_str_multiply,args)
+
+        elsif name == :lc_int_sum
+            return call_internal_1(:lc_int_sum,args)
+        else
+            puts "Unreached"
+        end
     end
 end

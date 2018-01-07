@@ -25,14 +25,19 @@
 module LinCAS::Internal
     
     def self.lc_num_to_cr_i(value)
-        o_type = lc_typeof(value)
-        if lc_typeof(value) == int
-            return obj_of(value).hidden.as(Intnum)
-        elsif lc_typeof(value) == float
-            return obj_of(value).hidden.as(Floatnum).to_i
+        if value.is_a? LcInt
+            return value.as(LcInt).val
+        elsif value.is_a? LcFloat
+            return value.as(LcFloat).val.to_i
         else
             # internal.lc_raise()
         end
     end
+
+    abstract struct LcNum < BaseS
+    end
+
+    NumClass = internal.lc_build_class_only("Number")
+    internal.lc_set_parent_class(NumClass,LcClass)
     
 end

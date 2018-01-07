@@ -24,11 +24,12 @@
 
 module LinCAS::Internal
 
+    struct LcNull < BaseS; end
+
     def self.lc_build_null
-        null  = LcObject.new
+        null  = LcNull.new
         null.klass = NullClass
         null.data  = NullClass.data.clone
-        null.type  = null_type
         return null
     end
 

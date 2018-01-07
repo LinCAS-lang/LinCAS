@@ -26,6 +26,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     alias    LcKernel = Internal::LcKernel
     
+    macro null
+        Internal::Null
+    end
+
     macro convert(err)
         LinCAS.convert_error({{err}})
     end
@@ -170,7 +174,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
-    protected def eval_exp(node : Node)
+    protected def eval_exp(node : Node)# : Internal::Value
         case node.type
             when NodeType::STRING
                 string = node.getAttr(NKey::VALUE)
@@ -180,24 +184,25 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             when NodeType::FALSE
                 return Internal::LcFalse
             when NodeType::INT
-                return internal.num2int(node.getAttr(NKey::VALUE))
+                return internal.num2int(node.getAttr(NKey::VALUE).as(Intnum))
             when NodeType::FLOAT
-                return internal.num2float(node.getAttr(NKey::VALUE))
-            when NodeType::ARRAY
+                return internal.num2float(node.getAttr(NKey::VALUE).as(Floatnum))
+#            when NodeType::ARRAY
 
-            when NodeType::MATRIX
+#            when NodeType::MATRIX
 
-            when NodeType::SYMBOLIC
+#            when NodeType::SYMBOLIC
 
-            when NodeType::CALL
+#            when NodeType::CALL
 
-            when NodeType::METHOD_CALL
+#            when NodeType::METHOD_CALL
 
-            when NodeType::NEW
+#            when NodeType::NEW
                 
         else
             return eval_bin_op(node)
         end
+        return null
     end
 
     macro calculate_binary(node)
@@ -208,7 +213,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         r_val    = eval_exp(right).as(Internal::Value)
     end
 
-    protected def eval_bin_op(node : Node)
+    protected def eval_bin_op(node : Node)# : Internal::Value
         case node.type
             when NodeType::SUM
                 l_val = uninitialized Internal::Value 
@@ -253,16 +258,17 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             when NodeType::NOT
                 arg     = node.getBranches[0]
                 arg_val = eval_stmt(arg)
-                # return call_fun(node,arg,"!")
+                return call_fun(node,arg,"!")
             when NodeType::INVERT
                 arg     = node.getBranches[0]
                 arg_val = eval_stmt(arg)
-                #return call_fun(node,arg,"invert")
+                return call_fun(node,arg,"invert")
         else
-            return lc_raise(LcInternalError,convert(:wrong_node),node)
+            lc_raise(LcInternalError,convert(:wrong_node_reached),node)
+            return null
         end
         # Should never get here
-        nil
+        null
     end
 
     protected def eval_call(node : Node)
@@ -531,6 +537,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             send_msg(error)
         else
         end
+        null
     end
 
     def lc_raise(code,msg)
@@ -545,6 +552,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             send_msg(error)
         else 
         end 
+        null
     end
 
     def class_of(receiver : Internal::Value)

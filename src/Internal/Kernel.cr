@@ -40,15 +40,18 @@ module LinCAS::Internal
         end 
 
         def self.out(arg)
-            t_arg = internal.lc_typeof(arg)
-            if t_arg == Internal::ObjType::STRING
-                print_str(obj_of(arg).hidden.as(Internal::LcString))
-            elsif t_arg == Internal::ObjType::TRUE
+            if arg.is_a? LcString
+                print_str(arg.as(LcString))
+            elsif arg.is_a? LcTrue
                 STDOUT.print "true"
-            elsif t_arg == Internal::ObjType::FALSE
+            elsif arg.is_a? LcFalse
                 STDOUT.print "false"
-            elsif t_arg == Internal::ObjType::NULL
+            elsif arg == Null
                 STDOUT.print "Null"
+            elsif arg.is_a? Structure
+                STDOUT.print arg.as(Structure).path.to_s
+            elsif arg.is_a? LcNum
+                STDOUT.print arg.as(LcNum).val
             end
         end
 

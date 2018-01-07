@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -24,7 +24,7 @@
 
 module LinCAS::Internal
 
-    struct LcRange < Base
+    class LcRange < BaseC
         
     end    
 end
