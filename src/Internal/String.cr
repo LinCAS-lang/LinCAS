@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -102,6 +102,7 @@ module LinCAS::Internal
             end 
         else
             # internal.lc_rasise()
+            return Null
         end 
     end
 
@@ -234,7 +235,7 @@ module LinCAS::Internal
     def self.lc_str_index(str : Value, index)
         str = str.as(LcString)
         if index.is_a? LcRange
-            
+            return Null
         else
             x = internal.lc_num_to_cr_i(index)
             if x > obj_of(str).size - 1
@@ -278,6 +279,7 @@ module LinCAS::Internal
                 str_add_char(str,x + i - 1,char)
             end 
         end
+        return Null
     end
 
     def self.lc_str_set_index(str : Value,index : Value,value)  #=> NOT TESTED YIET
@@ -302,6 +304,7 @@ module LinCAS::Internal
                 obj_of(str).hidden.as(LcString).str_ptr[index] = obj_of(value).hidden.as(LcString).str_ptr[0]
             end
         end 
+        return Null 
     end
 
 

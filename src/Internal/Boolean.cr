@@ -32,23 +32,23 @@ module LinCAS::Internal
 
     alias LcBool = LcBTrue | LcBFalse
 
-    def self.buildTrue : LcBTrue
+    def self.build_true
         lcTrue       = LcBTrue.new
         klass        = Id_Tab.lookUp("Boolean")
         lcTrue.klass = klass.as(ClassEntry)
         lcTrue.data  = klass.as(ClassEntry).data.clone
-        return lcTrue
+        return lcTrue.as(Value)
     end
 
-    def self.buildFalse : LcBFalse
+    def self.build_false
         lcFalse       = LcBFalse.new
         klass         = Id_Tab.lookUp("Boolean")
         lcFalse.klass = klass.as(ClassEntry)
         lcFalse.data  = klass.as(ClassEntry).data.clone
-        return lcFalse
+        return lcFalse.as(Value)
     end
 
-    def self.lc_bool_invert(value : LcBool)
+    def self.lc_bool_invert(value)
         if value.is_a? LcBTrue
             return lcfalse
         elsif value.is_a? LcBFalse
@@ -59,55 +59,55 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_bool_eq(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_eq(val1, val2)
         return lctrue if val1 == val2
         return lcfalse
     end
 
-    def self.lc_bool_gr(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_gr(val1, val2)
         return lctrue if val1 == lctrue && val2 == lcfalse
         return lcfalse
     end 
 
-    def self.lc_bool_sm(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_sm(val1, val2)
         return lctrue if val1 == lcfalse && val2 == lctrue
         return lcfalse 
     end
 
-    def self.lc_bool_ge(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_ge(val1, val2)
         return internal.lc_bool_gr(val1,val2)
     end 
 
-    def self.lc_bool_se(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_se(val1, val2)
         return internal.lc_bool_sm(val1,val2)
     end
 
-    def self.lc_bool_ne(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_ne(val1, val2)
         return internal.lc_bool_invert(
             internal.lc_bool_eq(val1,val2)
         )
     end
 
-    def self.lc_bool_and(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_and(val1, val2)
         return lctrue if val1 == lctrue && val2 == lctrue
         return lcfalse
     end
 
-    def self.lc_bool_or(val1 : LcBool, val2 : LcBool)
+    def self.lc_bool_or(val1, val2)
         return lctrue if val1 == lctrue || val2 == lctrue
         return lcfalse 
     end
 
-    klass = internal.lc_build_class_only("Boolean")
-    internal.lc_set_parent_class(klass, Obj)
+    BoolClass = internal.lc_build_class_only("Boolean")
+    internal.lc_set_parent_class(BoolClass, Obj)
 
-    internal.lc_add_internal(klass,"!", :lc_bool_invert,0)
-    internal.lc_add_internal(klass,"==",:lc_bool_eq,    1)
-    internal.lc_add_internal(klass,"&&",:lc_bool_and,   1)
-    internal.lc_add_internal(klass,"||",:lc_bool_or,    1)
+    internal.lc_add_internal(BoolClass,"!", :lc_bool_invert,0)
+    internal.lc_add_internal(BoolClass,"==",:lc_bool_eq,    1)
+    internal.lc_add_internal(BoolClass,"&&",:lc_bool_and,   1)
+    internal.lc_add_internal(BoolClass,"||",:lc_bool_or,    1)
 
-    LcTrue  = internal.buildTrue
-    LcFalse = internal.buildFalse
+    LcTrue  = internal.build_true
+    LcFalse = internal.build_false
 
 
 end

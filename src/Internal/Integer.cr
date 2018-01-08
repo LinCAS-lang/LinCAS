@@ -1,4 +1,27 @@
 
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
+#
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 module LinCAS::Internal
 
     struct LcInt < LcNum
@@ -23,12 +46,29 @@ module LinCAS::Internal
         int.klass = IntClass
         int.data  = IntClass.data.clone
         int.frozen = true
-        return int
+        return int.as(Value)
     end 
 
-    def self.lc_int_sum(n1 : Value, n2)
-        #n1 = n1.as(LcInt)
-        return internal.build_int(n1.as(LcInt).val + n2.as(LcInt).val)
+    def self.lc_int_sum(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_int(n1.val + n2.as(LcInt).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"+")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_int_sum(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_int(n1.val + n2.as(LcInt).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"-")
+        end
+        # Should never get here
+        return Null
     end
 
     IntClass = internal.lc_build_class_only("Integer")

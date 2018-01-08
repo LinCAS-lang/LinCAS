@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -48,10 +48,15 @@ module LinCAS
             :no_s_method    => "Undefined method for %s : %s",
             :no_method      => "Undefined method for '%s' object",
             :protected_method => "Protected method called for '%s' object",
-            :private_method => "Private method called for '%s' object"
+            :private_method => "Private method called for '%s' object",
+            :no_coerce      => "Cant't coerce %s into %s"
         }
 
         class LcError < BaseC
+        end
+
+        macro lc_raise(error_t,body)
+            Exec.lc_raise({{error_t}},{{body}})
         end
 
     end

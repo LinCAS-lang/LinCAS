@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -98,25 +98,34 @@ module LinCAS::Internal
 
     def self.seek_method(receiver, name)
         method    = receiver.methods.lookUp(name)
-        prevScope = receiver.prevScope
+        if receiver.is_a? ClassEntry
+            parent    = receiver.as(ClassEntry).parent
+        else 
+            parent   = nil
+            included = receiver.included 
+            included.each do |mod|
+                method = internal.seek_method(mod,name)
+            end
+        end
         if method
             return method 
-        elsif !prevScope
+        elsif !parent
             return 0
         else 
-            while prevScope
-                method = prevScope.methods.lookUp(name).as(MethodEntry)
+            while parent
+                method = parent.methods.lookUp(name)
                 if method
+                    method = method.as(MethodEntry)
                     case method.visib 
                         when VoidVisib::PUBLIC
-                            return method 
+                            return method.as(MethodEntry)
                         when VoidVisib::PROTECTED
                             return 1
                         when VoidVisib::PRIVATE 
                             return 2
                     end
                 end 
-                prevScope = prevScope.prevScope
+                parent = parent.as(ClassEntry).parent
             end
             return 0
         end
@@ -126,16 +135,24 @@ module LinCAS::Internal
 
     def self.seek_static_method(receiver : Structure, name)
         method    = receiver.methods.lookUp(name)
-        prevScope = receiver.prevScope
+        if receiver.is_a? ClassEntry
+            parent    = receiver.as(ClassEntry).parent
+        else 
+            parent   = nil
+            included = receiver.included 
+            included.each do |mod|
+                method = internal.seek_method(mod,name)
+            end
+        end
         if method
             return method 
-        elsif !prevScope 
+        elsif !parent
             return 0
         else 
-            while prevScope
-                method    = prevScope.methods.lookUp(name)
+            while parent
+                method    = parent.methods.lookUp(name)
                 return method if method 
-                prevScope = prevScope.prevScope
+                parent = parent.parent
             end
             return 0
         end
@@ -143,17 +160,15 @@ module LinCAS::Internal
         return 0
     end
 
-    macro internal_call(name,args,arity)
-        {%  if arity == 0 %}
-                call_internal({{name}},{{args}}[0])
-        {%  elsif arity == 1 %}
-                call_internal_1({{name}},{{args}})
-        {%  elsif arity == 2 %}
-                call_internal_2({{name}},{{args}})
-        {%  else %}
-                call_internal_n({{name}},{{args}})
-        {%  end %}
+    def self.lc_obj_responds_to?(obj : Value,method : String)
+        if obj.is_a? Structure 
+            m = internal.seek_static_method(obj.as(Structure),method)
+        else 
+            m = internal.seek_method(obj.klass,method)
+        end
+        return m.is_a? MethodEntry
     end
+
 
     macro call_internal(name,arg)
         internal.{{name.id}}({{arg}}[0])

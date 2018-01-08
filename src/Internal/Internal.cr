@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -71,14 +71,31 @@ module LinCAS::Internal
         Internal::LibC
     end
 
-    @[AlwaysInline]
-    def self.lc_typeof(value)
-        if value.is_a? LcObject
-            return value.type
-        elsif value.is_a? LcObject
-            return obj_of(value).type
-        end
-        return nil
+    macro convert(name)
+        Eval.convert({{name}})
+    end
+
+    def self.coerce(v1 : Value, v2 : Value)
+        if internal.lc_obj_responds_to? v1,"coerce"
+            return Exec.lc_call_fun(v1,"coerce",v2)
+        else 
+            lc_raise(LcTypeError,convert(:no_coerce) % {lc_typeof(v1),lc_typeof(v2)})
+            return Null
+        end 
+    end 
+
+    def self.lc_typeof(v : Value)
+        if v.is_a? Structure 
+            if v.is_a? ModuleEntry
+                return "#{v.as(ModuleEntry).name} : Module"
+            else 
+                return "#{v.as(ClassEntry).name} : Class"
+            end 
+        else 
+            return v.as(ValueR).klass.name
+        end 
+        # Should never get here
+        ""
     end
 
     def self.clone_val(obj)

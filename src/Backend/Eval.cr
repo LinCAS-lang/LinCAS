@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -74,6 +74,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @callstack.pushFrame({{filename}}.as(String),{{line}}.as(Intnum),{{name}}.as(String))
     end 
 
+    macro push_duplicated_frame
+        @callstack.push_duplicated_frame
+    end
+
     macro pop_frame
         @callstack.popFrame 
     end
@@ -87,25 +91,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
    
-    macro internal_call(name,args,arity)
-        internal.send({{name}},{{args}},{{arity}})
+    macro internal_call(name,args)
+        internal.send({{name}},{{args}})
     end
 
-    macro call_internal(name,arg)
-        internal.{{name}}({{arg}})
-    end
-
-    macro call_internal_1(name,arg)
-        internal.{{name.id}}({{arg[0]}},{{arg[1]}})
-    end 
-
-    macro call_internal_2(name,args)
-        internal.{{name.id}}({{arg[0]}},{{arg[1]}},{{arg[3]}})
-    end 
-
-    macro call_internal_n(name,args)
-        call_internal({{name}},{{args}})
-    end
     @error : Internal::LcError*?
 
     def initialize
@@ -113,6 +102,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @msgHandler = MsgHandler.new
         @try        = 0
         @error      = nil
+        self.addListener(RuntimeListener.new)
     end
 
     def messageHandler
@@ -147,6 +137,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             # when NodeTypee::IF
             # when NodeType::SELECT
         end
+        return null
     end
 
     protected def eval_program(node : Node) : Nil
@@ -195,8 +186,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
 #            when NodeType::CALL
 
-#            when NodeType::METHOD_CALL
-
+            when NodeType::METHOD_CALL
+                return eval_method_call(node)
 #            when NodeType::NEW
                 
         else
@@ -240,6 +231,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 return call_fun(node,l_val,"\\",r_val)
+            when NodeType::POWER
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,"^",r_val)
             when NodeType::MOD
                 l_val = uninitialized Internal::Value 
                 r_val = uninitialized Internal::Value 
@@ -255,14 +251,51 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 return call_fun(node,l_val,"||",r_val)
+            when NodeType::GR 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,">",r_val)
+            when NodeType::GE 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,">=",r_val)
+            when NodeType::SM 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,"<",r_val)
+            when NodeType::SE 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,"<=",r_val)
+            when NodeType::EQ
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                return call_fun(node,l_val,"==",r_val)
+            when NodeType::NE 
+                l_val = uninitialized Internal::Value 
+                r_val = uninitialized Internal::Value  
+                calculate_binary(node)
+                if internal.lc_obj_responds_to? l_val,"!="
+                    return call_fun(node,l_val,"!=",r_val)
+                elsif internal.lc_obj_responds_to? l_val,"<>"
+                    return call_fun(node,l_val,"<>",r_val)
+                else
+                    lc_raise(LcNoMethodError,"Undefined method '<>' or '!=' for #{internal.lc_typeof(l_val)}")
+                    return null
+                end
             when NodeType::NOT
                 arg     = node.getBranches[0]
-                arg_val = eval_stmt(arg)
-                return call_fun(node,arg,"!")
+                arg_val = eval_exp(arg).as(Internal::Value)
+                return call_fun(node,arg_val,"!")
             when NodeType::INVERT
                 arg     = node.getBranches[0]
-                arg_val = eval_stmt(arg)
-                return call_fun(node,arg,"invert")
+                arg_val = eval_exp(arg).as(Internal::Value)
+                return call_fun(node,arg_val,"invert")
         else
             lc_raise(LcInternalError,convert(:wrong_node_reached),node)
             return null
@@ -276,7 +309,15 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     protected def eval_method_call(node : Node)
-        
+        receiver = node.getAttr(NKey::RECEIVER)
+        branches = node.getBranches
+        name     = branches[0]
+        args     = branches[1]
+        voidName = unpack_name(name).as(String)
+        vReceiver = eval_exp(receiver.as(Node)).as(Internal::Value)
+        vArgs    = eval_args(args)
+        push_frame(find_file(node),find_line(node),voidName)
+        return call_fun(vReceiver,voidName,vArgs)
     end
 
     protected def call_fun(node : Node,receiver,name : String, *args)
@@ -286,37 +327,40 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def call_fun(receiver,name : String, args)
         receiver = eval_stmt(receiver).as(Internal::Value) if receiver.is_a? Node
-        return receiver if receiver.is_a? Internal::LcError*
         if receiver.is_a? Structure
             method = internal.seek_static_method(receiver,name)
-            unless method
+            unless method.is_a? MethodEntry
                 s_type = (receiver.is_a? ClassEntry) ? "Class" : "Module"
                 lc_raise(LcNoMethodError,convert(:no_s_method) % {receiver.path.to_s,s_type})
-                return nil 
+                return null
             end
         else 
             method = internal.seek_method(class_of(receiver),name)
             case method
                 when 0
                     lc_raise(LcNoMethodError,convert(:no_method) % class_of(receiver).name) 
-                    return nil 
+                    return null
                 when 1
                     lc_raise(LcNoMethodError,convert(:protected_method) % class_of(receiver).name)
-                    return nil
+                    return null
                 when 2
                     lc_raise(LcNoMethodError,convert(:private_method) % class_of(receiver).name)
-                    return nil
+                    return null
             end
         end
         method = method.as(MethodEntry)
         unless check_arity(method,args)
             lc_raise(LcArgumentError,convert(:few_args) % {args.size,method.arity})
-            return nil 
+            return null
         end
         if method.internal 
-            name   = method.code
-            f_args = {receiver} + args
-            output = internal_call(name,f_args,method.arity)
+            name   = method.code 
+            if args.is_a? Array
+                f_args = [receiver.as(Internal::Value)] + args
+            else 
+                f_args = {receiver} + args 
+            end 
+            output = internal_call(name,f_args)
             pop_frame
             return output
         else
@@ -335,15 +379,25 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     def lc_call_fun(receiver,name : String, *args)
+        push_duplicated_frame
         return call_fun(receiver,name,args)
+    end
+
+    protected def eval_args(args : Node)
+        branches = args.getBranches
+        return Tuple.new if branches.size == 0
+        argv = [eval_exp(branches[0]).as(Internal::Value)]
+       (1...branches.size).each do |i|
+            argv += [eval_exp(branches[i]).as(Internal::Value)]
+        end
+        return argv 
     end
 
     protected def load_call_args(m_args,args)
         m_args.each_with_index do |arg,i|
             val = args[i]
             if val
-                value = eval_exp(val.as(Node))
-                name  = arg.as(Node).getAttr(NKey::ID)
+                name  = arg.as(Node).getAttr(NKey::ID).as(String)
                 set_local(name,value)
             else 
                 lc_raise(LcArgumentError,convert(:few_args) % {args.size,m_args.size})
@@ -512,8 +566,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             end
         end 
         bind_method(receiver.as(Structure),voidName,method)
-        p receiver.as(Structure).name; gets
-        p voidName
     end
 
     protected def eval_body(node : Node)

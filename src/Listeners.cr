@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -80,6 +80,15 @@ module LinCAS
             end
         end
 
+    end
+
+    class RuntimeListener < Listener 
+        def receiveMsg(msg : Msg)
+            if msg.type == MsgType::RUNTIME_ERROR
+                puts msg.body[0]
+                exit 0 
+            end
+        end
     end
 
 end

@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -30,11 +30,13 @@ module LinCAS
         getter line 
         getter callname
         attr return_val
+        attr duplicated
         
         @return_val : Internal::Value
         def initialize(@filename : String,@line : Intnum, @callname : String)
             @varSet     = Hash(String,Internal::Value).new
             @return_val = Internal::Null
+            @duplicated = false
         end
                 
         def setVar(var, value)
@@ -65,6 +67,16 @@ module LinCAS
             @depth += 1
             self.push(StackFrame.new(filename,line,callname))
         end 
+
+        def push_duplicated_frame
+            frame = StackFrame.new(
+                    self.last.filename,
+                    self.last.line,
+                    self.last.callname
+            )
+            frame.duplicated = true
+            self.push(frame)
+        end
 
         def popFrame
             @depth -= 1

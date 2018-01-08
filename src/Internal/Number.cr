@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,6 +36,23 @@ module LinCAS::Internal
 
     abstract struct LcNum < BaseS
     end
+
+    def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
+        if v1.is_a? LcNum && v2.is_a? LcNum
+            v1 = internal.build_float(v1.as(LcNum).val.to_f)
+            v2 = internal.build_float(v2.as(LcNum).val.to_f)
+            Exec.lc_call_fun(v1,method,v2)
+        else
+            c = internal.coerce(v1,v2).as(Value)
+            return Null if c == Null
+            return Exec.lc_call_fun(
+                internal.lc_ary_index(c,internal.num2int(0)),
+                method,
+                internal.lc_ary_index(c,internal.num2int(1))
+            )
+        end 
+    end
+            
 
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,LcClass)

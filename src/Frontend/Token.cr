@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -203,7 +203,7 @@ module LinCAS
             case @text
                 when "$", "(", ")", "]", "{", "}", ",", ";", "'"
                     # nextChar
-                when ":","=", ">", "+", "-", "*", "^", "\\", "/", "%"
+                when ":","=", ">", "+", "-", "*", "^", "\\", "/", "%", "!"
                     if currentChar == "="
                         @text += currentChar
                         nextChar

@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS
+        TkType::READS, TkType::NOT
     } # + MATH_FUNCT
         
     START_SYNC_SET = { 
@@ -653,10 +653,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def parseExp(firstNode = NOOP) : Node
         root = parseRel(firstNode)
         tkType = @currentTk.ttype
-        while boolOpInclude? tkType
+        while (boolOpInclude? tkType)
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
             shift
-            skipEol
             node.addBranch(root)
             node.addBranch(parseSubExp)
             root   = node

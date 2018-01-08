@@ -106,6 +106,7 @@ module LinCAS
                 "="   => TkType::EQ,
                 "%"   => TkType::MOD,
                 "!"   => TkType::NOT,
+                "!="  => TkType::NOT_EQ,
                 "&"   => TkType::ADD,
                 "&&"  => TkType::AND,
                 "|"   => TkType::PIPE,

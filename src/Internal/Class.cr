@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -93,8 +93,9 @@ module LinCAS::Internal
     LcClass = internal.lc_build_class_only("Class")
 
     internal.lc_add_internal(LcClass,"is_a", :lc_is_a       ,1)
-    internal.lc_add_internal(LcClass,"class",:lc_class_class,0)
+    internal.lc_add_internal(LcClass,"its_class",:lc_class_class,0)
     internal.lc_add_internal(LcClass,"==",   :lc_class_eq,   1)
     internal.lc_add_internal(LcClass,"<>",   :lc_class_ne,   1)
+    internal.lc_add_internal(LcClass,"!=",   :lc_class_ne,   1)
 
 end

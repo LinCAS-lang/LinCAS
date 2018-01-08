@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -36,7 +36,9 @@ module LinCAS
         TkType::EQ_EQ   => NodeType::EQ,
         TkType::NOT_EQ  => NodeType::NE,
         TkType::GREATER_EQ => NodeType::GE,
-        TkType::SMALLER_EQ => NodeType::SE
+        TkType::SMALLER_EQ => NodeType::SE,
+        TkType::AND     => NodeType::AND,
+        TkType::OR      => NodeType::OR
     }
 
     private BoolOpDictTr = {
@@ -61,6 +63,6 @@ module LinCAS
 
     @[AlwaysInline]
     protected def boolOpInclude?(tkType : TkType)
-        BoolOpDictTr.has_key? tkType
+        return BoolOpDictTr.has_key? tkType
     end
 end

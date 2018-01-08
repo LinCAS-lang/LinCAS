@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -24,25 +24,41 @@
 
 module LinCAS::Internal
 
-    def self.send(name,args,arity)
+    def self.send(name,args)
         args = args.to_a
-        if name == :lc_is_a
-            return call_internal_1(:lc_is_a,args)
-        elsif name == :lc_class_class
-            return call_internal(:lc_class_class,args)
-        elsif name == :lc_class_eq
-            return call_internal_1(:lc_class_eq,args)
-        elsif name == :lc_class_ne
-            return call_internal_1(:lc_class_ne,args)
-        elsif name == :lc_str_concat
-            return call_internal_1(:lc_str_concat,args)
-        elsif name == :lc_str_multiply
-            return call_internal_1(:lc_str_multiply,args)
+        case name
+            # Class `Class`
+            when :lc_is_a
+                return call_internal_1(:lc_is_a,args)
+            when :lc_class_class
+                return call_internal(:lc_class_class,args)
+            when :lc_class_eq
+                return call_internal_1(:lc_class_eq,args)
+            when :lc_class_ne
+                return call_internal_1(:lc_class_ne,args)
 
-        elsif name == :lc_int_sum
-            return call_internal_1(:lc_int_sum,args)
-        else
-            puts "Unreached"
+            # Class `Bool`
+            when :lc_bool_invert
+                return call_internal(:lc_bool_invert,args)
+            when :lc_bool_eq
+                return call_internal_1(:lc_bool_eq,args)
+            when :lc_bool_and
+                return call_internal_1(:lc_bool_and,args)
+            when :lc_bool_or
+                return call_internal_1(:lc_bool_or,args)
+            
+            # Class `String`
+            when :lc_str_concat
+                return call_internal_1(:lc_str_concat,args)
+            when :lc_str_multiply
+                return call_internal_1(:lc_str_multiply,args)
+            
+            # Class `Integer`
+            when :lc_int_sum
+                return call_internal_1(:lc_int_sum,args)
+
+            else
+                return Null
         end
     end
 end
