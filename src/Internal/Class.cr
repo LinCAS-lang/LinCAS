@@ -94,8 +94,8 @@ module LinCAS::Internal
 
     internal.lc_add_internal(LcClass,"is_a", :lc_is_a       ,1)
     internal.lc_add_internal(LcClass,"its_class",:lc_class_class,0)
-    internal.lc_add_internal(LcClass,"==",   :lc_class_eq,   1)
-    internal.lc_add_internal(LcClass,"<>",   :lc_class_ne,   1)
-    internal.lc_add_internal(LcClass,"!=",   :lc_class_ne,   1)
+    internal.lc_add_static(LcClass,"==",   :lc_class_eq,   1)
+    internal.lc_add_static(LcClass,"<>",   :lc_class_ne,   1)
+    internal.lc_add_static(LcClass,"!=",   :lc_class_ne,   1)
 
 end

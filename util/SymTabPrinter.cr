@@ -109,7 +109,7 @@ class SymTabPrinter
 
     protected def printIncluded(array)
         array.each do |entry|
-            append("#{@indent}<INCLUDED: #{entry.name}/>")
+            append("#{@indent}<INCLUDED: #{entry.to_s}/>")
         end
     end
 

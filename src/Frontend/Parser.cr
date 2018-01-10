@@ -919,7 +919,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         shift if @currentTk.ttype == TkType::DOT
         if @currentTk.ttype == TkType::LOCAL_ID
             node.addBranch(parseLocalID)
-        elsif ALLOWED_VOID_NAMES.includes? @currentTk.ttype && !(@currentTk.ttype != TkType::L_BRACKET)
+        elsif (ALLOWED_VOID_NAMES.includes? @currentTk.ttype) && (@currentTk.ttype != TkType::L_BRACKET)
             id = @nodeFactory.makeNode(NodeType::LOCAL_ID)
             id.setAttr(NKey::ID,@currentTk.text)
             shift 

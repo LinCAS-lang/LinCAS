@@ -59,7 +59,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     macro unpack_name(node)
-        {{node}}.getAttr(NKey::ID)
+        {{node}}.getAttr(NKey::ID).as(String)
     end
 
     macro send_msg(msg)
@@ -82,6 +82,18 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @callstack.popFrame 
     end
 
+    macro push_object(obj)
+        @obj_stack.push({{obj}})
+    end 
+
+    macro pop_object
+        @obj_stack.pop 
+    end 
+
+    macro current_object
+        @obj_stack.last 
+    end 
+
     macro set_local(name,value)
         @callstack.setVar({{name}}.as(String),{{value}}.as(Internal::Value))
     end 
@@ -95,13 +107,15 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         internal.send({{name}},{{args}})
     end
 
-    @error : Internal::LcError*?
+    @error : Internal::LcError?
 
     def initialize
         @callstack  = CallStack.new
         @msgHandler = MsgHandler.new
         @try        = 0
         @error      = nil
+        @obj_stack  = [] of Internal::Value
+        @obj_stack << internal.boot_main_object
         self.addListener(RuntimeListener.new)
     end
 
@@ -132,6 +146,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_module(node)
             when NodeType::VOID
                 eval_void(node)
+            when NodeType::CALL, NodeType::METHOD_CALL
+                eval_exp(node)
             # when NodeType::WHILE
             # when NodeType::UNTIL
             # when NodeTypee::IF
@@ -178,14 +194,18 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return internal.num2int(node.getAttr(NKey::VALUE).as(Intnum))
             when NodeType::FLOAT
                 return internal.num2float(node.getAttr(NKey::VALUE).as(Floatnum))
+            when NodeType::GLOBAL_ID
+                return eval_global_id(node)
+            when NodeType::LOCAL_ID
+                return eval_local_id(node)
 #            when NodeType::ARRAY
 
 #            when NodeType::MATRIX
 
 #            when NodeType::SYMBOLIC
 
-#            when NodeType::CALL
-
+            when NodeType::CALL
+                return eval_call(node)
             when NodeType::METHOD_CALL
                 return eval_method_call(node)
 #            when NodeType::NEW
@@ -304,8 +324,28 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         null
     end
 
-    protected def eval_call(node : Node)
+    protected def eval_global_id(node : Node)
         
+    end
+
+    protected def eval_local_id(node : Node)
+        name = unpack_name(node)
+        val = @callstack.getVar(name)
+        if val 
+            return val 
+        else
+            set_local(name,null)
+            return null 
+        end
+    end
+
+    protected def eval_call(node : Node)
+        branches = node.getBranches
+        name     = unpack_name(branches[0])
+        args     = branches[1]
+        argv     = eval_args(args)
+        push_frame(find_file(node),find_line(node),name)
+        return call_fun(current_object,name,argv)
     end
 
     protected def eval_method_call(node : Node)
@@ -315,14 +355,20 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         args     = branches[1]
         voidName = unpack_name(name).as(String)
         vReceiver = eval_exp(receiver.as(Node)).as(Internal::Value)
-        vArgs    = eval_args(args)
+        argv    = eval_args(args)
         push_frame(find_file(node),find_line(node),voidName)
-        return call_fun(vReceiver,voidName,vArgs)
+        push_object(vReceiver)
+        return call_fun(vReceiver,voidName,argv)
+    ensure 
+        pop_object
     end
 
     protected def call_fun(node : Node,receiver,name : String, *args)
         push_frame(find_file(node),find_line(node),name)
+        push_object(receiver)
         return call_fun(receiver,name,args)
+    ensure
+        pop_object
     end
 
     protected def call_fun(receiver,name : String, args)
@@ -366,28 +412,34 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         else
             m_arg = method.args 
             body  = method.code
-            # load_call_args(m_arg.as(Node).getBranches,args)
-            return nil if @error
-            output = eval_body(body.as(Node))
-            if output
-                return output.return_val if output
-            else
-                return Internal::Null
+            load_call_args(m_arg.as(Node).getBranches,args)
+            if @error
                 pop_frame
+                return null
+            end
+            output = eval_body(body.as(Node))
+            if output && output.is_a? StackFrame
+                return output.return_val
+            else
+                pop_frame
+                return Internal::Null
             end
         end
     end
 
     def lc_call_fun(receiver,name : String, *args)
         push_duplicated_frame
+        push_object(receiver)
         return call_fun(receiver,name,args)
+    ensure
+        pop_object
     end
 
     protected def eval_args(args : Node)
         branches = args.getBranches
         return Tuple.new if branches.size == 0
         argv = [eval_exp(branches[0]).as(Internal::Value)]
-       (1...branches.size).each do |i|
+        (1...branches.size).each do |i|
             argv += [eval_exp(branches[i]).as(Internal::Value)]
         end
         return argv 
@@ -395,18 +447,22 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def load_call_args(m_args,args)
         m_args.each_with_index do |arg,i|
-            val = args[i]
+            val = args[i]?
             if val
-                name  = arg.as(Node).getAttr(NKey::ID).as(String)
-                set_local(name,value)
+                if arg.as(Node).type == NodeType::ASSIGN
+                    name = unpack_name(arg.getBranches[0])
+                else
+                    name  = unpack_name(arg)
+                end
+                set_local(name,val)
             else 
-                lc_raise(LcArgumentError,convert(:few_args) % {args.size,m_args.size})
+                if arg.as(Node).type == NodeType::ASSIGN
+                    eval_assign(arg)
+                else
+                    lc_raise(LcArgumentError,convert(:few_args) % {args.size,m_args.size})
+                end
             end 
         end
-    end
-
-    protected def eval_args(args)
-        
     end
 
     protected def eval_class(node : Node)
@@ -427,6 +483,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             klass = find_local(name)
             klass = define_class(klass,name)
         end
+        if klass.nil?
+            pop_frame
+            return nil 
+        end
+        push_object(klass.as(Internal::Value))
         if klass.as(ClassEntry).parent.nil? && parent
             parent = eval_namespace(parent.as(Node))
             lc_raise(
@@ -441,6 +502,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         eval_body(body)
         exit_scope
         pop_frame
+        pop_object
     end
 
     protected def define_class(klass,name)
@@ -492,11 +554,15 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             name = unpack_name(name.last)
             mod  = find_local(name)
             mod  = define_module(mod,name)
-            push_frame(find_file(node),find_line(node),name)
         end 
-        eval_body(body[0])
-        exit_scope
-        pop_frame
+        if mod 
+            push_frame(find_file(node),find_line(node),name)
+            push_object(mod.as(Internal::Value))
+            eval_body(body[0])
+            exit_scope
+            pop_object
+            pop_frame
+        end 
     end
 
     protected def define_module(mod,name)
@@ -575,6 +641,16 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
+    protected def eval_assign(node : Node)
+        branches = node.getBranches
+        var      = branches[0]
+        expr     = branches[1]
+        name  = unpack_name(var)
+        exprv = eval_exp(expr)
+        return null if @error
+        set_local(name,exprv)
+    end
+
 
     def lc_raise(code,msg,node)
         backtrace = build_backtrace(node) if node
@@ -607,12 +683,9 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         null
     end
 
+    @[AlwaysInline]
     def class_of(receiver : Internal::Value)
-        if receiver.is_a? Pointer
-            return receiver.value.klass 
-        else
-            return receiver.klass 
-        end 
+        return receiver.klass.as(ClassEntry) 
     end
 
     protected def build_backtrace(node : Node)

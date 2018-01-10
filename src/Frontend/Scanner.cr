@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -104,6 +104,11 @@ class LinCAS::Scanner < LinCAS::MsgGenerator
                                       @source.getLine.to_s,
                                       @source.getPos.to_s,
                                       @source.getFilename]))
+            end
+        end
+        if currentChar == "#"
+            while currentChar != "\n" && currentChar != EOF
+                nextChar
             end
         end
     end

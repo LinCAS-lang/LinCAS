@@ -32,6 +32,10 @@ module LinCAS::Internal
         return Id_Tab.addModule(name)
     end
 
+    def self.lc_include_module(klass : ClassEntry, mod : ModuleEntry)
+        klass.included << mod 
+    end
+
     LcModule = internal.lc_build_module_only("Module")
 
 end

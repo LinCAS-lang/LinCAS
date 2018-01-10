@@ -1,3 +1,14 @@
 
 printl "Bark " * 3
-print (4.14).its_class()
+printl 3.its_class() # <> 3.14.its_class()
+
+void out(param){
+    print param
+}
+
+void sum(v1,v3,v2 := 10){
+    printl v1 + v2
+    out(v3)
+}
+
+sum(3,3)

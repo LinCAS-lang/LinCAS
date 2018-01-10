@@ -31,7 +31,7 @@ module LinCAS
 
     struct Path
 
-       def initialize(@path = ["Main"]) 
+       def initialize(@path = Array(String).new) 
        end
 
        def addName(name)
@@ -55,16 +55,16 @@ module LinCAS
     abstract class BaseEntry
         def initialize(@name : String,@path : Path, @prevScope : Structure?)
         end 
-        @included = [] of ModuleEntry
+        @included = [] of Path
         @symTab   = SymTab.new
         @data     = Data.new
         @methods  = SymTab.new 
         attr name
         attr path
         attr prevScope
-        attr included
         attr symTab
         attr data
+        getter included
         getter methods
     end
 
@@ -181,7 +181,7 @@ module LinCAS
         end
 
         def initialize
-            @currentScope.push(ModuleEntry.new("Main",Path.new,nil))
+            @currentScope.push(ClassEntry.new("Main",Path.new,nil))
         end
 
         @[AlwaysInline]

@@ -49,7 +49,8 @@ module LinCAS
             :no_method      => "Undefined method for '%s' object",
             :protected_method => "Protected method called for '%s' object",
             :private_method => "Private method called for '%s' object",
-            :no_coerce      => "Cant't coerce %s into %s"
+            :no_coerce      => "Cant't coerce %s into %s",
+            :few_args       => "Wrong number of arguments (%i instead of %i)"
         }
 
         class LcError < BaseC

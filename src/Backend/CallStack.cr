@@ -96,7 +96,22 @@ module LinCAS
         end
 
         def getBacktrace
-            ""
+            count = 0
+            return String.build do |io|
+                self.reverse_each do |frame|
+                    if !frame.duplicated
+                        io << '\n' << "In: " << frame.callname << '\n'
+                        io << "Line: " << frame.line << '\n'
+                        io << "In: " << frame.filename << '\n'
+                        count += 1
+                    end
+                    break if count == 8
+                end 
+                if count < @depth
+                    io << '\n' << '\n'
+                    io << " ... Other #{@depth - count} items"
+                end
+            end
         end
 
     end 

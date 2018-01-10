@@ -96,67 +96,65 @@ module LinCAS::Internal
         )
     end
 
-    def self.seek_method(receiver, name)
-        method    = receiver.methods.lookUp(name)
-        if receiver.is_a? ClassEntry
-            parent    = receiver.as(ClassEntry).parent
-        else 
-            parent   = nil
-            included = receiver.included 
-            included.each do |mod|
-                method = internal.seek_method(mod,name)
-            end
-        end
-        if method
+    def self.seek_method(receiver : Structure, name)
+        method = seek_instance_method(receiver,name)
+        if method.is_a? MethodEntry
             return method 
-        elsif !parent
-            return 0
         else 
-            while parent
-                method = parent.methods.lookUp(name)
-                if method
-                    method = method.as(MethodEntry)
-                    case method.visib 
-                        when VoidVisib::PUBLIC
-                            return method.as(MethodEntry)
-                        when VoidVisib::PROTECTED
-                            return 1
-                        when VoidVisib::PRIVATE 
-                            return 2
-                    end
-                end 
-                parent = parent.as(ClassEntry).parent
+            parent = receiver.as(ClassEntry).parent 
+            while parent 
+                method = seek_instance_method(parent,name)
+                return method if method.is_a? MethodEntry
+                parent = parent.parent 
             end
-            return 0
         end
-        # Should never get here
         return 0
     end
 
+    def self.seek_instance_method(receiver : Structure,name)
+        method = receiver.methods.lookUp(name)
+        if method.is_a? MethodEntry
+            method = method.as(MethodEntry)
+            if !method.static
+                case method.visib 
+                    when VoidVisib::PUBLIC
+                        return method
+                    when VoidVisib::PROTECTED
+                        return 1
+                    when VoidVisib::PRIVATE 
+                        return 2
+                end
+            else
+                return 0
+            end
+        else
+            return 0
+        end
+    end
+
     def self.seek_static_method(receiver : Structure, name)
-        method    = receiver.methods.lookUp(name)
-        if receiver.is_a? ClassEntry
-            parent    = receiver.as(ClassEntry).parent
-        else 
-            parent   = nil
-            included = receiver.included 
-            included.each do |mod|
-                method = internal.seek_method(mod,name)
+        method    = seek_static_method2(receiver,name)
+        if method.is_a? MethodEntry
+            return method
+        else
+            if receiver.is_a? ClassEntry
+                parent = receiver.as(ClassEntry).parent 
+                while parent 
+                    method = seek_static_method2(parent,name)
+                    return method if method.is_a? MethodEntry
+                    parent = parent.parent 
+                end
             end
         end
-        if method
-            return method 
-        elsif !parent
-            return 0
-        else 
-            while parent
-                method    = parent.methods.lookUp(name)
-                return method if method 
-                parent = parent.parent
-            end
-            return 0
+        return 0
+    end
+    
+    def self.seek_static_method2(receiver : Structure, name : String)
+        method = receiver.methods.lookUp(name)
+        if !method.nil?
+            method = method.as(MethodEntry)
+            return method if method.static
         end
-        # Should never get here
         return 0
     end
 

@@ -24,15 +24,24 @@
 
 module LinCAS::Internal
 
+    class LcObject < BaseC
+    end
+
+    def self.boot_main_object
+        return internal.lc_instantiate_obj(MainClass)
+    end
+
     def self.lc_instantiate_obj(klass : ClassEntry)
-        obj Pointer.malloc(instance_sizeof(LcObject),LcObject.new)
-        obj_of(obj).klass = klass
-        obj_of(obj).data  = klass.data.clone
+        obj = LcObject.new
+        obj.klass = klass
+        obj.data  = klass.data.clone
         return obj 
     end
 
-    Obj = internal.lc_build_class_only("Object")
+    Obj       = internal.lc_build_class_only("Object")
+    MainClass = Id_Tab.getRoot.as(ClassEntry)
     internal.lc_set_parent_class(Obj,LcClass)
+    internal.lc_set_parent_class(MainClass,Obj)
 
     internal.lc_add_internal(Obj,"instantiate",:lc_instantiate_obj,0)
 
