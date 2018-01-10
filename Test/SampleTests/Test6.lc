@@ -1,5 +1,5 @@
-
-printl "Bark " * 3
+/*
+printl "Bang! " * 3
 printl 3.its_class() # <> 3.14.its_class()
 
 void out(param){
@@ -11,4 +11,17 @@ void sum(v1,v3,v2 := 10){
     out(v3)
 }
 
-sum(3,3)
+sum(3,3)*/
+
+module B { 
+    void hello(){
+        printl "Hello, world"
+    }
+
+    void self.private_hello(){
+        printl "Private greetings"
+    }
+}
+include B
+hello()
+private_hello()

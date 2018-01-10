@@ -26,7 +26,8 @@ module LinCAS::Internal
     
     def 
     self.lc_define_usr_method(
-        name, args : Node, owner : LinCAS::Structure, code : Node, arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
+        name, args : Node, owner : LinCAS::Structure, code : Node,
+        arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
     )
         m       = LinCAS::MethodEntry.new(name.as(String),visib)
         m.args  = args
@@ -38,7 +39,8 @@ module LinCAS::Internal
 
     def 
     self.lc_define_static_usr_method(
-        name,args : Node, owner : LinCAS::Structure, code : Node, arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
+        name,args : Node, owner : LinCAS::Structure, code : Node, 
+        arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC 
     )
         m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
         m.static = true
@@ -94,6 +96,22 @@ module LinCAS::Internal
         internal.lc_define_internal_static_singleton_method(
             {{name}},{{owner}},{{code}},{{arity}}
         )
+    end
+
+    macro call_internal(name,arg)
+        internal.{{name.id}}({{arg}}[0])
+    end
+
+    macro call_internal_1(name,arg)
+        internal.{{name.id}}({{arg}}[0],{{arg}}[1])
+    end 
+
+    macro call_internal_2(name,args)
+        internal.{{name.id}}({{arg[0]}},{{arg[1]}},{{arg[3]}})
+    end 
+
+    macro call_internal_n(name,args)
+        internal.{{name.id}}({{args}})
     end
 
     def self.seek_method(receiver : Structure, name)
@@ -167,21 +185,34 @@ module LinCAS::Internal
         return m.is_a? MethodEntry
     end
 
-
-    macro call_internal(name,arg)
-        internal.{{name.id}}({{arg}}[0])
+    def self.lc_copy_methods_as_instance_in(sender : Structure, receiver : Structure)
+        smtab = sender.methods
+        rmtab = receiver.methods
+        smtab.each_key do |name|
+            internal.insert_method_as_instance(smtab[name].as(MethodEntry),rmtab)
+        end
     end
 
-    macro call_internal_1(name,arg)
-        internal.{{name.id}}({{arg}}[0],{{arg}}[1])
-    end 
-
-    macro call_internal_2(name,args)
-        internal.{{name.id}}({{arg[0]}},{{arg[1]}},{{arg[3]}})
-    end 
-
-    macro call_internal_n(name,args)
-        internal.{{name.id}}({{args}})
+    def self.lc_copy_methods_as_static_in(sender : Structure, receiver : Structure)
+        smtab = sender.methods
+        rmtab = receiver.methods
+        smtab.each_key do |name|
+            internal.insert_method_as_static(smtab[name].as(MethodEntry),rmtab)
+        end
     end
+
+    def self.insert_method_as_instance(method : MethodEntry, r : SymTab)
+        if !method.static 
+            r.addEntry(method.name,method)
+        end
+    end
+
+    def self.insert_method_as_static(method : MethodEntry, r : SymTab)
+        if !method.static 
+            method.static = true
+            r.addEntry(method.name,method)
+        end
+    end
+
 
 end

@@ -1586,9 +1586,6 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 node.addBranch(parseExp)
                 sync(print_sync_set)
             end 
-        else 
-            nullNode = @nodeFactory.makeNode(NodeType::NULL)
-            node.addBranch(nullNode)
         end 
         return node 
     end

@@ -51,6 +51,87 @@ module LinCAS::Internal
         return flo
     end
 
+    def self.lc_float_sum(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2float(n1.val + n2.as(LcFloat).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"+")
+        end
+    end
+
+    def self.lc_float_sub(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2float(n1.val - n2.as(LcFloat).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"-")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_float_mult(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2float(n1.val * n2.as(LcFloat).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"*")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_float_idiv(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2int((float2num(n1) / float2num(n2)).to_i)
+        else
+            return internal.lc_num_coerce(n1,n2,"\\")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_float_fdiv(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2float(n1.val / n2.as(LcFloat).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"/")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_float_power(n1 : Value, n2 : Value)
+        n1 = n1.as(LcFloat)
+        if n2.is_a? LcFloat
+            return num2float(n1.val ** n2.as(LcFloat).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"^")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_float_to_s(n : Value)
+        return internal.build_string(float2num(n).to_s)
+    end
+
+    def self.lc_float_to_i(n : Value)
+        return internal.num2int(float2num(n).to_i)
+    end
+
     FloatClass = internal.lc_build_class_only("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
+
+    internal.lc_add_internal(FloatClass,"+",:lc_float_sum,  1)
+    internal.lc_add_internal(FloatClass,"-",:lc_float_sub,  1)
+    internal.lc_add_internal(FloatClass,"*",:lc_float_mult, 1)
+    internal.lc_add_internal(FloatClass,"\\",:lc_float_idiv,1)
+    internal.lc_add_internal(FloatClass,"/",:lc_float_fdiv, 1)
+    internal.lc_add_internal(FloatClass,"^",:lc_float_power,1)
+    internal.lc_add_internal(FloatClass,"to_s",:lc_float_to_s,0)
+    internal.lc_add_internal(FloatClass,"to_i",:lc_float_to_i,0)
 end

@@ -56,6 +56,38 @@ module LinCAS::Internal
             # Class `Integer`
             when :lc_int_sum
                 return call_internal_1(:lc_int_sum,args)
+            when :lc_int_sub
+                return call_internal_1(:lc_int_sub,args)
+            when :lc_int_mult
+                return call_internal_1(:lc_int_mult,args)
+            when :lc_int_idiv
+                return call_internal_1(:lc_int_idiv,args)
+            when :lc_int_fdiv
+                return call_internal_1(:lc_int_fdiv,args)
+            when :lc_int_power
+                return call_internal_1(:lc_int_power,args)
+            when :lc_int_to_s
+                return call_internal(:lc_int_to_s,args)
+            when :lc_int_to_f
+                return call_internal(:lc_int_to_f,args)
+
+            # Class Float
+            when :lc_float_sum 
+                return call_internal_1(:lc_float_sum,args)
+            when :lc_float_sub
+                return call_internal_1(:lc_float_sub,args)
+            when :lc_float_mult
+                return call_internal_1(:lc_float_mult,args)
+            when :lc_float_idiv
+                return call_internal_1(:lc_float_idiv,args)
+            when :lc_float_fdiv
+                return call_internal_1(:lc_float_fdiv,args)
+            when :lc_float_power
+                return call_internal_1(:lc_float_power,args)
+            when :lc_float_to_s
+                return call_internal(:lc_float_to_s,args)
+            when :lc_float_to_i
+               return call_internal(:lc_float_to_i,args)                
 
             else
                 return Null

@@ -60,10 +60,10 @@ module LinCAS::Internal
         return Null
     end
 
-    def self.lc_int_sum(n1 : Value, n2 : Value)
+    def self.lc_int_sub(n1 : Value, n2 : Value)
         n1 = n1.as(LcInt)
         if n2.is_a? LcInt 
-            return internal.build_int(n1.val + n2.as(LcInt).val)
+            return internal.build_int(n1.val - n2.as(LcInt).val)
         else
             return internal.lc_num_coerce(n1,n2,"-")
         end
@@ -71,10 +71,70 @@ module LinCAS::Internal
         return Null
     end
 
+    def self.lc_int_mult(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_int(n1.val * n2.as(LcInt).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"*")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_int_idiv(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_int(n1.val / n2.as(LcInt).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"\\")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_int_fdiv(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_float(n1.val / n2.as(LcInt).val.to_f)
+        else
+            return internal.lc_num_coerce(n1,n2,"/")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_int_power(n1 : Value, n2 : Value)
+        n1 = n1.as(LcInt)
+        if n2.is_a? LcInt 
+            return internal.build_int(n1.val ** n2.as(LcInt).val)
+        else
+            return internal.lc_num_coerce(n1,n2,"^")
+        end
+        # Should never get here
+        return Null
+    end
+
+    def self.lc_int_to_s(n : Value)
+        return internal.build_string(n.as(LcInt).val.to_s)
+    end
+
+    def self.lc_int_to_f(n : Value)
+        return internal.build_float(n.as(LcInt).val.to_f)
+    end
+
+    
+
     IntClass = internal.lc_build_class_only("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
 
-    internal.lc_add_internal(IntClass,"+",:lc_int_sum,1)
-    
+    internal.lc_add_internal(IntClass,"+",:lc_int_sum,  1)
+    internal.lc_add_internal(IntClass,"-",:lc_int_sub,  1)
+    internal.lc_add_internal(IntClass,"*",:lc_int_mult, 1)
+    internal.lc_add_internal(IntClass,"\\",:lc_int_idiv,1)
+    internal.lc_add_internal(IntClass,"/",:lc_int_fdiv, 1)
+    internal.lc_add_internal(IntClass,"^",:lc_int_power,1)
+    internal.lc_add_internal(IntClass,"to_s",:lc_int_to_s,0)
+    internal.lc_add_internal(IntClass,"to_f",:lc_int_to_f,0)
     
 end

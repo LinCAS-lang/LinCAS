@@ -77,9 +77,9 @@ module LinCAS::Internal
 
     def self.coerce(v1 : Value, v2 : Value)
         if internal.lc_obj_responds_to? v1,"coerce"
-            return Exec.lc_call_fun(v1,"coerce",v2)
+            return Exec.lc_call_fun(v2,"coerce",v1)
         else 
-            lc_raise(LcTypeError,convert(:no_coerce) % {lc_typeof(v1),lc_typeof(v2)})
+            lc_raise(LcTypeError,convert(:no_coerce) % {lc_typeof(v2),lc_typeof(v1)})
             return Null
         end 
     end 

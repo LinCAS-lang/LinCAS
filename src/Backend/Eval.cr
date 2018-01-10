@@ -152,6 +152,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             # when NodeType::UNTIL
             # when NodeTypee::IF
             # when NodeType::SELECT
+            when NodeType::INCLUDE
+                eval_include(node)
         end
         return null
     end
@@ -171,12 +173,24 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         args = node.getBranches
         case node.type
             when NodeType::PRINT
-                (0...args.size).each do |i|
-                    LcKernel.out(eval_exp(args[i]))
+                if args.size > 0
+                    (0...args.size).each do |i|
+                        val = eval_exp(args[i])
+                        break if @error
+                        LcKernel.out(val)
+                    end
+                else
+                    print ""
                 end
             when NodeType::PRINTL
-                (0...args.size).each do |i|
-                    LcKernel.outl(eval_exp(args[i]))
+                if args.size > 0
+                    (0...args.size).each do |i|
+                        val = eval_exp(args[i])
+                        break if @error
+                        LcKernel.outl(val)
+                    end
+                else 
+                    puts
                 end
         end
     end
@@ -547,7 +561,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             name = unpack_name(name[0])
             mod  = find(name)
             mod  = define_module(mod,name)
-            push_frame(find_file(node),find_line(node),name)
         else
             scope = eval_namespace(namespace.as(Node),false)
             reopen(scope)
@@ -649,6 +662,17 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         exprv = eval_exp(expr)
         return null if @error
         set_local(name,exprv)
+    end
+
+    protected def eval_include(node : Node)
+        namespace = node.getBranches[0]
+        entry     = eval_namespace(namespace)
+        return nil if @error
+        if entry.is_a? ModuleEntry
+            internal.lc_include_module(current_scope,entry)
+        else
+            lc_raise(LcTypeError,convert(:not_a_module) % stringify_namespace(namespace))
+        end 
     end
 
 

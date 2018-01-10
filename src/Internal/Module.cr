@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017 Massimiliano Dal Mas
+# Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -32,8 +32,13 @@ module LinCAS::Internal
         return Id_Tab.addModule(name)
     end
 
-    def self.lc_include_module(klass : ClassEntry, mod : ModuleEntry)
-        klass.included << mod 
+    def self.lc_include_module(receiver : Structure, mod : ModuleEntry)
+        if receiver.included.includes? mod.path
+            # lc_warn()
+        else
+            internal.lc_copy_methods_as_instance_in(mod,receiver)
+            internal.lc_copy_consts_in(mod,receiver)
+        end
     end
 
     LcModule = internal.lc_build_module_only("Module")

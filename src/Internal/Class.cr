@@ -65,6 +65,17 @@ module LinCAS::Internal
         receiver.methods.addEntry(name,m)
     end
 
+    def self.lc_copy_consts_in(sender : Structure, receiver : Structure)
+        stab = sender.symTab
+        rtab = receiver.symTab
+        stab.each_key do |name|
+            entry = stab.lookUp(name)
+            if entry.is_a? ConstEntry
+                rtab.addEntry(name,entry)
+            end
+        end
+    end
+
     #########
 
     def self.lc_is_a(obj : Value, lcType)
