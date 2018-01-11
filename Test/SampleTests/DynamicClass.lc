@@ -1,0 +1,18 @@
+
+/**
+* This is an example of dynamic classes;
+* overloading a class after some object has been
+* already instantiated, will produce an immediate
+* effect on all the objects themselves (eg. adding a
+* a method to a class will add the method to all the
+* instances of that class)
+*/
+
+x := "String"
+
+class String {
+    void say_hello(){
+        printl "Hello!"
+    }
+}
+x.say_hello()

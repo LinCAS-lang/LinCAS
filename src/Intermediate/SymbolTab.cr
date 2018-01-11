@@ -209,7 +209,7 @@ module LinCAS
 
         def addConst(name,value)
             const = ConstEntry.new(name,value)
-            currentScope.addEntry(name,value)
+            currentScope.symTab.addEntry(name,const)
         end
 
         def exitScope

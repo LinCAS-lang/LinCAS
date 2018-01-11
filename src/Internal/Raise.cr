@@ -34,6 +34,7 @@ module LinCAS
             InternalError
             NameError
             NoMethodError
+            ZeroDivisionError
         end
 
         ERR_MESSAGE = {
@@ -47,6 +48,7 @@ module LinCAS
             :undefined_const=> "Undefined constant '%s'",
             :no_s_method    => "Undefined method for %s : %s",
             :no_method      => "Undefined method for '%s' object",
+            :undefined_id   => "Undefined local variable or constant %s",
             :protected_method => "Protected method called for '%s' object",
             :private_method => "Private method called for '%s' object",
             :no_coerce      => "Cant't coerce %s into %s",
@@ -69,6 +71,7 @@ module LinCAS
     LcInternalError = Internal::ErrType::InternalError
     LcNameError     = Internal::ErrType::NameError
     LcNoMethodError = Internal::ErrType::NoMethodError
+    LcZeroDivisionError = Internal::ErrType::ZeroDivisionError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

@@ -119,11 +119,11 @@ module LinCAS::Internal
         if method.is_a? MethodEntry
             return method 
         else 
-            parent = receiver.as(ClassEntry).parent 
+            parent = parent_of(receiver) 
             while parent 
                 method = seek_instance_method(parent,name)
                 return method if method.is_a? MethodEntry
-                parent = parent.parent 
+                parent = parent_of(parent)
             end
         end
         return 0
@@ -156,11 +156,11 @@ module LinCAS::Internal
             return method
         else
             if receiver.is_a? ClassEntry
-                parent = receiver.as(ClassEntry).parent 
+                parent = parent_of(receiver)
                 while parent 
                     method = seek_static_method2(parent,name)
                     return method if method.is_a? MethodEntry
-                    parent = parent.parent 
+                    parent = parent_of(parent) 
                 end
             end
         end
@@ -180,7 +180,7 @@ module LinCAS::Internal
         if obj.is_a? Structure 
             m = internal.seek_static_method(obj.as(Structure),method)
         else 
-            m = internal.seek_method(obj.klass,method)
+            m = internal.seek_method(obj.as(ValueR).klass,method)
         end
         return m.is_a? MethodEntry
     end

@@ -154,6 +154,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             # when NodeType::SELECT
             when NodeType::INCLUDE
                 eval_include(node)
+            when NodeType::ASSIGN
+                eval_assign(node)
+            when NodeType::CONST
+                eval_const(node)
         end
         return null
     end
@@ -195,7 +199,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
-    protected def eval_exp(node : Node)# : Internal::Value
+    protected def eval_exp(node : Node)
         case node.type
             when NodeType::STRING
                 string = node.getAttr(NKey::VALUE)
@@ -212,6 +216,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_global_id(node)
             when NodeType::LOCAL_ID
                 return eval_local_id(node)
+            when NodeType::NAMESPACE
+                return eval_namespace(node)
 #            when NodeType::ARRAY
 
 #            when NodeType::MATRIX
@@ -344,12 +350,20 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def eval_local_id(node : Node)
         name = unpack_name(node)
-        val = @callstack.getVar(name)
+        val = @callstack.getVar(name) 
         if val 
             return val 
         else
-            set_local(name,null)
-            return null 
+            obj = current_object
+            if obj.is_a? Structure
+                obj = obj.as(Structure)
+            else 
+                obj = obj.as(Internal::ValueR).klass
+            end
+            val = internal.lc_seek_const(obj,name) 
+            return val if val 
+            lc_raise(LcNameError,convert(:undefined_id) % name,node)
+            return null
         end
     end
 
@@ -550,7 +564,12 @@ class LinCAS::Eval < LinCAS::MsgGenerator
            check_name(name,id)
         end
         name = name.as(Structure).symTab.lookUp(unpack_name(names.last)) if last && names.size > 1
-        return name 
+        if name
+            return name 
+        else 
+            lc_raise(LcNameError,convert(:undefined_const) % stringify_namespace(node),node)
+            return null 
+        end 
     end
 
     protected def eval_module(node : Node)
@@ -650,7 +669,9 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     protected def eval_body(node : Node)
         branches = node.getBranches
         branches.each do |branch|
-            eval_stmt(branch.as(Node))
+            outr = eval_stmt(branch.as(Node))
+            break if @error
+            return outr if outr.is_a? StackFrame
         end
     end
 
@@ -675,6 +696,22 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end 
     end
 
+    protected def eval_const(node : Node)
+        branch   = node.getBranches[0]
+        branches = branch.as(Node).getBranches
+        id       = branches[0]
+        expr     = branches[1]
+        name     = unpack_name(id)
+        val      = eval_exp(expr)
+        return nil if @error 
+        centry = internal.lc_seek_const(current_scope,name)
+        if centry
+            lc_raise(LcNameError,"Constant '%s' already defined" % name)
+            return nil
+        end
+        internal.lc_define_const_locally(name,val.as(Internal::Value))
+    end
+
 
     def lc_raise(code,msg,node)
         backtrace = build_backtrace(node) if node
@@ -683,7 +720,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 err << code
                 err << ": "
                 err << msg
-                err << '\n'
                 err << backtrace
             end
             send_msg(error)
@@ -747,13 +783,13 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     protected def stringify_namespace(node : Node)
-        str = ""
-        names = node.getBranches
-        return String.build do |str|
+        names  = node.getBranches
+        nspace = String.build do |str|
             names.each do |el|
-                str << unpack_name(el)
+                str << unpack_name(el) << ':'
             end 
         end
+        return nspace[0...nspace.size - 1]
     end
     
 end

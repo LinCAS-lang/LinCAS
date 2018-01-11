@@ -11,7 +11,7 @@ void sum(v1,v3,v2 := 10){
     out(v3)
 }
 
-sum(3,3)*/
+sum(3,3)
 
 module B { 
     void hello(){
@@ -24,4 +24,12 @@ module B {
 }
 include B
 hello()
-private_hello()
+private_hello() */
+
+const Hello := "Hello"
+class String {
+    void self.say_hello() {
+        printl Hello 
+    }
+}
+String.say_hello()

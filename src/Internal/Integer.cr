@@ -85,7 +85,12 @@ module LinCAS::Internal
     def self.lc_int_idiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcInt)
         if n2.is_a? LcInt 
-            return internal.build_int(n1.val / n2.as(LcInt).val)
+            n2 = n2.as(LcInt)
+            if int2num(n1) == 0
+                lc_raise(LcZeroDivisionError,"(Division by 0)")
+                return LcInfinity
+            end
+            return internal.build_int(n1.val / n2.val)
         else
             return internal.lc_num_coerce(n1,n2,"\\")
         end
@@ -96,6 +101,9 @@ module LinCAS::Internal
     def self.lc_int_fdiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcInt)
         if n2.is_a? LcInt 
+            if int2num(n1) == 0
+                return LcInfinity
+            end
             return internal.build_float(n1.val / n2.as(LcInt).val.to_f)
         else
             return internal.lc_num_coerce(n1,n2,"/")

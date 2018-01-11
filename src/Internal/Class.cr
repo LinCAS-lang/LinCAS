@@ -23,46 +23,58 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
+
+    macro parent_of(klass)
+       {{klass}}.as(ClassEntry).parent
+    end
     
-    def self.lc_build_class_only(name)
+    def self.lc_build_class_only(name : String)
         return Id_Tab.addClass(name,true)
     end
 
-    def self.lc_build_class(name)
+    def self.lc_build_class(name : String)
         return Id_Tab.addClass(name)
     end
 
-    def self.lc_set_parent_class(klass : LinCAS::ClassEntry,parent : LinCAS::ClassEntry)
-        # internal.lc_raise() unless klass.parent.nil?
+    def self.lc_set_parent_class(klass : ClassEntry,parent : ClassEntry)
         klass.parent = parent
     end
 
-    def self.lc_add_method(receiver, name, method : LinCAS::MethodEntry)
+    def self.lc_add_method(receiver : Structure, name : String, method : MethodEntry)
         receiver.methods.addEntry(name,method)
     end
 
-    def self.lc_add_method_locally(name, method : LinCAS::MethodEntry)
+    def self.lc_add_method_locally(name : String, method : LinCAS::MethodEntry)
         Id_Tab.addMethod(name,method)
     end
 
-    def self.lc_add_internal(receiver,name,proc,arity)
+    def self.lc_add_internal(receiver : Structure,name : String,proc : Symbol,arity : Intnum)
         m = define_method(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_static(receiver,name,proc,arity)
+    def self.lc_add_static(receiver : Structure, name : String, proc : Symbol,arity : Intnum)
         m = define_static(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_singleton(receiver, name, proc,arity)
+    def self.lc_add_singleton(receiver : Structure, name : String, proc : Symbol,arity : Intnum)
         m = define_singleton(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_static_singleton(receiver, name, proc, arity)
+    def self.lc_add_static_singleton(receiver : Structure, name : String, proc : Symbol, arity : Intnum)
         m = define_static_singleton(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
+    end
+
+    def self.lc_define_const(str : Structure, name : String, const : Value)
+        centry = ConstEntry.new(name,const)
+        str.symTab.addEntry(name,centry)
+    end
+
+    def self.lc_define_const_locally(name : String, const : Value)
+        Id_Tab.addConst(name,const)
     end
 
     def self.lc_copy_consts_in(sender : Structure, receiver : Structure)
@@ -76,11 +88,56 @@ module LinCAS::Internal
         end
     end
 
+    def self.lc_seek_const(str : Structure, name : String)
+        const = Id_Tab.lookUp(name)
+        return unpack_const(const) if const 
+        if str.is_a? ModuleEntry
+            return str.as(ModuleEntry).symTab.lookUp(name)
+        else
+            const = str.as(ClassEntry).symTab.lookUp(name)
+            return unpack_const(const) if const 
+            parent = parent_of(str)
+            while parent
+                const = parent.symTab.lookUp(name)
+                return unpack_const(const) if const
+                parent = parent_of(parent)
+            end
+        end
+        return nil
+    end
+
+    def self.unpack_const(const)
+        if const.is_a? Structure
+            return const 
+        else
+            return const.as(ConstEntry).val
+        end
+    end
+
     #########
 
-    def self.lc_is_a(obj : Value, lcType)
-        # internal.lc_raise() unless lcType.is_a? Structure
-        
+    def self.lc_is_a(obj : Value, lcType : Value)
+        if lcType.is_a? Structure
+            lcType = lcType.as(Structure)
+        else
+            lc_raise(LcArgumentError,"Argument must be a class or a module")
+            return lcfalse
+        end
+        if obj.is_a? Structure
+            return obj.as(Structure).path == lcType.path
+        else
+            objClass = obj.as(ValueR).klass
+            if objClass.path == lcType.path
+                return lctrue
+            else
+                parent = parent_of(objClass)
+                while parent
+                    return lctrue if parent.as(ClassEntry).path == lcType.path 
+                    parent = parent_of(parent)
+                end
+            end
+        end
+        return lcfalse
     end
 
     def self.lc_class_class(obj : Value)
@@ -103,7 +160,7 @@ module LinCAS::Internal
 
     LcClass = internal.lc_build_class_only("Class")
 
-    internal.lc_add_internal(LcClass,"is_a", :lc_is_a       ,1)
+    internal.lc_add_internal(LcClass,"is_a", :lc_is_a,     1)
     internal.lc_add_internal(LcClass,"its_class",:lc_class_class,0)
     internal.lc_add_static(LcClass,"==",   :lc_class_eq,   1)
     internal.lc_add_static(LcClass,"<>",   :lc_class_ne,   1)

@@ -321,12 +321,4 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"[]",     :lc_str_index,   1)
 
 
-a = self.build_string("ciao")
-b = self.build_string("Hola")
-c = self.build_string("55")
-#lc_str_insert(b,4,a)
-#lc_str_set_index(b,3,c)
-#LcKernel.outl(b)
-
-
 end
