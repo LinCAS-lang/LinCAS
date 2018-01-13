@@ -66,6 +66,8 @@ module LinCAS::Internal
                 return call_internal_1(:lc_int_fdiv,args)
             when :lc_int_power
                 return call_internal_1(:lc_int_power,args)
+            when :lc_int_invert
+                return call_internal(:lc_int_invert,args)
             when :lc_int_to_s
                 return call_internal(:lc_int_to_s,args)
             when :lc_int_to_f
@@ -84,11 +86,41 @@ module LinCAS::Internal
                 return call_internal_1(:lc_float_fdiv,args)
             when :lc_float_power
                 return call_internal_1(:lc_float_power,args)
+            when :lc_float_invert
+                return call_internal(:lc_float_invert,args)
             when :lc_float_to_s
                 return call_internal(:lc_float_to_s,args)
             when :lc_float_to_i
-               return call_internal(:lc_float_to_i,args)                
+               return call_internal(:lc_float_to_i,args) 
+               
+            # Class Infinity
+            when :lc_inf_to_s
+                return call_internal(:lc_inf_to_s,args)
+            when :lc_inf_sum
+                return call_internal_1(:lc_inf_sum,args)
+            when :lc_inf_sub
+                return call_internal_1(:lc_inf_sub,args)
+            when :lc_inf_mult
+                return call_internal_1(:lc_inf_mult,args)
+            when :lc_inf_div
+                return call_internal_1(:lc_inf_div,args)
+            when :lc_inf_power
+                return call_internal_1(:lc_inf_power,args)
+            when :lc_inf_invert
+                return call_internal(:lc_inf_invert,args)
+            when :lc_inf_coerce
+                return call_internal_1(:lc_inf_coerce,args)
 
+            
+            # Class Nan
+            when :lc_nan_to_s
+                return call_internal(:lc_nan_to_s,args)
+
+            # Class Object
+            when :lc_obj_new
+                return call_internal(:lc_obj_new,args)
+            when :lc_obj_init
+                return call_internal(:lc_obj_init,args)
             else
                 return Null
         end

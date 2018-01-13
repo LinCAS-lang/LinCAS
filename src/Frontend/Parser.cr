@@ -36,7 +36,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS, TkType::NOT
+        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS
     } # + MATH_FUNCT
         
     START_SYNC_SET = { 
@@ -707,7 +707,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         add_op = {
             TkType::PLUS, TkType::MINUS
         }
-        if add_op.includes? @currentTk.ttype && prevNode != NOOP
+        if (add_op.includes? @currentTk.ttype) && (prevNode == NOOP)
             sign = @currentTk.ttype
             shift
         end 

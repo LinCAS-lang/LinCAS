@@ -28,13 +28,18 @@ module LinCAS::Internal
     end
 
     def self.boot_main_object
-        return internal.lc_instantiate_obj(MainClass)
+        return internal.lc_obj_new(MainClass)
     end
 
-    def self.lc_instantiate_obj(klass : ClassEntry)
+    def self.lc_obj_new(klass : Value)
+        klass = klass.as(ClassEntry)
         obj = LcObject.new
         obj.klass = klass
         obj.data  = klass.data.clone
+        return obj.as(Value) 
+    end
+
+    def self.lc_obj_init(obj : Value)
         return obj 
     end
 
@@ -43,6 +48,7 @@ module LinCAS::Internal
     internal.lc_set_parent_class(Obj,LcClass)
     internal.lc_set_parent_class(MainClass,Obj)
 
-    internal.lc_add_internal(Obj,"instantiate",:lc_instantiate_obj,0)
+    internal.lc_add_static(Obj,"new",:lc_obj_new,    0)
+    internal.lc_add_internal(Obj,"init",:lc_obj_init,0)
 
 end

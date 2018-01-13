@@ -33,22 +33,70 @@ module LinCAS::Internal
         attr ptr 
     end
 
-    def self.build_ary()
+    macro set_ary_size(ary,size)
+        {{ary}}.as(LcArray).size = {{size}}
+    end
+
+    macro ary_size(ary)
+        {{ary}}.as(LcArray).size
+    end
+
+    macro ary_at_index(ary,i)
+        {{ary}}.as(LcArray).ptr[{{i}}]
+    end
+
+    macro resize_ary_capa(ary,size)
+        f_size = ary_size(ary) + size
+        {{ary}}.as(LcArray).ptr = {{ary}}.as(LcArray).ptr.realloc(f_size)
+        set_ary_size(ary,size)
+    end
+
+    def self.tuple2array(*values : Value)
+        ary = build_ary(values.size)
+        values.each_with_index do |v,i|
+            ary.as(LcArray).ptr[i] = v 
+        end
+        return ary.as(Value)
+    end
+
+    def self.new_ary
+        ary = LcArray.new
+        ary.klass = AryClass
+        ary.data  = AryClass.data.clone
+        return ary.as(Value)
+    end
+
+    @[AlwaysInline]
+    def self.build_ary(size : Intnum)
+        ary = new_ary
+        resize_ary_capa(ary,size) if size > 0
+        return ary.as(Value)
+    end
+
+    @[AlwaysInline]
+    def self.build_ary(size : Value)
+        sz = internal.lc_num_to_cr_i(size)
+        if sz 
+            return build_ary(sz)
+        else 
+            return Null 
+        end 
     end
 
     def self.lc_ary_index(ary : Value, index : Value)
-        ary = ary.as(LcArray)
         if index.is_a? LcNum
             i = internal.lc_num_to_cr_i(index)
             return Null unless i.is_a? Intnum
-            if i > ary.size 
+            if i > ary_size(ary) 
                 return Null 
             else
-                return ary.ptr[i]
+                return ary_at_index(ary,i)
             end
-        elsif index.is_a? LcRange
+#        elsif index.is_a? LcRange
         end
         # Should never get here
         Null 
     end
+
+    AryClass = internal.lc_build_class_only("Array")
 end

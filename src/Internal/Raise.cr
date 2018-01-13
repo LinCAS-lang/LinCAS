@@ -35,6 +35,7 @@ module LinCAS
             NameError
             NoMethodError
             ZeroDivisionError
+            SystemStackError
         end
 
         ERR_MESSAGE = {
@@ -72,6 +73,7 @@ module LinCAS
     LcNameError     = Internal::ErrType::NameError
     LcNoMethodError = Internal::ErrType::NoMethodError
     LcZeroDivisionError = Internal::ErrType::ZeroDivisionError
+    LcSystemStackError = Internal::ErrType::SystemStackError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

@@ -85,6 +85,10 @@ module LinCAS::Internal
     def self.lc_float_idiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
+            if float2num(n2) == 0
+                lc_raise(LcZeroDivisionError,"(Division by 0)")
+                return positive_num(n1) ? LcInfinity : LcNinfinity
+            end
             return num2int((float2num(n1) / float2num(n2)).to_i)
         else
             return internal.lc_num_coerce(n1,n2,"\\")
@@ -96,6 +100,9 @@ module LinCAS::Internal
     def self.lc_float_fdiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
+            if float2num(n2) == 0
+                return positive_num(n1) ? LcInfinity : LcNinfinity
+            end
             return num2float(n1.val / n2.as(LcFloat).val)
         else
             return internal.lc_num_coerce(n1,n2,"/")
@@ -115,6 +122,10 @@ module LinCAS::Internal
         return Null
     end
 
+    def self.lc_float_invert(n : Value)
+        return internal.build_float(- float2num(n))
+    end
+
     def self.lc_float_to_s(n : Value)
         return internal.build_string(float2num(n).to_s)
     end
@@ -132,6 +143,7 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"\\",:lc_float_idiv,1)
     internal.lc_add_internal(FloatClass,"/",:lc_float_fdiv, 1)
     internal.lc_add_internal(FloatClass,"^",:lc_float_power,1)
-    internal.lc_add_internal(FloatClass,"to_s",:lc_float_to_s,0)
-    internal.lc_add_internal(FloatClass,"to_i",:lc_float_to_i,0)
+    internal.lc_add_internal(FloatClass,"invert",:lc_float_invert, 0)
+    internal.lc_add_internal(FloatClass,"to_s",:lc_float_to_s,     0)
+    internal.lc_add_internal(FloatClass,"to_i",:lc_float_to_i,     0)
 end

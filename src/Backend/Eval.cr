@@ -24,7 +24,7 @@
 
 class LinCAS::Eval < LinCAS::MsgGenerator
 
-    alias    LcKernel = Internal::LcKernel
+    alias LcKernel = Internal::LcKernel
     
     macro null
         Internal::Null
@@ -148,6 +148,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_void(node)
             when NodeType::CALL, NodeType::METHOD_CALL
                 eval_exp(node)
+            when NodeType::RETURN
+                return eval_return(node)
             # when NodeType::WHILE
             # when NodeType::UNTIL
             # when NodeTypee::IF
@@ -158,6 +160,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_assign(node)
             when NodeType::CONST
                 eval_const(node)
+            when NodeType::NEW
+                eval_new(node)
         end
         return null
     end
@@ -228,7 +232,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_call(node)
             when NodeType::METHOD_CALL
                 return eval_method_call(node)
-#            when NodeType::NEW
+            when NodeType::NEW
+                return eval_new(node)
                 
         else
             return eval_bin_op(node)
@@ -244,81 +249,53 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         r_val    = eval_exp(right).as(Internal::Value)
     end
 
-    protected def eval_bin_op(node : Node)# : Internal::Value
+    protected def eval_bin_op(node : Node)
+        l_val = uninitialized Internal::Value 
+        r_val = uninitialized Internal::Value
         case node.type
-            when NodeType::SUM
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value 
+            when NodeType::SUM 
                 calculate_binary(node)
                 return call_fun(node,l_val,"+",r_val)
-            when NodeType::SUB
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::SUB 
                 calculate_binary(node)
                 return call_fun(node,l_val,"-",r_val)
-            when NodeType::MUL
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::MUL 
                 calculate_binary(node)
                 return call_fun(node,l_val,"*",r_val)
-            when NodeType::FDIV
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::FDIV  
                 calculate_binary(node)
                 return call_fun(node,l_val,"/",r_val)
-            when NodeType::IDIV
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::IDIV 
                 calculate_binary(node)
                 return call_fun(node,l_val,"\\",r_val)
-            when NodeType::POWER
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::POWER 
                 calculate_binary(node)
                 return call_fun(node,l_val,"^",r_val)
             when NodeType::MOD
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value 
                 calculate_binary(node)
                 return call_fun(node,l_val,"%",r_val)
             when NodeType::AND
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 return call_fun(node,l_val,"&&",r_val)
-            when NodeType::OR 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::OR  
                 calculate_binary(node)
                 return call_fun(node,l_val,"||",r_val)
-            when NodeType::GR 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::GR  
                 calculate_binary(node)
                 return call_fun(node,l_val,">",r_val)
-            when NodeType::GE 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::GE  
                 calculate_binary(node)
                 return call_fun(node,l_val,">=",r_val)
             when NodeType::SM 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 return call_fun(node,l_val,"<",r_val)
             when NodeType::SE 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 return call_fun(node,l_val,"<=",r_val)
-            when NodeType::EQ
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
+            when NodeType::EQ 
                 calculate_binary(node)
                 return call_fun(node,l_val,"==",r_val)
             when NodeType::NE 
-                l_val = uninitialized Internal::Value 
-                r_val = uninitialized Internal::Value  
                 calculate_binary(node)
                 if internal.lc_obj_responds_to? l_val,"!="
                     return call_fun(node,l_val,"!=",r_val)
@@ -565,7 +542,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
         name = name.as(Structure).symTab.lookUp(unpack_name(names.last)) if last && names.size > 1
         if name
-            return name 
+            return internal.unpack_const(name) 
         else 
             lc_raise(LcNameError,convert(:undefined_const) % stringify_namespace(node),node)
             return null 
@@ -711,6 +688,38 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
         internal.lc_define_const_locally(name,val.as(Internal::Value))
     end
+
+    protected def eval_return(node : Node)
+        branch = node.getBranches[0]
+        result = eval_exp(branch)
+        return null if @error
+        frame = pop_frame
+        frame.return_val = result.as(Internal::Value)
+        return frame 
+    end 
+
+    protected def eval_new(node : Node)
+        branches  = node.getBranches
+        namespace = branches[0]
+        args      = branches[1]
+        entry     = eval_namespace(namespace)
+        if !(entry.is_a? ClassEntry)
+            lc_raise(LcTypeError,convert(:not_a_class) % stringify_namespace(namespace),node)
+            return null 
+        end
+        argv = eval_args(args)
+        obj  = call_fun(node,entry,"new").as(Internal::Value)
+        if internal.lc_obj_responds_to? obj, "init"
+            push_duplicated_frame
+            push_object(obj)
+            call_fun(obj,"init",argv)
+            pop_object
+            return obj 
+        else 
+            return obj 
+        end
+    end
+
 
 
     def lc_raise(code,msg,node)

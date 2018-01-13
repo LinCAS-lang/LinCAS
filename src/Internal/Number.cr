@@ -38,7 +38,8 @@ module LinCAS::Internal
         elsif value.is_a? LcFloat
             return value.as(LcFloat).val.to_i
         else
-            # internal.lc_raise()
+            lc_raise(LcTypeError,"No implicit converion of %s into Integer" % lc_typeof(value))
+            return nil 
         end
     end
 
@@ -55,16 +56,17 @@ module LinCAS::Internal
 
     def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
         if v1.is_a? LcNum && v2.is_a? LcNum
-            v1 = internal.build_float(v1.as(LcNum).val.to_f)
-            v2 = internal.build_float(v2.as(LcNum).val.to_f)
+            v1 = internal.num2float(v1.as(LcNum).val.to_f)
+            v2 = internal.num2float(v2.as(LcNum).val.to_f)
             Exec.lc_call_fun(v1,method,v2)
         else
             c = internal.coerce(v1,v2).as(Value)
             return Null if c == Null
+            #p internal.lc_ary_index(c,num2int(0)).class;gets
             return Exec.lc_call_fun(
-                internal.lc_ary_index(c,internal.num2int(0)),
+                internal.lc_ary_index(c,num2int(0)),
                 method,
-                internal.lc_ary_index(c,internal.num2int(1))
+                internal.lc_ary_index(c,num2int(1))
             )
         end 
     end
@@ -88,6 +90,12 @@ module LinCAS::Internal
         inf.data  = InfClass.data.clone
         inf.frozen = true
         return inf.as(Value)
+    end
+
+    def self.build_n_infinity
+        inf = build_infinity
+        inf.as(Inf).positive = false
+        return inf 
     end
             
     def self.lc_inf_sum(v1 : Value, v2 : Value)
@@ -127,7 +135,11 @@ module LinCAS::Internal
                 return LcInfinity
             end
         elsif v2.is_a? LcNum
-            return v1
+            if num2num(v2) == 0
+                return NanObj
+            else
+                return v1
+            end
         else
             return internal.lc_num_coerce(v1,v2,"*")
         end
@@ -137,7 +149,11 @@ module LinCAS::Internal
         if v2.is_a? Inf
             return NanObj
         elsif v2.is_a? LcNum
-            return v1 
+            if num2num(v2) == 0
+                return NanObj
+            else
+                return v1
+            end
         else 
             return internal.lc_num_coerce(v1,v2,"/")
         end
@@ -147,7 +163,7 @@ module LinCAS::Internal
         if v2.is_a? Inf
             return NanObj
         elsif v2.is_a? LcNum
-            if num2num == 0
+            if num2num(v2) == 0
                 return NanObj
             else
                 return v1
@@ -155,6 +171,25 @@ module LinCAS::Internal
         else 
             return internal.lc_num_coerce(v1,v2,"/")
         end
+    end
+
+    def self.lc_inf_invert(v : Value)
+        if is_positive(v)
+            return LcNinfinity
+        else
+            return LcInfinity
+        end
+    end
+
+    def self.lc_inf_to_s(v : Value)
+        return internal.build_string(String.build do |io|
+            io << '-' unless is_positive(v)
+            io << '∞'
+        end)
+    end
+
+    def self.lc_inf_coerce(v1 : Value, v2 : Value)
+        return tuple2array(v1,v2)
     end
 
     InfClass = internal.lc_build_class_only("Infinity")
@@ -165,9 +200,32 @@ module LinCAS::Internal
     internal.lc_add_internal(InfClass,"/",:lc_inf_div, 1)
     internal.lc_add_internal(InfClass,"\\",:lc_inf_div,1)
     internal.lc_add_internal(InfClass,"^",:lc_inf_power,1)
+    internal.lc_add_internal(InfClass,"coerce",:lc_inf_coerce,1)
+    internal.lc_add_internal(InfClass,"to_s",:lc_inf_to_s,    0)
+    internal.lc_add_internal(InfClass,"invert",:lc_inf_invert,0)
     
     LcInfinity  = internal.build_infinity
-    LcNinfinity = Inf.new.tap { |inf| inf.positive = false}
-    internal.lc_define_const(NumClass,"Infinity",LcInfinity)
+    LcNinfinity = internal.build_n_infinity
+    internal.lc_define_const(NumClass,"INFINITY",LcInfinity)
+
+    def self.build_nan
+        obj = LcNan.new
+        obj.klass  = NanClass
+        obj.data   = NanClass.data.clone
+        obj.frozen = true
+        return obj
+    end
+
+    def self.lc_nan_to_s(v : Value)
+        return internal.build_string("Nan")
+    end
+
+    NanClass = internal.lc_build_class_only("Nan")
+    internal.lc_set_parent_class(NanClass,NumClass)
+    internal.lc_add_internal(NanClass,"to_s",:lc_nan_to_s,0)
+
+    NanObj = internal.build_nan
+    internal.lc_define_const(NumClass,"NAN",NanObj)
+
     
 end

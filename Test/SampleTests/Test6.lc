@@ -1,35 +1,14 @@
-/*
-printl "Bang! " * 3
-printl 3.its_class() # <> 3.14.its_class()
 
-void out(param){
-    print param
-}
-
-void sum(v1,v3,v2 := 10){
-    printl v1 + v2
-    out(v3)
-}
-
-sum(3,3)
-
-module B { 
-    void hello(){
-        printl "Hello, world"
+class MyClass {
+    void init(){
+        printl "Hello, being created"
     }
 
-    void self.private_hello(){
-        printl "Private greetings"
-    }
+    void sum(a,b){
+        return a + b
+    } 
 }
-include B
-hello()
-private_hello() */
 
-const Hello := "Hello"
-class String {
-    void self.say_hello() {
-        printl Hello 
-    }
-}
-String.say_hello()
+obj := new MyClass()
+printl obj.sum(3,4)
+

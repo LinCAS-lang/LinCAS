@@ -111,7 +111,11 @@ module LinCAS::Internal
     end 
 
     macro call_internal_n(name,args)
-        internal.{{name.id}}({{args}})
+#        internal.{{name.id}}({{args}}[0]
+#            {% for i in 1...args.size %}
+#                ,{{args}}[i]
+#            {% end %}
+#        )
     end
 
     def self.seek_method(receiver : Structure, name)

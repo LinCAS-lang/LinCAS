@@ -27,7 +27,7 @@ module LinCAS::Internal
     module LcKernel
 
         macro internal 
-            LinCAS::Internal
+            Internal
         end
 
         macro obj_of(str_ptr)
@@ -47,11 +47,18 @@ module LinCAS::Internal
             elsif arg.is_a? LcFalse
                 STDOUT.print "false"
             elsif arg == Null
-                STDOUT.print "Null"
+                STDOUT.print "null"
             elsif arg.is_a? Structure
                 STDOUT.print arg.as(Structure).path.to_s
             elsif arg.is_a? LcNum
                 STDOUT.print arg.as(LcNum).val
+            else
+                arg = arg.as(Internal::Value)
+                if internal.lc_obj_responds_to? arg,"to_s"
+                    self.out(Exec.lc_call_fun(arg,"to_s"))
+                else 
+                    STDOUT.print internal.lc_typeof(arg)
+                end
             end
         end
 

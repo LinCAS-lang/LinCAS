@@ -55,7 +55,7 @@ module LinCAS
     
     class CallStack < Array(StackFrame)
         
-        MAX_CALLSTACK_DEPTH = 1500
+        MAX_CALLSTACK_DEPTH = 1100
 
         def initialize()
             super()
@@ -63,7 +63,7 @@ module LinCAS
         end
 
         def pushFrame(filename,line,callname)
-            # Internal.lc_raise() if MAX_CALLSTACK_DEPTH == @depth
+            Exec.lc_raise(LcSystemStackError,"Stack level too deep") if MAX_CALLSTACK_DEPTH == @depth
             @depth += 1
             self.push(StackFrame.new(filename,line,callname))
         end 
