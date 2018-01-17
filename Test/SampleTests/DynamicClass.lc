@@ -7,7 +7,6 @@
 * a method to a class will add the method to all the
 * instances of that class)
 */
-
 x := "String"
 
 class String {

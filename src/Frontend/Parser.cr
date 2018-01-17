@@ -139,7 +139,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     macro parseBlock(condition = true)
         {% if condition %}
-            if @currentTk.ttype == TkType::L_BRACE
+            if @currentTk.ttype == TkType::L_BRACE && @condition == 0
                 expandBlockInstructs
             end
         {% else %}
@@ -179,6 +179,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         @nowTime     = 0
         @sym         = 0
         @sourceLines = 0
+        @condition   = 0
         @withSummary = true
         @lineSet     = true
         @tokenDisplay = false
@@ -329,7 +330,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 end
         end
     ensure
-        checkEol unless @currentTk.is_a? EofTk 
+        checkEol unless @currentTk.is_a? EofTk || @currentTk.ttype == TkType::R_BRACE
     end
     
     protected def parseClass : Node
@@ -358,11 +359,6 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 parent = makeDummyName
             end
             node.setAttr(NKey::PARENT,parent)
-     #       else
-     #   parent = @nodeFactory.makeNode(NodeType::LOCAL_ID)
-     #   parent.setAttr(NKey::ID,"Object")
-     #   node.setAttr(NKey::PARENT,parent)
-     #   node.addBranch(parseBody)
         end
         node.addBranch(parseBody)
         @cm -= 1
@@ -651,7 +647,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseExp(firstNode = NOOP) : Node
-        root = parseRel(firstNode)
+        p @currentTk.text
         tkType = @currentTk.ttype
         while (boolOpInclude? tkType)
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
@@ -846,6 +842,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 root = parseFilemc
             when TkType::DIRMC
                 root = parseDirmc
+            when TkType::READS
+                shift
+                root = @nodeFactory.makeNode(NodeType::READS)
             else
                 if @currentTk.ttype == TkType::ERROR
                     @errHandler.flag(@currentTk,@currentTk.value,self)
@@ -1299,7 +1298,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         if !(EXP_SYNC_SET.includes? @currentTk.ttype)
             @errHandler.flag(@currentTk,ErrCode::MISSING_EXPR,self)
         else
+            @condition += 1
             node.addBranch(parseExp)
+            @condition -= 1
         end 
         node.addBranch(parseBody)
         return node
@@ -1324,7 +1325,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         else
             shift
         end 
+        @condition += 1
         condition = parseExp
+        @condition -= 1
         setLine(condition)
         node.addBranch(condition)
         return node 
@@ -1342,7 +1345,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         if {TkType::THEN, TkType::L_BRACE}.includes? tkType
             @errHandler.flag(@currentTk,ErrCode::MISSING_EXPR,self)
         else
+            @condition += 1
             node.addBranch(parseExp)
+            @condition -= 1
         end 
         sync(if_sync_set)
         shift if @currentTk.ttype == TkType::THEN
@@ -1350,8 +1355,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         while @currentTk.ttype == TkType::EOL && @nextTk.ttype == TkType::EOL
             shift 
         end 
-        shift if {TkType::ELSE, TkType::ELSIF} .includes? @nextTk.ttype
-        if @currentTk.ttype = TkType::ELSIF
+        shift if {TkType::ELSE, TkType::ELSIF}.includes? @nextTk.ttype
+        if @currentTk.ttype == TkType::ELSIF
             node.addBranch(parseIf)
         elsif @currentTk.ttype == TkType::ELSE 
             shift 

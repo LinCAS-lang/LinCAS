@@ -1,14 +1,12 @@
 
-class MyClass {
-    void init(){
-        printl "Hello, being created"
+void if_void(param){
+    if param.is_a(Number){
+        return  "This is a number"
+        printl "here it came"
     }
-
-    void sum(a,b){
-        return a + b
-    } 
+    else {
+        return "This is not a number"
+    }
 }
 
-obj := new MyClass()
-printl obj.sum(3,4)
-
+printl if_void(9)

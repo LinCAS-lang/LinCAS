@@ -114,14 +114,10 @@ module LinCAS
 
     class Data
         def initialize
-            @data = Hash(Symbol,LinCAS::Internal::Value).new
+            @data = Hash(String,LinCAS::Internal::Value).new
         end
 
         def addVar(var : String,value)
-            @data[var] = value
-        end
-
-        def addVar(var : Symbol,value)
             @data[var] = value
         end
 

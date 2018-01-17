@@ -56,7 +56,7 @@ class LinCAS::Node
     end
 
     def getAttr(key : NKey)
-        return @attrs[key] if @attrs.keys.includes? key
+        return @attrs[key]?
     end
 
     def getAttrs

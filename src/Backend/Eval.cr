@@ -150,9 +150,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_exp(node)
             when NodeType::RETURN
                 return eval_return(node)
-            # when NodeType::WHILE
+             when NodeType::WHILE
+                return eval_while(node)
             # when NodeType::UNTIL
-            # when NodeTypee::IF
+            when NodeType::IF
+                return eval_if(node)
             # when NodeType::SELECT
             when NodeType::INCLUDE
                 eval_include(node)
@@ -234,7 +236,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_method_call(node)
             when NodeType::NEW
                 return eval_new(node)
-                
+            when NodeType::READS
+                return eval_reads(node)
+            when NodeType::NULL
+                return null
         else
             return eval_bin_op(node)
         end
@@ -322,12 +327,20 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     protected def eval_global_id(node : Node)
-        
+        obj  = current_object
+        name = unpack_name(node)
+        val  = obj.data.getVar(name)
+        if val
+            return val 
+        else 
+            obj.data.addVar(name,null)
+            return null 
+        end
     end
 
     protected def eval_local_id(node : Node)
-        name = unpack_name(node)
-        val = @callstack.getVar(name) 
+        name = unpack_name(node) 
+        val = @callstack.getVar(name)   
         if val 
             return val 
         else
@@ -501,7 +514,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             internal.lc_set_parent_class(klass.as(ClassEntry),parent.as(ClassEntry)) 
         elsif !klass.as(ClassEntry).parent.nil? && parent
             lc_raise(LcTypeError,convert(:superclass_err) % name)
-        else
+        elsif klass.as(ClassEntry).parent.nil?
             internal.lc_set_parent_class(klass.as(ClassEntry),Internal::Obj)
         end
         eval_body(body)
@@ -659,7 +672,17 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         name  = unpack_name(var)
         exprv = eval_exp(expr)
         return null if @error
-        set_local(name,exprv)
+        if var.type == NodeType::LOCAL_ID
+            set_local(name,exprv)
+        else 
+            obj = current_object
+            if obj.as(Internal::ValueR).frozen
+                lc_raise(LcFrozenError,convert(:modify_frozen),node)
+                return null 
+            else 
+                obj.data.addVar(name,exprv.as(Internal::Value))
+            end 
+        end
     end
 
     protected def eval_include(node : Node)
@@ -717,6 +740,44 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             return obj 
         else 
             return obj 
+        end
+    end
+
+    protected def eval_if(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        then_b    = branches[1]
+        else_b    = branches[2]?
+        if eval_condition(condition)
+            out_v = eval_body(then_b)
+            return null if @error
+            return out_v if out_v.is_a? StackFrame
+        elsif else_b
+            out_v = eval_body(else_b.as(Node))
+            return null if @error
+            return out_v if out_v.is_a? StackFrame
+        end 
+        return null
+    end
+
+    protected def eval_while(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        body      = branches[1]
+        while eval_condition(condition)
+            out_v = eval_body(body)
+            return null if @error
+            return out_v if out_v.is_a? StackFrame
+        end 
+        return null
+    end
+
+    protected def eval_condition(node : Node)
+        value = eval_exp(node)
+        if value == null || value == Internal::LcFalse
+            return false 
+        else 
+            return true
         end
     end
 

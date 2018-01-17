@@ -73,6 +73,18 @@ module LinCAS::Internal
             when :lc_int_to_f
                 return call_internal(:lc_int_to_f,args)
 
+            # Number class
+            when :lc_num_eq
+                return call_internal_1(:lc_num_eq,args)
+            when :lc_num_gr
+                return call_internal_1(:lc_num_gr,args)
+            when :lc_num_sm
+                return call_internal_1(:lc_num_sm,args)
+            when :lc_num_ge
+                return call_internal_1(:lc_num_ge,args)
+            when :lc_num_se
+                return call_internal_1(:lc_num_se,args)
+
             # Class Float
             when :lc_float_sum 
                 return call_internal_1(:lc_float_sum,args)

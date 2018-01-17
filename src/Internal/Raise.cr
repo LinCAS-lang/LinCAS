@@ -36,6 +36,7 @@ module LinCAS
             NoMethodError
             ZeroDivisionError
             SystemStackError
+            FrozenError
         end
 
         ERR_MESSAGE = {
@@ -53,7 +54,8 @@ module LinCAS
             :protected_method => "Protected method called for '%s' object",
             :private_method => "Private method called for '%s' object",
             :no_coerce      => "Cant't coerce %s into %s",
-            :few_args       => "Wrong number of arguments (%i instead of %i)"
+            :few_args       => "Wrong number of arguments (%i instead of %i)",
+            :modify_frozen  => "Attempted to modify a frozen object"
         }
 
         class LcError < BaseC
@@ -72,6 +74,7 @@ module LinCAS
     LcInternalError = Internal::ErrType::InternalError
     LcNameError     = Internal::ErrType::NameError
     LcNoMethodError = Internal::ErrType::NoMethodError
+    LcFrozenError   = Internal::ErrType::FrozenError
     LcZeroDivisionError = Internal::ErrType::ZeroDivisionError
     LcSystemStackError = Internal::ErrType::SystemStackError
 

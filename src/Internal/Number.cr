@@ -71,8 +71,75 @@ module LinCAS::Internal
         end 
     end
 
+    def self.lc_num_eq(n1 : Value, n2 : Value)
+        if n2.is_a? LcNum
+            if num2num(n1) == num2num(n2)
+                return lctrue
+            else 
+                return lcfalse
+            end
+        else 
+            return lc_num_coerce(n1,n2,"==")
+        end
+    end
+
+    def self.lc_num_gr(n1 : Value, n2 : Value)
+        if n2.is_a? LcNum
+            if num2num(n1) > num2num(n2)
+                return lctrue
+            else 
+                return lcfalse
+            end
+        else 
+            return lc_num_coerce(n1,n2,">")
+        end
+    end
+
+    def self.lc_num_sm(n1 : Value, n2 : Value)
+        if n2.is_a? LcNum
+            if num2num(n1) < num2num(n2)
+                return lctrue
+            else 
+                return lcfalse
+            end
+        else 
+            return lc_num_coerce(n1,n2,"<")
+        end
+    end
+
+    def self.lc_num_ge(n1 : Value, n2 : Value)
+        if n2.is_a? LcNum
+            if num2num(n1) >= num2num(n2)
+                return lctrue
+            else 
+                return lcfalse
+            end
+        else 
+            return lc_num_coerce(n1,n2,">=")
+        end
+    end
+
+    def self.lc_num_se(n1 : Value, n2 : Value)
+        if n2.is_a? LcNum
+            if num2num(n1) <= num2num(n2)
+                return lctrue
+            else 
+                return lcfalse
+            end
+        else 
+            return lc_num_coerce(n1,n2,"<=")
+        end
+    end
+
+
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,LcClass)
+
+    internal.lc_add_internal(NumClass,"==",:lc_num_eq, 1)
+    internal.lc_add_internal(NumClass,">",:lc_num_gr,  1)
+    internal.lc_add_internal(NumClass,"<",:lc_num_sm,  1)
+    internal.lc_add_internal(NumClass,">=",:lc_num_ge, 1)
+    internal.lc_add_internal(NumClass,"<=",:lc_num_se, 1)
 
     # Definition of Infinity:Class methods
 
