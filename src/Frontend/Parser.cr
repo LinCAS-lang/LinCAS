@@ -575,6 +575,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             TkType::PLUS_EQ, TkType::MINUS_EQ, TkType::STAR_EQ, TkType::SLASH_EQ, 
             TkType::BSLASH_EQ, TkType::MOD_EQ, TkType::POWER_EQ, TkType::APPEND
         }
+        tk   = @currentTk
         node = parseExp
         tkType = @currentTk.ttype
         if  tkType == TkType::COLON_EQ
@@ -582,8 +583,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         elsif assign_ops.includes? tkType
             assignCheck(node)
             node = manageAssignOps(node)
+        else 
+            setLine(tk,node)
         end
-        setLine(node)
         return node
     end
 
@@ -647,7 +649,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseExp(firstNode = NOOP) : Node
-        p @currentTk.text
+        root = parseRel(firstNode)
         tkType = @currentTk.ttype
         while (boolOpInclude? tkType)
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
@@ -984,6 +986,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseLocalID : Node
         node = @nodeFactory.makeNode(NodeType::LOCAL_ID)
+        setLine(node)
         node.setAttr(NKey::ID,@currentTk.text)
         shift
         return node
@@ -991,6 +994,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseGlobalID : Node
         node = @nodeFactory.makeNode(NodeType::GLOBAL_ID)
+        setLine(node)
         node.setAttr(NKey::ID,@currentTk.text)
         shift
         return node
@@ -1169,6 +1173,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             TkType::R_PAR
         } + eol_set + EXP_SYNC_SET
         node = @nodeFactory.makeNode(NodeType::NEW)
+        setLine(node)
         shift
         sync(new_sinc_set)
         if {TkType::GLOBAL_ID, TkType::LOCAL_ID}.includes? @currentTk.ttype
@@ -1647,6 +1652,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     @[AlwaysInline]
     private def setLine(node : Node) : ::Nil
         node.setAttr(NKey::LINE,@currentTk.line)
+    end
+
+    @[AlwaysInline]
+    private def setLine(tk : Token, node : Node)
+        node.setAttr(NKey::LINE,tk.line)
     end
     
 end

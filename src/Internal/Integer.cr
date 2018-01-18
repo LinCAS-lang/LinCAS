@@ -116,6 +116,18 @@ module LinCAS::Internal
         return Null
     end
 
+    def self.lc_int_odd(n : Value)
+        if int2num(n).odd? 
+            return lctrue
+        else 
+            return lcfalse
+        end 
+    end
+
+    def self.lc_int_even(n : Value)
+        return internal.lc_bool_invert(lc_int_odd(n))
+    end
+
     def self.lc_int_to_s(n : Value)
         return internal.build_string(int2num(n).to_s)
     end
@@ -139,6 +151,8 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"\\",:lc_int_idiv,1)
     internal.lc_add_internal(IntClass,"/",:lc_int_fdiv, 1)
     internal.lc_add_internal(IntClass,"^",:lc_int_power,1)
+    internal.lc_add_internal(NumClass,"odd",:lc_int_odd,       0)
+    internal.lc_add_internal(NumClass,"even",:lc_int_even,     0)
     internal.lc_add_internal(IntClass,"invert",:lc_int_invert, 0)
     internal.lc_add_internal(IntClass,"to_s",:lc_int_to_s,     0)
     internal.lc_add_internal(IntClass,"to_f",:lc_int_to_f,     0)

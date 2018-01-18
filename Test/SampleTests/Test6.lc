@@ -1,12 +1,5 @@
 
-void if_void(param){
-    if param.is_a(Number){
-        return  "This is a number"
-        printl "here it came"
-    }
-    else {
-        return "This is not a number"
-    }
+string := "I'm a man"
+for i : 0 to 8 {
+    printl string[i]
 }
-
-printl if_void(9)

@@ -49,8 +49,8 @@ ENV["libDir"] = ""
 parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test6.lc"))
 #parser.displayTokens
 ast = parser.parse
-astPrinter = AstPrinter.new
+#astPrinter = AstPrinter.new
 #astPrinter.printAst(ast.as(Node)) if ast
 Exec.eval(ast)
-s_printer = SymTabPrinter.new 
+#s_printer = SymTabPrinter.new 
 #s_printer.printSTab(Id_Tab.getRoot)

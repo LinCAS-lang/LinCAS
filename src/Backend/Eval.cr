@@ -98,6 +98,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @callstack.setVar({{name}}.as(String),{{value}}.as(Internal::Value))
     end 
 
+    macro delete_local(name)
+        @callstack.deleteVar({{name}}.as(String))
+    end
+
     macro bind_method(scope,name,method)
         {{scope}}.methods.addEntry({{name}},{{method}})
     end
@@ -107,7 +111,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         internal.send({{name}},{{args}})
     end
 
-    @error : Internal::LcError?
+    @error : Internal::Value?
 
     def initialize
         @callstack  = CallStack.new
@@ -152,10 +156,12 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_return(node)
              when NodeType::WHILE
                 return eval_while(node)
-            # when NodeType::UNTIL
+            when NodeType::UNTIL
+                return eval_until(node)
             when NodeType::IF
                 return eval_if(node)
-            # when NodeType::SELECT
+            when NodeType::SELECT
+                return eval_select(node)
             when NodeType::INCLUDE
                 eval_include(node)
             when NodeType::ASSIGN
@@ -164,6 +170,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_const(node)
             when NodeType::NEW
                 eval_new(node)
+            when NodeType::TRY 
+                return eval_try(node)
+            when NodeType::BODY 
+                return eval_body(node)
         end
         return null
     end
@@ -772,6 +782,59 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         return null
     end
 
+    protected def eval_until(node : Node)
+        branches  = node.getBranches
+        body      = branches[0]
+        condition = branches[1]
+        loop do 
+            out_v = eval_body(body)
+            return null if @error 
+            return out_v if out_v.is_a? StackFrame
+            return null if eval_condition(condition)           
+        end
+    end
+
+    protected def eval_select(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        c_value   = eval_exp(condition).as(Internal::Value)
+        return null if @error
+        opt       = find_opt(branches,c_value)
+        return null if @error
+        if opt
+            out_v = eval_body(opt.as(Node))
+            return null if @error || !(out_v.is_a? StackFrame)
+            return out_v
+        end 
+        return null
+    end
+
+    protected def find_opt(branches : Array(Node),c : Internal::Value)
+        optHash = {} of (Internal::Value | String) => Node
+        i       = 1
+        _else   = nil
+        while i < branches.size 
+            optNode = branches[i]
+            if optNode.type == NodeType::CASE
+                optBranches = optNode.getBranches
+                optList     = optBranches[0].getBranches
+                optBody     = optBranches[1]
+                optList.each do |opt|
+                    opt_v = eval_exp(opt)
+                    return nil if @error
+                    if call_fun(opt,c,"==",opt_v.as(Internal::Value)) == Internal::LcTrue
+                        return optBody
+                    end
+                end
+            else 
+                body  = optNode.getBranches[0]
+                _else = body
+            end 
+            i += 1
+        end
+        return _else
+    end
+
     protected def eval_condition(node : Node)
         value = eval_exp(node)
         if value == null || value == Internal::LcFalse
@@ -781,7 +844,32 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
-
+    protected def eval_try(node : Node)
+        branches  = node.getBranches
+        try       = branches[0]
+        catch     = branches[1]?
+        @try += 1
+        out_v     = eval_body(try)
+        if @error
+            if catch 
+                catch_branches = catch.getBranches
+                id             = catch_branches[0]
+                body           = catch_branches[1]
+                name           = unpack_name(id)
+                set_local(name,@error)
+                @error = nil
+                out_v  = eval_body(body)
+                delete_local(name)
+                return out_v if out_v.is_a? StackFrame
+                return null
+            end
+        else 
+           return out_v if out_v.is_a? StackFrame
+           return null 
+        end 
+    ensure 
+        @try -= 1
+    end
 
     def lc_raise(code,msg,node)
         backtrace = build_backtrace(node) if node
@@ -794,21 +882,24 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             end
             send_msg(error)
         else
+            @error = internal.build_error(code,msg,backtrace.as(String))
         end
         null
     end
 
     def lc_raise(code,msg)
+        backtrace = @callstack.getBacktrace
         if @try == 0
             error = String.build do |str|
                 str << '\n'
                 str << code
                 str << ": "
                 str << msg 
-                str << @callstack.getBacktrace
+                str << backtrace
             end
             send_msg(error)
-        else 
+        else
+            @error = internal.build_error(code,msg,backtrace.as(String)) 
         end 
         null
     end
@@ -835,19 +926,21 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end
 
     protected def find_line(node : Node)
-        line = node.getAttr(NKey::LINE)
-        while !line
-            node = node.parent 
+        line = node.getAttr(NKey::LINE) 
+        node = node.parent
+        while (!line) && node
             line = node.getAttr(NKey::LINE)
+            node = node.parent
         end 
         return line 
     end
 
     protected def find_file(node : Node)
         filename = node.getAttr(NKey::FILENAME)
-        while !filename
-            node     = node.parent 
+        node = node.parent
+        while !filename && node
             filename = node.getAttr(NKey::FILENAME)
+            node = node.parent
         end 
         return filename
     end

@@ -107,7 +107,7 @@ module LinCAS::Internal
     end 
 
     macro call_internal_2(name,args)
-        internal.{{name.id}}({{arg[0]}},{{arg[1]}},{{arg[3]}})
+        internal.{{name.id}}({{args}}[0],{{args}}[1],{{args}}[2])
     end 
 
     macro call_internal_n(name,args)
@@ -120,17 +120,17 @@ module LinCAS::Internal
 
     def self.seek_method(receiver : Structure, name)
         method = seek_instance_method(receiver,name)
-        if method.is_a? MethodEntry
+        if method != 0
             return method 
         else 
             parent = parent_of(receiver) 
             while parent 
                 method = seek_instance_method(parent,name)
-                return method if method.is_a? MethodEntry
+                return method if method != 0
                 parent = parent_of(parent)
             end
         end
-        return 0
+        return method
     end
 
     def self.seek_instance_method(receiver : Structure,name)

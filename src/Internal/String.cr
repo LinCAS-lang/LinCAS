@@ -73,6 +73,17 @@ module LinCAS::Internal
         end 
     end
 
+    def self.string2cr(value : Value)
+        value = value.as(LcString)
+        ptr   = value.str_ptr
+        size  = value.size
+        return String.build do |io| 
+            (0...size).each do |i|
+                io << ptr[i]
+            end
+        end 
+    end
+
     def self.build_string(value)
         str   = LcString.new
         str.klass = StringClass
@@ -171,7 +182,7 @@ module LinCAS::Internal
     def self.lc_str_include(str1 : Value ,str2)
         # To implement: argument check
         str1  = str1.as(LcString)
-        s_ptr = libc.strstr(obj_of(str1).str_ptr,obj_of(str2).str_ptr)
+        s_ptr = libc.strstr(str1.str_ptr,str2.as(LcString).str_ptr)
         if s_ptr.null?
              return lcfalse
         else 
@@ -238,10 +249,12 @@ module LinCAS::Internal
             return Null
         else
             x = internal.lc_num_to_cr_i(index)
-            if x > obj_of(str).size - 1
-                return Null 
-            else
-                return internal.build_string(obj_of(str).str_ptr[x].to_s)
+            if x 
+                if x > str_size(str) - 1
+                    return Null 
+                else
+                    return internal.build_string(str.str_ptr[x].to_s)
+                end
             end
         end
     end
@@ -314,7 +327,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"+",      :lc_str_concat,  1)
     internal.lc_add_internal(StringClass,"concat", :lc_str_concat,  1)
     internal.lc_add_internal(StringClass,"*",      :lc_str_multiply,1)
-    internal.lc_add_internal(StringClass,"include",:lc_str_include, 1)
+    internal.lc_add_internal(StringClass,"includes",:lc_str_include, 1)
     internal.lc_add_internal(StringClass,"==",     :lc_str_compare, 1)
     internal.lc_add_internal(StringClass, "<>",    :lc_str_icompare,1)
     internal.lc_add_internal(StringClass,"clone",  :lc_str_clone,   0)

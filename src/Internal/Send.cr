@@ -52,6 +52,16 @@ module LinCAS::Internal
                 return call_internal_1(:lc_str_concat,args)
             when :lc_str_multiply
                 return call_internal_1(:lc_str_multiply,args)
+            when :lc_str_include
+                return call_internal_1(:lc_str_include,args)
+            when :lc_str_compare
+                return  call_internal_1(:lc_str_compare,args)
+            when :lc_str_icompare
+                return call_internal_1(:lc_str_icompare,args)
+            when :lc_str_clone
+                call_internal(:lc_str_clone,args)
+            when :lc_str_index
+                call_internal_1(:lc_str_index,args)
             
             # Class `Integer`
             when :lc_int_sum
@@ -72,6 +82,10 @@ module LinCAS::Internal
                 return call_internal(:lc_int_to_s,args)
             when :lc_int_to_f
                 return call_internal(:lc_int_to_f,args)
+            when :lc_int_odd
+                return call_internal(:lc_int_odd,args)
+            when :lc_int_even
+                return call_internal(:lc_int_even,args)
 
             # Number class
             when :lc_num_eq
@@ -133,6 +147,18 @@ module LinCAS::Internal
                 return call_internal(:lc_obj_new,args)
             when :lc_obj_init
                 return call_internal(:lc_obj_init,args)
+
+            # Error Class
+            when :lc_err_new
+                call_internal(:lc_err_new,args)
+            when :lc_err_init
+                call_internal_2(:lc_err_init,args)
+            when :lc_err_msg 
+                call_internal(:lc_err_msg,args)
+            when :lc_err_backtrace
+                call_internal(:lc_err_backtrace,args)
+            when :lc_err_full_msg
+                call_internal(:lc_err_full_msg,args)
             else
                 return Null
         end

@@ -131,6 +131,8 @@ module LinCAS::Internal
         end
     end
 
+    
+
 
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,LcClass)

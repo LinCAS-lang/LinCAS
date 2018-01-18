@@ -24,9 +24,10 @@
 
 class LinCAS::Node
     
+    @parent : Node?
     def initialize(@type : NodeType)
         @branches = [] of Node
-        @parent   = uninitialized Node
+        @parent   = nil
         @attrs    = {} of NKey => (String | Node | Int32 | Int64 | Float32 | Float64 | VoidVisib)
     end
 
@@ -52,6 +53,9 @@ class LinCAS::Node
     end
 
     def setAttr(key : NKey,value)
+        if value.is_a? Node 
+            value.parent(self) 
+        end
         @attrs[key] = value
     end
 

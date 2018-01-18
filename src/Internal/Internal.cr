@@ -37,6 +37,13 @@ module LinCAS::Internal
         getter klass 
         getter frozen
         getter data
+        
+        def ==(other)
+            return false if self.class != other.class 
+            if other.is_a? BaseS
+                return self.klass.path == other.as(BaseS).klass.path
+            end
+        end
     end
 
     abstract class BaseC
@@ -49,6 +56,14 @@ module LinCAS::Internal
         getter klass 
         getter frozen
         getter data
+
+        def ==(other)
+            return false if self.class != other.class 
+            if other.is_a? BaseC
+                return self.klass.path == other.as(BaseC).klass.path
+            end
+            return false
+        end
     end
 
     lib LibC
