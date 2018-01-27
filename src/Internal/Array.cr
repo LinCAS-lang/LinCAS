@@ -144,7 +144,7 @@ module LinCAS::Internal
     end
 
     def self.lc_build_ary_new(klass : Value)
-        p "Called"
+
         return new_ary 
     end
 
