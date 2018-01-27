@@ -36,6 +36,7 @@ module LinCAS
             ZeroDivisionError
             SystemStackError
             FrozenError
+            IndexError
         end
 
         ERR_MESSAGE = {
@@ -81,11 +82,11 @@ module LinCAS
             return err.as(Value)
         end
 
-        def self.lc_err_init(err : Value, body : Value, backtrace : Value)
+        def self.lc_err_init(err : Value, body : Value)#, backtrace : Value)
             err = err.as(LcError)
-            klass         = err.klass.to_s
+            klass         = err.klass.name
             err.body      = klass + ':' + ' ' + string2cr(body)
-            err.backtrace = string2cr(backtrace)
+            #err.backtrace = string2cr(backtrace)
         end
 
         def self.lc_err_msg(err : Value)
@@ -108,6 +109,7 @@ module LinCAS
         internal.lc_add_static_singleton(ErrClass,"new",:lc_err_new,    0)
         internal.lc_add_internal(ErrClass,"init",:lc_err_init,          2)
         internal.lc_add_internal(ErrClass,"to_s",:lc_err_msg,           0)
+        internal.lc_add_internal(ErrClass,"message",:lc_err_msg,         0)
         internal.lc_add_internal(ErrClass,"backtrace",:lc_err_backtrace,0)
         internal.lc_add_internal(ErrClass,"full_msg",:lc_err_full_msg,  0)
 
@@ -138,6 +140,9 @@ module LinCAS
         SysStackErrClass = internal.lc_build_class_only("SystemStackError")
         internal.lc_set_parent_class(SysStackErrClass,ErrClass)
 
+        IndexErrClass = internal.lc_build_class_only("IndexError")
+        internal.lc_set_parent_class(IndexErrClass,ErrClass)
+
         ErrDict = {
             ErrType::TypeError      => TypeErrClass,
             ErrType::ArgumentError  => ArgErrClass,
@@ -146,7 +151,8 @@ module LinCAS
             ErrType::NoMethodError  => NoMErrClass,
             ErrType::ZeroDivisionError => ZeroDivErrClass,
             ErrType::SystemStackError  => SysStackErrClass,
-            ErrType::FrozenError       => FrozenErrClass
+            ErrType::FrozenError       => FrozenErrClass,
+            ErrType::IndexError     => IndexErrClass
         }
 
 
@@ -165,6 +171,7 @@ module LinCAS
     LcFrozenError   = Internal::ErrType::FrozenError
     LcZeroDivisionError = Internal::ErrType::ZeroDivisionError
     LcSystemStackError = Internal::ErrType::SystemStackError
+    LcIndexError    = Internal::ErrType::IndexError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

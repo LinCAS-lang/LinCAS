@@ -596,6 +596,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         }
         sync(assign_sync_set)
         node = @nodeFactory.makeNode(NodeType::ASSIGN)
+        setLine(node)
         if @currentTk.ttype == TkType::COLON_EQ && !(var)
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
             node.addBranch(makeDummyName)
@@ -618,10 +619,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def manageAssignOps(prevNode : Node) : Node
+        node    = @nodeFactory.makeNode(NodeType::ASSIGN)
+        setLine(node)
         opTkType = @currentTk.ttype
         shift
         expr    = parseExp
-        node    = @nodeFactory.makeNode(NodeType::ASSIGN)
         expNode = nil
         node.addBranch(prevNode)
         case opTkType
@@ -641,6 +643,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 makeOpNode(NodeType::POWER,prevNode,expr)
             when TkType::APPEND
                 node = @nodeFactory.makeNode(NodeType::APPEND)
+                setLine(node)
                 node.addBranch(prevNode)
                 node.addBranch(expr)
         end

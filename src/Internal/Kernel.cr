@@ -36,34 +36,35 @@ module LinCAS::Internal
 
         def self.outl(arg)
             self.out(arg)
-            STDOUT.puts "\n"
+            LibC.printf("\n")
         end 
 
         def self.out(arg)
             if arg.is_a? LcString
-                print_str(arg.as(LcString))
+                LibC.printf("%s",arg.str_ptr)
             elsif arg.is_a? LcTrue
-                STDOUT.print "true"
+                LibC.printf("true")
             elsif arg.is_a? LcFalse
-                STDOUT.print "false"
+                LibC.printf("false")
             elsif arg == Null
-                STDOUT.print "null"
+                LibC.printf("null")
             elsif arg.is_a? Structure
-                STDOUT.print arg.as(Structure).path.to_s
+                LibC.printf(arg.as(Structure).path.to_s)
             elsif arg.is_a? LcNum
-                STDOUT.print arg.as(LcNum).val
+                LibC.printf("#{arg.as(LcNum).val}")
             else
                 arg = arg.as(Internal::Value)
                 if internal.lc_obj_responds_to? arg,"to_s"
                     self.out(Exec.lc_call_fun(arg,"to_s"))
                 else 
-                    STDOUT.print internal.lc_typeof(arg)
+                    LibC.printf(internal.lc_typeof(arg))
                 end
             end
         end
 
         def self.in
-            str = internal.build_string(STDIN.gets)
+            value = STDIN.gets
+            str   = internal.build_string(value || "")
             return str 
         end
 

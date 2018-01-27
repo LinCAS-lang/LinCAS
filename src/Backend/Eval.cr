@@ -151,7 +151,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             when NodeType::VOID
                 eval_void(node)
             when NodeType::CALL, NodeType::METHOD_CALL
-                eval_exp(node)
+                return eval_exp(node)
             when NodeType::RETURN
                 return eval_return(node)
              when NodeType::WHILE
@@ -166,6 +166,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 eval_include(node)
             when NodeType::ASSIGN
                 eval_assign(node)
+            when NodeType::APPEND
+                eval_append(node)
             when NodeType::CONST
                 eval_const(node)
             when NodeType::NEW
@@ -218,7 +220,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     protected def eval_exp(node : Node)
         case node.type
             when NodeType::STRING
-                string = node.getAttr(NKey::VALUE)
+                string = node.getAttr(NKey::VALUE).as(String)
                 return internal.build_string(string)
             when NodeType::TRUE
                 return Internal::LcTrue
@@ -234,8 +236,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_local_id(node)
             when NodeType::NAMESPACE
                 return eval_namespace(node)
-#            when NodeType::ARRAY
-
+            when NodeType::ARRAY
+                return eval_array(node)
+            when NodeType::IRANGE, NodeType::ERANGE
+                return eval_range(node)
 #            when NodeType::MATRIX
 
 #            when NodeType::SYMBOLIC
@@ -679,19 +683,27 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         branches = node.getBranches
         var      = branches[0]
         expr     = branches[1]
-        name  = unpack_name(var)
-        exprv = eval_exp(expr)
-        return null if @error
-        if var.type == NodeType::LOCAL_ID
-            set_local(name,exprv)
-        else 
-            obj = current_object
-            if obj.as(Internal::ValueR).frozen
-                lc_raise(LcFrozenError,convert(:modify_frozen),node)
-                return null 
+        exprv    = eval_exp(expr).as(Internal::Value)
+        if var.type != NodeType::METHOD_CALL
+            name  = unpack_name(var)
+            return null if @error
+            if var.type == NodeType::LOCAL_ID
+                set_local(name,exprv)
             else 
+                obj = current_object
+                unless obj.is_a? Structure
+                    if obj.as(Internal::ValueR).frozen
+                       lc_raise(LcFrozenError,convert(:modify_frozen),node)
+                       return null 
+                    end 
+                end 
                 obj.data.addVar(name,exprv.as(Internal::Value))
-            end 
+            end
+        else 
+            r_node   = var.getAttr(NKey::RECEIVER).as(Node)
+            receiver = eval_exp(r_node).as(Internal::Value)
+            index    = eval_exp(var.getBranches[1].getBranches[0]).as(Internal::Value)
+            call_fun(node,receiver,"[]=",index,exprv)
         end
     end
 
@@ -743,7 +755,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         argv = eval_args(args)
         obj  = call_fun(node,entry,"new").as(Internal::Value)
         if internal.lc_obj_responds_to? obj, "init"
-            push_duplicated_frame
+            push_frame(find_file(node),find_line(node),"new")
             push_object(obj)
             call_fun(obj,"init",argv)
             pop_object
@@ -851,6 +863,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @try += 1
         out_v     = eval_body(try)
         if @error
+            @try -= 1
             if catch 
                 catch_branches = catch.getBranches
                 id             = catch_branches[0]
@@ -866,9 +879,34 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         else 
            return out_v if out_v.is_a? StackFrame
            return null 
-        end 
-    ensure 
-        @try -= 1
+        end  
+    end
+
+    protected def eval_array(node : Node)
+        branches = node.getBranches
+        ary      = internal.build_ary(branches.size)
+        branches.each do |elem|
+            internal.lc_ary_push(ary,eval_exp(elem).as(Internal::Value))
+        end
+        return ary
+    end
+
+    protected def eval_append(node : Node)
+        branches = node.getBranches
+        obj      = eval_exp(branches[0]).as(Internal::Value)
+        value    = eval_exp(branches[1]).as(Internal::Value)
+        call_fun(node,obj,"<<",value)
+        null 
+    end
+
+    protected def eval_range(node : Node)
+        branches = node.getBranches
+        v1       = branches[0]
+        v2       = branches[1]
+        left     = eval_exp(v1).as(Internal::Value)
+        right    = eval_exp(v2).as(Internal::Value)
+        inclusive = (node.type == NodeType::ERANGE) ? false : true
+        return internal.build_range(left,right,inclusive)
     end
 
     def lc_raise(code,msg,node)

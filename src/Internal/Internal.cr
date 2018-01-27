@@ -22,6 +22,17 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+lib LibC
+    fun strstr(str1 : Char*, str2 : Char*) : Char*
+    fun printf(format : Char*, ... ) : Int 
+    fun toupper(str : Char*) : Char*
+    fun strlwr(str : Char*) : Char*
+    fun strlen(str : Char*) : SizeT
+    fun strtok(str : Char*, delimiter : Char*) : Char*
+    fun strtol(str : Char*, endptr : Char*, base : Int) : Int
+    fun strtod(str : Char*, endptr : Char**) : Double
+end
+
 module LinCAS::Internal
 
     alias Value  = BaseS | BaseC | Structure
@@ -65,10 +76,6 @@ module LinCAS::Internal
             return false
         end
     end
-
-    lib LibC
-        fun strstr(str1 : Char*, str2 : Char*) : Char*
-    end
     
     macro internal 
         self 
@@ -83,7 +90,7 @@ module LinCAS::Internal
     end
 
     macro libc 
-        Internal::LibC
+        LibC
     end
 
     macro convert(name)

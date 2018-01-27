@@ -43,6 +43,7 @@ require "../util/SymTabPrinter"
 
 include LinCAS
 
+
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""

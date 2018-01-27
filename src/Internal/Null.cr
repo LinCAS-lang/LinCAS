@@ -33,7 +33,7 @@ module LinCAS::Internal
         return null
     end
 
-    NullClass = internal.lc_build_class_only("Null")
+    NullClass = internal.lc_build_class_only("NullClass")
     internal.lc_set_parent_class(NullClass,Obj)
 
     Null = lc_build_null

@@ -25,6 +25,37 @@
 module LinCAS::Internal
 
     class LcRange < BaseC
-        
+        @left  : Intnum = 0
+        @right : Intnum = 0
+        @inclusive = true
+        attr left 
+        attr right
+        attr inclusive
     end    
+
+    def self.range_new
+        range       = LcRange.new 
+        range.klass = RangeClass 
+        range.data  = RangeClass.data.clone 
+        return range 
+    end
+
+    def self.build_range(v1 : Num, v2 : Num, inclusive = true)
+        range       = range_new 
+        range.left  = v1.to_i 
+        range.right = v2.to_i
+        range.inclusive = inclusive
+        return range.as(Value)
+    end
+
+    def self.build_range(v1 : Value, v2 : Value, inclusive : Bool)
+        n1 = lc_num_to_cr_i(v1)
+        n2 = lc_num_to_cr_i(v2)
+        return Null unless n1 && n2
+        return build_range(n1,n2,inclusive)
+    end
+
+    RangeClass = internal.lc_build_class_only("Range")
+
+
 end

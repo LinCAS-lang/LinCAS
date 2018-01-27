@@ -1,5 +1,7 @@
 
-string := "I'm a man"
-for i : 0 to 8 {
-    printl string[i]
-}
+a := new Array(8)
+printl a.length()
+a.push(12)
+a.push("String")
+
+

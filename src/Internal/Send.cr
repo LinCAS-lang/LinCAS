@@ -62,6 +62,26 @@ module LinCAS::Internal
                 call_internal(:lc_str_clone,args)
             when :lc_str_index
                 call_internal_1(:lc_str_index,args)
+            when :lc_str_set_index
+                call_internal_2(:lc_str_set_index,args)
+            when :lc_str_insert
+                call_internal_2(:lc_str_insert,args)
+            when :lc_str_size 
+                call_internal(:lc_str_size,args)
+            when :lc_str_upr_o
+                call_internal(:lc_str_upr_o,args)
+            when :lc_str_lwr_o
+                call_internal(:lc_str_lwr_o,args)
+            when :lc_str_split
+                call_internal_1(:lc_str_split,args)
+            when :lc_str_upr 
+                call_internal(:lc_str_upr,args)
+            when :lc_str_lwr 
+                call_internal(:lc_str_lwr,args)
+            when :lc_str_to_i
+                call_internal(:lc_str_to_i,args)
+            when :lc_str_to_f
+                call_internal(:lc_str_to_f,args)
             
             # Class `Integer`
             when :lc_int_sum
@@ -152,13 +172,37 @@ module LinCAS::Internal
             when :lc_err_new
                 call_internal(:lc_err_new,args)
             when :lc_err_init
-                call_internal_2(:lc_err_init,args)
+                call_internal_1(:lc_err_init,args)
             when :lc_err_msg 
                 call_internal(:lc_err_msg,args)
             when :lc_err_backtrace
                 call_internal(:lc_err_backtrace,args)
             when :lc_err_full_msg
                 call_internal(:lc_err_full_msg,args)
+
+            # Class Array
+            when :lc_build_ary_new
+                call_internal(:build_ary_new,args)
+            when :lc_ary_add
+                call_internal_1(:lc_ary_add,args)
+            when :lc_ary_push
+                call_internal_1(:lc_ary_push,args)
+            when :lc_ary_pop
+                call_internal(:lc_ary_pop,args)
+            when :lc_ary_index
+                call_internal_1(:lc_ary_index,args)
+            when :lc_ary_index_assign
+                call_internal_2(:lc_ary_index_assign,args)
+            when :lc_ary_includes
+                call_internal_1(:lc_ary_includes,args)
+            when :lc_ary_clone
+                call_internal(:lc_ary_clone,args)
+            when :lc_ary_len
+                call_internal(:lc_ary_len,args)
+            when :lc_ary_init 
+                call_internal_1(:lc_ary_init,args)
+            when :lc_ary_last
+                call_internal(:lc_ary_last,args)
             else
                 return Null
         end
