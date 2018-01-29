@@ -1,7 +1,5 @@
 
-a := new Array(8)
-printl a.length()
-a.push(12)
-a.push("String")
-
+(3..1).each(){ (i)
+    printl i + 9 / ""
+}
 

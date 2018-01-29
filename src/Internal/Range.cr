@@ -33,6 +33,30 @@ module LinCAS::Internal
         attr inclusive
     end    
 
+    macro left(range)
+        {{range}}.as(LcRange).left
+    end 
+
+    macro right(range)
+        {{range}}.as(LcRange).right
+    end
+
+    @[AlwaysInline]
+    def self.range_size(range)
+        lft = left(range)
+        rht = right(range)
+        inc = inclusive(range) ? 1 : 0
+        if lft > rht
+            return lft - rht + inc 
+        else 
+            return rht - lft + inc 
+        end
+    end
+
+    macro inclusive(range)
+        {{range}}.as(LcRange).inclusive 
+    end
+
     def self.range_new
         range       = LcRange.new 
         range.klass = RangeClass 
@@ -55,7 +79,64 @@ module LinCAS::Internal
         return build_range(n1,n2,inclusive)
     end
 
+    def self.lc_range_include(range : Value, item : Value)
+        return lcfalse unless item.is_a? LcNum 
+        lft = left(range)
+        rht = right(range)
+        if lft > rht 
+            lft,rht = rht,lft 
+        end
+        itemv = num2num(item)
+        if lft <= itemv && itemv <= rht 
+            return lctrue 
+        end 
+        return lcfalse
+    end
+
+    def self.lc_range_to_s(range : Value)
+        lft = left(range)
+        rht = right(range)
+        string = String.build do |io|
+            io << lft 
+            io << (inclusive(range) ? ".." : "...")
+        end
+        return build_string(string)
+    ensure 
+        GC.free(Box.box(string))
+        GC.collect 
+    end
+
+    def self.lc_range_size(range)
+        return num2int(range_size(range))
+    end
+
+    def self.lc_range_each(range)
+        lft = left(range)
+        rht = right(range)
+        if lft > rht 
+            rht += 1 unless inclusive(range)
+            lft.downto rht do |i|
+                Exec.lc_yield(num2int(i))
+            end
+        else 
+            rht -= 1 unless inclusive(range)
+            (lft..rht).each do |i|
+                Exec.lc_yield(num2int(i))
+            end
+        end
+    end
+
+    def self.lc_range_map(range)
+    end
+
+
     RangeClass = internal.lc_build_class_only("Range")
+    internal.lc_set_parent_class(RangeClass,Obj)
+    
+    internal.lc_add_internal(RangeClass,"includes",:lc_range_include,  1)
+    internal.lc_add_internal(RangeClass,"to_s",:lc_range_to_s,         0)
+    internal.lc_add_internal(RangeClass,"size",:lc_range_size,         0)
+    internal.lc_add_internal(RangeClass,"each",:lc_range_each,         0)
 
 
 end

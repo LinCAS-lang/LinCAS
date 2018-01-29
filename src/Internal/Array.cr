@@ -144,7 +144,6 @@ module LinCAS::Internal
     end
 
     def self.lc_build_ary_new(klass : Value)
-
         return new_ary 
     end
 
@@ -276,6 +275,21 @@ module LinCAS::Internal
     end
 
     def self.lc_ary_to_s(ary : Value)
+        arylen = ary_size(ary)
+        ptr    = ary_ptr(ary)
+        return build_string("[]") if arylen == 0
+        string = String.build do |io|
+            io << '['
+            (0...arylen - 1).each do |i|
+                lc_str_io_append(io,ptr[i])
+                io << ','
+            end 
+            lc_str_io_append(io,ptr[arylen - 1])
+            io << ']'
+        end 
+        return build_string(string)
+    ensure 
+        GC.free(Box.box(string))
     end
 
 
@@ -295,4 +309,5 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"last", :lc_ary_last,   0)
     internal.lc_add_internal(AryClass,"size", :lc_ary_len,    0)
     internal.lc_add_internal(AryClass,"length",:lc_ary_len,   0)
+    internal.lc_add_internal(AryClass,"to_s", :lc_ary_to_s,   0)
 end

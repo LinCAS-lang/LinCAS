@@ -43,6 +43,30 @@ module LinCAS::Internal
         return obj 
     end
 
+    def self.lc_obj_to_s(obj : Value)
+        string = String.build do |io|
+            lc_obj_inspect(obj,io)
+        end 
+        return build_string(string)
+    ensure
+        GC.free(Box.box(string))
+        GC.collect 
+    end
+
+    def self.lc_obj_to_s(obj : Value, io)
+        io << '<'
+        if obj.is_a? Structure 
+            io << obj.as(Structure).path.to_s
+            io << ((obj.is_a? ClassEntry) ? " : class" : " : module")
+        else
+            io << obj.as(ValueR).klass.path.to_s
+            io << " : object"
+        end
+        io << " @0x"
+        pointerof(obj).address.to_s(16,io)
+        io << '>'
+    end
+
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
     internal.lc_set_parent_class(Obj,LcClass)

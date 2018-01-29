@@ -203,6 +203,18 @@ module LinCAS::Internal
                 call_internal_1(:lc_ary_init,args)
             when :lc_ary_last
                 call_internal(:lc_ary_last,args)
+            when :lc_ary_to_s 
+                call_internal(:lc_ary_to_s,args)
+
+            # Class Range
+            when :lc_range_include
+                call_internal_1(:lc_range_include,args)
+            when :lc_range_size
+                call_internal(:lc_range_size,args)
+            when :lc_range_to_s
+                call_internal(:lc_range_to_s,args)
+            when :lc_range_each
+                call_internal(:lc_range_each,args)
             else
                 return Null
         end

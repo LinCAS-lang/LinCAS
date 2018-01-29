@@ -59,9 +59,19 @@ module LinCAS::Internal
         end
     end
 
+    bool_invert = LcProc.new do |args|
+        args = args.as(T1)
+        next internal.lc_bool_eq(args[1])
+    end
+
     def self.lc_bool_eq(val1, val2)
         return lctrue if val1 == val2
         return lcfalse
+    end
+
+    bool_eq = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_bool_eq(args[1],args[2])
     end
 
     def self.lc_bool_gr(val1, val2)
@@ -93,9 +103,19 @@ module LinCAS::Internal
         return lcfalse
     end
 
+    bool_and = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_bool_and(args[1],args[2])
+    end
+
     def self.lc_bool_or(val1, val2)
         return lctrue if val1 == lctrue || val2 == lctrue
         return lcfalse 
+    end
+
+    bool_or = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_bool_or(args[1],args[2])
     end
 
     BoolClass = internal.lc_build_class_only("Boolean")
@@ -108,6 +128,5 @@ module LinCAS::Internal
 
     LcTrue  = internal.build_true
     LcFalse = internal.build_false
-
 
 end

@@ -785,16 +785,6 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 else
                     @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
                 end
-            when TkType::PI
-                root = @nodeFactory.makeNode(NodeType::PI)
-            when TkType::E 
-                root = @nodeFactory.makeNode(NodeType::E)
-            when TkType::INF
-                @errHandler.flag(@currentTk,ErrCode::INF_CONST_OUT_SYM,self) unless @sym > 0
-                root = @nodeFactory.makeNode(NodeType::INF)
-            when TkType::NINF
-                @errHandler.flag(@currentTk,ErrCode::INF_CONST_OUT_SYM,self) unless @sym > 0
-                root = @nodeFactory.makeNode(NodeType::NINF)
             when TkType::PIPE
                 root = parseMatrix
             when TkType::L_BRACKET

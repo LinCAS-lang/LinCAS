@@ -89,7 +89,7 @@ module LinCAS
 
     struct MethodEntry
         @args      : Node | ::Nil
-        @code      : Node | Symbol | ::Nil
+        @code      : Node | LcProc | ::Nil
         @owner     : ClassEntry  | ModuleEntry | ::Nil
         @arity     : Intnum = 0
         @static    = false

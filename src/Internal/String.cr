@@ -111,6 +111,28 @@ module LinCAS::Internal
         pointer_of(str).move_from(value,strlen)
         return str 
     end
+
+    def self.lc_str_io_append(io , value : Value)
+        #p value.class;gets
+        if value.is_a? LcString 
+            io << '"'
+            io.write_utf8(pointer_of(value).to_slice(str_size(value)))
+            io << '"'
+        elsif value.is_a? LcNum 
+            io << num2num(value)
+        elsif value == Null 
+            io << "null"
+        elsif value.is_a? LcBool
+            io << (value == lctrue ? "true" : "false")
+        elsif value.is_a? LcArray
+            io << lc_ary_to_s(value)
+        elsif lc_obj_responds_to? value,"to_s"
+            string = Exec.lc_call_fun(value,"to_s")
+            io.write_utf8(pointer_of(string).to_slice(str_size(string)))
+        else 
+            lc_obj_to_s(value,io)
+        end
+    end
     
     # Initializes a new string trough the keyword 'new' or just
     # assigning it. This is the 'init' method of the class
@@ -169,6 +191,11 @@ module LinCAS::Internal
         return concated_str
     end
 
+    str_concat = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_str_concat(args[0],args[1])
+    end
+
     # Performs a multiplication between a string and a number
     # ```
     # bark   := "Bark"
@@ -185,6 +212,11 @@ module LinCAS::Internal
         end
         return new_str
     end 
+
+    str_multiply = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_str_multiply(args[0],args[1])
+    end
 
     # Checks if a substring is contained in another one.
     # It works making a call like this:
@@ -213,6 +245,11 @@ module LinCAS::Internal
         return lctrue
     end
 
+    str_include = LcProc.new do |args|
+        args = args.as(T2)
+        next internal.lc_str_include(args[0],args[1])
+    end
+
     # Compares two strings or a string with another object
     # ```
     # bar := "Bar"
@@ -229,6 +266,11 @@ module LinCAS::Internal
         return lcfalse unless str2.is_a? LcString
         return lcfalse if str_size(str1) != str_size(str2)
         return internal.lc_str_include(str1,str2)
+    end
+
+    str_compare = LcProc.new do |args|
+        args = args.as(T2)
+        internal.lc_str_compare(args[0],args[1])
     end
 
     # Same as lc_str_compare, but it checks if two strings are different
@@ -486,12 +528,45 @@ module LinCAS::Internal
         return ary 
     end
 
+    # Converts a string into an integer number
+    # ```
+    # "12".to_i   #=> 12
+    # "12x".to_i  #=> 12
+    # "abcd".to_i #=> 0
+    #
+    # * argument:: String to convert
     def self.lc_str_to_i(str : Value)
         return num2int(libc.strtol(pointer_of(str),Pointer(LibC::Char).null,10))
     end
 
+    # Converts a string into an integer number
+    # ```
+    # "12".to_f     #=> 12.0
+    # "12.24".to_f  #=> 12.24
+    # "12.ab".to_f  #=> 12.0
+    # "abcd".to_i   #=> 0.0
+    #
+    # * argument:: String to convert
     def self.lc_str_to_f(str : Value)
         return num2float(libc.strtod(pointer_of(str),Pointer(LibC::Char*).null))
+    end
+
+    def self.lc_str_each_char(str : Value)
+        strlen = str_size(str) - 1
+        ptr    = pointer_of(str)
+        strlen.times do |i|
+            Exec.lc_yield(build_string(ptr[i]))
+        end
+    end
+
+    def self.lc_str_chars(str : Value)
+        strlen = str_size(str) - 1
+        ptr    = pointer_of(str)
+        ary    = build_ary(strlen)
+        (strlen -1).times do |i|
+            lc_ary_push(ary,build_string(ptr[i]))
+        end
+        return ary 
     end
         
 

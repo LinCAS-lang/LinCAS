@@ -78,6 +78,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @callstack.push_duplicated_frame
     end
 
+    macro push_cloned_frame
+        @callstack.push_cloned_frame
+    end
+
     macro pop_frame
         @callstack.popFrame 
     end
@@ -106,9 +110,16 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         {{scope}}.methods.addEntry({{name}},{{method}})
     end
 
-   
     macro internal_call(name,args)
         internal.send({{name}},{{args}})
+    end
+
+    macro set_block(block)
+        @callstack.set_block({{block}})
+    end 
+
+    macro get_block
+        @callstack.get_block
     end
 
     @error : Internal::Value?
@@ -375,8 +386,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         branches = node.getBranches
         name     = unpack_name(branches[0])
         args     = branches[1]
-        argv     = eval_args(args)
         push_frame(find_file(node),find_line(node),name)
+        argv     = eval_args(args)
         return call_fun(current_object,name,argv)
     end
 
@@ -387,8 +398,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         args     = branches[1]
         voidName = unpack_name(name).as(String)
         vReceiver = eval_exp(receiver.as(Node)).as(Internal::Value)
-        argv    = eval_args(args)
         push_frame(find_file(node),find_line(node),voidName)
+        argv    = eval_args(args)
         push_object(vReceiver)
         return call_fun(vReceiver,voidName,argv)
     ensure 
@@ -469,10 +480,15 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def eval_args(args : Node)
         branches = args.getBranches
+        block    = args.getAttr(NKey::BLOCK)
+        if block 
+            set_block(block.as(Node))
+        end
         return Tuple.new if branches.size == 0
         argv = [eval_exp(branches[0]).as(Internal::Value)]
         (1...branches.size).each do |i|
-            argv += [eval_exp(branches[i]).as(Internal::Value)]
+            tmp = branches[i]
+            argv += [eval_exp(tmp).as(Internal::Value)]
         end
         return argv 
     end
@@ -907,6 +923,44 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         right    = eval_exp(v2).as(Internal::Value)
         inclusive = (node.type == NodeType::ERANGE) ? false : true
         return internal.build_range(left,right,inclusive)
+    end
+
+    def lc_yield(*args : Internal::Value)
+        block = get_block
+        unless block 
+            lc_raise(LcArgumentError,"No block given")
+        end
+        argv  = block.as(Node).getAttr(NKey::BLOCK_ARG).as(Node)
+        push_cloned_frame
+        load_block_args(argv,args)
+        return null if @error
+        out_v = eval_body(block.as(Node))
+        return null if @error
+        if out_v.is_a? StackFrame
+            return out_v.return_val
+        end
+    ensure 
+        pop_frame
+    end
+
+    protected def load_block_args(argv : Node,args)
+        arg_list = argv.getBranches
+        arg_list.each_with_index do |arg,i|
+            val = args[i]?
+            if arg.type == NodeType::ASSIGN
+                if val 
+                    set_local(unpack_name(arg.getBranches[0]),val)
+                else 
+                    eval_assign(arg)
+                end 
+            else 
+                if val 
+                    set_local(unpack_name(arg),val)
+                else 
+                    set_local(unpack_name(arg),null)
+                end 
+            end
+        end         
     end
 
     def lc_raise(code,msg,node)

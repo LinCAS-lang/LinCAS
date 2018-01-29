@@ -29,14 +29,24 @@ module LinCAS
         getter filename
         getter line 
         getter callname
-        attr return_val
-        attr duplicated
+        property return_val
+        property duplicated
+        property block
         
         @return_val : Internal::Value
+        @block : Node?
         def initialize(@filename : String,@line : Intnum, @callname : String)
             @varSet     = Hash(String,Internal::Value).new
             @return_val = Internal::Null
             @duplicated = false
+            @block      = nil
+        end
+
+        def initialize(@filename : String,@line : Intnum, @varSet : Hash(String,Internal::Value))
+            @callname   = "block"
+            @return_val = Internal::Null
+            @duplicated = false
+            @block      = nil
         end
                 
         def setVar(var, value)
@@ -49,6 +59,10 @@ module LinCAS
         
         def deleteVar(var)
             @varSet.delete(var)
+        end
+
+        def to_unsafe
+            return @varSet
         end
                 
     end
@@ -78,9 +92,29 @@ module LinCAS
             self.push(frame)
         end
 
+        def push_cloned_frame
+            Exec.lc_raise(LcSystemStackError,"Stack level too deep") if MAX_CALLSTACK_DEPTH == @depth
+            @depth += 1
+            self.push(StackFrame.new(
+                self.last.filename,
+                self.last.line,
+                self.last.to_unsafe.dup
+            ))
+        end
+
         def popFrame
             @depth -= 1
             return self.pop
+        end
+
+        def set_block(block : Node)
+            tmp = self.pop
+            tmp.block = block
+            self.push(tmp)
+        end
+
+        def get_block
+            self.last.block 
         end
 
         def setVar(var,value)

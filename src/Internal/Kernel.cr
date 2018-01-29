@@ -52,6 +52,8 @@ module LinCAS::Internal
                 LibC.printf(arg.as(Structure).path.to_s)
             elsif arg.is_a? LcNum
                 LibC.printf("#{arg.as(LcNum).val}")
+            elsif arg.is_a? LcArray
+                LibC.printf("%s",internal.lc_ary_to_s(arg).as(LcString).str_ptr)
             else
                 arg = arg.as(Internal::Value)
                 if internal.lc_obj_responds_to? arg,"to_s"
