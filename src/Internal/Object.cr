@@ -39,8 +39,16 @@ module LinCAS::Internal
         return obj.as(Value) 
     end
 
+    obj_new = LcProc.new do |args|
+        next internal.lc_obj_new(*args.as(T1))
+    end
+
     def self.lc_obj_init(obj : Value)
         return obj 
+    end
+
+    obj_init = LcProc.new do |args|
+        next internal.lc_obj_init(*args.as(T1))
     end
 
     def self.lc_obj_to_s(obj : Value)
@@ -72,7 +80,7 @@ module LinCAS::Internal
     internal.lc_set_parent_class(Obj,LcClass)
     internal.lc_set_parent_class(MainClass,Obj)
 
-    internal.lc_add_static(Obj,"new",:lc_obj_new,    0)
-    internal.lc_add_internal(Obj,"init",:lc_obj_init,0)
+    internal.lc_add_static(Obj,"new",obj_new,    0)
+    internal.lc_add_internal(Obj,"init",obj_init,0)
 
 end

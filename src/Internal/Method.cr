@@ -98,26 +98,6 @@ module LinCAS::Internal
         )
     end
 
-    macro call_internal(name,arg)
-        internal.{{name.id}}({{arg}}[0])
-    end
-
-    macro call_internal_1(name,arg)
-        internal.{{name.id}}({{arg}}[0],{{arg}}[1])
-    end 
-
-    macro call_internal_2(name,args)
-        internal.{{name.id}}({{args}}[0],{{args}}[1],{{args}}[2])
-    end 
-
-    macro call_internal_n(name,args)
-#        internal.{{name.id}}({{args}}[0]
-#            {% for i in 1...args.size %}
-#                ,{{args}}[i]
-#            {% end %}
-#        )
-    end
-
     def self.seek_method(receiver : Structure, name)
         method = seek_instance_method(receiver,name)
         if method != 0

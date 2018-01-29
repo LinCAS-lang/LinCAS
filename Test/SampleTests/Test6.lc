@@ -1,5 +1,5 @@
 
 (3..1).each(){ (i)
-    printl i + 9 / ""
+    printl i + 9
 }
 

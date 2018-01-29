@@ -61,7 +61,7 @@ module LinCAS::Internal
 
     bool_invert = LcProc.new do |args|
         args = args.as(T1)
-        next internal.lc_bool_eq(args[1])
+        next internal.lc_bool_invert(args[0])
     end
 
     def self.lc_bool_eq(val1, val2)
@@ -71,7 +71,7 @@ module LinCAS::Internal
 
     bool_eq = LcProc.new do |args|
         args = args.as(T2)
-        next internal.lc_bool_eq(args[1],args[2])
+        next internal.lc_bool_eq(args[0],args[1])
     end
 
     def self.lc_bool_gr(val1, val2)
@@ -105,7 +105,7 @@ module LinCAS::Internal
 
     bool_and = LcProc.new do |args|
         args = args.as(T2)
-        next internal.lc_bool_and(args[1],args[2])
+        next internal.lc_bool_and(args[0],args[1])
     end
 
     def self.lc_bool_or(val1, val2)
@@ -115,16 +115,16 @@ module LinCAS::Internal
 
     bool_or = LcProc.new do |args|
         args = args.as(T2)
-        next internal.lc_bool_or(args[1],args[2])
+        next internal.lc_bool_or(args[0],args[1])
     end
 
     BoolClass = internal.lc_build_class_only("Boolean")
     internal.lc_set_parent_class(BoolClass, Obj)
 
-    internal.lc_add_internal(BoolClass,"!", :lc_bool_invert,0)
-    internal.lc_add_internal(BoolClass,"==",:lc_bool_eq,    1)
-    internal.lc_add_internal(BoolClass,"&&",:lc_bool_and,   1)
-    internal.lc_add_internal(BoolClass,"||",:lc_bool_or,    1)
+    internal.lc_add_internal(BoolClass,"!", bool_invert,0)
+    internal.lc_add_internal(BoolClass,"==",bool_eq,    1)
+    internal.lc_add_internal(BoolClass,"&&",bool_and,   1)
+    internal.lc_add_internal(BoolClass,"||",bool_or,    1)
 
     LcTrue  = internal.build_true
     LcFalse = internal.build_false

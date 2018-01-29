@@ -60,6 +60,10 @@ module LinCAS::Internal
         end
     end
 
+    float_sum = LcProc.new do |args|
+        next internal.lc_float_sum(*args.as(T2))
+    end
+
     def self.lc_float_sub(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -71,6 +75,10 @@ module LinCAS::Internal
         return Null
     end
 
+    float_sub = LcProc.new do |args|
+        next internal.lc_float_sub(*args.as(T2))
+    end
+
     def self.lc_float_mult(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -80,6 +88,10 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
+    end
+
+    float_mult = LcProc.new do |args|
+        next internal.lc_float_mult(*args.as(T2))
     end
 
     def self.lc_float_idiv(n1 : Value, n2 : Value)
@@ -97,6 +109,10 @@ module LinCAS::Internal
         return Null
     end
 
+    float_idiv = LcProc.new do |args|
+        next internal.lc_float_idiv(*args.as(T2))
+    end
+
     def self.lc_float_fdiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -111,6 +127,10 @@ module LinCAS::Internal
         return Null
     end
 
+    float_fdiv = LcProc.new do |args|
+        next internal.lc_float_fdiv(*args.as(T2))
+    end
+
     def self.lc_float_power(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -122,28 +142,44 @@ module LinCAS::Internal
         return Null
     end
 
+    float_power = LcProc.new do |args|
+        next internal.lc_float_power(*args.as(T2))
+    end
+
     def self.lc_float_invert(n : Value)
         return internal.build_float(- float2num(n))
+    end
+
+    float_invert = LcProc.new do |args|
+        next internal.lc_float_invert(*args.as(T1))
     end
 
     def self.lc_float_to_s(n : Value)
         return internal.build_string(float2num(n).to_s)
     end
 
+    float_to_s = LcProc.new do |args|
+        next internal.lc_float_to_s(*args.as(T1))
+    end
+
     def self.lc_float_to_i(n : Value)
         return internal.num2int(float2num(n).to_i)
+    end
+
+    float_to_i = LcProc.new do |args|
+        next internal.lc_float_to_i(*args.as(T1))
     end
 
     FloatClass = internal.lc_build_class_only("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
 
-    internal.lc_add_internal(FloatClass,"+",:lc_float_sum,  1)
-    internal.lc_add_internal(FloatClass,"-",:lc_float_sub,  1)
-    internal.lc_add_internal(FloatClass,"*",:lc_float_mult, 1)
-    internal.lc_add_internal(FloatClass,"\\",:lc_float_idiv,1)
-    internal.lc_add_internal(FloatClass,"/",:lc_float_fdiv, 1)
-    internal.lc_add_internal(FloatClass,"^",:lc_float_power,1)
-    internal.lc_add_internal(FloatClass,"invert",:lc_float_invert, 0)
-    internal.lc_add_internal(FloatClass,"to_s",:lc_float_to_s,     0)
-    internal.lc_add_internal(FloatClass,"to_i",:lc_float_to_i,     0)
+    internal.lc_add_internal(FloatClass,"+",float_sum,  1)
+    internal.lc_add_internal(FloatClass,"-",float_sub,  1)
+    internal.lc_add_internal(FloatClass,"*",float_mult, 1)
+    internal.lc_add_internal(FloatClass,"\\",float_idiv,1)
+    internal.lc_add_internal(FloatClass,"/",float_fdiv, 1)
+    internal.lc_add_internal(FloatClass,"^",float_power,1)
+    internal.lc_add_internal(FloatClass,"invert",float_invert, 0)
+    internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
+    internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
 end

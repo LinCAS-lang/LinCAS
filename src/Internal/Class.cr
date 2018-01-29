@@ -48,22 +48,22 @@ module LinCAS::Internal
         Id_Tab.addMethod(name,method)
     end
 
-    def self.lc_add_internal(receiver : Structure,name : String,proc : Symbol,arity : Intnum)
+    def self.lc_add_internal(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
         m = define_method(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_static(receiver : Structure, name : String, proc : Symbol,arity : Intnum)
+    def self.lc_add_static(receiver : Structure, name : String, proc : LcProc,arity : Intnum)
         m = define_static(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_singleton(receiver : Structure, name : String, proc : Symbol,arity : Intnum)
+    def self.lc_add_singleton(receiver : Structure, name : String, proc : LcProc,arity : Intnum)
         m = define_singleton(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
-    def self.lc_add_static_singleton(receiver : Structure, name : String, proc : Symbol, arity : Intnum)
+    def self.lc_add_static_singleton(receiver : Structure, name : String, proc : LcProc, arity : Intnum)
         m = define_static_singleton(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
@@ -124,7 +124,7 @@ module LinCAS::Internal
             return lcfalse
         end
         if obj.is_a? Structure
-            return obj.as(Structure).path == lcType.path
+            return (obj.as(Structure).path == lcType.path) ? lctrue : lcfalse
         else
             objClass = obj.as(ValueR).klass
             if objClass.path == lcType.path
@@ -140,16 +140,29 @@ module LinCAS::Internal
         return lcfalse
     end
 
+    is_a = LcProc.new do |args|
+        next internal.lc_is_a(*args.as(T2))
+    end
+
     def self.lc_class_class(obj : Value)
         return LcClass  if obj.is_a? ClassEntry
         return LcModule if obj.is_a? ModuleEntry
         return obj.as(ValueR).klass
     end
 
-    def self.lc_class_eq(klass : Value, other)
+    class_class = LcProc.new do |args|
+        next internal.lc_class_class(*args.as(T1))
+    end
+
+
+    def self.lc_class_eq(klass : Value, other : Value)
         return lcfalse unless klass.class == other.class
         return lcfalse unless klass.as(Structure).path  == other.as(Structure).path 
         return lctrue
+    end
+
+    class_eq = LcProc.new do |args|
+        next internal.lc_class_eq(*args.as(T2))
     end
 
     def self.lc_class_ne(klass : Value, other)
@@ -158,12 +171,16 @@ module LinCAS::Internal
         )
     end
 
+    class_ne = LcProc.new do |args|
+        next internal.lc_class_ne(*args.as(T2))
+    end
+
     LcClass = internal.lc_build_class_only("Class")
 
-    internal.lc_add_internal(LcClass,"is_a", :lc_is_a,     1)
-    internal.lc_add_internal(LcClass,"its_class",:lc_class_class,0)
-    internal.lc_add_static(LcClass,"==",   :lc_class_eq,   1)
-    internal.lc_add_static(LcClass,"<>",   :lc_class_ne,   1)
-    internal.lc_add_static(LcClass,"!=",   :lc_class_ne,   1)
+    internal.lc_add_internal(LcClass,"is_a", is_a,     1)
+    internal.lc_add_internal(LcClass,"its_class",class_class,0)
+    internal.lc_add_static(LcClass,"==",   class_eq,   1)
+    internal.lc_add_static(LcClass,"<>",   class_ne,   1)
+    internal.lc_add_static(LcClass,"!=",   class_ne,   1)
 
 end

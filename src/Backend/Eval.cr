@@ -110,10 +110,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         {{scope}}.methods.addEntry({{name}},{{method}})
     end
 
-    macro internal_call(name,args)
-        internal.send({{name}},{{args}})
-    end
-
     macro set_block(block)
         @callstack.set_block({{block}})
     end 
@@ -121,6 +117,38 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     macro get_block
         @callstack.get_block
     end
+
+    macro call_internal(method,arg)
+        {{method}}.call({{arg}}[0])
+    end
+
+    macro call_internal_1(method,arg)
+        {{method}}.call({{arg}}[0],{{arg}}[1])
+    end 
+
+    macro call_internal_2(method,args)
+        {{method}}.call({{args}}[0],{{args}}[1],{{args}}[2])
+    end 
+
+    macro call_internal_n(method,args)
+        {{method}}.call(*{{args}})
+    end
+
+    @[AlwaysInline]
+    def internal_call(method,args,arity)
+        args = args.to_a
+        case arity
+            when 0
+                return call_internal(method,args)
+            when 1
+                return call_internal_1(method,args)
+            when 2
+                return call_internal_2(method,args)
+            else
+                # return call_internal_n(method,args)
+            end
+    end
+
 
     @error : Internal::Value?
 
@@ -443,13 +471,13 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             return null
         end
         if method.internal 
-            name   = method.code 
+            code   = method.code.as(LcProc) 
             if args.is_a? Array
                 f_args = [receiver.as(Internal::Value)] + args
             else 
                 f_args = {receiver} + args 
             end 
-            output = internal_call(name,f_args)
+            output = internal_call(code,f_args,args.size)
             pop_frame
             return output
         else

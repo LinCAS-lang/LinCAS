@@ -93,6 +93,10 @@ module LinCAS::Internal
         return lcfalse
     end
 
+    range_include = LcProc.new do |args|
+        next internal.lc_range_include(*args.as(T2))
+    end
+
     def self.lc_range_to_s(range : Value)
         lft = left(range)
         rht = right(range)
@@ -106,8 +110,16 @@ module LinCAS::Internal
         GC.collect 
     end
 
+    range_to_s = LcProc.new do |args|
+        next internal.lc_range_to_s(*args.as(T1))
+    end
+
     def self.lc_range_size(range)
         return num2int(range_size(range))
+    end
+
+    range_size = LcProc.new do |args|
+        next num2int(range_size(*args.as(T1)))
     end
 
     def self.lc_range_each(range)
@@ -126,6 +138,10 @@ module LinCAS::Internal
         end
     end
 
+    range_each = LcProc.new do |args|
+        next internal.lc_range_each(*args.as(T1))
+    end
+
     def self.lc_range_map(range)
     end
 
@@ -133,10 +149,10 @@ module LinCAS::Internal
     RangeClass = internal.lc_build_class_only("Range")
     internal.lc_set_parent_class(RangeClass,Obj)
     
-    internal.lc_add_internal(RangeClass,"includes",:lc_range_include,  1)
-    internal.lc_add_internal(RangeClass,"to_s",:lc_range_to_s,         0)
-    internal.lc_add_internal(RangeClass,"size",:lc_range_size,         0)
-    internal.lc_add_internal(RangeClass,"each",:lc_range_each,         0)
+    internal.lc_add_internal(RangeClass,"includes",range_include,  1)
+    internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)
+    internal.lc_add_internal(RangeClass,"size",range_size,         0)
+    internal.lc_add_internal(RangeClass,"each",range_each,         0)
 
 
 end

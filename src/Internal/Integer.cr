@@ -59,6 +59,10 @@ module LinCAS::Internal
         return Null
     end
 
+    int_sum = LcProc.new do |args|
+        next internal.lc_int_sum(*args.as(T2))
+    end
+
     def self.lc_int_sub(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             return internal.num2int(int2num(n1) - int2num(n2))
@@ -69,6 +73,10 @@ module LinCAS::Internal
         return Null
     end
 
+    int_sub = LcProc.new do |args|
+        next internal.lc_int_sub(*args.as(T2))
+    end
+
     def self.lc_int_mult(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             return internal.num2int(int2num(n1) * int2num(n2))
@@ -77,6 +85,10 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
+    end
+    
+    int_mult = LcProc.new do |args|
+        next internal.lc_int_mult(*args.as(T2))
     end
 
     def self.lc_int_idiv(n1 : Value, n2 : Value)
@@ -93,6 +105,10 @@ module LinCAS::Internal
         return Null
     end
 
+    int_idiv = LcProc.new do |args|
+        next internal.lc_int_idiv(*args.as(T2))
+    end
+
     def self.lc_int_fdiv(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             if int2num(n1) == 0
@@ -106,6 +122,10 @@ module LinCAS::Internal
         return Null
     end
 
+    int_fdiv = LcProc.new do |args|
+        next internal.lc_int_fdiv(*args.as(T2))
+    end
+
     def self.lc_int_power(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             return internal.num2int(int2num(n1) ** int2num(n2))
@@ -116,6 +136,10 @@ module LinCAS::Internal
         return Null
     end
 
+    int_power = LcProc.new do |args|
+        next internal.lc_int_power(*args.as(T2))
+    end
+
     def self.lc_int_odd(n : Value)
         if int2num(n).odd? 
             return lctrue
@@ -124,20 +148,51 @@ module LinCAS::Internal
         end 
     end
 
+    int_odd = LcProc.new do |args|
+        next internal.lc_int_odd(*args.as(T1))
+    end
+
     def self.lc_int_even(n : Value)
         return internal.lc_bool_invert(lc_int_odd(n))
+    end
+
+    int_even = LcProc.new do |args|
+        next internal.lc_int_even(*args.as(T1))
     end
 
     def self.lc_int_to_s(n : Value)
         return internal.build_string(int2num(n).to_s)
     end
 
+    int_to_s = LcProc.new do |args|
+        next internal.lc_int_to_s(*args.as(T1))
+    end
+
     def self.lc_int_to_f(n : Value)
         return internal.num2float(int2num(n).to_f)
     end
 
+    int_to_f = LcProc.new do |args|
+        next internal.lc_int_to_f(*args.as(T1))
+    end
+
     def self.lc_int_invert(n : Value)
         return internal.build_int(- int2num(n))
+    end
+
+    int_invert = LcProc.new do |args|
+        next internal.lc_int_invert(*args.as(T1))
+    end
+
+    def self.lc_int_times(n : Value)
+        val = int2num(n)
+        val.times do |i|
+            Exec.lc_yield(num2int(i))
+        end
+    end
+
+    int_times = LcProc.new do |args|
+        next internal.lc_int_times(*args.as(T1))
     end
 
     
@@ -145,16 +200,17 @@ module LinCAS::Internal
     IntClass = internal.lc_build_class_only("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
 
-    internal.lc_add_internal(IntClass,"+",:lc_int_sum,  1)
-    internal.lc_add_internal(IntClass,"-",:lc_int_sub,  1)
-    internal.lc_add_internal(IntClass,"*",:lc_int_mult, 1)
-    internal.lc_add_internal(IntClass,"\\",:lc_int_idiv,1)
-    internal.lc_add_internal(IntClass,"/",:lc_int_fdiv, 1)
-    internal.lc_add_internal(IntClass,"^",:lc_int_power,1)
-    internal.lc_add_internal(NumClass,"odd",:lc_int_odd,       0)
-    internal.lc_add_internal(NumClass,"even",:lc_int_even,     0)
-    internal.lc_add_internal(IntClass,"invert",:lc_int_invert, 0)
-    internal.lc_add_internal(IntClass,"to_s",:lc_int_to_s,     0)
-    internal.lc_add_internal(IntClass,"to_f",:lc_int_to_f,     0)
+    internal.lc_add_internal(IntClass,"+",int_sum,  1)
+    internal.lc_add_internal(IntClass,"-",int_sub,  1)
+    internal.lc_add_internal(IntClass,"*",int_mult, 1)
+    internal.lc_add_internal(IntClass,"\\",int_idiv,1)
+    internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
+    internal.lc_add_internal(IntClass,"^",int_power,1)
+    internal.lc_add_internal(NumClass,"odd",int_odd,       0)
+    internal.lc_add_internal(NumClass,"even",int_even,     0)
+    internal.lc_add_internal(IntClass,"invert",int_invert, 0)
+    internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
+    internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)
+    internal.lc_add_internal(IntClass,"times",int_times,   0)
     
 end

@@ -83,6 +83,10 @@ module LinCAS::Internal
         end
     end
 
+    num_eq = LcProc.new do |args|
+        next internal.lc_num_eq(*args.as(T2))
+    end
+
     def self.lc_num_gr(n1 : Value, n2 : Value)
         if n2.is_a? LcNum
             if num2num(n1) > num2num(n2)
@@ -93,6 +97,10 @@ module LinCAS::Internal
         else 
             return lc_num_coerce(n1,n2,">")
         end
+    end
+
+    num_gr = LcProc.new do |args|
+        next internal.lc_num_gr(*args.as(T2))
     end
 
     def self.lc_num_sm(n1 : Value, n2 : Value)
@@ -107,6 +115,10 @@ module LinCAS::Internal
         end
     end
 
+    num_sm = LcProc.new do |args|
+        next internal.lc_num_sm(*args.as(T2))
+    end
+
     def self.lc_num_ge(n1 : Value, n2 : Value)
         if n2.is_a? LcNum
             if num2num(n1) >= num2num(n2)
@@ -117,6 +129,10 @@ module LinCAS::Internal
         else 
             return lc_num_coerce(n1,n2,">=")
         end
+    end
+
+    num_ge = LcProc.new do |args|
+        next internal.lc_num_ge(*args.as(T2))
     end
 
     def self.lc_num_se(n1 : Value, n2 : Value)
@@ -131,17 +147,20 @@ module LinCAS::Internal
         end
     end
 
+    num_se = LcProc.new do |args|
+        next internal.lc_num_se(*args.as(T2))
+    end
     
 
 
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,LcClass)
 
-    internal.lc_add_internal(NumClass,"==",:lc_num_eq, 1)
-    internal.lc_add_internal(NumClass,">",:lc_num_gr,  1)
-    internal.lc_add_internal(NumClass,"<",:lc_num_sm,  1)
-    internal.lc_add_internal(NumClass,">=",:lc_num_ge, 1)
-    internal.lc_add_internal(NumClass,"<=",:lc_num_se, 1)
+    internal.lc_add_internal(NumClass,"==",num_eq, 1)
+    internal.lc_add_internal(NumClass,">",num_gr,  1)
+    internal.lc_add_internal(NumClass,"<",num_sm,  1)
+    internal.lc_add_internal(NumClass,">=",num_ge, 1)
+    internal.lc_add_internal(NumClass,"<=",num_se, 1)
 
     # Definition of Infinity:Class methods
 
@@ -182,6 +201,10 @@ module LinCAS::Internal
         end
     end
 
+    inf_sum = LcProc.new do |args|
+        next internal.lc_inf_sum(*args.as(T2))
+    end
+
     def self.lc_inf_sub(v1 : Value, v2 : Value)
         if v2.is_a? Inf
             if is_negative(v1) && is_negative(v2)
@@ -194,6 +217,10 @@ module LinCAS::Internal
         else
             return internal.lc_num_coerce(v1,v2,"-")
         end
+    end
+
+    inf_sub = LcProc.new do |args|
+        next internal.lc_inf_sub(*args.as(T2))
     end
 
     def self.lc_inf_mult(v1 : Value, v2 : Value)
@@ -214,6 +241,10 @@ module LinCAS::Internal
         end
     end
 
+    inf_mult = LcProc.new do |args|
+        next internal.lc_inf_mult(*args.as(T2))
+    end
+
     def self.lc_inf_div(v1 : Value, v2 : Value)
         if v2.is_a? Inf
             return NanObj
@@ -226,6 +257,10 @@ module LinCAS::Internal
         else 
             return internal.lc_num_coerce(v1,v2,"/")
         end
+    end
+
+    inf_div = LcProc.new do |args|
+        next internal.lc_inf_div(*args.as(T2))
     end
 
     def self.lc_inf_power(v1 : Value, v2 : Value)
@@ -242,12 +277,20 @@ module LinCAS::Internal
         end
     end
 
+    inf_power = LcProc.new do |args|
+        next internal.lc_inf_power(*args.as(T2))
+    end
+
     def self.lc_inf_invert(v : Value)
         if is_positive(v)
             return LcNinfinity
         else
             return LcInfinity
         end
+    end
+
+    inf_invert = LcProc.new do |args|
+        next internal.lc_inf_invert(*args.as(T1))
     end
 
     def self.lc_inf_to_s(v : Value)
@@ -257,21 +300,29 @@ module LinCAS::Internal
         end)
     end
 
+    inf_to_s = LcProc.new do |args|
+        next internal.lc_inf_to_s(*args.as(T1))
+    end
+
     def self.lc_inf_coerce(v1 : Value, v2 : Value)
         return tuple2array(v1,v2)
     end
 
+    inf_coerce = LcProc.new do |args|
+        next tuple2array(*args.as(T2))
+    end
+
     InfClass = internal.lc_build_class_only("Infinity")
     internal.lc_set_parent_class(InfClass,NumClass)
-    internal.lc_add_internal(InfClass,"+",:lc_inf_sum, 1)
-    internal.lc_add_internal(InfClass,"-",:lc_inf_sum, 1)
-    internal.lc_add_internal(InfClass,"*",:lc_inf_mult,1)
-    internal.lc_add_internal(InfClass,"/",:lc_inf_div, 1)
-    internal.lc_add_internal(InfClass,"\\",:lc_inf_div,1)
-    internal.lc_add_internal(InfClass,"^",:lc_inf_power,1)
-    internal.lc_add_internal(InfClass,"coerce",:lc_inf_coerce,1)
-    internal.lc_add_internal(InfClass,"to_s",:lc_inf_to_s,    0)
-    internal.lc_add_internal(InfClass,"invert",:lc_inf_invert,0)
+    internal.lc_add_internal(InfClass,"+",inf_sum, 1)
+    internal.lc_add_internal(InfClass,"-",inf_sum, 1)
+    internal.lc_add_internal(InfClass,"*",inf_mult,1)
+    internal.lc_add_internal(InfClass,"/",inf_div, 1)
+    internal.lc_add_internal(InfClass,"\\",inf_div,1)
+    internal.lc_add_internal(InfClass,"^",inf_power,1)
+    internal.lc_add_internal(InfClass,"coerce",inf_coerce,1)
+    internal.lc_add_internal(InfClass,"to_s",inf_to_s,    0)
+    internal.lc_add_internal(InfClass,"invert",inf_invert,0)
     
     LcInfinity  = internal.build_infinity
     LcNinfinity = internal.build_n_infinity
@@ -289,9 +340,13 @@ module LinCAS::Internal
         return internal.build_string("Nan")
     end
 
+    nan_to_s = LcProc.new do |args|
+        next internal.build_string("Nan")
+    end
+
     NanClass = internal.lc_build_class_only("Nan")
     internal.lc_set_parent_class(NanClass,NumClass)
-    internal.lc_add_internal(NanClass,"to_s",:lc_nan_to_s,0)
+    internal.lc_add_internal(NanClass,"to_s",nan_to_s,0)
 
     NanObj = internal.build_nan
     internal.lc_define_const(NumClass,"NAN",NanObj)

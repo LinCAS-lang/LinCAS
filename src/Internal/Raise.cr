@@ -82,19 +82,36 @@ module LinCAS
             return err.as(Value)
         end
 
+        err_new = LcProc.new do |args|
+            next internal.lc_err_new(*args.as(T1))
+        end
+
         def self.lc_err_init(err : Value, body : Value)#, backtrace : Value)
             err = err.as(LcError)
             klass         = err.klass.name
             err.body      = klass + ':' + ' ' + string2cr(body)
             #err.backtrace = string2cr(backtrace)
+            Null
+        end
+
+        err_init = LcProc.new do |args|
+            next internal.lc_err_init(*args.as(T2))
         end
 
         def self.lc_err_msg(err : Value)
             return internal.build_string(err.as(LcError).body)
         end
 
+        err_msg = LcProc.new do |args|
+            next internal.lc_err_msg(*args.as(T1))
+        end
+
         def self.lc_err_backtrace(err : Value)
             return internal.build_string(err.as(LcError).backtrace)
+        end
+
+        err_backtrace = LcProc.new do |args|
+            next internal.lc_err_backtrace(*args.as(T1))
         end
 
         def self.lc_err_full_msg(err : Value)
@@ -104,14 +121,18 @@ module LinCAS
             end)
         end
 
+        err_full_msg = LcProc.new do |args|
+            next internal.lc_err_full_msg(*args.as(T1))
+        end
+
         ErrClass = internal.lc_build_class_only("Error")
         internal.lc_set_parent_class(ErrClass,Obj)
-        internal.lc_add_static_singleton(ErrClass,"new",:lc_err_new,    0)
-        internal.lc_add_internal(ErrClass,"init",:lc_err_init,          2)
-        internal.lc_add_internal(ErrClass,"to_s",:lc_err_msg,           0)
-        internal.lc_add_internal(ErrClass,"message",:lc_err_msg,         0)
-        internal.lc_add_internal(ErrClass,"backtrace",:lc_err_backtrace,0)
-        internal.lc_add_internal(ErrClass,"full_msg",:lc_err_full_msg,  0)
+        internal.lc_add_static_singleton(ErrClass,"new",err_new,    0)
+        internal.lc_add_internal(ErrClass,"init",err_init,          2)
+        internal.lc_add_internal(ErrClass,"to_s",err_msg,           0)
+        internal.lc_add_internal(ErrClass,"message",err_msg,        0)
+        internal.lc_add_internal(ErrClass,"backtrace",err_backtrace,0)
+        internal.lc_add_internal(ErrClass,"full_msg",err_full_msg,  0)
 
         TypeErrClass = internal.lc_build_class_only("TypeError")
         internal.lc_set_parent_class(TypeErrClass,ErrClass)
