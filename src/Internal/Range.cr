@@ -136,6 +136,7 @@ module LinCAS::Internal
                 Exec.lc_yield(num2int(i))
             end
         end
+        Null
     end
 
     range_each = LcProc.new do |args|
@@ -143,6 +144,37 @@ module LinCAS::Internal
     end
 
     def self.lc_range_map(range)
+        ary = build_ary_new(nil)
+        lft = left(range)
+        rht = right(range)
+        lft,rht = rht,lft unless lft < rht
+        rht -= 1 unless inclusive(range)
+        (lft..rht).each do |i|
+            lc_ary_push(ary,Exec.lc_yield(num2int(i)))
+        end
+        return ary
+    end
+
+    range_map = LcProc.new do |args|
+        next internal.lc_range_map(*args.as(T1))
+    end
+
+    def self.lc_range_eq(range1 : Value,range2 : Value)
+        return lcfalse unless range2.is_a? LcRange
+        return lctrue if left(range1) == left(range2) &&
+                         right(range1) == right(range2) &&
+                         inclusive(range1) == inclusive(range2)
+        return lcfalse 
+    end
+
+    range_eq = LcProc.new do |args|
+        next internal.lc_range_eq(*args.as(T2))
+    end
+
+    range_defrost = LcProc.new do |args|
+        range = args.as(T1)[0]
+        range.frozen = false
+        next range
     end
 
 
@@ -152,7 +184,11 @@ module LinCAS::Internal
     internal.lc_add_internal(RangeClass,"includes",range_include,  1)
     internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)
     internal.lc_add_internal(RangeClass,"size",range_size,         0)
+    internal.lc_add_internal(RangeClass,"length",range_size,       0)
     internal.lc_add_internal(RangeClass,"each",range_each,         0)
+    internal.lc_add_internal(RangeClass,"map",range_map,           0)
+    internal.lc_add_internal(RangeClass,"==",range_eq,             1)
+    internal.lc_add_internal(RangeClass,"defrost",range_defrost,   0)
 
 
 end

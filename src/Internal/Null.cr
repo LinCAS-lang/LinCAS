@@ -30,7 +30,7 @@ module LinCAS::Internal
         null  = LcNull.new
         null.klass = NullClass
         null.data  = NullClass.data.clone
-        return null
+        return null.as(Value)
     end
 
     NullClass = internal.lc_build_class_only("NullClass")

@@ -131,7 +131,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     end 
 
     macro call_internal_n(method,args)
-        {{method}}.call(*{{args}})
+        {{method}}.call(args)
     end
 
     @[AlwaysInline]
@@ -145,7 +145,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             when 2
                 return call_internal_2(method,args)
             else
-                # return call_internal_n(method,args)
+                return call_internal_n(method,args)
             end
     end
 
@@ -477,7 +477,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             else 
                 f_args = {receiver} + args 
             end 
-            output = internal_call(code,f_args,args.size)
+            output = internal_call(code,f_args,method.arity)
             pop_frame
             return output
         else
@@ -583,6 +583,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def define_class(klass,name)
         if klass.is_a? ClassEntry
+            if klass.frozen
+                lc_raise(LcFrozenError,convert(:frozen_class))
+                return nil 
+            end
             reopen(klass)
             return klass
         elsif !klass.nil?
@@ -647,6 +651,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def define_module(mod,name)
         if mod.is_a? ModuleEntry
+            if mod.frozen 
+                lc_raise(LcFrozenError,convert(:frozen_module))
+                return nil 
+            end
             reopen(mod)
         elsif !mod.nil?
             lc_raise(LcTypeError,convert(:not_a_module) % name)
@@ -967,8 +975,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         if out_v.is_a? StackFrame
             return out_v.return_val
         end
-    ensure 
         pop_frame
+        return null
     end
 
     protected def load_block_args(argv : Node,args)

@@ -1,5 +1,23 @@
+/*
+class Prova
+{
+    void set_attr(attr)
+    {@attr := attr}
 
-(3..1).each(){ (i)
-    printl i + 9
+    void get_attr()
+    {return @attr}
 }
+
+Prova.freeze()
+Prova.defrost()
+class Prova {}
+
+a := new Prova()
+a.freeze()
+b := 1000
+b.freeze()
+printl b.is_null()*/
+
+printl -Float:NAN 
+
 

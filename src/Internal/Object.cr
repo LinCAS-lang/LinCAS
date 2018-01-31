@@ -36,6 +36,7 @@ module LinCAS::Internal
         obj = LcObject.new
         obj.klass = klass
         obj.data  = klass.data.clone
+        obj.id    = pointerof(obj).address
         return obj.as(Value) 
     end
 
@@ -75,12 +76,86 @@ module LinCAS::Internal
         io << '>'
     end
 
+    def self.lc_obj_compare(obj1 : Value, obj2 : Value)
+        return lcfalse unless obj1.class == obj2.class 
+        return lctrue if obj1.id == obj2.id
+        case obj1.class 
+            when LcString
+                return lc_str_compare(obj1,obj2)
+            when LcNum
+                return lc_num_eq(obj1,obj2)
+            when LcBool
+                return lc_bool_eq(obj1,obj2)
+            when LcRange 
+                return lc_range_eq(obj1,obj2)
+            when LcNull 
+                return lctrue 
+            when Structure
+                return lc_class_eq(obj1,obj2)
+            when LcArray
+                return lc_ary_eq(obj1,obj2)
+            else 
+                if lc_obj_responds_to? obj1,"=="
+                    return Exec.lc_call_fun(obj1,"==",obj2)
+                elsif lc_obj_responds_to? obj1,"!="
+                    return lc_bool_invert(Exec.lc_call_fun(obj1,"==",obj2))
+                end
+                return lcfalse 
+        end 
+    end
+
+    def self.lc_obj_eq(obj1 : Value, obj2 : Value)
+        return lcfalse unless obj1.class == obj2.class
+        if obj1.is_a? Structure
+            return lc_class_eq(obj1,obj2)
+        else
+            return lctrue if obj1.id == obj2.id
+        end 
+        return lcfalse
+    end
+
+    obj_eq = LcProc.new do |args|
+        next internal.lc_obj_eq(*args.as(T2))
+    end
+
+    def self.lc_obj_freeze(obj : Value)
+        obj.frozen = true 
+        return obj 
+    end
+
+    obj_freeze = LcProc.new do |args|
+        next internal.lc_obj_freeze(*args.as(T1))
+    end
+
+    obj_frozen = LcProc.new do |args|
+        obj = args.as(T1)[0]
+        if obj.frozen 
+            next lctrue 
+        end 
+        next lcfalse
+    end
+
+    obj_null = LcProc.new do |args|
+        obj = args.as(T1)[0]
+        next lctrue if obj.is_a? LcNull
+        next lcfalse
+    end
+
+
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
     internal.lc_set_parent_class(Obj,LcClass)
     internal.lc_set_parent_class(MainClass,Obj)
 
-    internal.lc_add_static(Obj,"new",obj_new,    0)
-    internal.lc_add_internal(Obj,"init",obj_init,0)
+    internal.lc_add_static(Obj,"new",obj_new,         0)
+    internal.lc_add_internal(Obj,"init",obj_init,     0)
+    internal.lc_add_internal(Obj,"==",obj_eq,         1)
+    internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
+    internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
+    internal.lc_add_internal(Obj,"is_null",obj_null,  0)
+
+    internal.lc_add_static(LcClass,"freeze",obj_freeze,0)
+    internal.lc_add_static(LcClass,"frozen",obj_frozen,0)
+    internal.lc_add_static(LcClass,"is_null",obj_null, 0)
 
 end

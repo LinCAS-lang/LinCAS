@@ -48,13 +48,18 @@ module LinCAS::Internal
         return lcFalse.as(Value)
     end
 
+    bool_new = LcProc.new do |args|
+        lc_raise(LcNoMethodError,convert(:no_s_method) % {"Bool","Class"})
+        next Null
+    end
+
     def self.lc_bool_invert(value)
         if value.is_a? LcBTrue
             return lcfalse
         elsif value.is_a? LcBFalse
             return lctrue
         else 
-            # internal.raise()
+            #internal.raise()
             return Null
         end
     end
@@ -98,6 +103,10 @@ module LinCAS::Internal
         )
     end
 
+    bool_ne = LcProc.new do |args|
+        next internal.lc_bool_ne(*args.as(T2))
+    end
+
     def self.lc_bool_and(val1, val2)
         return lctrue if val1 == lctrue && val2 == lctrue
         return lcfalse
@@ -121,8 +130,10 @@ module LinCAS::Internal
     BoolClass = internal.lc_build_class_only("Boolean")
     internal.lc_set_parent_class(BoolClass, Obj)
 
+    internal.lc_add_static(BoolClass,"new",bool_new,    0)
     internal.lc_add_internal(BoolClass,"!", bool_invert,0)
     internal.lc_add_internal(BoolClass,"==",bool_eq,    1)
+    internal.lc_add_internal(BoolClass,"!=",bool_ne,    1)
     internal.lc_add_internal(BoolClass,"&&",bool_and,   1)
     internal.lc_add_internal(BoolClass,"||",bool_or,    1)
 

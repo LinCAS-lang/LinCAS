@@ -89,6 +89,7 @@ module LinCAS
                     self.last.callname
             )
             frame.duplicated = true
+            frame.block      = self.last.block
             self.push(frame)
         end
 

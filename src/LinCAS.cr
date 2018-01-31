@@ -35,9 +35,10 @@ require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
 require "./Internal/Proc"
 require "./Intermediate/SymbolTab"
+require "./Backend/Eval"
 require "./Internal/LcInternal"
 require "./Backend/CallStack"
-require "./Backend/Eval"
+require "./Internal/Math"
 require "../util/AstPrinter"
 require "../util/SymTabPrinter"
 
@@ -48,7 +49,8 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test6.lc"))
+dir = ARGV[0]
+parser = factory.makeParser(File.expand_path(dir))
 #parser.displayTokens
 ast = parser.parse
 #astPrinter = AstPrinter.new

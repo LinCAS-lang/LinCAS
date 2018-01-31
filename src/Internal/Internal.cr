@@ -42,39 +42,16 @@ module LinCAS::Internal
         @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
-        setter klass
-        setter frozen
-        setter data
-        getter klass 
-        getter frozen
-        getter data
-        
-        def ==(other)
-            return false if self.class != other.class 
-            if other.is_a? BaseS
-                return self.klass.path == other.as(BaseS).klass.path
-            end
-        end
+        @id     = 0_u64
+        property klass, frozen, data, id
     end
 
     abstract class BaseC
         @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
-        setter klass
-        setter frozen
-        setter data
-        getter klass 
-        getter frozen
-        getter data
-
-        def ==(other)
-            return false if self.class != other.class 
-            if other.is_a? BaseC
-                return self.klass.path == other.as(BaseC).klass.path
-            end
-            return false
-        end
+        @id     = 0_u64
+        property klass, frozen, data, id
     end
     
     macro internal 

@@ -27,6 +27,7 @@ module LinCAS
     alias T1 = Tuple(Value)
     alias T2 = Tuple(Value,Value)
     alias T3 = Tuple(Value,Value,Value)
+    alias T  = T1 | T2 | T3
     alias An = Array(Value)
     alias Va = T1 | T2 | T3 | An 
 
@@ -38,8 +39,12 @@ module LinCAS
             @proc = block 
         end
 
+        def call(args : An)
+            return @proc.call(args)
+        end
+
         def call(*args : Value)
-            @proc.call(args)
+            return @proc.call(args)
         end
 
     end

@@ -176,6 +176,10 @@ module LinCAS::Internal
         next internal.lc_int_to_f(*args.as(T1))
     end
 
+    int_to_i = LcProc.new do |args|
+        next args.as(T1)[0]
+    end
+
     def self.lc_int_invert(n : Value)
         return internal.build_int(- int2num(n))
     end
@@ -195,6 +199,13 @@ module LinCAS::Internal
         next internal.lc_int_times(*args.as(T1))
     end
 
+    int_abs = LcProc.new do |args|
+        arg = args.as(T1)[0]
+        val = internal.lc_num_to_cr_i(arg)
+        next Null unless val 
+        next num2int(val.abs)
+    end
+
     
 
     IntClass = internal.lc_build_class_only("Integer")
@@ -211,6 +222,8 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"invert",int_invert, 0)
     internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
     internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)
+    internal.lc_add_internal(IntClass,"to_i",int_to_i,     0)
     internal.lc_add_internal(IntClass,"times",int_times,   0)
+    internal.lc_add_internal(IntClass,"abs",int_abs,       0)
     
 end

@@ -37,10 +37,10 @@ module LinCAS
                 # "sqrt"  => TkType::SQRT,
 
                 # Math constants
-                "inf"  => TkType::INF,
-                "ninf" => TkType::NINF,
-                "e"    => TkType::E,
-                "pi"   => TkType::PI,
+                # "inf"  => TkType::INF,
+                # "ninf" => TkType::NINF,
+                # "e"    => TkType::E,
+                # "pi"   => TkType::PI,
 
                 # Keywords
                 "if"         => TkType::IF,

@@ -175,6 +175,17 @@ module LinCAS::Internal
         next internal.lc_class_ne(*args.as(T2))
     end
 
+    def self.lc_class_defrost(klass : Value)
+        klass.frozen = false 
+        return klass 
+    end 
+
+    class_defrost = LcProc.new do |args|
+        klass = args.as(T1)[0]
+        klass.frozen = false 
+        next klass
+    end
+
     LcClass = internal.lc_build_class_only("Class")
 
     internal.lc_add_internal(LcClass,"is_a", is_a,     1)
@@ -182,5 +193,6 @@ module LinCAS::Internal
     internal.lc_add_static(LcClass,"==",   class_eq,   1)
     internal.lc_add_static(LcClass,"<>",   class_ne,   1)
     internal.lc_add_static(LcClass,"!=",   class_ne,   1)
+    internal.lc_add_static(LcClass,"defrost",class_defrost,  0)
 
 end

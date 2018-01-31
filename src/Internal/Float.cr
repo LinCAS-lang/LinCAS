@@ -24,6 +24,15 @@
 
 
 module LinCAS::Internal
+
+    def self.lc_num_to_cr_f(num : Value)
+        if num.is_a? LcNum 
+            return num2num(num).to_f
+        else
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(num)} into Float")
+        end 
+        return nil 
+    end
     
 
     struct LcFloat < LcNum
@@ -116,10 +125,7 @@ module LinCAS::Internal
     def self.lc_float_fdiv(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            if float2num(n2) == 0
-                return positive_num(n1) ? LcInfinity : LcNinfinity
-            end
-            return num2float(n1.val / n2.as(LcFloat).val)
+            return num2float(n1.val / float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"/")
         end
@@ -170,6 +176,17 @@ module LinCAS::Internal
         next internal.lc_float_to_i(*args.as(T1))
     end
 
+    float_to_f = LcProc.new do |args|
+        next args.as(T1)[0]
+    end
+
+    float_abs = LcProc.new do |args|
+        arg = args.as(T1)[0]
+        val = internal.lc_num_to_cr_f(val)
+        next Null unless val 
+        next num2float(val.abs)
+    end
+
     FloatClass = internal.lc_build_class_only("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
 
@@ -182,4 +199,14 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"invert",float_invert, 0)
     internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
+    internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)
+    internal.lc_add_internal(FloatClass,"abs",float_abs,       0)
+
+
+    LcInfinity  =  num2float(Float64::INFINITY)
+    LcNinfinity = num2float(-Float64::INFINITY)
+    internal.lc_define_const(FloatClass,"INFINITY",LcInfinity)
+
+    NanObj = num2float(Float64::NAN)
+    internal.lc_define_const(FloatClass,"NAN",NanObj)
 end

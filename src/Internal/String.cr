@@ -32,10 +32,7 @@ module LinCAS::Internal
             @str_ptr = Pointer(LibC::Char).null
             @size    = 0
         end
-        setter str_ptr
-        setter size
-        getter str_ptr
-        getter size
+        property str_ptr, size
     end 
 
     macro set_size(lcStr,size)
@@ -51,8 +48,8 @@ module LinCAS::Internal
     end
 
     macro resize_str_capacity(lcStr,value)
-        st_size    = str_size({{lcStr}})
-        final_size = st_size + {{value}}
+        st_len    = str_size({{lcStr}})
+        final_size = st_len + {{value}}
         if final_size > STR_MAX_CAPA
             lc_raise(LcIndexError, "String size too big")
             return Null
@@ -75,6 +72,19 @@ module LinCAS::Internal
             char = str_char_at({{str}},{{index}} + {{to}} - i)
             str_add_char({{str}},{{length}} - i,char)
         end 
+    end
+
+    def self.compute_total_string_size(array : An)
+        size = 0
+        array.each do |val|
+            if val.is_a? LcString
+                size += str_size(val)
+            else 
+                lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(val)} into String")
+                return -1
+            end
+        end
+        return size 
     end
 
     def self.string2cr(value : Value)
@@ -140,8 +150,8 @@ module LinCAS::Internal
     # # str = "Foo" #=> "Foo"
     # ```
     #
-    # * argument:: string struct to initialize
-    # * argument:: initial string value
+    # * argument:: string to initialize
+    # * argument:: initial value
     def self.lc_init_string(lcStr : Value, value : (Value | String | LibC::Char))
         # To implement: argument check
         lcStr = lcStr.as(LcString)
@@ -160,20 +170,18 @@ module LinCAS::Internal
         end 
     end
 
-    # Concatenates two strings.
+    # Adds two strings.
     # This method can be invoked in two ways:
     # ```
     # foo    := "Foo"
     # bar    := "Bar"
-    # foobar := foo + bar
-    # # same as:
-    # foobar := foo.concat(bar)
+    # foobar := foo + bar #=> "FooBar"
     # ```
     #
-    # * argument:: first string struct to concatenate
-    # * argument:: second string struct to concatenate
-    # * returns:: new string struct
-    def self.lc_str_concat(lcStr : Value, str : Value)
+    # * argument:: first string to sum
+    # * argument:: second string to concatenate
+    # * returns:: new string
+    def self.lc_str_add(lcStr : Value, str : Value)
         unless str.is_a? LcString
             lc_raise(
                 LcTypeError,
@@ -191,15 +199,47 @@ module LinCAS::Internal
         return concated_str
     end
 
-    str_concat = LcProc.new do |args|
+    str_add = LcProc.new do |args|
         args = args.as(T2)
-        next internal.lc_str_concat(*args)
+        next internal.lc_str_add(*args)
+    end
+
+    # Concatenates other strings at the given one
+    # ```
+    # a := "1"
+    # a.concat("2")     #=> "12"
+    # a.concat("3","4") #=> "1234"
+    # ```
+    #
+    # * argument:: first string to concatenate
+    # * argument:: other strings to concatenate
+    # * returns:: first string
+    def self.lc_str_concat(str1 : Value, str2 : An)
+        len = compute_total_string_size(str2)
+        return Null unless len > 0
+        strlen = str_size(str1)
+        resize_str_capacity(str1,len)
+        ptr    = pointer_of(str1) + strlen
+        str2.each do |str|
+            tmp = str_size(str)
+            ptr.copy_from(pointer_of(str),tmp)
+            ptr += tmp
+        end
+        return str1 
+    end
+
+    str_concat = LcProc.new do |args|
+        args = args.as(An)
+        arg1 = args[0]
+        args.shift
+        next internal.lc_str_concat(arg1,args)
     end
 
     # Performs a multiplication between a string and a number
     # ```
     # bark   := "Bark"
     # bark_3 := bark * 3 #=> "BarkBarkBark"
+    # ```
     def self.lc_str_multiply(lcStr : Value, times : Value)
         new_str = build_string("")
         strlen  = str_size(lcStr)
@@ -339,7 +379,7 @@ module LinCAS::Internal
         else
             x = internal.lc_num_to_cr_i(index)
             if x 
-                if x > str_size(str) - 1
+                if x > str_size(str) - 1 ||  x < 0
                     return Null 
                 else
                     return internal.build_string(str_char_at(str,x))
@@ -366,7 +406,7 @@ module LinCAS::Internal
     def self.lc_str_insert(str : Value, index : Value, value : Value)
         x = internal.lc_num_to_cr_i(index)
         return Null unless x.is_a? Number  
-        if x > str_size(str)
+        if x > str_size(str) || x < 0
             lc_raise(LcIndexError,"(index #{x} out of String)")
             return Null
         else 
@@ -406,7 +446,7 @@ module LinCAS::Internal
     def self.lc_str_set_index(str : Value,index : Value, value : Value)
         x = internal.lc_num_to_cr_i(index)
         return Null unless x.is_a? Number  
-        if x > str_size(str)
+        if x > str_size(str) || x < 0
             lc_raise(LcIndexError,"(Index #{x} out of String)")
         else
             unless value.is_a? LcString
@@ -608,7 +648,7 @@ module LinCAS::Internal
     end
 
     def self.lc_str_each_char(str : Value)
-        strlen = str_size(str) - 1
+        strlen = str_size(str)
         ptr    = pointer_of(str)
         strlen.times do |i|
             Exec.lc_yield(build_string(ptr[i]))
@@ -620,10 +660,10 @@ module LinCAS::Internal
     end
 
     def self.lc_str_chars(str : Value)
-        strlen = str_size(str) - 1
+        strlen = str_size(str)
         ptr    = pointer_of(str)
         ary    = build_ary(strlen)
-        (strlen -1).times do |i|
+        (strlen).times do |i|
             lc_ary_push(ary,build_string(ptr[i]))
         end
         return ary 
@@ -633,7 +673,11 @@ module LinCAS::Internal
         next internal.lc_str_chars(*args.as(T1))
     end
         
-
+    str_defrost = LcProc.new do |args|
+        str = args.as(T1)[0]
+        str.frozen = false 
+        next str 
+    end
 
 
 
@@ -641,12 +685,11 @@ module LinCAS::Internal
     StringClass = internal.lc_build_class_only("String")
     internal.lc_set_parent_class(StringClass, Obj)
 
-    internal.lc_add_internal(StringClass,"+",      str_concat,  1)
-    internal.lc_add_internal(StringClass,"concat", str_concat,  1)
+    internal.lc_add_internal(StringClass,"+",      str_add,     1)
+    internal.lc_add_internal(StringClass,"concat", str_concat, -1)
     internal.lc_add_internal(StringClass,"*",      str_multiply,1)
     internal.lc_add_internal(StringClass,"includes",str_include,1)
     internal.lc_add_internal(StringClass,"==",     str_compare, 1)
-    internal.lc_add_internal(StringClass, "<>",    str_icompare,1)
     internal.lc_add_internal(StringClass, "!=",    str_icompare,1)
     internal.lc_add_internal(StringClass,"clone",  str_clone,   0)
     internal.lc_add_internal(StringClass,"[]",     str_index,   1)
@@ -662,6 +705,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char,0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,   0)
+    internal.lc_add_internal(StringClass,"defrost",str_defrost, 0)
 
 
 end
