@@ -31,6 +31,9 @@ module LinCAS::Internal
         attr left 
         attr right
         attr inclusive
+        def to_s
+            return "#{@left}#{@inclusive ? ".." : "..."}#{@right}"
+        end
     end    
 
     macro left(range)

@@ -64,6 +64,9 @@ module LinCAS
         property name, path, prevScope, symTab, data, id, frozen
         getter included
         getter methods
+        def to_s 
+            return @path.to_s
+        end
     end
 
     class ClassEntry < BaseEntry

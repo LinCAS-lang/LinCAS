@@ -38,7 +38,7 @@ module LinCAS::Internal
         elsif value.is_a? LcFloat
             return value.as(LcFloat).val.to_i
         else
-            lc_raise(LcTypeError,"No implicit converion of %s into Integer" % lc_typeof(value))
+            lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
             return nil 
         end
     end
@@ -46,13 +46,6 @@ module LinCAS::Internal
     abstract struct LcNum < BaseS
     end
 
-    struct Inf < BaseS
-        @positive = true 
-        attr positive
-    end
-
-    struct LcNan < BaseS
-    end
 
     def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
         if v1.is_a? LcNum && v2.is_a? LcNum

@@ -22,19 +22,46 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./Kernel"
-require "./Internal"
-require "./Method"
-require "./Class"
-require "./Module"
-require "./Raise"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
-require "./Matrix"
+module LinCAS::Internal
+
+    abstract struct BinaryOp < BaseS
+
+        macro reduce_loop(val,tmp)
+            while {{val}} != {{tmp}}
+                {{tmp}} = {{val}}
+                {{val}} = {{val}}.reduce
+            end
+        end
+
+        property left,right 
+
+        def initialize(@left : Sym, @right : Sym)
+            super()
+        end
+
+        def reduce
+            tmp   = @left 
+            @left = @left.reduce 
+            reduce_loop(@left,tmp)
+            tmp    = @right 
+            @right = @right.reduce 
+            reduce_loop(@right,tmp)
+        end
+
+        def ==(obj : BinaryOp)
+            return false unless self.class = obj.class
+            return (self.left == obj.left) && (self.right == obj.right)
+        end 
+
+        @[AlwaysInline]
+        def ==(obj)
+            return false 
+        end
+
+        def depend?(obj)
+            return (@left.depend? obj) || (@right.depend? obj)
+        end
+
+    end
+    
+end

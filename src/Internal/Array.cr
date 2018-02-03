@@ -339,7 +339,7 @@ module LinCAS::Internal
         string = String.build do |io|
             io << '['
             (0...arylen - 1).each do |i|
-                lc_str_io_append(io,ptr[i])
+                io << ptr[i].to_s
                 io << ','
             end 
             lc_str_io_append(io,ptr[arylen - 1])

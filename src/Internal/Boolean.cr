@@ -25,9 +25,15 @@
 module LinCAS::Internal
 
     struct LcBTrue  < BaseS
+        def to_s 
+            return "true"
+        end
     end
 
     struct LcBFalse  < BaseS 
+        def to_s 
+            return "false"
+        end
     end
 
     alias LcBool = LcBTrue | LcBFalse

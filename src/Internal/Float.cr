@@ -40,6 +40,9 @@ module LinCAS::Internal
         def initialize(@val)
         end
         getter val
+        def to_s 
+            return @val.to_s 
+        end
     end
     
     @[AlwaysInline]
@@ -182,7 +185,7 @@ module LinCAS::Internal
 
     float_abs = LcProc.new do |args|
         arg = args.as(T1)[0]
-        val = internal.lc_num_to_cr_f(val)
+        val = internal.lc_num_to_cr_f(arg)
         next Null unless val 
         next num2float(val.abs)
     end

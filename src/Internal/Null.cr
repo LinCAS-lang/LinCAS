@@ -24,7 +24,11 @@
 
 module LinCAS::Internal
 
-    struct LcNull < BaseS; end
+    struct LcNull < BaseS
+        def to_s
+            return "null"
+        end
+    end
 
     def self.lc_build_null
         null  = LcNull.new

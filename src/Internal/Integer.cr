@@ -29,6 +29,9 @@ module LinCAS::Internal
         def initialize(@val)
         end
         getter val
+        def to_s 
+            return @val.to_s 
+        end
     end
 
     @[AlwaysInline]

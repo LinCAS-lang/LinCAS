@@ -33,6 +33,10 @@ module LinCAS::Internal
             @size    = 0
         end
         property str_ptr, size
+
+        def to_s 
+            return String.new(@str_ptr)
+        end
     end 
 
     macro set_size(lcStr,size)

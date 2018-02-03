@@ -22,19 +22,50 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./Kernel"
-require "./Internal"
-require "./Method"
-require "./Class"
-require "./Module"
-require "./Raise"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
-require "./Matrix"
+module LinCAS::Internal
+
+    abstract struct BaseS
+        property top
+        def initialize(@top = true)
+        end
+
+        abstract def +(obj)
+        abstract def -(obj)
+        abstract def *(obj)
+        abstract def /(obj)
+        abstract def **(obj)
+        abstract def reduce()
+        abstract def diff()
+        abstract def eval(dict)
+        abstract def ==(obj)
+        abstract def depend?(obj)
+    end
+
+    abstract class BaseC
+        property top
+        def initialize(@top = true)
+        end
+
+        abstract def +(obj)
+        abstract def -(obj)
+        abstract def *(obj)
+        abstract def /(obj)
+        abstract def **(obj)
+        abstract def reduce()
+        abstract def diff()
+        abstract def eval(dict)
+        abstract def ==(obj)
+        abstract def depend?(obj)
+    end
+
+    alias Sym = BaseS 
+
+    macro num2sym(value)
+        Snumber.new({{value}})
+    end
+
+    macro string2sym(value)
+        Variable.new({{value}})
+    end
+
+end

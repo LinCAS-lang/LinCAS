@@ -49,12 +49,16 @@ include LinCAS
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-dir = ARGV[0]
+dir = ARGV[0]?
+if dir 
+
 parser = factory.makeParser(File.expand_path(dir))
 #parser.displayTokens
 ast = parser.parse
 #astPrinter = AstPrinter.new
 #astPrinter.printAst(ast.as(Node)) if ast
-Exec.eval(ast)
+Exec.eval(ast) unless parser.errCount > 0
 #s_printer = SymTabPrinter.new 
 #s_printer.printSTab(Id_Tab.getRoot)
+
+end

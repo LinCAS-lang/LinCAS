@@ -27,9 +27,9 @@ module LinCAS
     alias T1 = Tuple(Value)
     alias T2 = Tuple(Value,Value)
     alias T3 = Tuple(Value,Value,Value)
-    alias T  = T1 | T2 | T3
+    alias T4 = Tuple(Value,Value,Value,Value)
     alias An = Array(Value)
-    alias Va = T1 | T2 | T3 | An 
+    alias Va = T1 | T2 | T3 | T4 | An 
 
     alias PV = Proc(Va,Value?)
 

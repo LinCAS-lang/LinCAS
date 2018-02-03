@@ -186,13 +186,24 @@ module LinCAS::Internal
         next klass
     end
 
+    class_to_s = LcProc.new do |args|
+        tmp = String.build do |io|
+            io << '"'
+            io << args.as(T1)[0].as(Structure).path.to_s
+            io << '"'
+        end
+        next internal.build_string(tmp)
+    end
+
     LcClass = internal.lc_build_class_only("Class")
 
     internal.lc_add_internal(LcClass,"is_a", is_a,     1)
-    internal.lc_add_internal(LcClass,"its_class",class_class,0)
     internal.lc_add_static(LcClass,"==",   class_eq,   1)
     internal.lc_add_static(LcClass,"<>",   class_ne,   1)
     internal.lc_add_static(LcClass,"!=",   class_ne,   1)
+    internal.lc_add_static(LcClass,"to_s", class_to_s, 0)
+    internal.lc_add_static(LcClass,"inspect",class_to_s,     0)
     internal.lc_add_static(LcClass,"defrost",class_defrost,  0)
+    internal.lc_add_internal(LcClass,"its_class",class_class,0)
 
 end

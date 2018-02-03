@@ -25,6 +25,9 @@
 module LinCAS::Internal
 
     class LcObject < BaseC
+        def to_s 
+            return Internal.lc_obj_to_s(self)
+        end
     end
 
     def self.boot_main_object
@@ -54,12 +57,16 @@ module LinCAS::Internal
 
     def self.lc_obj_to_s(obj : Value)
         string = String.build do |io|
-            lc_obj_inspect(obj,io)
+            lc_obj_to_s(obj,io)
         end 
         return build_string(string)
     ensure
         GC.free(Box.box(string))
         GC.collect 
+    end
+
+    obj_to_s = LcProc.new do |args|
+        next internal.lc_obj_to_s(*args.as(T1))
     end
 
     def self.lc_obj_to_s(obj : Value, io)
@@ -69,9 +76,8 @@ module LinCAS::Internal
             io << ((obj.is_a? ClassEntry) ? " : class" : " : module")
         else
             io << obj.as(ValueR).klass.path.to_s
-            io << " : object"
         end
-        io << " @0x"
+        io << ":@0x"
         pointerof(obj).address.to_s(16,io)
         io << '>'
     end
@@ -153,6 +159,8 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
     internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
+    internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
+    internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
 
     internal.lc_add_static(LcClass,"freeze",obj_freeze,0)
     internal.lc_add_static(LcClass,"frozen",obj_frozen,0)

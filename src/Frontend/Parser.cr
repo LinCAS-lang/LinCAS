@@ -210,6 +210,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         @scanner.lines
     end
 
+    def errCount
+        @errHandler.errors 
+    end
+
     protected def sync(syncSet)
         if !(syncSet.includes? @currentTk.ttype)
             @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self)
