@@ -392,6 +392,20 @@ module LinCAS::Internal
         next internal.lc_ary_o_map(*args.as(T1))
     end
 
+    def self.lc_ary_each_with_index(ary : Value)
+        arylen = ary_size(ary)
+        ptr    = ary_ptr(ary)
+        arylen.times do |i|
+            Exec.lc_yield(ptr[i],num2int(i))
+            break if Exec.error?
+        end
+        return Null 
+    end
+
+    ary_each_with_index = LcProc.new do |args|
+        next internal.lc_ary_each_with_index(*args.as(T1))
+    end
+
     def self.lc_ary_flatten(ary : Value)
         arylen = ary_size(ary)
         new_ary = build_ary_new(nil)
@@ -471,6 +485,25 @@ module LinCAS::Internal
         next ary 
     end
 
+    def self.lc_ary_swap(ary : Value, i1 : Value, i2 : Value)
+        i1_val = lc_num_to_cr_i(i1)
+        return Null unless i1_val 
+        i2_val = lc_num_to_cr_i(i2)
+        return Null unless i2_val
+        arylen = ary_size(ary)
+        if (i1_val < 0) || (i2_val < 0) || (i1_val >= arylen) || (i2_val >= arylen)
+            lc_raise(LcIndexError,"(Indexes out of array)")
+            return Null 
+        end 
+        ptr = ary_ptr(ary)
+        ptr.swap(i1_val,i2_val)
+        return Null 
+    end 
+
+    ary_swap = LcProc.new do |args|
+        next internal.lc_ary_swap(*args.as(T3))
+    end
+
 
     AryClass = internal.lc_build_class_only("Array")
     internal.lc_set_parent_class(AryClass,Obj)
@@ -497,4 +530,6 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"insert",ary_insert, -1)
     internal.lc_add_internal(AryClass,"==",ary_eq,          1)
     internal.lc_add_internal(AryClass,"defrost",ary_defrost,0)
+    internal.lc_add_internal(AryClass,"swap",ary_swap,      2)
+    internal.lc_add_internal(AryClass,"each_with_index",ary_each_with_index,  0)
 end

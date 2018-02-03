@@ -147,6 +147,12 @@ module LinCAS::Internal
         next lcfalse
     end
 
+    obj_to_m = LcProc.new do |args|
+        mx = internal.build_matrix(1,1)
+        set_matrix_index(mx,0,0,args.as(T1)[0])
+        next mx
+    end
+
 
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
@@ -160,6 +166,7 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
+    internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
 
     internal.lc_add_static(LcClass,"freeze",obj_freeze,0)
