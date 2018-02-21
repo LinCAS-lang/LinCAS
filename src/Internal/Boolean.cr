@@ -40,23 +40,20 @@ module LinCAS::Internal
 
     def self.build_true
         lcTrue       = LcBTrue.new
-        klass        = Id_Tab.lookUp("Boolean")
-        lcTrue.klass = klass.as(ClassEntry)
-        lcTrue.data  = klass.as(ClassEntry).data.clone
+        klass         = Id_Tab.lookUp("Boolean")
+        lcTrue.klass  = klass.as(ClassEntry)
+        lcTrue.data   = klass.as(ClassEntry).data.clone
+        lcTrue.frozen = true
         return lcTrue.as(Value)
     end
 
     def self.build_false
-        lcFalse       = LcBFalse.new
-        klass         = Id_Tab.lookUp("Boolean")
-        lcFalse.klass = klass.as(ClassEntry)
-        lcFalse.data  = klass.as(ClassEntry).data.clone
+        lcFalse        = LcBFalse.new
+        klass          = Id_Tab.lookUp("Boolean")
+        lcFalse.klass  = klass.as(ClassEntry)
+        lcFalse.data   = klass.as(ClassEntry).data.clone
+        lcFalse.frozen = true
         return lcFalse.as(Value)
-    end
-
-    bool_new = LcProc.new do |args|
-        lc_raise(LcNoMethodError,convert(:no_s_method) % {"Bool","Class"})
-        next Null
     end
 
     def self.lc_bool_invert(value)
@@ -136,7 +133,9 @@ module LinCAS::Internal
     BoolClass = internal.lc_build_class_only("Boolean")
     internal.lc_set_parent_class(BoolClass, Obj)
 
-    internal.lc_add_static(BoolClass,"new",bool_new,    0)
+    internal.lc_remove_static(BoolClass,"new")
+    internal.lc_remove_internal(BoolClass,"defrost")
+
     internal.lc_add_internal(BoolClass,"!", bool_invert,0)
     internal.lc_add_internal(BoolClass,"==",bool_eq,    1)
     internal.lc_add_internal(BoolClass,"!=",bool_ne,    1)

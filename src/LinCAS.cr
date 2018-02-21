@@ -51,14 +51,18 @@ factory = FrontendFactory.new
 ENV["libDir"] = ""
 dir = ARGV[0]?
 if dir 
-
-parser = factory.makeParser(File.expand_path(dir))
-#parser.displayTokens
-ast = parser.parse
-#astPrinter = AstPrinter.new
-#astPrinter.printAst(ast.as(Node)) if ast
-Exec.eval(ast) unless parser.errCount > 0
-#s_printer = SymTabPrinter.new 
-#s_printer.printSTab(Id_Tab.getRoot)
-
+    begin
+        parser = factory.makeParser(File.expand_path(dir))
+        #parser.displayTokens
+        ast = parser.parse
+        #astPrinter = AstPrinter.new
+        #astPrinter.printAst(ast.as(Node)) if ast
+        Exec.eval(ast) unless parser.errCount > 0
+        #s_printer = SymTabPrinter.new 
+        #s_printer.printSTab(Id_Tab.getRoot)
+    rescue e
+        puts e 
+        puts
+        Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
+    end
 end

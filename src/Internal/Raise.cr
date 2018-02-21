@@ -137,7 +137,7 @@ module LinCAS
         ErrClass = internal.lc_build_class_only("Error")
         internal.lc_set_parent_class(ErrClass,Obj)
         internal.lc_add_static_singleton(ErrClass,"new",err_new,    0)
-        internal.lc_add_internal(ErrClass,"init",err_init,          2)
+        internal.lc_add_internal(ErrClass,"init",err_init,          1)
         internal.lc_add_internal(ErrClass,"to_s",err_msg,           0)
         internal.lc_add_internal(ErrClass,"message",err_msg,        0)
         internal.lc_add_internal(ErrClass,"backtrace",err_backtrace,0)

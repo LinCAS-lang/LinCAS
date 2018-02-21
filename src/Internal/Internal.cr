@@ -31,6 +31,7 @@ lib LibC
     fun strtok(str : Char*, delimiter : Char*) : Char*
     fun strtol(str : Char*, endptr : Char*, base : Int) : Int
     fun strtod(str : Char*, endptr : Char**) : Double
+    fun strcmp(str1 : Char*, str2 : Char*) : Int
 end
 
 module LinCAS::Internal

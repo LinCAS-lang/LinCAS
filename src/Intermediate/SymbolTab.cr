@@ -59,11 +59,12 @@ module LinCAS
         @symTab   = SymTab.new
         @data     = Data.new
         @methods  = SymTab.new 
+        @statics  = SymTab.new
         @id       = 0_u64
         @frozen   = false
         property name, path, prevScope, symTab, data, id, frozen
         getter included
-        getter methods
+        getter methods, statics
         def to_s 
             return @path.to_s
         end

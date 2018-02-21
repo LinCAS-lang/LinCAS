@@ -152,6 +152,9 @@ module LinCAS::Internal
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,Obj)
 
+    internal.lc_remove_static(NumClass,"new")
+    internal.lc_remove_internal(NumClass,"defrost")
+
     internal.lc_add_internal(NumClass,"==",num_eq, 1)
     internal.lc_add_internal(NumClass,"!=",num_ne, 1)
     internal.lc_add_internal(NumClass,">",num_gr,  1)

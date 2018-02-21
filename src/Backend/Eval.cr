@@ -70,9 +70,13 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         {{method}}.arity <= args.size
     end
 
+    macro push_frame(filename,line,name,object)
+        @callstack.pushFrame({{filename}}.as(String),{{line}}.as(Intnum),{{name}}.as(String),{{object}})
+    end
+    
     macro push_frame(filename,line,name)
         @callstack.pushFrame({{filename}}.as(String),{{line}}.as(Intnum),{{name}}.as(String))
-    end 
+    end
 
     macro push_duplicated_frame
         @callstack.push_duplicated_frame
@@ -86,16 +90,12 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @callstack.popFrame 
     end
 
-    macro push_object(obj)
-        @obj_stack.push({{obj}})
-    end 
-
-    macro pop_object
-        @obj_stack.pop 
-    end 
+    macro set_object(obj)
+        @callstack.object = {{obj}}
+    end
 
     macro current_object
-        @obj_stack.last 
+        @callstack.object.as(Internal::Value)
     end 
 
     macro set_local(name,value)
@@ -109,6 +109,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
     macro bind_method(scope,name,method)
         {{scope}}.methods.addEntry({{name}},{{method}})
     end
+
+    macro bind_static_method(scope,name,method)
+        {{scope}}.statics.addEntry({{name}},{{method}})
+    end 
 
     macro set_block(block)
         @callstack.set_block({{block}})
@@ -138,6 +142,14 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         {{method}}.call(args)
     end
 
+    macro set_last_method(m)
+        @callstack.method = {{m}} 
+    end 
+
+    macro get_last_method
+        @callstack.method
+    end
+
     @[AlwaysInline]
     def internal_call(method,args,arity)
         args = args.to_a
@@ -163,8 +175,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         @msgHandler = MsgHandler.new
         @try        = 0
         @error      = nil
-        @obj_stack  = [] of Internal::Value
-        @obj_stack << internal.boot_main_object
         self.addListener(RuntimeListener.new)
     end
 
@@ -178,7 +188,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     def eval(program : Node?)
         if program
-            push_frame(find_file(program.as(Node)),0,"Main")
+            obj = internal.boot_main_object
+            push_frame(find_file(program.as(Node)),0,"Main",obj)
+            method       = MethodEntry.new("Main",VoidVisib::PUBLIC)
+            method.owner = obj.as(Internal::ValueR).klass
+            set_last_method(method)
             eval_stmt(program) 
             pop_frame
         end
@@ -225,6 +239,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_try(node)
             when NodeType::BODY 
                 return eval_body(node)
+            when NodeType::YIELD
+                return eval_yield(node)
+            when NodeType::RAISE
+                eval_raise(node)
         end
         return null
     end
@@ -303,6 +321,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_reads(node)
             when NodeType::NULL
                 return null
+            when NodeType::YIELD
+                return eval_yield(node)
         else
             return eval_bin_op(node)
         end
@@ -421,39 +441,23 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
     end
 
-    protected def eval_call(node : Node)
-        branches = node.getBranches
-        name     = unpack_name(branches[0])
-        args     = branches[1]
-        push_frame(find_file(node),find_line(node),name)
-        argv     = eval_args(args)
-        return call_fun(current_object,name,argv)
+    private def find_method(owner,name,protctd)
+        method = internal.seek_method(owner,name,protctd)
+            case method
+                when 0
+                    lc_raise(LcNoMethodError,convert(:no_method) % owner.name) 
+                    return nil
+                when 1
+                    lc_raise(LcNoMethodError,convert(:protected_method) % owner.name)
+                    return nil
+                when 2
+                    lc_raise(LcNoMethodError,convert(:private_method) % owner.name)
+                    return nil
+            end
+        return method
     end
 
-    protected def eval_method_call(node : Node)
-        receiver = node.getAttr(NKey::RECEIVER)
-        branches = node.getBranches
-        name     = branches[0]
-        args     = branches[1]
-        voidName = unpack_name(name).as(String)
-        vReceiver = eval_exp(receiver.as(Node)).as(Internal::Value)
-        push_frame(find_file(node),find_line(node),voidName)
-        argv    = eval_args(args)
-        push_object(vReceiver)
-        return call_fun(vReceiver,voidName,argv)
-    ensure 
-        pop_object
-    end
-
-    protected def call_fun(node : Node,receiver,name : String, *args)
-        push_frame(find_file(node),find_line(node),name)
-        push_object(receiver)
-        return call_fun(receiver,name,args)
-    ensure
-        pop_object
-    end
-
-    protected def call_fun(receiver,name : String, args)
+    private def seek_method(receiver,name,protctd = false)
         receiver = eval_stmt(receiver).as(Internal::Value) if receiver.is_a? Node
         if receiver.is_a? Structure
             method = internal.seek_static_method(receiver,name)
@@ -463,30 +467,102 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return null
             end
         else 
-            method = internal.seek_method(class_of(receiver),name)
-            case method
-                when 0
-                    lc_raise(LcNoMethodError,convert(:no_method) % class_of(receiver).name) 
-                    return null
-                when 1
-                    lc_raise(LcNoMethodError,convert(:protected_method) % class_of(receiver).name)
-                    return null
-                when 2
-                    lc_raise(LcNoMethodError,convert(:private_method) % class_of(receiver).name)
-                    return null
-            end
+            method = find_method(class_of(receiver),name,protctd)  
         end
+        return method if method.is_a? MethodEntry
+        return nil
+    end
+
+    protected def seek_method_2(receiver,name,protctd,static)
+        if static 
+            return seek_method(receiver,name)
+        else 
+            method = find_method(receiver,name,protctd)
+        end 
+        return method
+    end 
+
+    protected def eval_call(node : Node)
+        branches = node.getBranches
+        name     = unpack_name(branches[0])
+        args     = branches[1]
+        argv     = eval_args(args)
+        current_obj = current_object
+        l_method    = get_last_method.as(MethodEntry)
+        owner       = l_method.owner.as(Structure)
+        push_frame(find_file(node),find_line(node),name,current_obj)
+        static = (current_obj.is_a? Structure)
+        method = seek_method_2(owner,name,true,static)
+        if method
+            execute_fun(current_obj,method,argv)
+        else 
+            pop_frame 
+        end
+    end
+
+    protected def eval_method_call(node : Node)
+        receiver = node.getAttr(NKey::RECEIVER)
+        branches = node.getBranches
+        name     = branches[0]
+        args     = branches[1]
+        voidName = unpack_name(name).as(String)
+        vReceiver = eval_exp(receiver.as(Node)).as(Internal::Value)
+        argv    = eval_args(args)
+        push_frame(find_file(node),find_line(node),voidName,vReceiver)
+        method = seek_method(vReceiver,voidName)
+        if method
+            return execute_fun(vReceiver,method,argv)
+        else 
+            pop_frame
+        end 
+        return null
+    end
+
+    protected def call_fun(node : Node,receiver,name : String, *args)
+        push_frame(find_file(node),find_line(node),name,receiver)
+        method = seek_method(receiver,name)
+        if method
+            return execute_fun(receiver,method,args)
+        else 
+            pop_frame
+        end 
+        return null
+    end
+
+    protected def call_fun(receiver,name : String,argv)
+        method = seek_method(receiver,name)
+        if method 
+            return execute_fun(receiver,method,argv)
+        end 
+        return null
+    end
+
+    def lc_call_fun(receiver,name : String, *args)
+        method = seek_method(receiver,name)
+        push_duplicated_frame
+        if method
+            return execute_fun(receiver,method,args)
+        else 
+            pop_frame
+        end 
+        return null 
+    end
+
+    protected def execute_fun(receiver,method,args)
         method = method.as(MethodEntry)
+        name = @callstack.last.callname
+        set_last_method(method)
         unless check_arity(method,args)
             lc_raise(LcArgumentError,convert(:few_args) % {args.size,method.arity})
+            pop_frame
             return null
         end
         if method.internal 
             code   = method.code.as(LcProc) 
             if args.is_a? Array
-                f_args = [receiver.as(Internal::Value)] + args
+                f_args = ([receiver.as(Internal::Value)] + args).as(An)
             else 
-                f_args = {receiver} + args 
+                f_args = ({receiver.as(Internal::Value)} + args) 
             end 
             output = internal_call(code,f_args,method.arity)
             pop_frame
@@ -508,14 +584,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             end
         end
         return null
-    end
-
-    def lc_call_fun(receiver,name : String, *args)
-        push_duplicated_frame
-        push_object(receiver)
-        return call_fun(receiver,name,args)
-    ensure
-        pop_object
     end
 
     protected def eval_args(args : Node)
@@ -575,7 +643,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             pop_frame
             return nil 
         end
-        push_object(klass.as(Internal::Value))
+        set_object(klass.as(Internal::Value))
         if klass.as(ClassEntry).parent.nil? && parent
             parent = eval_namespace(parent.as(Node))
             lc_raise(
@@ -590,7 +658,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         eval_body(body)
         exit_scope
         pop_frame
-        pop_object
     end
 
     protected def define_class(klass,name)
@@ -652,11 +719,9 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             mod  = define_module(mod,name)
         end 
         if mod 
-            push_frame(find_file(node),find_line(node),name)
-            push_object(mod.as(Internal::Value))
+            push_frame(find_file(node),find_line(node),name,mod)
             eval_body(body[0])
             exit_scope
-            pop_object
             pop_frame
         end 
     end
@@ -731,7 +796,13 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 )
             end
         end 
-        bind_method(receiver.as(Structure),voidName,method)
+        return nil if @error 
+        receiver = receiver.as(Structure)
+        if method.static 
+            bind_static_method(receiver,voidName,method)
+        else 
+            bind_method(receiver,voidName,method)
+        end
     end
 
     protected def eval_body(node : Node)
@@ -750,6 +821,10 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         exprv    = eval_exp(expr).as(Internal::Value)
         if var.type != NodeType::METHOD_CALL
             name  = unpack_name(var)
+            if internal.lc_seek_const(current_scope,name)
+                lc_raise(LcNameError,"(Dynamic assignment of const '%s')" % name,node)
+                return null 
+            end
             return null if @error
             if var.type == NodeType::LOCAL_ID
                 set_local(name,exprv)
@@ -776,6 +851,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             push_frame(find_file(node),find_line(node),"[]=")
             call_fun(receiver,"[]=",index)
         end
+        return exprv
     end
 
     protected def eval_include(node : Node)
@@ -825,11 +901,9 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         end
         obj  = call_fun(node,entry,"new").as(Internal::Value)
         if internal.lc_obj_responds_to? obj, "init"
-            push_frame(find_file(node),find_line(node),"new")
             argv = eval_args(args)
-            push_object(obj)
+            push_frame(find_file(node),find_line(node),"init",obj)
             call_fun(obj,"init",argv)
-            pop_object
             return obj 
         else 
             return obj 
@@ -846,7 +920,11 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             return null if @error
             return out_v if out_v.is_a? StackFrame
         elsif else_b
-            out_v = eval_body(else_b.as(Node))
+            if else_b.type == NodeType::IF
+                out_v = eval_if(else_b.as(Node))
+            else
+                out_v = eval_body(else_b.as(Node))
+            end
             return null if @error
             return out_v if out_v.is_a? StackFrame
         end 
@@ -920,7 +998,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
 
     protected def eval_condition(node : Node)
         value = eval_exp(node)
-        if value == null || value == Internal::LcFalse
+        if value.is_a? Internal::Null || value.is_a? Internal::LcFalse
             return false 
         else 
             return true
@@ -1001,49 +1079,114 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         
     end
 
+    protected def delete_block_args(list)
+        if list
+            list.each do |var|
+                delete_local(var)
+            end
+        end
+    end
+
+    protected def delete_block_args(frame : StackFrame,list)
+       if list
+           frame_list = frame.to_unsafe
+           list.each do |var|
+               frame_list.delete(var)
+           end 
+        end 
+    end
+
     def lc_yield(*args : Internal::Value)
         block = get_block
+        return execute_yield(block,args)
+    end
+
+    protected def load_block_args(argv : Node,args)
+        arg_list = argv.getBranches
+        var_list = [] of String
+        arg_list.each_with_index do |arg,i|
+            val = args[i]?
+            if arg.type == NodeType::ASSIGN
+                if val 
+                    name = unpack_name(arg.getBranches[0])
+                    var_list << name
+                    set_local(name,val)
+                else 
+                    name = unpack_name(arg.getBranches[0])
+                    var_list << name
+                    eval_assign(arg)
+                end 
+            else 
+                name = unpack_name(arg)
+                var_list << name
+                if val 
+                    set_local(name,val)
+                else 
+                    set_local(name,null)
+                end 
+            end
+        end 
+        return var_list        
+    end
+
+    def block_given?
+        return (get_block ? true : false)
+    end
+
+    protected def eval_yield(node : Node)
+        args  = node.getBranches[0]
+        block = get_block
+        argv  = eval_args(args)
+        return null if @error
+        value = execute_yield(block,argv)
+        return value
+    end
+
+    protected def execute_yield(block,args)
         if block .nil?
             lc_raise(LcArgumentError,"No block given")
             return null
         end
         argv  = block.as(Node).getAttr(NKey::BLOCK_ARG)
         push_cloned_frame
+        var_list = nil
         if argv 
-            load_block_args(argv.as(Node),args)
+            var_list = load_block_args(argv.as(Node),args)
         end
         return null if @error
         out_v = eval_body(block.as(Node))
         return null if @error
         if out_v.is_a? StackFrame
+            delete_block_args(out_v,var_list)
             return out_v.return_val
         end
+        delete_block_args(var_list)
         pop_frame
         return null
     end
 
-    protected def load_block_args(argv : Node,args)
-        arg_list = argv.getBranches
-        arg_list.each_with_index do |arg,i|
-            val = args[i]?
-            if arg.type == NodeType::ASSIGN
-                if val 
-                    set_local(unpack_name(arg.getBranches[0]),val)
-                else 
-                    eval_assign(arg)
-                end 
+    protected def eval_raise(node : Node)
+        exp = node.getBranches[0]
+        if exp.type == NodeType::NEW
+            error = eval_new(exp)
+            if internal.lc_is_a(error.as(Internal::Value),Internal::ErrClass)
+                lc_raise_e(error,node)
             else 
-                if val 
-                    set_local(unpack_name(arg),val)
-                else 
-                    set_local(unpack_name(arg),null)
-                end 
+                lc_raise(LcTypeError,"(Expecting string/error object)",node)
             end
-        end         
-    end
-
-    def block_given?
-        return (get_block ? true : false)
+        elsif exp.type == NodeType::STRING 
+            msg = exp.getAttr(NKey::VALUE).as(String)
+            lc_raise(LcRuntimeError,msg,node)
+        elsif exp.type == NodeType::LOCAL_ID || exp.type == NodeType::GLOBAL_ID
+            error = eval_exp(exp)
+            if internal.lc_is_a(error.as(Internal::Value),Internal::ErrClass)
+                lc_raise_e(error,node)
+            else 
+                lc_raise(LcTypeError,"(Expecting string/error object)",node)
+            end
+        else 
+            lc_raise(LcTypeError,"(Expecting string/error object)",node)
+        end
     end
 
     def lc_raise(code,msg,node)
@@ -1076,6 +1219,20 @@ class LinCAS::Eval < LinCAS::MsgGenerator
         else
             @error = internal.build_error(code,msg,backtrace.as(String)) 
         end 
+        null
+    end
+
+    protected def lc_raise_e(error,node)
+        backtrace = build_backtrace(node) if node
+        if @try == 0
+            err = String.build do |e|
+                e << error.as(Internal::LcError).body
+                e << backtrace
+            end
+            send_msg(err)
+        else
+            @error = error.as(Internal::LcError)
+        end
         null
     end
 

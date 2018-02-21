@@ -27,6 +27,24 @@ module LinCAS::Internal
     macro parent_of(klass)
        {{klass}}.as(ClassEntry).parent
     end
+
+    macro class_of(obj)
+        {{obj}}.as(ValueR).klass 
+    end
+
+    macro ensure_string(name, _return = true)
+        {% if _return == true %}
+            if !{{name}}.is_a? LcString 
+                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
+                return Null
+            end
+        {% else %}
+            if !{{name}}.is_a? LcString 
+                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
+            end
+        {% end %}
+    end
+
     
     def self.lc_build_class_only(name : String)
         return Id_Tab.addClass(name,true)
@@ -44,8 +62,16 @@ module LinCAS::Internal
         receiver.methods.addEntry(name,method)
     end
 
-    def self.lc_add_method_locally(name : String, method : LinCAS::MethodEntry)
+    def self.lc_add_undef_method(receiver : Structure,name : String,method : MethodEntry)
+        receiver.methods.addEntry(name,method)
+    end
+
+    def self.lc_add_method_locally(name : String, method : MethodEntry)
         Id_Tab.addMethod(name,method)
+    end
+
+    def self.lc_add_undef_method_locally(name : String,method : MethodEntry)
+        lc_add_undef_method(Id_Tab.getCurrent,name,method) 
     end
 
     def self.lc_add_internal(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
@@ -53,9 +79,19 @@ module LinCAS::Internal
         receiver.methods.addEntry(name,m)
     end
 
+    def self.lc_remove_internal(receiver : Structure,name : String)
+        m = undef_method(name,receiver)
+        receiver.methods.addEntry(name,m)
+    end
+
     def self.lc_add_static(receiver : Structure, name : String, proc : LcProc,arity : Intnum)
         m = define_static(name,receiver,proc,arity)
-        receiver.methods.addEntry(name,m)
+        receiver.statics.addEntry(name,m)
+    end
+
+    def self.lc_remove_static(receiver : Structure,name : String)
+        m = undef_static(name,receiver)
+        receiver.statics.addEntry(name,m)
     end
 
     def self.lc_add_singleton(receiver : Structure, name : String, proc : LcProc,arity : Intnum)
@@ -63,9 +99,24 @@ module LinCAS::Internal
         receiver.methods.addEntry(name,m)
     end
 
+    def self.lc_remove_singleton(receiver : Structure,name : String)
+        m = undef_singleton(name,receiver,proc,arity)
+        receiver.methods.addEntry(name,m)
+    end
+
     def self.lc_add_static_singleton(receiver : Structure, name : String, proc : LcProc, arity : Intnum)
         m = define_static_singleton(name,receiver,proc,arity)
-        receiver.methods.addEntry(name,m)
+        receiver.statics.addEntry(name,m)
+    end
+
+    def self.lc_remove_static_singleton(receiver : Structure,name : String)
+        m = undef_static_singleton(receiver,name)
+        receiver.statics.addEntry(name,m)
+    end
+
+    def self.lc_add_class_method(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
+        lc_add_internal(receiver,name,proc,arity)
+        lc_add_static(receiver,name,proc,arity)
     end
 
     def self.lc_define_const(str : Structure, name : String, const : Value)
@@ -195,9 +246,54 @@ module LinCAS::Internal
         next internal.build_string(tmp)
     end
 
+    def self.lc_class_rm_static_method(klass : Value, name : Value)
+        ensure_string(name)
+        sname = lc_str2str(name)
+        unless lc_obj_responds_to? klass,sname
+            lc_raise(LcNoMethodError, "Can't find static method '%s' for %s" % {sname,lc_typeof(klass)})
+            return Null 
+        else 
+            lc_remove_static(klass.as(Structure),sname)
+            return Null 
+        end 
+    end
+
+    class_rm_static_method = LcProc.new do |args|
+        next internal.lc_class_rm_static_method(*args.as(T2))
+    end
+
+    def self.lc_class_rm_instance_method(klass : Value,name : Value)
+        ensure_string(name)
+        sname = lc_str2str(name)
+        unless lc_obj_responds_to? klass,sname,false
+            lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
+            return Null 
+        else 
+            lc_remove_internal(klass.as(Structure),sname)
+            return Null  
+        end
+    end
+
+    class_rm_instance_method = LcProc.new do |args|
+        next internal.lc_class_rm_instance_method(*args.as(T2))
+    end
+
+    def self.lc_class_rm_method(obj : Value,name : Value)
+        if obj.is_a? Structure 
+            return lc_class_rm_static_method(obj,name)
+        else 
+            return lc_class_rm_instance_method(class_of(obj),name)
+        end 
+    end
+
+    class_rm_method = LcProc.new do |args|
+        next internal.lc_class_rm_method(*args.as(T2))
+    end
+
+
     LcClass = internal.lc_build_class_only("Class")
 
-    internal.lc_add_internal(LcClass,"is_a", is_a,     1)
+    internal.lc_add_internal(LcClass,"is_a?", is_a,     1)
     internal.lc_add_static(LcClass,"==",   class_eq,   1)
     internal.lc_add_static(LcClass,"<>",   class_ne,   1)
     internal.lc_add_static(LcClass,"!=",   class_ne,   1)
@@ -205,5 +301,10 @@ module LinCAS::Internal
     internal.lc_add_static(LcClass,"inspect",class_to_s,     0)
     internal.lc_add_static(LcClass,"defrost",class_defrost,  0)
     internal.lc_add_internal(LcClass,"its_class",class_class,0)
+    internal.lc_add_static(LcClass,"its_class",class_class,  0)
+    internal.lc_add_static(LcClass,"undef_instance_method",class_rm_instance_method,  1)
+    internal.lc_add_static(LcClass,"undef_static_method",class_rm_static_method,      1)
+
+    internal.lc_add_class_method(LcClass,"undef_method",class_rm_method,              1)
 
 end

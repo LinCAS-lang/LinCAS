@@ -190,6 +190,43 @@ module LinCAS::Internal
         next num2float(val.abs)
     end
 
+    float_round = LcProc.new do |args|
+        args = args.as(An)
+        float = internal.lc_num_to_cr_f(args[0]).as(Floatnum)
+        num   = args[1]? || 1
+        unless num.is_a? Intnum 
+            num = internal.lc_num_to_cr_i(num).as(Intnum)
+        end
+        next num2float(float.round(num))
+    end
+
+    float_ceil = LcProc.new do |args|
+        float = internal.lc_num_to_cr_f(*args.as(T1))
+        if float.is_a? Float32
+            next num2float(LibM.ceil_f32(float.as(Float32)))
+        else
+            next num2float(LibM.ceil_f64(float.as(Float64)))
+        end
+    end
+
+    float_floor = LcProc.new do |args|
+        float = internal.lc_num_to_cr_f(*args.as(T1))
+        if float.is_a? Float32 
+            next num2float(LibM.floor_f32(float.as(Float32)))
+        else 
+            next num2float(LibM.floor_f64(float.as(Float64)))
+        end
+    end
+
+    float_trunc = LcProc.new do |args|
+        float = internal.lc_num_to_cr_f(*args.as(T1))
+        if float.is_a? Float32 
+            next num2float(LibM.trunc_f32(float.as(Float32)))
+        else 
+            next num2float(LibM.trunc_f64(float.as(Float64)))
+        end
+    end
+
     FloatClass = internal.lc_build_class_only("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
 
@@ -204,6 +241,10 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
     internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)
     internal.lc_add_internal(FloatClass,"abs",float_abs,       0)
+    internal.lc_add_internal(FloatClass,"round",float_round,  -1)
+    internal.lc_add_internal(FloatClass,"floor",float_floor,   0)
+    internal.lc_add_internal(FloatClass,"ceil",float_ceil,     0)
+    internal.lc_add_internal(FloatClass,"trunc",float_trunc,   0)
 
 
     LcInfinity  =  num2float(Float64::INFINITY)

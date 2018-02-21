@@ -34,11 +34,77 @@ module LinCAS::Internal
         null  = LcNull.new
         null.klass = NullClass
         null.data  = NullClass.data.clone
+        null.frozen= true
         return null.as(Value)
+    end
+
+    def self.lc_null_and(v1 : Value, v2 : Value)
+        return v1
+    end 
+
+    null_and = LcProc.new do |args|
+        next Null
+    end
+
+    def self.lc_null_or(v1 : Value, v2 : Value)
+        return v2 
+    end 
+
+    null_or = LcProc.new do |args|
+        next args.as(T2)[1]
+    end
+
+    def self.lc_null_not(v1 : Value)
+        next lctrue 
+    end
+
+    null_not = LcProc.new do |args|
+        next lctrue
+    end
+
+    @[AlwaysInline]
+    def self.lc_null_to_s(arg = Null)
+        return build_string("null")
+    end
+
+    null_to_s = LcProc.new do |args|
+        next internal.lc_null_to_s
+    end
+
+    null_eq = LcProc.new do |args|
+        value = args.as(T2)[1]
+        if value.is_a? LcNull
+            next lctrue 
+        end
+        next lcfalse
+    end
+
+    null_ne = LcProc.new do |args|
+        value = args.as(T2)[1]
+        if value.is_a? LcNull
+            next lcfalse
+        end
+        next lctrue
+    end
+
+    null_clone = LcProc.new do |args|
+        next args.as(T1)[0]
     end
 
     NullClass = internal.lc_build_class_only("NullClass")
     internal.lc_set_parent_class(NullClass,Obj)
+
+    internal.lc_remove_static(NullClass,"new")
+    internal.lc_remove_internal(NullClass,"defrost")
+
+    internal.lc_add_internal(NullClass,"&&",null_and,      1)
+    internal.lc_add_internal(NullClass,"||",null_or,       1)
+    internal.lc_add_internal(NullClass,"!",null_not,       0)
+    internal.lc_add_internal(NullClass,"==",null_eq,       1)
+    internal.lc_add_internal(NullClass,"!=",null_ne,       1)
+    internal.lc_add_internal(NullClass,"to_s",null_to_s,   0)
+    internal.lc_add_internal(NullClass,"inspect",null_to_s,0)
+    internal.lc_add_internal(NullClass,"clone",null_clone, 0)
 
     Null = lc_build_null
     

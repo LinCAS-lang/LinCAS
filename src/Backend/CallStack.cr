@@ -34,21 +34,39 @@ module LinCAS
         property block
         
         @return_val : Internal::Value
-        @block : Node?
+        @block      : Node?
+        @object     : Internal::Value?
+        @method     : MethodEntry?
         def initialize(@filename : String,@line : Intnum, @callname : String)
+            @varSet     = Hash(String,Internal::Value).new
+            @return_val = Internal::Null
+            @duplicated = false
+            @block      = nil
+            @object     = nil
+            @method     = nil
+        end
+
+        def initialize(@filename : String,@line : Intnum, @callname : String,@object : Internal::Value)
             @varSet     = Hash(String,Internal::Value).new
             @return_val = Internal::Null
             @duplicated = false
             @block      = nil
         end
 
-        def initialize(@filename : String,@line : Intnum, @varSet : Hash(String,Internal::Value))
+        def initialize(@filename : String,@line : Intnum, @varSet : Hash(String,Internal::Value),@object : Internal::Value)
             @callname   = "block"
             @return_val = Internal::Null
             @duplicated = false
             @block      = nil
         end
-                
+
+        def initialize(@filename : String,@line : Intnum,@callname : String, 
+                                @varSet : Hash(String,Internal::Value),@object : Internal::Value)
+            @return_val = Internal::Null
+            @duplicated = true
+            @block      = nil
+        end
+
         def setVar(var, value)
             @varSet[var] = value
         end
@@ -64,6 +82,9 @@ module LinCAS
         def to_unsafe
             return @varSet
         end
+
+        property object
+        property method
                 
     end
     
@@ -76,6 +97,12 @@ module LinCAS
             @depth = 0
         end
 
+        def pushFrame(filename,line,callname,object)
+            Exec.lc_raise(LcSystemStackError,"Stack level too deep") if MAX_CALLSTACK_DEPTH == @depth
+            @depth += 1
+            self.push(StackFrame.new(filename,line,callname,object))
+        end 
+
         def pushFrame(filename,line,callname)
             Exec.lc_raise(LcSystemStackError,"Stack level too deep") if MAX_CALLSTACK_DEPTH == @depth
             @depth += 1
@@ -86,7 +113,9 @@ module LinCAS
             frame = StackFrame.new(
                     self.last.filename,
                     self.last.line,
-                    self.last.callname
+                    self.last.callname,
+                    self.last.to_unsafe.dup,
+                    self.last.object.as(Internal::Value)
             )
             frame.duplicated = true
             frame.block      = self.last.block
@@ -95,11 +124,12 @@ module LinCAS
 
         def push_cloned_frame
             Exec.lc_raise(LcSystemStackError,"Stack level too deep") if MAX_CALLSTACK_DEPTH == @depth
-            @depth += 1
+            @depth += 1  
             self.push(StackFrame.new(
                 self.last.filename,
                 self.last.line,
-                self.last.to_unsafe.dup
+                self[size - 2].to_unsafe,
+                self[size - 2].object.as(Internal::Value)
             ))
         end
 
@@ -115,7 +145,7 @@ module LinCAS
         end
 
         def get_block
-            self.last.block 
+            self[size - 2].block 
         end
 
         def setVar(var,value)
@@ -128,6 +158,24 @@ module LinCAS
 
         def deleteVar(var)
             self.last.deleteVar(var)
+        end
+
+        def object
+            return self.last.object 
+        end
+
+        def object=(obj)
+            self.last.object = obj 
+        end
+
+        def method
+            return self.last.method
+        end
+
+        def method=(m)
+            last = self.pop
+            last.method = m
+            self.push(last)
         end
 
         def getBacktrace

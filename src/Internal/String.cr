@@ -25,7 +25,7 @@
 
 module LinCAS::Internal
 
-    STR_MAX_CAPA = 3000
+    STR_MAX_CAPA = 30000
 
     class LcString < BaseC
         def initialize
@@ -38,6 +38,10 @@ module LinCAS::Internal
             return String.new(@str_ptr)
         end
     end 
+
+    macro lc_str2str(str)
+        String.new(pointer_of({{str}}))
+    end
 
     macro set_size(lcStr,size)
         {{lcStr}}.as(LcString).size = {{size}}
@@ -651,6 +655,19 @@ module LinCAS::Internal
         next internal.lc_str_to_f(*args.as(T1))
     end
 
+    # Iterates over each char of the string
+    # ```
+    # "abcd".each_char() { (chr)
+    #     print "Char: ",chr
+    #     printl
+    # }
+    #
+    # #=> Char: a
+    # #=> Char: b
+    # #=> Char: c
+    # #=> Char: d
+    #
+    # * argument:: string on which the method is called
     def self.lc_str_each_char(str : Value)
         strlen = str_size(str)
         ptr    = pointer_of(str)
@@ -663,6 +680,11 @@ module LinCAS::Internal
         next internal.lc_str_each_char(*args.as(T1))
     end
 
+    # Returns an array containing each char of the string
+    # ```
+    # "abc".chars() #=> ["a","b","c"]
+    # ```
+    # * argument:: string on which the method is called
     def self.lc_str_chars(str : Value)
         strlen = str_size(str)
         ptr    = pointer_of(str)
@@ -676,12 +698,6 @@ module LinCAS::Internal
     str_chars = LcProc.new do |args|
         next internal.lc_str_chars(*args.as(T1))
     end
-        
-    str_defrost = LcProc.new do |args|
-        str = args.as(T1)[0]
-        str.frozen = false 
-        next str 
-    end
 
 
 
@@ -692,7 +708,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"+",      str_add,     1)
     internal.lc_add_internal(StringClass,"concat", str_concat, -1)
     internal.lc_add_internal(StringClass,"*",      str_multiply,1)
-    internal.lc_add_internal(StringClass,"includes",str_include,1)
+    internal.lc_add_internal(StringClass,"include?",str_include,1)
     internal.lc_add_internal(StringClass,"==",     str_compare, 1)
     internal.lc_add_internal(StringClass, "!=",    str_icompare,1)
     internal.lc_add_internal(StringClass,"clone",  str_clone,   0)
@@ -700,16 +716,16 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"[]=",    str_set_index,2)
     internal.lc_add_internal(StringClass,"insert", str_insert,  2)
     internal.lc_add_internal(StringClass,"size",   str_size,    0)
-    internal.lc_add_internal(StringClass,"o_upcase",str_upr_o,  0)
+    internal.lc_add_internal(StringClass,"length", str_size,    0)
+    internal.lc_add_internal(StringClass,"upcase!",str_upr_o,   0)
     internal.lc_add_internal(StringClass,"upcase", str_upr,     0)
-    internal.lc_add_internal(StringClass,"o_lowcase",str_lwr_o, 0)
+    internal.lc_add_internal(StringClass,"lowcase!",str_lwr_o,  0)
     internal.lc_add_internal(StringClass,"lowcase",str_lwr,     0)
     internal.lc_add_internal(StringClass,"split",  str_split,   1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char,0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,   0)
-    internal.lc_add_internal(StringClass,"defrost",str_defrost, 0)
 
 
 end

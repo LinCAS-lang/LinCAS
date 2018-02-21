@@ -185,6 +185,10 @@ module LinCAS
                     @text += currentChar
                     nextChar
                 end
+                if currentChar == "!" || currentChar == "?"
+                    @text += currentChar
+                    nextChar
+                end
                 if @text[0] == '@'
                     @ttype = TkType::GLOBAL_ID
                 else

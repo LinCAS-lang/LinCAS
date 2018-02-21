@@ -30,6 +30,9 @@ module LinCAS::Internal
         end
     end
 
+    struct VirtualObj < BaseS
+    end
+
     def self.boot_main_object
         return internal.lc_obj_new(MainClass)
     end
@@ -124,6 +127,10 @@ module LinCAS::Internal
         next internal.lc_obj_eq(*args.as(T2))
     end
 
+    obj_ne = LcProc.new do |args|
+        next lc_bool_invert(internal.lc_obj_eq(*args.as(T2)))
+    end
+
     def self.lc_obj_freeze(obj : Value)
         obj.frozen = true 
         return obj 
@@ -153,6 +160,24 @@ module LinCAS::Internal
         next mx
     end
 
+    obj_and = LcProc.new do |args|
+        next args.as(T2)[1]
+    end
+
+    obj_or = LcProc.new do |args|
+        next args.as(T2)[0]
+    end
+
+    obj_not = LcProc.new do |args|
+        next lcfalse
+    end
+
+    obj_defrost = LcProc.new do |args|
+        obj = args.as(T1)[0]
+        obj.frozen = false 
+        next obj
+    end
+
 
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
@@ -162,15 +187,22 @@ module LinCAS::Internal
     internal.lc_add_static(Obj,"new",obj_new,         0)
     internal.lc_add_internal(Obj,"init",obj_init,     0)
     internal.lc_add_internal(Obj,"==",obj_eq,         1)
+    internal.lc_add_internal(Obj,"!=",obj_eq,         1)
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
     internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
+    internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
+    internal.lc_add_internal(Obj,"||",obj_or,         1)
+    internal.lc_add_internal(Obj,"&&",obj_and,        1)
+    internal.lc_add_internal(Obj,"!",obj_not,         0)
 
-    internal.lc_add_static(LcClass,"freeze",obj_freeze,0)
-    internal.lc_add_static(LcClass,"frozen",obj_frozen,0)
-    internal.lc_add_static(LcClass,"is_null",obj_null, 0)
+    internal.lc_add_static(LcClass,"freeze",obj_freeze,   0)
+    internal.lc_add_static(LcClass,"defrost",obj_defrost, 0)
+    internal.lc_add_static(LcClass,"frozen?",obj_frozen,  0)
+    internal.lc_add_static(LcClass,"is_null",obj_null,    0)
+
 
 end

@@ -24,28 +24,44 @@
 
 module LinCAS::Internal
 
-    def self.lc_build_module_only(name : String)
-        return Id_Tab.addModule(name,true)
-    end
-    
-    def self.lc_build_module(name : String)
-        return Id_Tab.addModule(name)
-    end
-
-    def self.lc_include_module(receiver : Structure, mod : ModuleEntry)
-        if receiver.included.includes? mod.path
-            # lc_warn()
-        else
-            internal.lc_copy_methods_as_instance_in(mod,receiver)
-            internal.lc_copy_consts_in(mod,receiver)
+    def self.lc_heap_sort(heap : Pointer, size : Intnum,&block)
+        n      = size
+        parent = size / 2
+        loop do
+            if parent > 0
+                parent -= 1
+                tmp = heap[parent]
+            else 
+                n -= 1
+                if n == 0
+                    return nil
+                end 
+                tmp     = heap[n]
+                heap[n] = heap[0]
+            end
+            index = parent 
+            child = index * 2 + 1
+            while child < n
+                if child + 1 < n
+                    cmp = yield(heap[child + 1],heap[child])
+                    return unless cmp 
+                    if cmp > 0
+                        child += 1
+                    end
+                end
+                cmp = yield(heap[child],tmp)
+                return unless cmp 
+                if cmp > 0
+                    heap[index] = heap[child]
+                    index = child 
+                    child = index * 2 + 1
+                else
+                    break 
+                end
+            end
+            heap[index] = tmp
         end
     end
 
-    def self.lc_module_add_internal(mod : ModuleEntry, name : String, method : LcProc, arity : Int32)
-        internal.lc_add_internal(mod,name,method,arity)
-        internal.lc_add_static(mod,name,method,arity)
-    end
-
-    LcModule = internal.lc_build_module_only("Module")
-
+        
 end

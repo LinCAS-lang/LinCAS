@@ -184,7 +184,7 @@ module LinCAS::Internal
     RangeClass = internal.lc_build_class_only("Range")
     internal.lc_set_parent_class(RangeClass,Obj)
     
-    internal.lc_add_internal(RangeClass,"includes",range_include,  1)
+    internal.lc_add_internal(RangeClass,"include?",range_include,  1)
     internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)
     internal.lc_add_internal(RangeClass,"size",range_size,         0)
     internal.lc_add_internal(RangeClass,"length",range_size,       0)

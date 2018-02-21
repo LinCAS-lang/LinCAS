@@ -23,6 +23,7 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 require "./Kernel"
+require "./Sort"
 require "./Internal"
 require "./Method"
 require "./Class"
