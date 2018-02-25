@@ -32,6 +32,10 @@ module LinCAS::Internal
         def to_s 
             return @val.to_s 
         end
+
+        def to_s(io)
+            io << @val 
+        end
     end
 
     @[AlwaysInline]
@@ -43,6 +47,17 @@ module LinCAS::Internal
     def self.int2num(int : Value)
         return int.as(LcInt).val
     end 
+
+    def self.lc_num_to_cr_i(value)
+        if value.is_a? LcInt
+            return value.as(LcInt).val
+        elsif value.is_a? LcFloat
+            return value.as(LcFloat).val.to_i
+        else
+            lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
+            return nil 
+        end
+    end
 
     def self.build_int(value : Intnum)
         int       = LcInt.new(value)
@@ -209,10 +224,24 @@ module LinCAS::Internal
         next num2int(val.abs)
     end
 
+    def self.lc_int_eq(n : Value, obj : Value)
+        if obj.is_a? LcInt
+            return val2bool(int2num(n) == int2num(obj))
+        else 
+            return lc_compare(n,obj)
+        end
+    end
+
+    int_eq = LcProc.new do |args|
+        next internal.lc_int_eq(*args.as(T2))
+    end
+
     
 
     IntClass = internal.lc_build_class_only("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
+
+    internal.lc_remove_static(IntClass,"new")
 
     internal.lc_add_internal(IntClass,"+",int_sum,  1)
     internal.lc_add_internal(IntClass,"-",int_sub,  1)
@@ -220,6 +249,7 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"\\",int_idiv,1)
     internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
     internal.lc_add_internal(IntClass,"^",int_power,1)
+    internal.lc_add_internal(IntClass,"==",int_eq,  1)
     internal.lc_add_internal(NumClass,"odd",int_odd,       0)
     internal.lc_add_internal(NumClass,"even",int_even,     0)
     internal.lc_add_internal(IntClass,"invert",int_invert, 0)

@@ -31,20 +31,6 @@ module LinCAS::Internal
     macro class_of(obj)
         {{obj}}.as(ValueR).klass 
     end
-
-    macro ensure_string(name, _return = true)
-        {% if _return == true %}
-            if !{{name}}.is_a? LcString 
-                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
-                return Null
-            end
-        {% else %}
-            if !{{name}}.is_a? LcString 
-                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
-            end
-        {% end %}
-    end
-
     
     def self.lc_build_class_only(name : String)
         return Id_Tab.addClass(name,true)
@@ -247,8 +233,8 @@ module LinCAS::Internal
     end
 
     def self.lc_class_rm_static_method(klass : Value, name : Value)
-        ensure_string(name)
-        sname = lc_str2str(name)
+        sname = string2cr(name)
+        return Null unless sname
         unless lc_obj_responds_to? klass,sname
             lc_raise(LcNoMethodError, "Can't find static method '%s' for %s" % {sname,lc_typeof(klass)})
             return Null 
@@ -263,8 +249,8 @@ module LinCAS::Internal
     end
 
     def self.lc_class_rm_instance_method(klass : Value,name : Value)
-        ensure_string(name)
-        sname = lc_str2str(name)
+        sname = string2cr(name)
+        return Null unless sname
         unless lc_obj_responds_to? klass,sname,false
             lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
             return Null 
@@ -290,21 +276,69 @@ module LinCAS::Internal
         next internal.lc_class_rm_method(*args.as(T2))
     end
 
+    def self.lc_class_delete_instance_method(klass : Value,name : Value)
+        sname = string2cr(name)
+        return Null unless sname
+        klass = klass.as(Structure)
+        if klass.methods.lookUp(sname)
+            klass.methods.removeEntry(sname)
+        else 
+            lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
+        end 
+        return Null 
+    end
+
+    class_delete_ins_method = LcProc.new do |args|
+        next internal.lc_class_delete_instance_method(*args.as(T2))
+    end
+
+    def self.lc_class_delete_static_method(klass : Value, name : Value)
+        sname = string2cr(name)
+        return Null unless sname
+        klass = klass.as(Structure)
+        if klass.statics.lookUp(sname)
+            klass.statics.removeEntry(sname)
+        else
+            lc_raise(LcNoMethodError,"Static method '%s' not defined in %s" % {sname,lc_typeof(klass)})
+        end 
+        return Null 
+    end 
+
+    class_delete_st_method = LcProc.new do |args|
+        next internal.lc_class_delete_static_method(*args.as(T2))
+    end
+
+    def self.lc_class_delete_method(obj : Value,name : Value)
+        if obj.is_a? Structure
+            return lc_class_delete_static_method(obj,name)
+        else
+            return lc_class_delete_instance_method(class_of(obj),name)
+        end
+    end
+
+    class_delete_method = LcProc.new do |args|
+        next internal.lc_class_delete_method(*args.as(T2))
+    end
+
 
     LcClass = internal.lc_build_class_only("Class")
 
-    internal.lc_add_internal(LcClass,"is_a?", is_a,     1)
-    internal.lc_add_static(LcClass,"==",   class_eq,   1)
-    internal.lc_add_static(LcClass,"<>",   class_ne,   1)
-    internal.lc_add_static(LcClass,"!=",   class_ne,   1)
-    internal.lc_add_static(LcClass,"to_s", class_to_s, 0)
+    internal.lc_remove_static(LcClass,"new")
+
+    internal.lc_add_internal(LcClass,"is_a?", is_a,          1)
+    internal.lc_add_static(LcClass,"==",   class_eq,         1)
+    internal.lc_add_static(LcClass,"<>",   class_ne,         1)
+    internal.lc_add_static(LcClass,"!=",   class_ne,         1)
+    internal.lc_add_static(LcClass,"to_s", class_to_s,       0)
     internal.lc_add_static(LcClass,"inspect",class_to_s,     0)
     internal.lc_add_static(LcClass,"defrost",class_defrost,  0)
-    internal.lc_add_internal(LcClass,"its_class",class_class,0)
-    internal.lc_add_static(LcClass,"its_class",class_class,  0)
-    internal.lc_add_static(LcClass,"undef_instance_method",class_rm_instance_method,  1)
-    internal.lc_add_static(LcClass,"undef_static_method",class_rm_static_method,      1)
+    internal.lc_add_static(LcClass,"remove_instance_method",class_rm_instance_method,  1)
+    internal.lc_add_static(LcClass,"remove_static_method",class_rm_static_method,      1)
+    internal.lc_add_static(LcClass,"delete_static_method",class_delete_st_method,      1)
+    internal.lc_add_static(LcClass,"delete_instance_method",class_delete_ins_method,   1)
 
-    internal.lc_add_class_method(LcClass,"undef_method",class_rm_method,              1)
+    internal.lc_add_class_method(LcClass,"its_class",class_class,                      0)
+    internal.lc_add_class_method(LcClass,"remove_method",class_rm_method,              1)
+    internal.lc_add_class_method(LcClass,"delete_method",class_delete_method,          1)
 
 end

@@ -27,17 +27,12 @@ enum LinCAS::VoidVisib
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
 
-#    MATH_FUNCT     = {
-#        TkType::LOG, TkType::EXP, TkType::TAN, TkType::ATAN, TkType::COS, TkType::ACOS,
-#        TkType::SIN, TkType::ASIN, TkType::SQRT
-#    }
-
     EXP_SYNC_SET   = {
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
         TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL
-    } # + MATH_FUNCT
+    }
         
     START_SYNC_SET = { 
         TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,

@@ -37,11 +37,11 @@ module LinCAS::Internal
         def to_s 
             return String.new(@str_ptr)
         end
-    end 
 
-    macro lc_str2str(str)
-        String.new(pointer_of({{str}}))
-    end
+        def to_s(io)
+            io.write_utf8(@str_ptr.to_slice(size))
+        end
+    end 
 
     macro set_size(lcStr,size)
         {{lcStr}}.as(LcString).size = {{size}}
@@ -67,6 +67,16 @@ module LinCAS::Internal
         end 
     end
 
+    macro resize_str_capacity_2(str,value)
+        if {{value}} > STR_MAX_CAPA
+            lc_raise(LcIndexError, "String size too big")
+            return Null
+        else
+            {{str}}.as(LcString).str_ptr = pointer_of({{str}}).realloc({{value}})
+            set_size({{str}},{{value}})
+        end 
+    end
+
     macro str_add_char(lcStr,index,char)
         pointer_of({{lcStr}})[{{index}}] = {{char}}
     end
@@ -82,7 +92,17 @@ module LinCAS::Internal
         end 
     end
 
-    def self.compute_total_string_size(array : An)
+    @[AlwaysInline]
+    def self.string2cr(string : Value)
+        unless string.is_a? LcString
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(string)} into String")
+            return nil
+        else 
+            return String.new(pointer_of(string))
+        end
+    end
+
+    private def self.compute_total_string_size(array : An)
         size = 0
         array.each do |val|
             if val.is_a? LcString
@@ -93,13 +113,6 @@ module LinCAS::Internal
             end
         end
         return size 
-    end
-
-    def self.string2cr(value : Value)
-        value = value.as(LcString)
-        ptr   = value.str_ptr
-        size  = value.size
-        return String.new(pointer_of(value))
     end
 
     def self.new_string
@@ -150,6 +163,10 @@ module LinCAS::Internal
         else 
             lc_obj_to_s(value,io)
         end
+    end
+
+    string_new = LcProc.new do |args|
+        next internal.new_string
     end
     
     # Initializes a new string trough the keyword 'new' or just
@@ -699,11 +716,57 @@ module LinCAS::Internal
         next internal.lc_str_chars(*args.as(T1))
     end
 
+    def self.lc_str_compact(str : Value)
+        strlen = str_size(str)
+        ptr    = pointer_of(str)
+        tmp    = new_string
+        resize_str_capacity(tmp,strlen)
+        tmp_ptr = pointer_of(tmp)
+        count   = 0
+        strlen.times do |i|
+            if ptr[i] != ' '.ord.to_u8
+                tmp_ptr[count] = ptr[i]
+                count += 1
+            end
+        end
+        resize_str_capacity_2(tmp,count)
+        return tmp
+    end
+
+    str_compact = LcProc.new do |args|
+        next internal.lc_str_compact(*args.as(T1))
+    end
+
+    def self.lc_str_o_compact(str : Value)
+        strlen = str_size(str)
+        ptr    = pointer_of(str)
+        tmp    = Pointer(LibC::Char).malloc(strlen)
+        count  = 0
+        strlen.times do |i|
+            if ptr[i] != ' '.ord.to_u8
+                tmp[count] = ptr[i]
+                count += 1
+            end
+        end
+        ptr.copy_from(tmp,count)
+        resize_str_capacity_2(str,count)
+        tmp = tmp.realloc(0)
+        return str 
+    end
+
+    str_o_compact = LcProc.new do |args|
+        next internal.lc_str_o_compact(*args.as(T1))
+    end
+
+        
+
 
 
 
     StringClass = internal.lc_build_class_only("String")
     internal.lc_set_parent_class(StringClass, Obj)
+
+    internal.lc_add_static(StringClass,"new",string_new,        0)
 
     internal.lc_add_internal(StringClass,"+",      str_add,     1)
     internal.lc_add_internal(StringClass,"concat", str_concat, -1)
@@ -724,8 +787,10 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"split",  str_split,   1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
-    internal.lc_add_internal(StringClass,"each_char",str_each_char,0)
-    internal.lc_add_internal(StringClass,"chars",  str_chars,   0)
+    internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
+    internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
+    internal.lc_add_internal(StringClass,"compact",  str_compact,   0)
+    internal.lc_add_internal(StringClass,"compact!",  str_o_compact,0)
 
 
 end

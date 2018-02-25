@@ -38,6 +38,13 @@ module LinCAS::Internal
 
     alias LcBool = LcBTrue | LcBFalse
 
+    @[AlwaysInline]
+    def self.val2bool(value : Bool)
+        return lctrue if value 
+        return lcfalse 
+    end
+
+
     def self.build_true
         lcTrue       = LcBTrue.new
         klass         = Id_Tab.lookUp("Boolean")

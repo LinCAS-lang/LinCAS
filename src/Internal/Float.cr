@@ -26,8 +26,10 @@
 module LinCAS::Internal
 
     def self.lc_num_to_cr_f(num : Value)
-        if num.is_a? LcNum 
-            return num2num(num).to_f
+        if num.is_a? LcInt
+            return int2num(num).to_f
+        elsif num.is_a? LcFloat
+            return float2num(num).as(Floatnum)
         else
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(num)} into Float")
         end 
@@ -227,8 +229,22 @@ module LinCAS::Internal
         end
     end
 
+    def self.lc_float_eq(n : Value, obj : Value)
+        if obj.is_a? LcFloat
+            return val2bool(float2num(n) == float2num(obj))
+        else 
+            return lc_compare(n,obj)
+        end
+    end
+
+    float_eq = LcProc.new do |args|
+        next internal.lc_float_eq(*args.as(T2))
+    end
+
     FloatClass = internal.lc_build_class_only("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
+
+    internal.lc_remove_static(FloatClass,"new")
 
     internal.lc_add_internal(FloatClass,"+",float_sum,  1)
     internal.lc_add_internal(FloatClass,"-",float_sub,  1)

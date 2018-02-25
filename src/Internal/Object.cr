@@ -30,9 +30,22 @@ module LinCAS::Internal
         end
     end
 
-    struct VirtualObj < BaseS
+    @[AlwaysInline]
+    def self.compare_by_type?(obj1 : Value, obj2 : Value)
+        return obj1.is_a? NumType && obj2.is_a? NumType
     end
 
+    def self.lc_compare(obj1 : Value, obj2 : Value)
+        if compare_by_type?(obj1,obj2)
+            return val2bool(num2num(obj1) == num2num(obj2))
+        end
+        if (lc_obj_has_internal_m? obj2,"==") == 1
+            return Exec.lc_call_fun(obj2,"==",obj1)
+        end
+        return lcfalse
+    end
+
+    @[AlwaysInline]
     def self.boot_main_object
         return internal.lc_obj_new(MainClass)
     end
@@ -86,31 +99,8 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_compare(obj1 : Value, obj2 : Value)
-        return lcfalse unless obj1.class == obj2.class 
+        return lc_compare(obj1,obj2)
         return lctrue if obj1.id == obj2.id
-        case obj1.class 
-            when LcString
-                return lc_str_compare(obj1,obj2)
-            when LcNum
-                return lc_num_eq(obj1,obj2)
-            when LcBool
-                return lc_bool_eq(obj1,obj2)
-            when LcRange 
-                return lc_range_eq(obj1,obj2)
-            when LcNull 
-                return lctrue 
-            when Structure
-                return lc_class_eq(obj1,obj2)
-            when LcArray
-                return lc_ary_eq(obj1,obj2)
-            else 
-                if lc_obj_responds_to? obj1,"=="
-                    return Exec.lc_call_fun(obj1,"==",obj2)
-                elsif lc_obj_responds_to? obj1,"!="
-                    return lc_bool_invert(Exec.lc_call_fun(obj1,"==",obj2))
-                end
-                return lcfalse 
-        end 
     end
 
     def self.lc_obj_eq(obj1 : Value, obj2 : Value)
@@ -178,6 +168,25 @@ module LinCAS::Internal
         next obj
     end
 
+    def self.lc_obj_responds_to(obj : Value,name : Value)
+        sname = string2cr(name)
+        return Null unless sname
+        return val2bool(lc_obj_responds_to?(obj,sname))
+    end
+
+    obj_responds_to = LcProc.new do |args|
+        next internal.lc_obj_responds_to(*args.as(T2))
+    end
+    
+    @[AlwaysInline]
+    def self.lc_obj_to_a(obj : Value)
+        return tuple2array(obj)
+    end
+
+    obj_to_a = LcProc.new do |args|
+        next internal.lc_obj_to_a(*args.as(T1))
+    end
+
 
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
@@ -194,15 +203,21 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
-    internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
     internal.lc_add_internal(Obj,"||",obj_or,         1)
     internal.lc_add_internal(Obj,"&&",obj_and,        1)
     internal.lc_add_internal(Obj,"!",obj_not,         0)
+    internal.lc_add_internal(Obj,"to_a",obj_to_a,     0)
 
     internal.lc_add_static(LcClass,"freeze",obj_freeze,   0)
     internal.lc_add_static(LcClass,"defrost",obj_defrost, 0)
     internal.lc_add_static(LcClass,"frozen?",obj_frozen,  0)
-    internal.lc_add_static(LcClass,"is_null",obj_null,    0)
+    internal.lc_add_static(LcClass,"null?",obj_null,      0)
+    internal.lc_add_static(LcClass,"to_a",obj_to_a,       0)
+    internal.lc_add_static(LcClass,"||",obj_or,           1)
+    internal.lc_add_static(LcClass,"&&",obj_and,          1)
+    internal.lc_add_static(LcClass,"!",obj_not,           0)
+
+    internal.lc_add_class_method(LcClass,"respond_to?",obj_responds_to, 1)
 
 
 end

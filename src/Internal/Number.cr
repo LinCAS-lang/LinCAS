@@ -24,6 +24,8 @@
 
 module LinCAS::Internal
 
+    alias NumType = LcInt | LcFloat
+
     macro positive_num(v)
         ({{v}}.as(LcNum).val > 0)
     end
@@ -31,63 +33,58 @@ module LinCAS::Internal
     macro num2num(v)
         {{v}}.as(LcNum).val 
     end
-    
-    def self.lc_num_to_cr_i(value)
-        if value.is_a? LcInt
-            return value.as(LcInt).val
-        elsif value.is_a? LcFloat
-            return value.as(LcFloat).val.to_i
-        else
-            lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
-            return nil 
-        end
-    end
 
     abstract struct LcNum < BaseS
     end
 
+    struct Num_ < LcNum
+        @val = 0.as(Num)
+        property val 
+    end
+
+    def self.new_number(klass : Value)
+        klass      = klass.as(ClassEntry)
+        num        = Num_.new
+        num.klass  = klass
+        num.data   = klass.data.clone 
+        num.frozen = true 
+        return num.as(Value)
+    end
+
+    number_new = LcProc.new do |args|
+        next internal.new_number(*args.as(T1))
+    end
+
 
     def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
-        if v1.is_a? LcNum && v2.is_a? LcNum
-            v1 = internal.num2float(v1.as(LcNum).val.to_f)
-            v2 = internal.num2float(v2.as(LcNum).val.to_f)
+        if v1.is_a? NumType && v2.is_a? NumType
+            v1 = num2float(num2num(v1).to_f)
+            v2 = num2float(num2num(v2).to_f)
             Exec.lc_call_fun(v1,method,v2)
         else
             c = internal.coerce(v1,v2).as(Value)
             return Null if c == Null
+            if !(c.is_a? LcArray)
+                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                return Null 
+            end
+            if !(ary_size(c) == 2)
+                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                return Null 
+            end
             return Exec.lc_call_fun(
-                internal.lc_ary_index(c,num2int(0)),
+                lc_ary_index(c,num2int(0)),
                 method,
-                internal.lc_ary_index(c,num2int(1))
+                lc_ary_index(c,num2int(1))
             )
         end 
     end
 
-    def self.lc_num_eq(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) == num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
-        else 
-            return lc_num_coerce(n1,n2,"==")
-        end
-    end
-
-    num_eq = LcProc.new do |args|
-        next internal.lc_num_eq(*args.as(T2))
-    end
-
     def self.lc_num_gr(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) > num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.class.is_a? NumType && n2.class.is_a? NumType
+            return val2bool(num2num(n1) > num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,">")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -96,14 +93,10 @@ module LinCAS::Internal
     end
 
     def self.lc_num_sm(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) < num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) < num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,"<")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -112,14 +105,10 @@ module LinCAS::Internal
     end
 
     def self.lc_num_ge(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) >= num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) >= num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,">=")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -128,14 +117,10 @@ module LinCAS::Internal
     end
 
     def self.lc_num_se(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) <= num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) <= num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,"<=")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -143,24 +128,44 @@ module LinCAS::Internal
         next internal.lc_num_se(*args.as(T2))
     end
 
-    num_ne = LcProc.new do |args|
-        next internal.lc_bool_invert(internal.lc_num_eq(*args.as(T2)))
+    @[AlwaysInline]
+    def self.lc_num_is_zero(num : Value)
+        return lcfalse unless num.is_a? NumType
+        return val2bool(num2num(num) == 0)
     end
+
+    num_is_zero = LcProc.new do |args|
+        next val2bool(num2num(args.as(T1)[0]) == 0)
+    end
+
+    def self.lc_num_coerce(n1 : Value, n2 : Value)
+        tmp = num2int(0)
+        v1  = lc_num_to_cr_f(n1)
+        return tuple2array(tmp,tmp) unless v1
+        v2  = lc_num_to_cr_f(n2)
+        return tuple2array(tmp,tmp) unless v2
+        return tuple2array(num2float(v2),num2float(v1))
+    end
+
+    num_coerce = LcProc.new do |args|
+        next internal.lc_num_coerce(*args.as(T2))
+    end
+
     
 
 
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,Obj)
 
-    internal.lc_remove_static(NumClass,"new")
     internal.lc_remove_internal(NumClass,"defrost")
 
-    internal.lc_add_internal(NumClass,"==",num_eq, 1)
-    internal.lc_add_internal(NumClass,"!=",num_ne, 1)
-    internal.lc_add_internal(NumClass,">",num_gr,  1)
-    internal.lc_add_internal(NumClass,"<",num_sm,  1)
-    internal.lc_add_internal(NumClass,">=",num_ge, 1)
-    internal.lc_add_internal(NumClass,"<=",num_se, 1)
+    internal.lc_add_static(NumClass,"new",number_new,0)
+    internal.lc_add_internal(NumClass,">",num_gr,    1)
+    internal.lc_add_internal(NumClass,"<",num_sm,    1)
+    internal.lc_add_internal(NumClass,">=",num_ge,   1)
+    internal.lc_add_internal(NumClass,"<=",num_se,   1)
+    internal.lc_add_internal(NumClass,"zero?",num_is_zero,   0)
+    internal.lc_add_internal(NumClass,"coerce",num_coerce,   1)
 
     
 end

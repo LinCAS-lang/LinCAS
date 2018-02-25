@@ -24,7 +24,28 @@
 
 module LinCAS::Internal
 
-    abstract struct BaseS
+    abstract struct SBaseS
+        macro num2sym(value)
+            Snumber.new({{value}})
+        end
+
+        macro sym2num(value)
+            {{value}}.as(Snumber).value
+        end
+
+        macro neg2val(value)
+            {{value}}.as(Negative).value 
+        end
+    
+        macro string2sym(value)
+            Variable.new({{value}})
+        end
+
+        macro return_with_top(obj,top)
+            {{obj.top}} == top 
+            return obj 
+        end
+
         property top
         def initialize(@top = true)
         end
@@ -38,10 +59,32 @@ module LinCAS::Internal
         abstract def diff()
         abstract def eval(dict)
         abstract def ==(obj)
+        abstract def =~(obj)
         abstract def depend?(obj)
     end
 
-    abstract class BaseC
+    abstract class SBaseC
+        macro num2sym(value)
+            Snumber.new({{value}})
+        end
+
+        macro sym2num(value)
+            {{value}}.as(Snumber).value
+        end
+
+        macro neg2val(value)
+            {{value}}.as(Negative).value 
+        end
+    
+        macro string2sym(value)
+            Variable.new({{value}})
+        end
+
+        macro return_with_top(obj,top)
+            {{obj.top}} == top 
+            return obj 
+        end
+
         property top
         def initialize(@top = true)
         end
@@ -55,17 +98,10 @@ module LinCAS::Internal
         abstract def diff()
         abstract def eval(dict)
         abstract def ==(obj)
+        abstract def =~(obj)
         abstract def depend?(obj)
     end
 
     alias Sym = BaseS 
-
-    macro num2sym(value)
-        Snumber.new({{value}})
-    end
-
-    macro string2sym(value)
-        Variable.new({{value}})
-    end
 
 end

@@ -321,6 +321,8 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                 return eval_reads(node)
             when NodeType::NULL
                 return null
+            when NodeType::SELF
+                return current_object
             when NodeType::YIELD
                 return eval_yield(node)
         else
@@ -1073,10 +1075,6 @@ class LinCAS::Eval < LinCAS::MsgGenerator
             break if @error
         end
         return matrix
-    end
-
-    protected def eval_yield(node : Node)
-        
     end
 
     protected def delete_block_args(list)

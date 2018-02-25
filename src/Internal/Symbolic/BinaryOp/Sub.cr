@@ -98,7 +98,28 @@ module LinCAS::Internal
         end
 
         def reduce
-
+            super
+            if @left == 0
+                return @right 
+            elsif @right == 0 
+                return @left 
+            elsif @left == InfinityC && @right == NInfinityC
+                return InfinityC 
+            elsif @left == NinfinityC && @right == InfinityC
+                return NinfinityC
+            elsif @left.is_a? Infinity && @right.is_a? Infinity 
+                Exec.lc_raise(LcMathError,"(∞-∞)")
+                return @left 
+            elsif @left == @right
+                return num2sym(0)
+            elsif @left.is_a? Snumber && @right.is_a? Snumber
+                return num2sym(sym2num(@left) - sym2num(@right))
+            elsif @right.is_a? Negative
+                return @left - neg2val(@right)
+            elsif @left.is_a? Negative
+                return Negative.new(neg2val(@left + @right)).reduce
+            end
+            return self
         end
 
         def diff(obj)

@@ -240,6 +240,17 @@ module LinCAS::Internal
         return m.is_a? MethodEntry
     end
 
+    def self.lc_obj_has_internal_m?(obj : Value,name : String)
+        if obj.is_a? Structure
+            method = seek_static_method(obj,name)
+        else
+            method = seek_instance_method(class_of(obj),name)
+        end 
+        return -1 unless method.is_a? MethodEntry
+        return 0 if method.internal 
+        return 1
+    end
+
     def self.lc_copy_methods_as_instance_in(sender : Structure, receiver : Structure)
         smtab = sender.methods
         rmtab = receiver.methods

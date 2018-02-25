@@ -24,7 +24,7 @@
 
 module LinCAS::Internal
 
-    abstract struct BinaryOp < BaseS
+    abstract struct BinaryOp < SBaseS
 
         macro reduce_loop(val,tmp)
             while {{val}} != {{tmp}}
@@ -35,8 +35,17 @@ module LinCAS::Internal
 
         property left,right 
 
-        def initialize(@left : Sym, @right : Sym)
+        def initialize(left : Sym, right : Sym)
             super()
+            left.top  = false 
+            right.top = false
+            @left     = left  
+            @right    = right
+        end
+
+        def initialize(left,right,top)
+            super(top)
+            initialize(left,right)
         end
 
         def reduce

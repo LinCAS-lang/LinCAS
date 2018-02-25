@@ -107,7 +107,7 @@ module LinCAS::Internal
             elsif @left == NinfinityC && @right == NinfinityC
                 return NinfinityC
             elsif @left.is_a? Infinity && @right.is_a? Infinity 
-                Exec.lc_raise(LcMathError,"(∞-∞)"))
+                Exec.lc_raise(LcMathError,"(∞-∞)")
                 return @left 
             elsif (@left.is_a? Snumber) && (@right.is_a? Snumber)
                 return sym2num(@left.value + @right.value)

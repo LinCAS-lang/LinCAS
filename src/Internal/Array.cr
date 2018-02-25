@@ -768,6 +768,36 @@ module LinCAS::Internal
     ary_o_sort_by = LcProc.new do |args|
         next internal.lc_ary_o_sort_by(*args.as(T1))
     end
+
+    def self.lc_ary_join(ary : Value, *args : Value)
+        if args[0] == Null
+            separator = ""
+        else 
+            separator = string2cr(args[0])
+        end 
+        arylen = ary_size(ary)
+        string = String.build do |io|
+            arylen.times do |i|
+                io << ary_at_index(ary,i).to_s 
+                io << separator if i < arylen - 1
+            end
+        end
+        if string.size > STR_MAX_CAPA
+            lc_raise(LcRuntimeError,"String overflows max length")
+            return Null 
+        end 
+        return build_string(string)
+    end 
+
+    ary_join = LcProc.new do |args|
+        args = args.as(An)
+        arg1 = args[0]
+        arg2 = args[1]?
+        if arg2
+            next internal.lc_ary_join(arg1,arg2)
+        end 
+        next internal.lc_ary_join(arg1,Null)
+    end
         
 
     AryClass = internal.lc_build_class_only("Array")
@@ -801,6 +831,7 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"sort!",ary_o_sort,   0)
     internal.lc_add_internal(AryClass,"reverse",ary_reverse,0)
     internal.lc_add_internal(AryClass,"shift",ary_shift,    0)
+    internal.lc_add_internal(AryClass,"join",ary_join,     -1)
     internal.lc_add_internal(AryClass,"sort_by",ary_sort_by,                  0)
     internal.lc_add_internal(AryClass,"sort_by!",ary_o_sort_by,               0)
     internal.lc_add_internal(AryClass,"reverse!",ary_o_reverse,               0)

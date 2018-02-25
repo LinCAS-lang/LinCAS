@@ -252,7 +252,7 @@ module LinCAS::Internal
             return Null unless r 
             c = lc_num_to_cr_i(j)
             return Null unless c 
-            if (r < 0) && (c < 0) && (r >= matrix_rws(matrix)) && (c >= matrix_cls(matrix))
+            if ((r < 0) || (c < 0)) || ((r >= matrix_rws(matrix)) || (c >= matrix_cls(matrix)))
                 return Null 
             end 
             return matrix_at_index(matrix,r,c)

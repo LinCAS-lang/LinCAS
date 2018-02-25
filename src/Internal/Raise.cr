@@ -58,7 +58,8 @@ module LinCAS
             :few_args       => "Wrong number of arguments (%i instead of %i)",
             :modify_frozen  => "Attempted to modify a frozen object",
             :frozen_class   => "Can't reopen a frozen class",
-            :frozen_module  => "Can't reopen a frozen module"
+            :frozen_module  => "Can't reopen a frozen module",
+            :failed_comparison => "Comparison between %s and %s failed"
         }
 
         class LcError < BaseC
@@ -90,9 +91,11 @@ module LinCAS
         end
 
         def self.lc_err_init(err : Value, body : Value)
+            body = string2cr(body)
+            return Null unless body
             err = err.as(LcError)
             klass         = err.klass.name
-            err.body      = klass + ':' + ' ' + string2cr(body)
+            err.body      = klass + ':' + ' ' + body
             err.backtrace = ""
             Null
         end
