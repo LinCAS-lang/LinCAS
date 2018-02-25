@@ -22,48 +22,30 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-class LinCAS::Reader < LinCAS::MsgGenerator
+module LinCAS
+    alias Value = Internal::Value
+    alias T1 = Tuple(Value)
+    alias T2 = Tuple(Value,Value)
+    alias T3 = Tuple(Value,Value,Value)
+    alias T4 = Tuple(Value,Value,Value,Value)
+    alias An = Array(Value)
+    alias Va = T1 | T2 | T3 | T4 | An 
 
-   def initialize(filename : String)
-       @filename = filename
-       @line     = 0
-       @msgHandler = MsgHandler.new
-       @msgHandler.addListener(ReaderListener.new)
-       if !(File.exists?(filename))
-           body = ["Invalid directory '#{filename}'"]
-           sendMsg(Msg.new(MsgType::IO_ERROR,body))
-           exit 0
-       else
-           @file     = File.open(filename,"r")
-       end
-   end
+    alias PV = Proc(Va,Value?)
 
-   def readLine
-      begin
-          line = @file.gets
-          if line
-              line += "\n"
-          end
-          return line
-      rescue exception
-          body = ["#{exception}"]
-          sendMsg(Msg.new(MsgType::IO_ERROR,body))
-      end
+    struct LcProc
+        @proc : PV
+        def initialize(&block : Va -> Value?)
+            @proc = block 
+        end
 
-    ensure
-        @line += 1
-   end
+        def call(args : An)
+            return @proc.call(args)
+        end
 
-   def close
-       @file.close
-   end
+        def call(*args : Value)
+            return @proc.call(args)
+        end
 
-   def messageHandler
-       @msgHandler
-   end
-
-   def getFilename
-       @filename
-   end
-    
+    end
 end

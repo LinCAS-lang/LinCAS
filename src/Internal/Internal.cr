@@ -22,6 +22,18 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+lib LibC
+    fun strstr(str1 : Char*, str2 : Char*) : Char*
+    fun printf(format : Char*, ... ) : Int 
+    fun toupper(str : Char*) : Char*
+    fun strlwr(str : Char*) : Char*
+    fun strlen(str : Char*) : SizeT
+    fun strtok(str : Char*, delimiter : Char*) : Char*
+    fun strtol(str : Char*, endptr : Char*, base : Int) : Int
+    fun strtod(str : Char*, endptr : Char**) : Double
+    fun strcmp(str1 : Char*, str2 : Char*) : Int
+end
+
 module LinCAS::Internal
 
     alias Value  = BaseS | BaseC | Structure
@@ -31,43 +43,16 @@ module LinCAS::Internal
         @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
-        setter klass
-        setter frozen
-        setter data
-        getter klass 
-        getter frozen
-        getter data
-        
-        def ==(other)
-            return false if self.class != other.class 
-            if other.is_a? BaseS
-                return self.klass.path == other.as(BaseS).klass.path
-            end
-        end
+        @id     = 0_u64
+        property klass, frozen, data, id
     end
 
     abstract class BaseC
         @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
-        setter klass
-        setter frozen
-        setter data
-        getter klass 
-        getter frozen
-        getter data
-
-        def ==(other)
-            return false if self.class != other.class 
-            if other.is_a? BaseC
-                return self.klass.path == other.as(BaseC).klass.path
-            end
-            return false
-        end
-    end
-
-    lib LibC
-        fun strstr(str1 : Char*, str2 : Char*) : Char*
+        @id     = 0_u64
+        property klass, frozen, data, id
     end
     
     macro internal 
@@ -83,7 +68,7 @@ module LinCAS::Internal
     end
 
     macro libc 
-        Internal::LibC
+        LibC
     end
 
     macro convert(name)

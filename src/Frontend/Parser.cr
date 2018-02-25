@@ -23,21 +23,16 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 enum LinCAS::VoidVisib
-    PUBLIC PROTECTED PRIVATE 
+    PUBLIC PROTECTED PRIVATE UNDEFINED
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
-
-#    MATH_FUNCT     = {
-#        TkType::LOG, TkType::EXP, TkType::TAN, TkType::ATAN, TkType::COS, TkType::ACOS,
-#        TkType::SIN, TkType::ASIN, TkType::SQRT
-#    }
 
     EXP_SYNC_SET   = {
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS
-    } # + MATH_FUNCT
+        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL
+    }
         
     START_SYNC_SET = { 
         TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
@@ -208,6 +203,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     def sourceLines
         @scanner.lines
+    end
+
+    def errCount
+        @errHandler.errors 
     end
 
     protected def sync(syncSet)
@@ -596,6 +595,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         }
         sync(assign_sync_set)
         node = @nodeFactory.makeNode(NodeType::ASSIGN)
+        setLine(node)
         if @currentTk.ttype == TkType::COLON_EQ && !(var)
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
             node.addBranch(makeDummyName)
@@ -618,10 +618,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def manageAssignOps(prevNode : Node) : Node
+        node    = @nodeFactory.makeNode(NodeType::ASSIGN)
+        setLine(node)
         opTkType = @currentTk.ttype
         shift
         expr    = parseExp
-        node    = @nodeFactory.makeNode(NodeType::ASSIGN)
         expNode = nil
         node.addBranch(prevNode)
         case opTkType
@@ -641,6 +642,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 makeOpNode(NodeType::POWER,prevNode,expr)
             when TkType::APPEND
                 node = @nodeFactory.makeNode(NodeType::APPEND)
+                setLine(node)
                 node.addBranch(prevNode)
                 node.addBranch(expr)
         end
@@ -782,16 +784,6 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 else
                     @errHandler.flag(@currentTk,ErrCode::MISSING_R_PAR,self)
                 end
-            when TkType::PI
-                root = @nodeFactory.makeNode(NodeType::PI)
-            when TkType::E 
-                root = @nodeFactory.makeNode(NodeType::E)
-            when TkType::INF
-                @errHandler.flag(@currentTk,ErrCode::INF_CONST_OUT_SYM,self) unless @sym > 0
-                root = @nodeFactory.makeNode(NodeType::INF)
-            when TkType::NINF
-                @errHandler.flag(@currentTk,ErrCode::INF_CONST_OUT_SYM,self) unless @sym > 0
-                root = @nodeFactory.makeNode(NodeType::NINF)
             when TkType::PIPE
                 root = parseMatrix
             when TkType::L_BRACKET

@@ -24,28 +24,53 @@
 
 module LinCAS::Internal
 
-    def self.lc_build_module_only(name : String)
-        return Id_Tab.addModule(name,true)
+    abstract struct BinaryOp < SBaseS
+
+        macro reduce_loop(val,tmp)
+            while {{val}} != {{tmp}}
+                {{tmp}} = {{val}}
+                {{val}} = {{val}}.reduce
+            end
+        end
+
+        property left,right 
+
+        def initialize(left : Sym, right : Sym)
+            super()
+            left.top  = false 
+            right.top = false
+            @left     = left  
+            @right    = right
+        end
+
+        def initialize(left,right,top)
+            super(top)
+            initialize(left,right)
+        end
+
+        def reduce
+            tmp   = @left 
+            @left = @left.reduce 
+            reduce_loop(@left,tmp)
+            tmp    = @right 
+            @right = @right.reduce 
+            reduce_loop(@right,tmp)
+        end
+
+        def ==(obj : BinaryOp)
+            return false unless self.class = obj.class
+            return (self.left == obj.left) && (self.right == obj.right)
+        end 
+
+        @[AlwaysInline]
+        def ==(obj)
+            return false 
+        end
+
+        def depend?(obj)
+            return (@left.depend? obj) || (@right.depend? obj)
+        end
+
     end
     
-    def self.lc_build_module(name : String)
-        return Id_Tab.addModule(name)
-    end
-
-    def self.lc_include_module(receiver : Structure, mod : ModuleEntry)
-        if receiver.included.includes? mod.path
-            # lc_warn()
-        else
-            internal.lc_copy_methods_as_instance_in(mod,receiver)
-            internal.lc_copy_consts_in(mod,receiver)
-        end
-    end
-
-    def self.lc_module_add_internal(mod : ModuleEntry, name : String, method : LcProc, arity : Int32)
-        internal.lc_add_internal(mod,name,method,arity)
-        internal.lc_add_static(mod,name,method,arity)
-    end
-
-    LcModule = internal.lc_build_module_only("Module")
-
 end

@@ -33,24 +33,36 @@ require "./Intermediate/NodeType"
 require "./Intermediate/Nkey"
 require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
+require "./Internal/Proc"
 require "./Intermediate/SymbolTab"
+require "./Backend/Eval"
 require "./Internal/LcInternal"
 require "./Backend/CallStack"
-require "./Backend/Eval"
+require "./Internal/Math"
 require "../util/AstPrinter"
 require "../util/SymTabPrinter"
 
 
 include LinCAS
 
+
 ast = nil
 factory = FrontendFactory.new
 ENV["libDir"] = ""
-parser = factory.makeParser(File.expand_path("../Test/SampleTests/Test6.lc"))
-#parser.displayTokens
-ast = parser.parse
-#astPrinter = AstPrinter.new
-#astPrinter.printAst(ast.as(Node)) if ast
-Exec.eval(ast)
-#s_printer = SymTabPrinter.new 
-#s_printer.printSTab(Id_Tab.getRoot)
+dir = ARGV[0]?
+if dir 
+    begin
+        parser = factory.makeParser(File.expand_path(dir))
+        #parser.displayTokens
+        ast = parser.parse
+        #astPrinter = AstPrinter.new
+        #astPrinter.printAst(ast.as(Node)) if ast
+        Exec.eval(ast) unless parser.errCount > 0
+        #s_printer = SymTabPrinter.new 
+        #s_printer.printSTab(Id_Tab.getRoot)
+    rescue e
+        puts e 
+        puts
+        Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
+    end
+end

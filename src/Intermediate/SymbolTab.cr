@@ -59,13 +59,15 @@ module LinCAS
         @symTab   = SymTab.new
         @data     = Data.new
         @methods  = SymTab.new 
-        attr name
-        attr path
-        attr prevScope
-        attr symTab
-        attr data
+        @statics  = SymTab.new
+        @id       = 0_u64
+        @frozen   = false
+        property name, path, prevScope, symTab, data, id, frozen
         getter included
-        getter methods
+        getter methods, statics
+        def to_s 
+            return @path.to_s
+        end
     end
 
     class ClassEntry < BaseEntry
@@ -89,7 +91,7 @@ module LinCAS
 
     struct MethodEntry
         @args      : Node | ::Nil
-        @code      : Node | Symbol | ::Nil
+        @code      : Node | LcProc | ::Nil
         @owner     : ClassEntry  | ModuleEntry | ::Nil
         @arity     : Intnum = 0
         @static    = false
@@ -101,15 +103,8 @@ module LinCAS
             @code = nil
         end
 
-        attr name
-        attr args
-        attr code
-        attr owner
-        attr arity
-        attr static
-        attr internal
-        attr singleton
-        attr visib 
+        property name, args, code, owner, arity
+        property static, internal, singleton, visib 
     end 
 
     class Data
@@ -177,6 +172,8 @@ module LinCAS
         end
 
         def initialize
+            tmp = ClassEntry.new("Main",Path.new,nil)
+            tmp.id = pointerof(tmp).address
             @currentScope.push(ClassEntry.new("Main",Path.new,nil))
         end
 
@@ -186,7 +183,8 @@ module LinCAS
         end
 
         def addClass(name : String,exit = false)
-            klass = ClassEntry.new(name,path.addName(name),currentScope)
+            klass    = ClassEntry.new(name,path.addName(name),currentScope)
+            klass.id = pointerof(klass).address
             currentScope.symTab.addEntry(name,klass)
             @currentScope.push(klass) unless exit
             return klass
@@ -194,6 +192,7 @@ module LinCAS
 
         def addModule(name : String, exit = false)
             mod = ModuleEntry.new(name,path.addName(name), currentScope)
+            mod.id = pointerof(mod).address
             currentScope.symTab.addEntry(name,mod)
             @currentScope.push(mod) unless exit 
             return mod

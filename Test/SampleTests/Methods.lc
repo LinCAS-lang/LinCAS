@@ -1,0 +1,47 @@
+/**
+* This file tests whether protected and private methods
+* are accessed correctly, that is:
+* - PROTECTED: can be called only inside all the parent
+* classes
+* - PRIVATE: can be called only inside the class it is 
+* defined in 
+*
+* protected and private methods can't be called with a receiver
+**/
+class Z
+{
+    private void z_private()
+    {
+      printl "private method from z"
+    }
+    protected void z_protected()
+    {
+      z_private()
+    }
+}
+
+class A inherits Z
+{
+  protected void a_protected() {
+    a_private()
+    printl "I'm protected"
+  }
+  
+  private void a_private() {
+    printl "I'm private"
+  }
+}
+
+class B inherits A
+{
+    void test(){
+        z_protected()
+        a_protected()
+        
+        # this should raise an error
+        a_private()
+    }
+}
+
+x := new B()
+x.test()

@@ -22,40 +22,46 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-class LinCAS::ErrorHandler
+module LinCAS::Internal
 
-    MAX_ERR = 10
-
-    def initialize
-        @errorCount = 0
-    end
-
-    def errors
-        return @errorCount
-    end
-    
-    def flag(token : Token, errCode , parser : Parser)
-        body = [convertErrCode(errCode),
-                token.line.to_s,
-                token.pos.to_s,
-                token.text.to_s,
-                parser.filename]
-        msg  = Msg.new(MsgType::SINTAX_ERROR,body)
-        parser.sendMsg(msg)
-        @errorCount += 1
-        if @errorCount > MAX_ERR
-            abortProcess(parser)
+    def self.lc_heap_sort(heap : Pointer, size : Intnum,&block)
+        n      = size
+        parent = size / 2
+        loop do
+            if parent > 0
+                parent -= 1
+                tmp = heap[parent]
+            else 
+                n -= 1
+                if n == 0
+                    return nil
+                end 
+                tmp     = heap[n]
+                heap[n] = heap[0]
+            end
+            index = parent 
+            child = index * 2 + 1
+            while child < n
+                if child + 1 < n
+                    cmp = yield(heap[child + 1],heap[child])
+                    return unless cmp 
+                    if cmp > 0
+                        child += 1
+                    end
+                end
+                cmp = yield(heap[child],tmp)
+                return unless cmp 
+                if cmp > 0
+                    heap[index] = heap[child]
+                    index = child 
+                    child = index * 2 + 1
+                else
+                    break 
+                end
+            end
+            heap[index] = tmp
         end
     end
 
-    def abortProcess(parser : Parser)
-        msg = Msg.new(MsgType::FATAL,["Too many errors"])
-        parser.sendMsg(msg)
-        exit 0
-    end
-
-    def abortProcess
-        exit 0
-    end
-
+        
 end

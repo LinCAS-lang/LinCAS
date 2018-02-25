@@ -1,0 +1,58 @@
+/**
+* This code tests the Matrix class API
+*/
+
+const RWS := 3
+const CLS := 4
+
+# This creates a 3x3 matrix of the type
+# |1,2,3|
+# |4,5,6|
+# |7,8,9|
+#
+m1 := |1,2,3;4,5,6;7,8,9|
+
+# This creates a matrix like the previous one,
+# but in an automatic way (using a block)
+#
+m2 := new Matrix(RWS,RWS) { (r,c)
+    return r * RWS + c + 1
+}
+
+printl m1 & "" & m2
+printl
+
+# This sums the two matrices.
+# It should return 
+# |2,  4, 6|
+# |8 ,10,12|
+# |14,16,18|
+#
+sum := m1 + m2
+
+printl sum
+printl
+
+# Same as m1 + m2, but using multiplication
+#
+prod := m1 * 2
+
+printl  sum
+printl
+
+# This performs multiplication between matrices
+#
+M1xM2 := m1 * m2 
+
+printl M1xM2
+printl 
+
+# Transposition of a matrix
+# It should return 
+# |1,4,7|
+# |2,5,8|
+# |3,6,9|
+#
+printl m1.tr()
+printl
+

@@ -24,6 +24,8 @@
 
 module LinCAS::Internal
 
+    alias NumType = LcInt | LcFloat
+
     macro positive_num(v)
         ({{v}}.as(LcNum).val > 0)
     end
@@ -31,270 +33,139 @@ module LinCAS::Internal
     macro num2num(v)
         {{v}}.as(LcNum).val 
     end
-    
-    def self.lc_num_to_cr_i(value)
-        if value.is_a? LcInt
-            return value.as(LcInt).val
-        elsif value.is_a? LcFloat
-            return value.as(LcFloat).val.to_i
-        else
-            lc_raise(LcTypeError,"No implicit converion of %s into Integer" % lc_typeof(value))
-            return nil 
-        end
-    end
 
     abstract struct LcNum < BaseS
     end
 
-    struct Inf < BaseS
-        @positive = true 
-        attr positive
+    struct Num_ < LcNum
+        @val = 0.as(Num)
+        property val 
     end
 
-    struct LcNan < BaseS
+    def self.new_number(klass : Value)
+        klass      = klass.as(ClassEntry)
+        num        = Num_.new
+        num.klass  = klass
+        num.data   = klass.data.clone 
+        num.frozen = true 
+        return num.as(Value)
     end
+
+    number_new = LcProc.new do |args|
+        next internal.new_number(*args.as(T1))
+    end
+
 
     def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
-        if v1.is_a? LcNum && v2.is_a? LcNum
-            v1 = internal.num2float(v1.as(LcNum).val.to_f)
-            v2 = internal.num2float(v2.as(LcNum).val.to_f)
+        if v1.is_a? NumType && v2.is_a? NumType
+            v1 = num2float(num2num(v1).to_f)
+            v2 = num2float(num2num(v2).to_f)
             Exec.lc_call_fun(v1,method,v2)
         else
             c = internal.coerce(v1,v2).as(Value)
             return Null if c == Null
-            #p internal.lc_ary_index(c,num2int(0)).class;gets
+            if !(c.is_a? LcArray)
+                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                return Null 
+            end
+            if !(ary_size(c) == 2)
+                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                return Null 
+            end
             return Exec.lc_call_fun(
-                internal.lc_ary_index(c,num2int(0)),
+                lc_ary_index(c,num2int(0)),
                 method,
-                internal.lc_ary_index(c,num2int(1))
+                lc_ary_index(c,num2int(1))
             )
         end 
     end
 
-    def self.lc_num_eq(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) == num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+    def self.lc_num_gr(n1 : Value, n2 : Value)
+        if n1.class.is_a? NumType && n2.class.is_a? NumType
+            return val2bool(num2num(n1) > num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,"==")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
-    def self.lc_num_gr(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) > num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
-        else 
-            return lc_num_coerce(n1,n2,">")
-        end
+    num_gr = LcProc.new do |args|
+        next internal.lc_num_gr(*args.as(T2))
     end
 
     def self.lc_num_sm(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) < num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) < num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,"<")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
+    end
+
+    num_sm = LcProc.new do |args|
+        next internal.lc_num_sm(*args.as(T2))
     end
 
     def self.lc_num_ge(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) >= num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) >= num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,">=")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
+    num_ge = LcProc.new do |args|
+        next internal.lc_num_ge(*args.as(T2))
+    end
+
     def self.lc_num_se(n1 : Value, n2 : Value)
-        if n2.is_a? LcNum
-            if num2num(n1) <= num2num(n2)
-                return lctrue
-            else 
-                return lcfalse
-            end
+        if n1.is_a? NumType && n2.is_a? NumType
+            return val2bool(num2num(n1) <= num2num(n2))
         else 
-            return lc_num_coerce(n1,n2,"<=")
+            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
+    end
+
+    num_se = LcProc.new do |args|
+        next internal.lc_num_se(*args.as(T2))
+    end
+
+    @[AlwaysInline]
+    def self.lc_num_is_zero(num : Value)
+        return lcfalse unless num.is_a? NumType
+        return val2bool(num2num(num) == 0)
+    end
+
+    num_is_zero = LcProc.new do |args|
+        next val2bool(num2num(args.as(T1)[0]) == 0)
+    end
+
+    def self.lc_num_coerce(n1 : Value, n2 : Value)
+        tmp = num2int(0)
+        v1  = lc_num_to_cr_f(n1)
+        return tuple2array(tmp,tmp) unless v1
+        v2  = lc_num_to_cr_f(n2)
+        return tuple2array(tmp,tmp) unless v2
+        return tuple2array(num2float(v2),num2float(v1))
+    end
+
+    num_coerce = LcProc.new do |args|
+        next internal.lc_num_coerce(*args.as(T2))
     end
 
     
 
 
     NumClass = internal.lc_build_class_only("Number")
-    internal.lc_set_parent_class(NumClass,LcClass)
+    internal.lc_set_parent_class(NumClass,Obj)
 
-    internal.lc_add_internal(NumClass,"==",:lc_num_eq, 1)
-    internal.lc_add_internal(NumClass,">",:lc_num_gr,  1)
-    internal.lc_add_internal(NumClass,"<",:lc_num_sm,  1)
-    internal.lc_add_internal(NumClass,">=",:lc_num_ge, 1)
-    internal.lc_add_internal(NumClass,"<=",:lc_num_se, 1)
+    internal.lc_remove_internal(NumClass,"defrost")
 
-    # Definition of Infinity:Class methods
-
-    macro is_positive(v)
-        ({{v}}.as(Inf).positive)
-    end
-
-    macro is_negative(v)
-        !({{v}}.as(Inf).positive)
-    end
-
-    def self.build_infinity
-        inf = Inf.new
-        inf.klass = InfClass
-        inf.data  = InfClass.data.clone
-        inf.frozen = true
-        return inf.as(Value)
-    end
-
-    def self.build_n_infinity
-        inf = build_infinity
-        inf.as(Inf).positive = false
-        return inf 
-    end
-            
-    def self.lc_inf_sum(v1 : Value, v2 : Value)
-        v1 = v1.as(Inf)
-        if v2.is_a? Inf
-            if is_positive(v1) && is_positive(v2)
-                return LcInfinity
-            else
-                return NanObj
-            end
-        elsif v2.is_a? LcNum
-            return v1
-        else
-            return internal.lc_num_coerce(v1,v2,"+")
-        end
-    end
-
-    def self.lc_inf_sub(v1 : Value, v2 : Value)
-        if v2.is_a? Inf
-            if is_negative(v1) && is_negative(v2)
-                return LcNinfinity
-            else
-                return NanObj
-            end
-        elsif v2.is_a? LcNum
-            return v1
-        else
-            return internal.lc_num_coerce(v1,v2,"-")
-        end
-    end
-
-    def self.lc_inf_mult(v1 : Value, v2 : Value)
-        if v2.is_a? Inf
-            if is_negative(v1) || is_negative(v2)
-                return LcNinfinity
-            else
-                return LcInfinity
-            end
-        elsif v2.is_a? LcNum
-            if num2num(v2) == 0
-                return NanObj
-            else
-                return v1
-            end
-        else
-            return internal.lc_num_coerce(v1,v2,"*")
-        end
-    end
-
-    def self.lc_inf_div(v1 : Value, v2 : Value)
-        if v2.is_a? Inf
-            return NanObj
-        elsif v2.is_a? LcNum
-            if num2num(v2) == 0
-                return NanObj
-            else
-                return v1
-            end
-        else 
-            return internal.lc_num_coerce(v1,v2,"/")
-        end
-    end
-
-    def self.lc_inf_power(v1 : Value, v2 : Value)
-        if v2.is_a? Inf
-            return NanObj
-        elsif v2.is_a? LcNum
-            if num2num(v2) == 0
-                return NanObj
-            else
-                return v1
-            end
-        else 
-            return internal.lc_num_coerce(v1,v2,"/")
-        end
-    end
-
-    def self.lc_inf_invert(v : Value)
-        if is_positive(v)
-            return LcNinfinity
-        else
-            return LcInfinity
-        end
-    end
-
-    def self.lc_inf_to_s(v : Value)
-        return internal.build_string(String.build do |io|
-            io << '-' unless is_positive(v)
-            io << '∞'
-        end)
-    end
-
-    def self.lc_inf_coerce(v1 : Value, v2 : Value)
-        return tuple2array(v1,v2)
-    end
-
-    InfClass = internal.lc_build_class_only("Infinity")
-    internal.lc_set_parent_class(InfClass,NumClass)
-    internal.lc_add_internal(InfClass,"+",:lc_inf_sum, 1)
-    internal.lc_add_internal(InfClass,"-",:lc_inf_sum, 1)
-    internal.lc_add_internal(InfClass,"*",:lc_inf_mult,1)
-    internal.lc_add_internal(InfClass,"/",:lc_inf_div, 1)
-    internal.lc_add_internal(InfClass,"\\",:lc_inf_div,1)
-    internal.lc_add_internal(InfClass,"^",:lc_inf_power,1)
-    internal.lc_add_internal(InfClass,"coerce",:lc_inf_coerce,1)
-    internal.lc_add_internal(InfClass,"to_s",:lc_inf_to_s,    0)
-    internal.lc_add_internal(InfClass,"invert",:lc_inf_invert,0)
-    
-    LcInfinity  = internal.build_infinity
-    LcNinfinity = internal.build_n_infinity
-    internal.lc_define_const(NumClass,"INFINITY",LcInfinity)
-
-    def self.build_nan
-        obj = LcNan.new
-        obj.klass  = NanClass
-        obj.data   = NanClass.data.clone
-        obj.frozen = true
-        return obj
-    end
-
-    def self.lc_nan_to_s(v : Value)
-        return internal.build_string("Nan")
-    end
-
-    NanClass = internal.lc_build_class_only("Nan")
-    internal.lc_set_parent_class(NanClass,NumClass)
-    internal.lc_add_internal(NanClass,"to_s",:lc_nan_to_s,0)
-
-    NanObj = internal.build_nan
-    internal.lc_define_const(NumClass,"NAN",NanObj)
+    internal.lc_add_static(NumClass,"new",number_new,0)
+    internal.lc_add_internal(NumClass,">",num_gr,    1)
+    internal.lc_add_internal(NumClass,"<",num_sm,    1)
+    internal.lc_add_internal(NumClass,">=",num_ge,   1)
+    internal.lc_add_internal(NumClass,"<=",num_se,   1)
+    internal.lc_add_internal(NumClass,"zero?",num_is_zero,   0)
+    internal.lc_add_internal(NumClass,"coerce",num_coerce,   1)
 
     
 end
