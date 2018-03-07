@@ -28,5 +28,21 @@ struct LinCAS::IntermediateFactory
     def makeNode(nType : NodeType)
         Node.new(nType)
     end
+
+    def makeBlock(code : Bytecode,line : Intnum)
+        return IseqBlock.new(code,line)
+    end
+
+    def makeBlock(code : Block,filename : String)
+        return StructBlock.new(code,filename)
+    end
+
+    def makeBCode(code : Code)
+        return Bytecode.new(code)
+    end
+
+    def makeVoidArg(name : String, opt = false)
+        return VoidArgument.new(name,opt)
+    end
     
 end

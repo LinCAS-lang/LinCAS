@@ -58,6 +58,22 @@ module LinCAS::Internal
         return m
     end
 
+    def self.lc_def_method(name : String, args : Array(VoidArgument),
+                           arity : Intnum, code : Bytecode, visib : VoidVisib = VoidVisib::PUBLIC)
+        m       = LcMethod.new(name,visib)
+        m.args    = args 
+        m.code    = code 
+        m.arity   = arity
+        return m
+    end
+
+    def self.lc_def_static_method(name : String, args : Array(VoidArgument), 
+                                  arity : Intnum,code : Bytecode,visib : VoidVisib = VoidVisib::PUBLIC)
+        m        = lc_def_method(name,args,arity,code,visib)
+        m.static = true
+        return m 
+    end
+
     def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity)
         m          = LinCAS::MethodEntry.new(name, VoidVisib::PUBLIC)
         m.internal = true

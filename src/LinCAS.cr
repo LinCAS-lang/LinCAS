@@ -33,14 +33,18 @@ require "./Intermediate/NodeType"
 require "./Intermediate/Nkey"
 require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
+require "./Intermediate/Bytecode"
 require "./Internal/Proc"
 require "./Intermediate/SymbolTab"
 require "./Backend/Eval"
+require "./Backend/Compiler"
 require "./Internal/LcInternal"
 require "./Backend/CallStack"
 require "./Internal/Math"
+require "./Backend/VM"
 require "../util/AstPrinter"
 require "../util/SymTabPrinter"
+require "../util/Disassembler"
 
 
 include LinCAS
@@ -57,12 +61,15 @@ if dir
         ast = parser.parse
         #astPrinter = AstPrinter.new
         #astPrinter.printAst(ast.as(Node)) if ast
-        Exec.eval(ast) unless parser.errCount > 0
+        compiler = Compiler.new
+        code   = compiler.compile(ast)
+        disass = Disassembler.new 
+        disass.disassemble(code)
         #s_printer = SymTabPrinter.new 
         #s_printer.printSTab(Id_Tab.getRoot)
-    rescue e
-        puts e 
-        puts
-        Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
+    #rescue e
+    #    puts e 
+    #    puts
+    #    Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
     end
 end

@@ -22,21 +22,55 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./Kernel"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
+class LinCAS::Symbol_Table_Stack
+
+    private struct ID_table 
+        def initialize
+            @cache = [] of String
+        end
+
+        @[AlwaysInline]
+        def fetch(name : String)
+            return @cache.includes? name
+        end
+
+        @[AlwaysInline]
+        def set(name : String)
+            unless @cache.includes? name 
+                @cache << name
+            end
+        end
+    end
+
+    def initialize
+        @stack = [ID_table.new]
+        @sp    = 1
+    end
+
+    @[AlwaysInline]
+    def fetch(name : String)
+        return @stack[@sp - 1].fetch(name)
+    end
+
+    @[AlwaysInline]
+    def set(name : String)
+        @stack[@sp - 1].set(name)
+    end 
+
+    @[AlwaysInline]
+    def fetch_in_previous(name : String)
+        return @stack[@sp - 2].fetch(name)
+    end
+
+    @[AlwaysInline]
+    def push_table
+        @stack.push ID_table.new 
+        @sp        += 1
+    end
+
+    @[AlwaysInline]
+    def pop_table
+        @sp -= 1
+    end
+
+end

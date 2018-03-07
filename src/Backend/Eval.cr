@@ -618,6 +618,7 @@ class LinCAS::Eval < LinCAS::MsgGenerator
                     eval_assign(arg)
                 else
                     lc_raise(LcArgumentError,convert(:few_args) % {args.size,m_args.size})
+                    return nil 
                 end
             end 
         end

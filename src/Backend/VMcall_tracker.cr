@@ -22,21 +22,44 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./Kernel"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
+class LinCAS::VMcall_tracker
+ 
+    private struct Info
+        def initialize(@filename : String,@line : Intnum, @callname : String)
+        end   
+        getter filename,line,callname     
+    end
+
+    def initialize
+        @stack = [] of Info
+    end
+
+    @[AlwaysInline]
+    def push_track(filename : String, line : Intnum, callname : String)
+        @stack.push Info.new(filename,line,callname)
+    end
+
+    @[AlwaysInline]
+    def pop_track
+        @stack.pop 
+    end
+
+    @[AlwaysInline]
+    def get_backtrace
+        count = 0
+        return String.build do |io|
+            @stack.reverse_each do |element|
+                io << "in: `"  << element.callname << '\'' << '\n'
+                io << "line: " << element.line << '\n'
+                io << "in: "   << element.filename '\n'
+                count += 1
+                break if count == 10
+            end
+            if count == 10 && @stack.size > 10
+                io << "  ...and other " << @stack.size - 10
+                io << " items"
+            end
+        end
+    end
+
+end
