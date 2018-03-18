@@ -211,6 +211,7 @@ module LinCAS::Internal
         val.times do |i|
             Exec.lc_yield(num2int(i))
         end
+        return Null
     end
 
     int_times = LcProc.new do |args|
@@ -238,10 +239,9 @@ module LinCAS::Internal
 
     
 
-    IntClass = internal.lc_build_class_only("Integer")
+    IntClass = internal.lc_build_internal_class("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
-
-    internal.lc_remove_static(IntClass,"new")
+    internal.lc_undef_allocator(IntClass)
 
     internal.lc_add_internal(IntClass,"+",int_sum,  1)
     internal.lc_add_internal(IntClass,"-",int_sub,  1)
@@ -250,8 +250,8 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
     internal.lc_add_internal(IntClass,"^",int_power,1)
     internal.lc_add_internal(IntClass,"==",int_eq,  1)
-    internal.lc_add_internal(NumClass,"odd",int_odd,       0)
-    internal.lc_add_internal(NumClass,"even",int_even,     0)
+    internal.lc_add_internal(NumClass,"odd?",int_odd,       0)
+    internal.lc_add_internal(NumClass,"even?",int_even,     0)
     internal.lc_add_internal(IntClass,"invert",int_invert, 0)
     internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
     internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)

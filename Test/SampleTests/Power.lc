@@ -29,9 +29,9 @@ void power(n)
 
 printl power(2)
 
-# should return [[],[1],[2],[3],[1,2],[1,3],[2,3]]
+/* should return [[],[1],[2],[3],[1,2],[1,3],[2,3]] */
 printl power(3)
 
-# should raise an error
+/* should raise an error */
 #power("string")
 

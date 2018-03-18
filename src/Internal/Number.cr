@@ -43,7 +43,7 @@ module LinCAS::Internal
     end
 
     def self.new_number(klass : Value)
-        klass      = klass.as(ClassEntry)
+        klass      = klass.as(LcClass)
         num        = Num_.new
         num.klass  = klass
         num.data   = klass.data.clone 
@@ -51,7 +51,7 @@ module LinCAS::Internal
         return num.as(Value)
     end
 
-    number_new = LcProc.new do |args|
+    number_allocator = LcProc.new do |args|
         next internal.new_number(*args.as(T1))
     end
 
@@ -154,12 +154,12 @@ module LinCAS::Internal
     
 
 
-    NumClass = internal.lc_build_class_only("Number")
+    NumClass = internal.lc_build_internal_class("Number")
     internal.lc_set_parent_class(NumClass,Obj)
+    internal.lc_set_allocator(NumClass,number_allocator)
 
     internal.lc_remove_internal(NumClass,"defrost")
 
-    internal.lc_add_static(NumClass,"new",number_new,0)
     internal.lc_add_internal(NumClass,">",num_gr,    1)
     internal.lc_add_internal(NumClass,"<",num_sm,    1)
     internal.lc_add_internal(NumClass,">=",num_ge,   1)

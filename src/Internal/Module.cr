@@ -23,16 +23,22 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-
-    def self.lc_build_module_only(name : String)
-        return Id_Tab.addModule(name,true)
-    end
     
     def self.lc_build_module(name : String)
-        return Id_Tab.addModule(name)
+        return LcModule.new(name)
     end
 
-    def self.lc_include_module(receiver : Structure, mod : ModuleEntry)
+    def self.lc_build_module(name : String, path : Path)
+        return LcModule.new(name,path)
+    end
+
+
+    def self.lc_build_internal_module(name : String)
+        mod = lc_build_module(name,Path.new.forceAddName(name))
+        MainClass.symTab.addEntry(name,mod)
+    end
+
+    def self.lc_include_module(receiver : Structure, mod : LcModule)
         if receiver.included.includes? mod.path
             # lc_warn()
         else
@@ -41,11 +47,16 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_module_add_internal(mod : ModuleEntry, name : String, method : LcProc, arity : Int32)
+    def self.lc_module_add_internal(mod : LcModule, name : String, method : LcProc, arity : Int32)
         internal.lc_add_internal(mod,name,method,arity)
         internal.lc_add_static(mod,name,method,arity)
     end
 
-    LcModule = internal.lc_build_module_only("Module")
+    def self.lc_module_extend(receiver : Structure, mod : LcModule)
+        internal.lc_copy_methods_as_static_in(mod,receiver)
+        internal.lc_copy_consts_in(mod,receiver)
+    end
+
+    #LcModule = internal.lc_build_module_only("Module")
 
 end

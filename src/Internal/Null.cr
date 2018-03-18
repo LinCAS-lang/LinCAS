@@ -91,10 +91,10 @@ module LinCAS::Internal
         next args.as(T1)[0]
     end
 
-    NullClass = internal.lc_build_class_only("NullClass")
+    NullClass = internal.lc_build_internal_class("NullClass")
     internal.lc_set_parent_class(NullClass,Obj)
+    internal.lc_undef_allocator(NullClass)
 
-    internal.lc_remove_static(NullClass,"new")
     internal.lc_remove_internal(NullClass,"defrost")
 
     internal.lc_add_internal(NullClass,"&&",null_and,      1)

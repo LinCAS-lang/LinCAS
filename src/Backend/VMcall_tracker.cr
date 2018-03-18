@@ -49,9 +49,10 @@ class LinCAS::VMcall_tracker
         count = 0
         return String.build do |io|
             @stack.reverse_each do |element|
+                io << '\n'
                 io << "in: `"  << element.callname << '\'' << '\n'
-                io << "line: " << element.line << '\n'
-                io << "in: "   << element.filename '\n'
+                io << "line: " << element.line     << '\n'
+                io << "in: "   << element.filename << '\n'
                 count += 1
                 break if count == 10
             end

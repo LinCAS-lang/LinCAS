@@ -52,27 +52,34 @@ class LinCAS::Disassembler
             when Code::CALL, Code::M_CALL
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
             when Code::PRINT, Code::PRINTL, Code::PUSHSELF,Code::POPOBJ,Code::PUSHN,
-                 Code::HALT,  Code::NOOP, Code::SET_PARENT, Code::PUSHOBJ_REF, Code::LEAVE,
-                 Code::RETURN
+                 Code::HALT,Code::LEAVE,Code::RETURN, Code::IRANGE_NEW,Code::ERANGE_NEW,
+                 Code::NEW_OBJ, Code::PUSHDUP
                 puts code
             when Code::LINE
                 print_line(iseq.line)
             when Code::FILENAME
                 print_filename(iseq.text)
-            when Code::STRING_NEW, Code::LOADC, Code::PUT_CLASS, Code::PUT_MODULE, Code::GETC,
-                 Code::STOREL_0, Code::STOREL_1, Code::STOREG, Code::STOREC, Code::LOADV, 
-                 Code::LOADL_1, Code::LOADG
+            when Code::STRING_NEW, Code::LOADC, Code::GETC,
+                 Code::STOREL_0, Code::STOREL_1, Code::STOREL_2, Code::STOREG, Code::STOREC, 
+                 Code::LOADV, Code::LOADL_0, Code::LOADL_1,Code::LOADL_2, Code::LOADG
                 print code, ' ', '"', iseq.text, '"',' ', '\n'
+            when Code::STOREL, Code::LOADL 
+                print code, ' ', '"', iseq.text, '"',',', iseq.value,'\n'
             when Code::PUT_INSTANCE_METHOD, Code::PUT_STATIC_METHOD
                 print code, ' ', '"', iseq.text, '"',' ', '\n'
                 print_method_is(iseq)
-            when Code::PUT_ARG, Code::PUT_OPT_ARG
-                print code, ' ', iseq.value, '\n'
-            when Code::PUSHINT, Code::PUSHFLO 
+            when Code::PUSHINT, Code::PUSHFLO, Code::ARY_NEW
                 print code, ' ', iseq.value, '\n'
             when Code::CALL_WITH_BLOCK, Code::M_CALL_WITH_BLOCK
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
                 print_block(iseq.block.as(LcBlock))
+            when Code::MX_NEW
+                print code, ' ', iseq.value, ',', iseq.opt_v, '\n'
+            when Code::OPT_CALL_INIT
+                print code, ' ', iseq.argc, '\n'
+            when Code::PUT_CLASS, Code::PUT_MODULE
+                print code, ' ', '"', iseq.text, '"',' ', '\n'
+                print_scope(iseq.jump.as(Bytecode))
                 
         end
     end
@@ -105,6 +112,13 @@ class LinCAS::Disassembler
         puts "=== <BODY> ==="
         print_iseq(body)
         puts "~" * 40
+    end
+
+    def print_scope(code : Bytecode)
+        header = "-" * 40
+        puts header
+        print_iseq(code)
+        puts header 
     end
 
 end

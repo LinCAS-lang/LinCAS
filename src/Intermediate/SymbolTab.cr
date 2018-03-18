@@ -31,29 +31,48 @@ module LinCAS
 
     struct Path
 
-       def initialize(@path = Array(String).new) 
-       end
+        def initialize(@path = Array(String).new) 
+        end
 
-       def addName(name)
-           return Path.new(@path + [name])
-       end
+        def addName(name)
+            return Path.new(@path + [name])
+        end
 
-       def ==(path)
-           return @path == path.unsafe
-       end
+        def forceAddName(name : String)
+            @path.push(name)
+            return self
+        end
 
-       def unsafe
-          return @path
-       end
+        def copyFrom(path : Path)
+            @path.clear
+            path.each do |elem|
+                @path << elem 
+            end
+            return self 
+        end
 
-       def to_s
-           return @path.join(":")
-       end
+        def ==(path)
+            return @path == path.unsafe
+        end
+
+        def unsafe
+           return @path
+        end
+
+        def to_s
+            return @path.join(":")
+        end
 
     end
 
     abstract class BaseEntry
-        def initialize(@name : String,@path : Path, @prevScope : Structure?)
+        @path : Path
+        def initialize(@name : String,path : Path? = nil, @prevScope : Structure? = nil)
+            if path
+                @path = path 
+            else 
+                @path = Path.new
+            end
         end 
         @included = [] of Path
         @symTab   = SymTab.new

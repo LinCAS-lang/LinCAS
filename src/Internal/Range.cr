@@ -28,9 +28,7 @@ module LinCAS::Internal
         @left  : Intnum = 0
         @right : Intnum = 0
         @inclusive = true
-        attr left 
-        attr right
-        attr inclusive
+        property left,right,inclusive
         def to_s
             return "#{@left}#{@inclusive ? ".." : "..."}#{@right}"
         end
@@ -58,6 +56,18 @@ module LinCAS::Internal
 
     macro inclusive(range)
         {{range}}.as(LcRange).inclusive 
+    end
+
+    def self.lc_range_allocate(klass : Value)
+        klass = klass.as(LcClass)
+        range       = LcRange.new 
+        range.klass = klass 
+        range.data  = klass.data.clone 
+        return range.as(Value)
+    end
+    
+    range_allocator = LcProc.new do |args|
+        next lc_range_allocate(*args.as(T1))
     end
 
     def self.range_new
@@ -181,8 +191,9 @@ module LinCAS::Internal
     end
 
 
-    RangeClass = internal.lc_build_class_only("Range")
+    RangeClass = internal.lc_build_internal_class("Range")
     internal.lc_set_parent_class(RangeClass,Obj)
+    internal.lc_set_allocator(RangeClass,range_allocator)
     
     internal.lc_add_internal(RangeClass,"include?",range_include,  1)
     internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)

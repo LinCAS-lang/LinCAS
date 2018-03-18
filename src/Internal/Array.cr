@@ -166,12 +166,16 @@ module LinCAS::Internal
         return ary.as(Value)
     end
 
-    def self.lc_build_ary_new(klass : Value)
-        return new_ary 
+    def self.lc_ary_allocate(klass : Value)
+        klass     = klass.as(LcClass)
+        ary       = LcArray.new
+        ary.klass = klass
+        ary.data  = klass.data.clone
+        return ary.as(Value)
     end
 
-    lc_new_ary = LcProc.new do |args|
-        next new_ary
+    ary_allocate = LcProc.new do |args|
+        next lc_ary_allocate(*args.as(T1))
     end
 
     def self.lc_ary_init(ary : Value, size : Value)
@@ -800,10 +804,10 @@ module LinCAS::Internal
     end
         
 
-    AryClass = internal.lc_build_class_only("Array")
+    AryClass = internal.lc_build_internal_class("Array")
     internal.lc_set_parent_class(AryClass,Obj)
+    internal.lc_set_allocator(AryClass,ary_allocate)
 
-    internal.lc_add_static_singleton(AryClass,"new",lc_new_ary,0)
     internal.lc_add_internal(AryClass,"init",ary_init,    1)
     internal.lc_add_internal(AryClass,"+",ary_add,        1)
     internal.lc_add_internal(AryClass,"push",ary_push,    1)

@@ -81,12 +81,15 @@ module LinCAS::Internal
     end
 
     lc_printl = LcProc.new do |args|
-        next LcKernel.outl(args.as(T2)[2])
+        LcKernel.outl(args.as(T2)[1])
+        next Null
     end
 
-    LKernel = internal.build_module_only("Kernel")
+    LKernel = internal.lc_build_internal_module("Kernel")
 
-    internal.lc_add_module_method(LKernel,"printl",lc_printl,1)
+    lc_module_add_internal(LKernel,"printl",lc_printl,1)
+    lc_include_module(Lc_Class,LKernel)
+    lc_module_extend(Lc_Class,LKernel)
 
     
 

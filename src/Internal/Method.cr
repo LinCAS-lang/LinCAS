@@ -24,39 +24,50 @@
 
 module LinCAS::Internal
 
-    EMPTY_CODE = Parser::NOOP
 
-     private def self.lc_undef_method(name,owner : Structure)
-        m       = LinCAS::MethodEntry.new(name.as(String),VoidVisib::UNDEFINED)
-        m.args  = EMPTY_CODE 
-        m.code  = EMPTY_CODE
+    private def self.lc_undef_method(name,owner : Structure)
+        m       = LinCAS::LcMethod.new(name.as(String),VoidVisib::UNDEFINED)
+        m.args  = nil
+        m.code  = nil
         m.arity = 0
         m.owner = owner
         return m
     end
-    
-    def 
-    self.lc_define_usr_method(
-        name, args : Node, owner : LinCAS::Structure, code : Node,
-        arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
-    )
-        m       = LinCAS::MethodEntry.new(name.as(String),visib)
-        m.args  = args
-        m.owner = owner
-        m.code  = code
-        m.arity = arity
-        return m 
+
+    macro new_lc_method(name,visib)
+        LcMethod.new({{name}},{{visib}})
     end
 
-    def 
-    self.lc_define_static_usr_method(
-        name,args : Node, owner : LinCAS::Structure, code : Node, 
-        arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC 
-    )
-        m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
-        m.static = true
-        return m
-    end
+    macro set_default(m,owner,code,arity)
+        {{m}}.internal = true
+        {{m}}.owner    = {{owner}}
+        {{m}}.code     = {{code}}
+        {{m}}.arity    = {{arity}}
+    end 
+
+    
+    #def 
+    #self.lc_define_usr_method(
+    #    name, args : Node, owner : LinCAS::Structure, code : Node,
+    #    arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
+    #)
+    #    m       = LinCAS::MethodEntry.new(name.as(String),visib)
+    #    m.args  = args
+    #    m.owner = owner
+    #    m.code  = code
+    #    m.arity = arity
+    #    return m 
+    #end
+
+    #def 
+    #self.lc_define_static_usr_method(
+    #    name,args : Node, owner : LinCAS::Structure, code : Node, 
+    #    arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC 
+    #)
+    #    m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
+    #    m.static = true
+    #    return m
+    #end
 
     def self.lc_def_method(name : String, args : Array(VoidArgument),
                            arity : Intnum, code : Bytecode, visib : VoidVisib = VoidVisib::PUBLIC)
@@ -75,11 +86,14 @@ module LinCAS::Internal
     end
 
     def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity)
-        m          = LinCAS::MethodEntry.new(name, VoidVisib::PUBLIC)
-        m.internal = true
-        m.owner    = owner
-        m.code     = code
-        m.arity    = arity 
+        m          = new_lc_method(name, VoidVisib::PUBLIC)
+        set_default(m,owner,code,arity)
+        return m
+    end
+
+    def self.lc_define_protected_internal_method(name : String, owner : Structure, code, arity)
+        m = new_lc_method(name,VoidVisib::PROTECTED)
+        set_default(m,owner,code,arity)
         return m
     end
 
@@ -141,6 +155,12 @@ module LinCAS::Internal
         )
     end
 
+    macro define_protected_method(name,owner,code,arity)
+        internal.lc_define_protected_internal_method(
+            {{name}},{{owner}},{{code}},{{arity}}
+        )
+    end
+
     macro undef_method(name,owner)
         internal.lc_undef_internal_method({{name}},{{owner}})
     end 
@@ -194,9 +214,9 @@ module LinCAS::Internal
 
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
         method = receiver.methods.lookUp(name)
-        if method.is_a? MethodEntry
+        if method.is_a? LcMethod
             return method unless check
-            method = method.as(MethodEntry)
+            method = method.as(LcMethod)
             case method.visib 
                 when VoidVisib::PUBLIC
                     return method
@@ -216,15 +236,15 @@ module LinCAS::Internal
     def self.seek_static_method(receiver : Structure, name)
         method    = seek_static_method2(receiver,name)
         return 0 if method == 1
-        if method.is_a? MethodEntry
+        if method.is_a? LcMethod
             return method
         else
-            if receiver.is_a? ClassEntry
+            if receiver.is_a? LcClass
                 parent = parent_of(receiver)
                 while parent 
                     method = seek_static_method2(parent,name)
                     return 0 if method == 1
-                    return method if method.is_a? MethodEntry
+                    return method if method.is_a? LcMethod
                     parent = parent_of(parent) 
                 end
             end
@@ -235,7 +255,7 @@ module LinCAS::Internal
     def self.seek_static_method2(receiver : Structure, name : String)
         method = receiver.statics.lookUp(name)
         if !method.nil?
-            method = method.as(MethodEntry)
+            method = method.as(LcMethod)
             return 1 if method.visib == VoidVisib::UNDEFINED
             return method
         end
@@ -253,7 +273,7 @@ module LinCAS::Internal
             end
             m = internal.seek_method(klass.as(Structure),method)
         end
-        return m.is_a? MethodEntry
+        return m.is_a? LcMethod
     end
 
     def self.lc_obj_has_internal_m?(obj : Value,name : String)
@@ -262,7 +282,7 @@ module LinCAS::Internal
         else
             method = seek_instance_method(class_of(obj),name)
         end 
-        return -1 unless method.is_a? MethodEntry
+        return -1 unless method.is_a? LcMethod
         return 0 if method.internal 
         return 1
     end
@@ -271,7 +291,7 @@ module LinCAS::Internal
         smtab = sender.methods
         rmtab = receiver.methods
         smtab.each_key do |name|
-            method = smtab[name].as(MethodEntry)
+            method = smtab[name].as(LcMethod)
             method.owner = receiver
             internal.insert_method_as_instance(method,rmtab)
         end
@@ -281,18 +301,18 @@ module LinCAS::Internal
         smtab = sender.methods
         rmtab = receiver.statics
         smtab.each_key do |name|
-            method = smtab[name].as(MethodEntry)
+            method = smtab[name].as(LcMethod)
             method.owner = receiver
             internal.insert_method_as_static(method,rmtab)
         end
     end
 
     @[AlwaysInline]
-    def self.insert_method_as_instance(method : MethodEntry, r : SymTab)
+    def self.insert_method_as_instance(method : LcMethod, r : SymTab)
         r.addEntry(method.name,method)
     end
 
-    def self.insert_method_as_static(method : MethodEntry, r : SymTab)
+    def self.insert_method_as_static(method : LcMethod, r : SymTab)
         method.static = true
         r.addEntry(method.name,method)
     end

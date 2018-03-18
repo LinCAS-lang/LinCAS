@@ -222,7 +222,7 @@ module LinCAS::Internal
         num2float(Math.hypot(val1,val2).to_f)
     end
 
-    MathM = internal.lc_build_module_only("Math")
+    MathM = internal.lc_build_internal_module("Math")
     
     internal.lc_module_add_internal(MathM,"cos",m_cos,    1)
     internal.lc_module_add_internal(MathM,"sin",m_sin,    1)

@@ -76,8 +76,8 @@ class LinCAS::Compiler
     end
 
     def initialize
-        @ifactory = IntermediateFactory.new
-        @in_block = true
+        @ifactory    = IntermediateFactory.new
+        @block_depth = 0
     end
 
     @[AlwaysInline]
@@ -105,18 +105,27 @@ class LinCAS::Compiler
 
     @[AlwaysInline]
     protected def emit_store_l(name : String,forced = false)
-        if !@in_block || forced
+        if @block_depth == 0 || forced
             iseq      = @ifactory.makeBCode(Code::STOREL_0)
             STstack.set(name)
         else
-            if STstack.fetch(name)
-                iseq = @ifactory.makeBCode(Code::STOREL_0)
-            elsif STstack.fetch_in_previous(name)
-                iseq = @ifactory.makeBCode(Code::STOREL_1)
+            index = STstack.fetch(name,@block_depth)
+            if index >= 0
+                case index
+                    when 0
+                        iseq = @ifactory.makeBCode(Code::STOREL_0)
+                    when 1
+                        iseq = @ifactory.makeBCode(Code::STOREL_1)
+                    when 2
+                        iseq = @ifactory.makeBCode(Code::STOREL_2)
+                    else 
+                        iseq = @ifactory.makeBCode(Code::STOREL)
+                        iseq.value = index 
+                end
             else
                 iseq = @ifactory.makeBCode(Code::STOREL_0)
                 STstack.set(name)
-            end 
+            end
         end 
         iseq.text = name
         return iseq
@@ -124,13 +133,22 @@ class LinCAS::Compiler
 
     @[AlwaysInline]
     protected def emit_load_v(name : String)
-        if !@in_block
+        if @block_depth == 0
             is = @ifactory.makeBCode(Code::LOADV)
         else 
-            if STstack.fetch(name)
-                is = @ifactory.makeBCode(Code::LOADV)
-            elsif STstack.fetch_in_previous(name)
-                is = @ifactory.makeBCode(Code::LOADL_1)
+            index = STstack.fetch(name,@block_depth)
+            if index >= 0
+                case index
+                    when 0
+                        is = @ifactory.makeBCode(Code::LOADL_0)
+                    when 1
+                        is = @ifactory.makeBCode(Code::LOADL_1)
+                    when 2
+                        is = @ifactory.makeBCode(Code::LOADL_2)
+                    else
+                        is = @ifactory.makeBCode(Code::LOADL)
+                        is.value = index 
+                end
             else
                 is = @ifactory.makeBCode(Code::LOADV)
             end 
@@ -213,7 +231,7 @@ class LinCAS::Compiler
         if args.size > 0
             args.each_with_index do |exp,i|
                 callis   = make_call_is(callname,1)  
-                exp_iseq = compile_exp(exp)
+                exp_iseq = compile_exp(exp,false)
                 link(last,exp_iseq,callis)
                 if i < args.size - 1
                     pop_is = popobj
@@ -256,35 +274,27 @@ class LinCAS::Compiler
         body        = node.getBranches[0]
         full_name   = namespace.as(Node).getBranches
         line        = new_line(node)
-        set_p       = @ifactory.makeBCode(Code::SET_PARENT)
-        pop_is      = popobj
         leave_is    = leave
+        c_name      = @ifactory.makeBCode(Code::PUT_CLASS)
         if full_name.size == 1
             name        = full_name.last
-            p_main      = @ifactory.makeBCode(Code::PUSHOBJ_REF)
-            c_name      = @ifactory.makeBCode(Code::PUT_CLASS)
+            c_nspace    = pushself
             c_name.text = unpack_name(name)
-            link(p_main,c_name)
-            set_last(p_main,c_name)
-            c_name = p_main
         else
             c_nspace    = compile_namespace(namespace,false)
             name        = full_name.last
-            c_name      = @ifactory.makeBCode(Code::PUT_CLASS)
             c_name.text = unpack_name(name)
-            link(c_nspace,c_name)
-            set_last(c_nspace,c_name)
-            c_name = c_nspace
         end
         if parent
             c_parent = compile_namespace(parent.as(Node))  
         else 
-            c_parent      = @ifactory.makeBCode(Code::LOADC)
-            c_parent.text = "Object"
+            c_parent = pushn
         end
-        c_body = compile_body(body)
-        link(line,c_name,c_parent,set_p,c_body,pop_is,leave_is)
-        set_last(line,leave_is)
+        c_body      = compile_body(body)
+        link(c_body,leave_is)
+        c_name.jump = c_body
+        link(line,c_nspace,c_parent,c_name)
+        set_last(line,c_name)
         STstack.pop_table
         return line
     end
@@ -297,26 +307,21 @@ class LinCAS::Compiler
         line      = new_line(node)
         pop_is    = popobj
         leave_is  = leave
+        c_name    = @ifactory.makeBCode(Code::PUT_MODULE)
         if full_name.size == 1
-            name = full_name.last
-            p_main      = @ifactory.makeBCode(Code::PUSHOBJ_REF)
-            c_name      = @ifactory.makeBCode(Code::PUT_MODULE)
+            name        = full_name.last
+            c_nspace    = pushself
             c_name.text = unpack_name(name)
-            link(p_main,c_name)
-            set_last(p_main,c_name)
-            c_name = p_main
         else
             c_nspace    = compile_namespace(namespace,false)
             name        = full_name.last
-            c_name      = @ifactory.makeBCode(Code::PUT_MODULE)
             c_name.text = unpack_name(name)
-            link(c_nspace,c_name)
-            set_last(c_nspace,c_name)
-            c_name = c_nspace
         end 
         c_body = compile_body(body)
-        link(line,c_name,c_body,pop_is,leave_is)
-        set_last(line,leave_is)
+        link(c_body,leave_is)
+        c_name.jump = c_body
+        link(line,c_nspace,c_name)
+        set_last(line,c_name)
         STstack.pop_table
         return line
     end
@@ -331,9 +336,9 @@ class LinCAS::Compiler
         body     = branches[1]
         static   = false
         if name.type == NodeType::SELF
-            voidName = unpack_name(name.getBranches[0]).as(String)
-            c_receiver = @ifactory.makeBCode(Code::PUSHOBJ_REF)
-            static   = true
+            voidName   = unpack_name(name.getBranches[0]).as(String)
+            c_receiver = pushself
+            static     = true
         else
             voidName = unpack_name(name).as(String)
             receiver = name.getAttr(NKey::RECEIVER)
@@ -347,28 +352,29 @@ class LinCAS::Compiler
                     static = true
                 end
             else
-                c_receiver = @ifactory.makeBCode(Code::PUSHOBJ_REF)
+                c_receiver = @ifactory.makeBCode(Code::PUSHSELF)
             end
         end
         ret_is = make_null_return
         file   = new_file(node)
         line   = new_line(node)
         pop_is = popobj
+        b_noop = noop
         c_body = compile_body(body)
         c_args = compile_void_args(args)
-        link(file,c_body,ret_is)
-        set_last(file,ret_is)
+        link(b_noop,file,c_body,ret_is)
+        set_last(b_noop,ret_is)
         if {VoidVisib::PUBLIC,nil}.includes? visib
             if static 
-                method = internal.lc_def_static_method(voidName,c_args,arity,file)
+                method = internal.lc_def_static_method(voidName,c_args,arity,b_noop)
             else
-                method = internal.lc_def_method(voidName,c_args,arity,file)
+                method = internal.lc_def_method(voidName,c_args,arity,b_noop)
             end
         else 
             if static 
-                method = internal.lc_def_static_method(voidName,c_args,arity,file,visib.as(VoidVisib))
+                method = internal.lc_def_static_method(voidName,c_args,arity,b_noop,visib.as(VoidVisib))
             else
-                method = internal.lc_def_method(voidName,c_args,arity,file,visib.as(VoidVisib))
+                method = internal.lc_def_method(voidName,c_args,arity,b_noop,visib.as(VoidVisib))
             end
         end
         if static
@@ -500,23 +506,27 @@ class LinCAS::Compiler
                 arg.optcode = p_null 
                 follow_v << arg
             end
+            STstack.set(name)
         end 
         return follow_v
     end
 
     protected def compile_block(node : Node)
-        @in_block = true 
+        @block_depth += 1
         STstack.push_table
         argv   = node.as(Node).getAttr(NKey::BLOCK_ARG)
-        c_args = compile_block_args(argv.as(Node))
+        c_args = compile_block_args(argv.as(Node)) if argv
+        c_noop = noop
         c_body = compile_body(node)
-        ret_is = make_null_return
+        ret_is = make_null_next
         file   = new_file(node)
-        link(file,c_body,ret_is)
-        block         = LcBlock.new(file)
-        block.args    = c_args
+        link(c_noop,file,c_body,ret_is)
+        block         = LcBlock.new(c_noop)
+        if c_args
+            block.args    = c_args
+        end 
         STstack.pop_table
-        @in_block = false
+        @block_depth -= 1
         return block
     end
 
@@ -543,6 +553,35 @@ class LinCAS::Compiler
                 is = compile_call(node)
             when NodeType::METHOD_CALL
                 is = compile_m_call(node)
+            when NodeType::TRUE
+                is = @ifactory.makeBCode(Code::PUSHT)
+            when NodeType::FALSE
+                is = @ifactory.makeBCode(Code::PUSHF)
+            when NodeType::NULL
+                is = @ifactory.makeBCode(Code::PUSHN)
+            when NodeType::STRING
+                is      = @ifactory.makeBCode(Code::PUSHSTR)
+                is.text = node.getAttr(NKey::VALUE).as(String)
+            when NodeType::NAMESPACE
+                is = compile_namespace(node)
+            when NodeType::RETURN
+                is = compile_return(node)
+            when NodeType::ARRAY
+                is = compile_array(node)
+            when NodeType::IRANGE, NodeType::ERANGE
+                is = compile_range(node)
+            when NodeType::MATRIX
+                is = compile_matrix(node)
+            when NodeType::READS
+                is = compile_reads(node)
+            when NodeType::PRINT, NodeType::PRINTL
+                is = compile_print(node)
+            when NodeType::NEW 
+                is = compile_new(node)
+            when NodeType::SELF
+                is = pushself
+            when NodeType::YIELD
+                id = compile_yield(node)
             else 
                 is = noop
         end
@@ -595,9 +634,114 @@ class LinCAS::Compiler
         return c_receiver
     end
 
-    @[AlwaysInline]
-    private def add_next_is(code : Bytecode)
-        code.nextc = NEXTB
+    protected def compile_return(node : Node)
+        exp   = node.getBranches[0]
+        c_exp = compile_exp(exp,false)
+        ret   = @ifactory.makeBCode(Code::RETURN)
+        link(c_exp,ret)
+        set_last(c_exp,ret)
+        return c_exp
+    end
+
+    protected def compile_array(node : Node)
+        branches     = node.getBranches
+        ary_is       = @ifactory.makeBCode(Code::ARY_NEW)
+        ary_is.value = branches.size
+        if branches.size > 0
+            first    = compile_exp(branches.last,false)
+            tmp      = first 
+            i        = branches.size - 2
+            while i >= 0
+                tmp2 = compile_exp(branches[i],false)
+                link(tmp,tmp2)
+                tmp = tmp2
+                i  -= 1
+            end
+            link(tmp,ary_is)
+            set_last(first,ary_is)
+            return first
+        else 
+            return ary_is
+        end
+    end
+
+    protected def compile_range(node : Node)
+        branches = node.getBranches
+        left     = compile_exp(branches[0],false)
+        right    = compile_exp(branches[1],false)
+        if node.type == NodeType::IRANGE
+            range_is = @ifactory.makeBCode(Code::IRANGE_NEW)
+        else
+            range_is = @ifactory.makeBCode(Code::ERANGE_NEW)
+        end 
+        link(left,right,range_is)
+        set_last(left,range_is)
+        return left
+    end
+
+    protected def compile_matrix(node : Node)
+        branches = node.getBranches
+        rws      = branches.size 
+        cls      = (branches[0]? ? branches[0].getBranches.size : 0)
+        mx_is    = @ifactory.makeBCode(Code::MX_NEW)
+        mx_is.value = rws 
+        mx_is.opt_v = cls
+        if rws > 0 && cls > 0
+            first = compile_matrix_row(branches.last) 
+            tmp   = first 
+            i     = rws  -2
+            while i >= 0
+                tmp2 = compile_matrix_row(branches[i])
+                link(tmp,tmp2)
+                tmp = tmp2 
+                i  -= 1
+            end 
+            link(tmp,mx_is)
+            set_last(first,mx_is)
+            return first
+        end
+        return mx_is
+    end
+
+    protected def compile_matrix_row(node : Node)
+        branches = node.getBranches
+        first    = compile_exp(branches.last,false)
+        tmp      = first
+        i        = branches.size - 2
+        while i >= 0
+            tmp2 = compile_exp(branches[i],false)
+            link(tmp,tmp2)
+            tmp = tmp2 
+            i  -= 1
+        end 
+        set_last(first,tmp)
+        return first
+    end
+
+    protected def compile_new(node : Node)
+        branches  = node.getBranches
+        namespace = branches[0]
+        args      = branches[1]
+        c_nspace  = compile_namespace(namespace)
+        c_args    = compile_call_args(args)                # Fix call_with_block
+        n_obj     = @ifactory.makeBCode(Code::NEW_OBJ)
+        c_init    = @ifactory.makeBCode(Code::OPT_CALL_INIT)
+        p_dup     = @ifactory.makeBCode(Code::PUSHDUP)
+        p_obj     = popobj
+
+        c_init.block   = c_args[1]
+        c_init.argc = args.getBranches.size
+        link(c_nspace,n_obj,p_dup,c_args[0],c_init,p_obj)
+        set_last(c_nspace,p_obj)
+        return c_nspace
+    end
+
+    protected def compile_yield(node : Node)
+        c_args  = compile_call_args(node.getBranches[0])
+        c_yield = @ifactory.makeBCode(Code::YIELD)
+        link(c_args,c_yield)
+        set_last(c_args,c_yield)
+        return c_args
     end
 
     @[AlwaysInline]
@@ -658,6 +802,14 @@ class LinCAS::Compiler
     private def make_null_return
         null = pushn
         ret  = @ifactory.makeBCode(Code::RETURN)
+        link(null,ret)
+        set_last(null,ret)
+        return null
+    end
+
+    private def make_null_next
+        null = pushn
+        ret  = @ifactory.makeBCode(Code::B_NEXT)
         link(null,ret)
         set_last(null,ret)
         return null

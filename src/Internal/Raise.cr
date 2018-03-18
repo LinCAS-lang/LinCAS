@@ -38,6 +38,7 @@ module LinCAS
             FrozenError
             IndexError
             MathError
+            InstanceError
         end
 
         ERR_MESSAGE = {
@@ -47,11 +48,13 @@ module LinCAS
             :not_a_class    => "'%s' is not a class",
             :not_a_module   => "'%s' is not a module",
             :const_defined  => "constant '%s' already defined",
-            :superclass_err => "Superclass missmatch in '%s'",
+            :superclass_err => "Superclass missmatch for '%s'",
             :undefined_const=> "Undefined constant '%s'",
+            :undef_const_2  => "Undefined constant '%s' for '%s'",
             :no_s_method    => "Undefined method for %s : %s",
             :no_method      => "Undefined method for '%s' object",
             :undefined_id   => "Undefined local variable or constant '%s'",
+            :undef_var      => "Undefined local variable '%s'",
             :protected_method => "Protected method called for '%s' object",
             :private_method => "Private method called for '%s' object",
             :no_coerce      => "Cant't coerce %s into %s",
@@ -59,14 +62,16 @@ module LinCAS
             :modify_frozen  => "Attempted to modify a frozen object",
             :frozen_class   => "Can't reopen a frozen class",
             :frozen_module  => "Can't reopen a frozen module",
-            :failed_comparison => "Comparison between %s and %s failed"
+            :failed_comparison => "Comparison between %s and %s failed",
+            :no_parent      => "Parent must be a class (%s given)",
+            :no_block       => "No block given"
         }
 
         class LcError < BaseC
             @body      : String = ""
             @backtrace : String = ""
-            getter error, body, backtrace
-            setter error, body, backtrace
+            getter body, backtrace
+            setter body, backtrace
         end
 
         def self.build_error(error : ErrType,body : String, backtrace : String)
@@ -79,14 +84,14 @@ module LinCAS
         end
 
         def self.lc_err_new(klass : Value)
-            klass     = klass.as(ClassEntry)
+            klass     = klass.as(LcClass)
             err       = LcError.new 
             err.klass = klass 
             err.data  = klass.data.clone
             return err.as(Value)
         end
 
-        err_new = LcProc.new do |args|
+        err_allocator = LcProc.new do |args|
             next internal.lc_err_new(*args.as(T1))
         end
 
@@ -137,9 +142,10 @@ module LinCAS
             next err
         end
 
-        ErrClass = internal.lc_build_class_only("Error")
+        ErrClass = internal.lc_build_internal_class("Error")
         internal.lc_set_parent_class(ErrClass,Obj)
-        internal.lc_add_static_singleton(ErrClass,"new",err_new,    0)
+        internal.lc_set_allocator(ErrClass,err_allocator)
+        
         internal.lc_add_internal(ErrClass,"init",err_init,          1)
         internal.lc_add_internal(ErrClass,"to_s",err_msg,           0)
         internal.lc_add_internal(ErrClass,"message",err_msg,        0)
@@ -147,38 +153,41 @@ module LinCAS
         internal.lc_add_internal(ErrClass,"full_msg",err_full_msg,  0)
         internal.lc_add_internal(ErrClass,"defrost",err_defrost,    0)
 
-        TypeErrClass = internal.lc_build_class_only("TypeError")
+        TypeErrClass = internal.lc_build_internal_class("TypeError")
         internal.lc_set_parent_class(TypeErrClass,ErrClass)
 
-        ArgErrClass  = internal.lc_build_class_only("ArgumentError")
+        ArgErrClass  = internal.lc_build_internal_class("ArgumentError")
         internal.lc_set_parent_class(ArgErrClass,ErrClass)
 
-        RuntimeErrClass = internal.lc_build_class_only("RuntimeError")
+        RuntimeErrClass = internal.lc_build_internal_class("RuntimeError")
         internal.lc_set_parent_class(RuntimeErrClass,ErrClass)
 
 #        InternalErrClass = internal.lc_build_class_only("InternalError")
 #        internal.lc_set_parent_class(ErrClass,Obj)
 
-        NameErrClass = internal.lc_build_class_only("NameError")
+        NameErrClass = internal.lc_build_internal_class("NameError")
         internal.lc_set_parent_class(NameErrClass,ErrClass)
 
-        NoMErrClass  = internal.lc_build_class_only("NoMethodError")
+        NoMErrClass  = internal.lc_build_internal_class("NoMethodError")
         internal.lc_set_parent_class(NoMErrClass,ErrClass)
 
-        FrozenErrClass = internal.lc_build_class_only("FrozenError")
+        FrozenErrClass = internal.lc_build_internal_class("FrozenError")
         internal.lc_set_parent_class(FrozenErrClass,ErrClass)
 
-        ZeroDivErrClass = internal.lc_build_class_only("ZeroDivisionError")
+        ZeroDivErrClass = internal.lc_build_internal_class("ZeroDivisionError")
         internal.lc_set_parent_class(ZeroDivErrClass,ErrClass)
 
-        SysStackErrClass = internal.lc_build_class_only("SystemStackError")
+        SysStackErrClass = internal.lc_build_internal_class("SystemStackError")
         internal.lc_set_parent_class(SysStackErrClass,ErrClass)
 
-        IndexErrClass = internal.lc_build_class_only("IndexError")
+        IndexErrClass = internal.lc_build_internal_class("IndexError")
         internal.lc_set_parent_class(IndexErrClass,ErrClass)
 
-        MathErr = internal.lc_build_class_only("MathError")
+        MathErr = internal.lc_build_internal_class("MathError")
         internal.lc_set_parent_class(MathErr,ErrClass)
+
+        InstanceErr = internal.lc_build_internal_class("InstanceError")
+        internal.lc_set_parent_class(InstanceErr,ErrClass)
 
         ErrDict = {
             ErrType::TypeError      => TypeErrClass,
@@ -190,7 +199,8 @@ module LinCAS
             ErrType::SystemStackError  => SysStackErrClass,
             ErrType::FrozenError       => FrozenErrClass,
             ErrType::IndexError     => IndexErrClass,
-            ErrType::MathError      => MathErr
+            ErrType::MathError      => MathErr,
+            ErrType::InstanceError  => InstanceErr 
         }
 
 
@@ -211,6 +221,7 @@ module LinCAS
     LcSystemStackError  = Internal::ErrType::SystemStackError
     LcIndexError    = Internal::ErrType::IndexError
     LcMathError     = Internal::ErrType::MathError
+    LcInstanceErr   = Internal::ErrType::InstanceError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

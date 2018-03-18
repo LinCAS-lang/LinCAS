@@ -112,15 +112,24 @@ module LinCAS::Internal
     end
 
     def self.build_matrix
-        matrix = Matrix.new
+        matrix       = Matrix.new
         matrix.klass = MatrixClass 
         matrix.data  = MatrixClass.data.clone
         return matrix.as(Value)
     end
 
-    matrix_new = LcProc.new do |args|
-        next internal.build_matrix
+    def self.lc_matrix_allocate(klass : Value)
+        klass        = klass.as(LcClass)
+        matrix       = Matrix.new 
+        matrix.klass = klass 
+        matrix.data  = klass.data.clone 
+        return matrix.as(Value)
+    end 
+
+    matrix_allocate = LcProc.new do |args|
+        next lc_matrix_allocate(*args.as(T1))
     end
+    
 
     def self.lc_matrix_init(matrix : Value, rows : Value, cols : Value)
         r = lc_num_to_cr_i(rows)
@@ -780,10 +789,10 @@ module LinCAS::Internal
     end
 
 
-    MatrixClass = internal.lc_build_class_only("Matrix")
+    MatrixClass = internal.lc_build_internal_class("Matrix")
     internal.lc_set_parent_class(MatrixClass,Obj)
+    internal.lc_set_allocator(MatrixClass,matrix_allocate)
 
-    internal.lc_add_static_singleton(MatrixClass,"new",matrix_new,0)
     internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)
     internal.lc_add_internal(MatrixClass,"init",matrix_init,      2)
     internal.lc_add_internal(MatrixClass,"to_s",matrix_to_s,      0)

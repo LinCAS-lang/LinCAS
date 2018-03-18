@@ -35,11 +35,11 @@ require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
 require "./Intermediate/Bytecode"
 require "./Internal/Proc"
-require "./Intermediate/SymbolTab"
-require "./Backend/Eval"
+#require "./Intermediate/SymbolTab"
+# require "./Backend/Eval"
 require "./Backend/Compiler"
 require "./Internal/LcInternal"
-require "./Backend/CallStack"
+#require "./Backend/CallStack"
 require "./Internal/Math"
 require "./Backend/VM"
 require "../util/AstPrinter"
@@ -55,7 +55,7 @@ factory = FrontendFactory.new
 ENV["libDir"] = ""
 dir = ARGV[0]?
 if dir 
-    begin
+    #begin
         parser = factory.makeParser(File.expand_path(dir))
         #parser.displayTokens
         ast = parser.parse
@@ -65,11 +65,13 @@ if dir
         code   = compiler.compile(ast)
         disass = Disassembler.new 
         disass.disassemble(code)
+        puts
+        Exec.run(code)
         #s_printer = SymTabPrinter.new 
         #s_printer.printSTab(Id_Tab.getRoot)
     #rescue e
     #    puts e 
     #    puts
     #    Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
-    end
+    #end
 end

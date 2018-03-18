@@ -31,33 +31,36 @@ module LinCAS
     PUSHT 
     PUSHF 
     PUSHN  
-    PUSHSELF   
-    PUSHOBJ_REF
+    PUSHSELF  
     PUT_CLASS         
     PUT_MODULE 
-    PUT_ARG
-    PUT_OPT_ARG
     PUT_STATIC_METHOD
-    PUT_INSTANCE_METHOD
-    SET_PARENT          
+    PUT_INSTANCE_METHOD        
     CALL 
     CALL_WITH_BLOCK
     M_CALL         
-    M_CALL_WITH_BLOCK          
+    M_CALL_WITH_BLOCK 
+    OPT_CALL_INIT         
     POPOBJ
     STOREL_0
-    STOREL_1                 
+    STOREL_1 
+    STOREL_2
+    STOREL                
     STOREG                  
     STOREC                         
     ARY_NEW                 
-    RANGE_NEW 
+    IRANGE_NEW 
+    ERANGE_NEW
     STRING_NEW             
     SYMC_NEW              
     SYMN_NEW                
     SYMF_NEW  
     MX_NEW              
     LOADV
-    LOADL_1                   
+    LOADL_0
+    LOADL_1
+    LOADL_2
+    LOADL                   
     LOADG
     LOADC 
     GETC
@@ -68,12 +71,10 @@ module LinCAS
     PRINTL
     PUSHDUP
     RETURN
-#    EQCMP
-#    GRCMP
-#    SMCMP
-#    GECMP
-#    SECMP
+    B_NEXT
+    NEW_OBJ
     NOOP
+    YIELD
 
     LINE
     FILENAME
@@ -89,6 +90,7 @@ module LinCAS
     @text  = ""
     @argc  = 0
     @value = 0.as(Num)
+    @opt_v = 0.as(Intnum)
     @jump  : Bytecode? = nil
     @line  = 0.as(Intnum)
     @method : LcMethod? = nil
@@ -96,6 +98,6 @@ module LinCAS
 
 
     def initialize(@code : Code); end
-    property code,nextc,text,argc,value,jump,lastc,line,method, block
+    property code,nextc,text,argc,value,jump,lastc,line,method, block,opt_v
   end
 end

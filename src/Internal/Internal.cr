@@ -40,7 +40,7 @@ module LinCAS::Internal
     alias ValueR = BaseS | BaseC
 
     abstract struct BaseS
-        @klass  = uninitialized ClassEntry
+        @klass  = uninitialized LcClass
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
@@ -48,7 +48,7 @@ module LinCAS::Internal
     end
 
     abstract class BaseC
-        @klass  = uninitialized ClassEntry
+        @klass  = uninitialized LcClass
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
@@ -72,7 +72,7 @@ module LinCAS::Internal
     end
 
     macro convert(name)
-        Eval.convert({{name}})
+        VM.convert({{name}})
     end
 
     def self.coerce(v1 : Value, v2 : Value)
@@ -86,10 +86,10 @@ module LinCAS::Internal
 
     def self.lc_typeof(v : Value)
         if v.is_a? Structure 
-            if v.is_a? ModuleEntry
-                return "#{v.as(ModuleEntry).name} : Module"
+            if v.is_a? LcModule
+                return "#{v.as(LcModule).name} : Module"
             else 
-                return "#{v.as(ClassEntry).name} : Class"
+                return "#{v.as(LcClass).name} : Class"
             end 
         else 
             return v.as(ValueR).klass.name

@@ -241,10 +241,9 @@ module LinCAS::Internal
         next internal.lc_float_eq(*args.as(T2))
     end
 
-    FloatClass = internal.lc_build_class_only("Float")
+    FloatClass = internal.lc_build_internal_class("Float")
     internal.lc_set_parent_class(FloatClass,NumClass)
-
-    internal.lc_remove_static(FloatClass,"new")
+    internal.lc_undef_allocator(FloatClass)
 
     internal.lc_add_internal(FloatClass,"+",float_sum,  1)
     internal.lc_add_internal(FloatClass,"-",float_sub,  1)

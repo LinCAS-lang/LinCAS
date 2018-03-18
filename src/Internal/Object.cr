@@ -47,20 +47,34 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.boot_main_object
-        return internal.lc_obj_new(MainClass)
+        return internal.lc_obj_allocate(Obj)
     end
 
-    def self.lc_obj_new(klass : Value)
-        klass = klass.as(ClassEntry)
-        obj = LcObject.new
+    def self.lc_new_object(klass : Value)
+        klass = klass.as(LcClass)
+        allocator = lc_find_allocator(klass)
+        if allocator == Allocator::UNDEF
+            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.path.to_s)
+            return Null 
+        end
+        if allocator.is_a? LcProc
+            return allocator.call(klass).as(Value)
+        end
+        lc_raise(LcInstanceErr,"Undefined allocator for %s" % klass.path.to_s)
+        return Null
+    end
+
+    def self.lc_obj_allocate(klass : Value)
+        klass     = klass.as(LcClass)
+        obj       = LcObject.new
         obj.klass = klass
         obj.data  = klass.data.clone
         obj.id    = pointerof(obj).address
         return obj.as(Value) 
     end
 
-    obj_new = LcProc.new do |args|
-        next internal.lc_obj_new(*args.as(T1))
+    obj_allocator = LcProc.new do |args|
+        next internal.lc_obj_allocate(*args.as(T1))
     end
 
     def self.lc_obj_init(obj : Value)
@@ -89,7 +103,7 @@ module LinCAS::Internal
         io << '<'
         if obj.is_a? Structure 
             io << obj.as(Structure).path.to_s
-            io << ((obj.is_a? ClassEntry) ? " : class" : " : module")
+            io << ((obj.is_a? LcClass) ? " : class" : " : module")
         else
             io << obj.as(ValueR).klass.path.to_s
         end
@@ -188,17 +202,15 @@ module LinCAS::Internal
     end
 
 
-    Obj       = internal.lc_build_class_only("Object")
-    MainClass = Id_Tab.getRoot.as(ClassEntry)
-    internal.lc_set_parent_class(Obj,LcClass)
-    internal.lc_set_parent_class(MainClass,Obj)
+    Obj       = internal.lc_build_internal_class("Object")
+    internal.lc_set_parent_class(Obj,Lc_Class)
+    internal.lc_set_allocator(Obj,obj_allocator)
 
-    internal.lc_add_static(Obj,"new",obj_new,         0)
     internal.lc_add_internal(Obj,"init",obj_init,     0)
     internal.lc_add_internal(Obj,"==",obj_eq,         1)
     internal.lc_add_internal(Obj,"!=",obj_eq,         1)
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
-    internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
+    internal.lc_add_internal(Obj,"frozen?",obj_frozen, 0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
@@ -208,16 +220,16 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"!",obj_not,         0)
     internal.lc_add_internal(Obj,"to_a",obj_to_a,     0)
 
-    internal.lc_add_static(LcClass,"freeze",obj_freeze,   0)
-    internal.lc_add_static(LcClass,"defrost",obj_defrost, 0)
-    internal.lc_add_static(LcClass,"frozen?",obj_frozen,  0)
-    internal.lc_add_static(LcClass,"null?",obj_null,      0)
-    internal.lc_add_static(LcClass,"to_a",obj_to_a,       0)
-    internal.lc_add_static(LcClass,"||",obj_or,           1)
-    internal.lc_add_static(LcClass,"&&",obj_and,          1)
-    internal.lc_add_static(LcClass,"!",obj_not,           0)
+    internal.lc_add_static(Lc_Class,"freeze",obj_freeze,   0)
+    internal.lc_add_static(Lc_Class,"defrost",obj_defrost, 0)
+    internal.lc_add_static(Lc_Class,"frozen?",obj_frozen,  0)
+    internal.lc_add_static(Lc_Class,"null?",obj_null,      0)
+    internal.lc_add_static(Lc_Class,"to_a",obj_to_a,       0)
+    internal.lc_add_static(Lc_Class,"||",obj_or,           1)
+    internal.lc_add_static(Lc_Class,"&&",obj_and,          1)
+    internal.lc_add_static(Lc_Class,"!",obj_not,           0)
 
-    internal.lc_add_class_method(LcClass,"respond_to?",obj_responds_to, 1)
+    internal.lc_add_class_method(Lc_Class,"respond_to?",obj_responds_to, 1)
 
 
 end

@@ -165,8 +165,16 @@ module LinCAS::Internal
         end
     end
 
-    string_new = LcProc.new do |args|
-        next internal.new_string
+    def self.lc_string_allocate(klass : Value)
+        klass     = klass.as(LcClass)
+        str       = LcString.new
+        str.klass = klass
+        str.data  = klass.data.clone
+        return  str
+    end
+
+    string_allocate = LcProc.new do |args|
+        next lc_string_allocate(*args.as(T1))
     end
     
     # Initializes a new string trough the keyword 'new' or just
@@ -763,10 +771,10 @@ module LinCAS::Internal
 
 
 
-    StringClass = internal.lc_build_class_only("String")
+    StringClass = internal.lc_build_internal_class("String")
     internal.lc_set_parent_class(StringClass, Obj)
+    internal.lc_set_allocator(StringClass,string_allocate)
 
-    internal.lc_add_static(StringClass,"new",string_new,        0)
 
     internal.lc_add_internal(StringClass,"+",      str_add,     1)
     internal.lc_add_internal(StringClass,"concat", str_concat, -1)

@@ -48,19 +48,22 @@ class LinCAS::Symbol_Table_Stack
     end
 
     @[AlwaysInline]
-    def fetch(name : String)
-        return @stack[@sp - 1].fetch(name)
+    def fetch(name : String, max_depth : Intnum)
+        count = 0
+        @stack.reverse_each do |table|
+            if table.fetch(name)
+                return count
+            end
+            break if max_depth == count
+            count += 1
+        end
+        return -1
     end
 
     @[AlwaysInline]
     def set(name : String)
         @stack[@sp - 1].set(name)
     end 
-
-    @[AlwaysInline]
-    def fetch_in_previous(name : String)
-        return @stack[@sp - 2].fetch(name)
-    end
 
     @[AlwaysInline]
     def push_table

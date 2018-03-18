@@ -86,7 +86,7 @@ class Queens
         return true
     }
 
-} /* end Queen */
+} /* end Queens */
 
 const queens := 4
 
