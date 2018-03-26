@@ -22,13 +22,13 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./Kernel"
 require "./Sort"
 require "./Internal"
 require "./Method"
 require "./Structures"
 require "./Class"
 require "./Module"
+require "./Kernel"
 require "./Raise"
 require "./Matrix"
 require "./Object"

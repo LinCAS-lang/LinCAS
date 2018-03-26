@@ -29,6 +29,10 @@ module LinCAS
         def initialize(@path = Array(String).new) 
         end
 
+        def empty?
+            return @path.size == 0 
+        end
+
         def addName(name)
             return Path.new(@path + [name])
         end
@@ -63,24 +67,37 @@ module LinCAS
     enum Allocator 
         UNDEF 
     end
+
+    enum SType
+        CLASS 
+        MODULE 
+    end
+
+    class Top
+        @included = [] of UInt64
+    end
     
-    abstract class LcBaseStruct
-        @path : Path
+    abstract class LcBaseStruct < Top
+        @path   : Path
+        @id     : UInt64 = 0.to_u64
+        @type     = uninitialized SType
+        @frozen   = false
+
         def initialize(@name : String,path : Path? = nil)
             if path
                 @path = path 
             else 
                 @path = Path.new
             end
+            @symTab   = SymTab.new
+            @data     = Data.new
+            @methods  = SymTab.new 
+            @statics  = SymTab.new
+            @id       = self.object_id
+            #@included = [] of UInt64
         end 
-        @included = [] of Path
-        @symTab   = SymTab.new
-        @data     = Data.new
-        @methods  = SymTab.new 
-        @statics  = SymTab.new
-        @id       = 0_u64
-        @frozen   = false
-        property name, path, symTab, data, id, frozen
+
+        property name, path, symTab, data, id, frozen, type
         getter included
         getter methods, statics
         def to_s 
@@ -91,21 +108,31 @@ module LinCAS
     class LcClass < LcBaseStruct
         @parent    : LcClass  | ::Nil
         @allocator : LcProc?  | Allocator = nil
+        @parent   = nil
+        @klass    = uninitialized LcClass
 
-        def initialize(name, path = nil)
+        def initialize(name : String, path : Path? = nil)
             super(name,path)
-            @parent   = nil
         end
 
-        property parent,allocator
+        def initialize(@name : String, symTab : SymTab,data : Data,
+                       methods : SymTab, statics : SymTab,path : Path? = nil)
+            if path
+                @path = path 
+            else 
+                @path = Path.new
+            end
+            @symTab  = symTab
+            @data    = data 
+            @methods = methods
+            @statics = statics
+            @id      = self.object_id
+        end
+
+        property parent,allocator,klass
     end 
 
-    class LcModule < LcBaseStruct
-        @klass : LcClass? = nil
-        def initialize(name, path = nil)
-            super(name,path)
-        end
-    end
+    alias LcModule = LcClass
 
     struct VoidArgument
         @optcode : Bytecode? = nil
@@ -115,7 +142,7 @@ module LinCAS
         property optcode
     end
 
-    struct LcMethod
+    class LcMethod
         @args      : Array(VoidArgument) | ::Nil = nil 
         @code      : Bytecode | LcProc   | ::Nil
         @owner     : LcClass  | LcModule | ::Nil = nil
@@ -149,26 +176,29 @@ module LinCAS
     end
 
     alias LcEntry   = LcBaseStruct | LcMethod | LcConst
-    alias Structure = LcClass | LcModule
+    alias Structure = LcClass
 
-    class SymTab < Hash(String,LcEntry)
+    class SymTab
         @parent : SymTab? = nil 
-        property parent
+        property parent, sym_tab
 
         def initialize
-            super()
+            @sym_tab = Hash(String,LcEntry).new
+        end
+
+        def initialize(@sym_tab : Hash(String,LcEntry))
         end
         
         def addEntry(name,entry : LcEntry)
-            self[name] = entry
+            @sym_tab[name] = entry
         end
 
         def lookUp(name)
-            return self[name]?
+            return @sym_tab[name]?
         end
 
         def removeEntry(name)
-            self.delete(name)
+            @sym_tab.delete(name)
         end
 
     end

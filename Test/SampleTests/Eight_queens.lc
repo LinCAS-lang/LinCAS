@@ -2,10 +2,10 @@
 *
 *  ~~ QUEENS ~~
 *
-* This implementation resolves the problem of
+* This implementation solves the problem of
 * placing eight queens (chess piece) on a 8x8 chessboard
 * so that none of them can capure another one, using 
-* the standard rules for thos piece:
+* the standard rules for those pieces:
 * - two queens can't be on the same row or column or
 * diagonal
 *
@@ -13,7 +13,7 @@
 **/
 
 class Queens
-{
+{   
     void get_solution() { return @sol  }
     void get_size()     { return @size }
 
@@ -21,7 +21,7 @@ class Queens
     { 
         if !(size.is_a?(Integer))
         { raise new ArgumentError("Size must be an integer")   }
-
+        
         if size < 0
         { raise new ArgumentError("Size must be positive")     }
 
@@ -30,10 +30,11 @@ class Queens
 
         if queens < 0
         { raise new ArgumentError("Queens must be positive")   }
+        
 
         @size   := size 
         @queens := queens 
-        @sol    := new Matrix(@size,@size) { return 0 }
+        @sol    := new Matrix(@size,@size) { next 0 }
     }
 
     void solve()
@@ -88,11 +89,12 @@ class Queens
 
 } /* end Queens */
 
-const queens := 4
+#const 
+queens := 8
 
-r := (new Queens(queens,queens)).solve()
+r := new Queens(queens,queens).solve()
 
-printl r.map!() { (el) if (el == 1) { return "Q" } else { return "*" } }
+printl r.map!() { (el) if (el == 1) { next "Q" } else { next "*" } }
 
 
 

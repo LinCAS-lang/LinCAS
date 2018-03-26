@@ -195,6 +195,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     @[AlwaysInline]
     private def class_of(obj : Value)
         if obj.is_a? Structure 
+            #if internal.struct_type(obj.as(Structure),SType::CLASS)
+            #    return obj.klass 
+            #end
             return obj 
         else 
             return obj.klass 
@@ -217,6 +220,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
+    def test(object : Value)
+        if object == Null || object == LcFalse
+            return false 
+        end 
+        return true 
+    end
+
 
     def initialize
         @stack   = [] of StackValue
@@ -227,6 +237,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
         @filename   = [] of String
         @msgHandler = MsgHandler.new
+        @internal   = false
 
         self.addListener(RuntimeListener.new)
     end
@@ -361,6 +372,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_run_bytecode(handle_return = false)
         is = current_frame.pc
         loop do
+            {% if flag?(:debug) %}
+                puts "Executing code #{is.code}"
+            {% end %}
             case is.code
                 when Code::LINE
                     @line = is.line
@@ -368,7 +382,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     @filename.push(is.text)
                 when Code::HALT
                     exit 0
-                when Code::NEXT
+                when Code::QUIT
                     return Null 
                 when Code::PUSHN
                     push(W_null)
@@ -402,7 +416,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     if handle_return
                         return unwrap_object(pop)
                     end
-                when Code::B_NEXT
+                when Code::NEXT
                     vm_next
                     if handle_return
                         return unwrap_object(pop)
@@ -454,7 +468,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::NEW_OBJ
                     vm_new_obj
                 when Code::OPT_CALL_INIT
-                    vm_opt_call_init(is.argc)
+                    vm_opt_call_init(is.argc,is.block)
                 when Code::PUSHDUP
                     if @sp == 0
                         raise VMerror.new("(VM attempted to duplicate a missing object)")
@@ -463,6 +477,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
                         push(obj)
                         push(obj)
                     end 
+                when Code::YIELD
+                    vm_call_block(is.argc)
+                when Code::JUMP
+                    fm    = current_frame
+                    fm.pc = is.jump.as(Bytecode)
+                when Code::JUMPF
+                    vm_jumpf(is.jump.as(Bytecode))
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -590,11 +611,13 @@ begin
             vm_push_new_frame(receiver,method.owner.as(Structure),argc)
             return nil unless vm_arity_check(argc,method.arity)
             if method.internal
+                @internal = true
                 argv  = vm_get_args(argc)
                 value = internal_call(method.code.as(LcProc),argv,method.arity)
                 push(wrap_object(value.as(Value)))
                 vm_return_internal
             else
+                @internal = false
                 call_usr(method,argc)
             end
         end
@@ -651,7 +674,7 @@ end
         count = 0
         argv.each do |arg|
             value = get_arg(count)
-            name = arg.name
+            name  = arg.name
             if !arg.opt && value
                 store_local(name,unwrap_object(value))
             elsif !arg.opt
@@ -661,10 +684,10 @@ end
             if value
                 store_local(name,unwrap_object(value))
             else
-                #pc  = current_frame.pc 
+                pc  = current_frame.pc 
                 current_frame.pc = arg.optcode.as(Bytecode)
                 vm_run_bytecode
-                #current_frame.pc = pc 
+                current_frame.pc = pc 
             end
             count += 1
         end
@@ -787,7 +810,11 @@ begin
 
     protected def vm_load_c(name : String)
         selfr = current_frame.me 
-        klass = class_of(selfr)
+        if !(selfr.is_a? Structure)
+            klass = class_of(selfr)
+        else
+            klass = selfr.as(Structure)
+        end
         const = internal.lc_seek_const(klass,name)
         if const
             push(wrap_object(const))
@@ -942,6 +969,8 @@ end
             fm = current_frame
             fm.pc = block.body
             vm_load_call_args(block.args,argc)
+        else 
+            lc_raise(LcArgumentError,convert(:no_block)) 
         end
     end
 
@@ -952,9 +981,11 @@ end
     end
 
     protected def vm_put_instance_method(name : String,method : LcMethod)
-        klass        = class_of(unwrap_object(pop))
+        object       = pop
+        klass        = class_of(unwrap_object(object))
         method.owner = klass
         klass.methods.addEntry(name,method)
+        push(object)
     end
 
     protected def vm_ary_new(size : Intnum)
@@ -1016,6 +1047,14 @@ end
         end
     end
 
+    protected def vm_jumpf(code : Bytecode)
+        obj = unwrap_object(pop)
+        if !test(obj)
+            fm    = current_frame
+            fm.pc = code 
+        end
+    end
+
 
     protected def lc_raise_1(code,msg)
         backtrace = String.build do |io|
@@ -1046,6 +1085,12 @@ end
         ErrHandler.handle_error(error)
     end
 
+    def lc_raise(error : Value)
+        error = error.as(LcError)
+        error.backtrace = CallTracker.get_backtrace
+        ErrHandler.handle_error(error)
+    end 
+
     def lc_yield(*args : Value)
         vm_push_args(args)
         if block_given?
@@ -1057,7 +1102,14 @@ end
     end
 
     def lc_call_fun(receiver : Value, method : String, *args)
-        Null
+        push(wrap_object(receiver))
+        vm_push_args(args)
+        vm_m_call(method,args.size)
+        if @internal
+            return unwrap_object(pop)
+        else
+            return vm_run_bytecode(true)
+        end
     end
 
     protected def vm_push_args(args)

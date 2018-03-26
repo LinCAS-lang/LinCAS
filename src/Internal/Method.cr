@@ -239,14 +239,12 @@ module LinCAS::Internal
         if method.is_a? LcMethod
             return method
         else
-            if receiver.is_a? LcClass
-                parent = parent_of(receiver)
-                while parent 
-                    method = seek_static_method2(parent,name)
-                    return 0 if method == 1
-                    return method if method.is_a? LcMethod
-                    parent = parent_of(parent) 
-                end
+            parent = parent_of(receiver)
+            while parent 
+                method = seek_static_method2(parent,name)
+                return 0 if method == 1
+                return method if method.is_a? LcMethod
+                parent = parent_of(parent) 
             end
         end
         return 0
@@ -258,8 +256,9 @@ module LinCAS::Internal
             method = method.as(LcMethod)
             return 1 if method.visib == VoidVisib::UNDEFINED
             return method
+        else
+            return 0
         end
-        return 0
     end
 
     def self.lc_obj_responds_to?(obj : Value,method : String,default = true)
@@ -285,36 +284,6 @@ module LinCAS::Internal
         return -1 unless method.is_a? LcMethod
         return 0 if method.internal 
         return 1
-    end
-
-    def self.lc_copy_methods_as_instance_in(sender : Structure, receiver : Structure)
-        smtab = sender.methods
-        rmtab = receiver.methods
-        smtab.each_key do |name|
-            method = smtab[name].as(LcMethod)
-            method.owner = receiver
-            internal.insert_method_as_instance(method,rmtab)
-        end
-    end
-
-    def self.lc_copy_methods_as_static_in(sender : Structure, receiver : Structure)
-        smtab = sender.methods
-        rmtab = receiver.statics
-        smtab.each_key do |name|
-            method = smtab[name].as(LcMethod)
-            method.owner = receiver
-            internal.insert_method_as_static(method,rmtab)
-        end
-    end
-
-    @[AlwaysInline]
-    def self.insert_method_as_instance(method : LcMethod, r : SymTab)
-        r.addEntry(method.name,method)
-    end
-
-    def self.insert_method_as_static(method : LcMethod, r : SymTab)
-        method.static = true
-        r.addEntry(method.name,method)
     end
 
 

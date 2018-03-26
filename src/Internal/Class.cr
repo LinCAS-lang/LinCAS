@@ -29,22 +29,40 @@ module LinCAS::Internal
     end
 
     macro class_of(obj)
-        {{obj}}.as(ValueR).klass 
+        {{obj}}.klass 
+    end
+
+    macro path_of(obj)
+        {{obj}}.as(Structure).path 
+    end
+
+    macro type_of(obj)
+        {{obj}}.as(Structure).type
+    end
+
+    macro class_name(klass)
+        {{klass}}.as(LcClass).name 
     end
     
     @[AlwaysInline]
     def self.lc_build_class(name : String)
-        klass = LcClass.new(name)
+        klass      = LcClass.new(name)
+        klass.type = SType::CLASS
+        return klass
     end
 
     @[AlwaysInline]
     def self.lc_build_class(name : String,path : Path)
-        klass = LcClass.new(name,path)
+        klass       = LcClass.new(name,path)
+        klass.type  = SType::CLASS
+        klass.klass = Lc_Class
+        return klass
     end
 
     @[AlwaysInline]
     def self.lc_build_internal_class(name : String)
-        klass = lc_build_class(name,Path.new.forceAddName(name))
+        klass               = lc_build_class(name)
+        klass.klass         = Lc_Class
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
     end
@@ -161,17 +179,13 @@ module LinCAS::Internal
         if const
             return const.as(Value)
         end
-        if str.is_a? LcModule
-            return str.as(LcModule).symTab.lookUp(name).as(Value?)
-        else
-            const = str.as(LcClass).symTab.lookUp(name)
-            return unpack_const(const).as(Value) if const 
-            parent = parent_of(str)
-            while parent
-                const = parent.symTab.lookUp(name)
-                return unpack_const(const).as(Value) if const
-                parent = parent_of(parent)
-            end
+        const = str.as(LcClass).symTab.lookUp(name)
+        return unpack_const(const).as(Value) if const 
+        parent = parent_of(str)
+         while parent
+            const = parent.symTab.lookUp(name)
+            return unpack_const(const).as(Value) if const
+            parent = parent_of(parent)
         end
         return nil
     end
@@ -198,26 +212,27 @@ module LinCAS::Internal
 
     #########
 
-    def self.lc_is_a(obj : Value, lcType : Value)
-        if lcType.is_a? Structure
-            lcType = lcType.as(Structure)
+    @[AlwaysInline]
+    def self.lc_class_compare(klass1 : Value, klass2 : Value)
+        path1 = path_of(klass1)
+        path2 = path_of(klass2)
+        if !path1.empty? && !path2.empty?
+            return lcfalse unless path_of(klass1) == path_of(klass2)
         else
+            return lcfalse unless class_name(klass1) == class_name(klass2)
+        end
+        return lctrue
+    end
+
+    def self.lc_is_a(obj : Value, lcType : Value)
+        if !(lcType.is_a? Structure)
             lc_raise(LcArgumentError,"Argument must be a class or a module")
             return lcfalse
         end
-        if obj.is_a? Structure
-            return (obj.as(Structure).path == lcType.path) ? lctrue : lcfalse
-        else
-            objClass = obj.as(ValueR).klass
-            if objClass.path == lcType.path
-                return lctrue
-            else
-                parent = parent_of(objClass)
-                while parent
-                    return lctrue if parent.as(LcClass).path == lcType.path 
-                    parent = parent_of(parent)
-                end
-            end
+        objClass = class_of(obj)
+        while objClass
+            return lctrue if lc_class_compare(objClass,lcType) == lctrue
+            objClass = parent_of(objClass)
         end
         return lcfalse
     end
@@ -226,21 +241,20 @@ module LinCAS::Internal
         next internal.lc_is_a(*args.as(T2))
     end
 
+    @[AlwaysInline]
     def self.lc_class_class(obj : Value)
-        return Lc_Class  if obj.is_a? LcClass
-        #return LcModule if obj.is_a? ModuleEntry
-        return obj.as(ValueR).klass
+        return class_of(obj)
     end
 
     class_class = LcProc.new do |args|
-        next internal.lc_class_class(*args.as(T1))
+        next class_of(args.as(T1)[0])
     end
 
 
     def self.lc_class_eq(klass : Value, other : Value)
-        return lcfalse unless klass.class == other.class
-        return lcfalse unless klass.as(Structure).path  == other.as(Structure).path 
-        return lctrue
+        return lcfalse unless klass.class == other.class 
+        return lcfalse unless type_of(klass) == type_of(other)
+        return lc_class_compare(klass,other)
     end
 
     class_eq = LcProc.new do |args|
@@ -248,9 +262,7 @@ module LinCAS::Internal
     end
 
     def self.lc_class_ne(klass : Value, other)
-        return internal.lc_bool_invert(
-            internal.lc_class_eq(klass,other)
-        )
+        return lc_bool_invert(lc_class_eq(klass,other))
     end
 
     class_ne = LcProc.new do |args|
@@ -268,13 +280,30 @@ module LinCAS::Internal
         next klass
     end
 
-    class_to_s = LcProc.new do |args|
+    class_inspect = LcProc.new do |args|
         tmp = String.build do |io|
             io << '"'
-            io << args.as(T1)[0].as(Structure).path.to_s
+            klass = args.as(T1)[0].as(Structure)
+            path  = path_of(klass)
+            if !path.empty?
+                io << path.to_s
+            else
+                io << klass.name 
+            end
             io << '"'
         end
         next internal.build_string(tmp)
+    end
+
+    class_to_s = LcProc.new do |args|
+        klass = args.as(T1)[0].as(Structure)
+        path  = path_of(klass)
+        if path.empty?
+            name = klass.name 
+        else
+            name = path.to_s
+        end
+        next build_string(name)
     end
 
     def self.lc_class_rm_static_method(klass : Value, name : Value)
@@ -365,9 +394,23 @@ module LinCAS::Internal
         next internal.lc_class_delete_method(*args.as(T2))
     end
 
+    def self.lc_class_ancestors(klass : Value)
+        ary = build_ary_new
+        while klass 
+            lc_ary_push(ary,klass)
+            klass = parent_of(klass)
+        end
+        return ary 
+    end
 
-    MainClass = lc_build_class("BaseClass")
-    Lc_Class = internal.lc_build_internal_class("Class")
+    class_ancestors = LcProc.new do |args|
+        next lc_class_ancestors(*args.as(T1))
+    end
+
+
+    MainClass      = lc_build_class("BaseClass")
+    Lc_Class       = internal.lc_build_internal_class("cClass")
+    Lc_Class.klass = Lc_Class
     internal.lc_set_parent_class(Lc_Class,MainClass)
 
     internal.lc_remove_static(Lc_Class,"new")
@@ -377,15 +420,17 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"<>",   class_ne,         1)
     internal.lc_add_static(Lc_Class,"!=",   class_ne,         1)
     internal.lc_add_static(Lc_Class,"to_s", class_to_s,       0)
-    internal.lc_add_static(Lc_Class,"inspect",class_to_s,     0)
+    internal.lc_add_static(Lc_Class,"inspect",class_inspect,  0)
     internal.lc_add_static(Lc_Class,"defrost",class_defrost,  0)
     internal.lc_add_static(Lc_Class,"remove_instance_method",class_rm_instance_method,  1)
     internal.lc_add_static(Lc_Class,"remove_static_method",class_rm_static_method,      1)
     internal.lc_add_static(Lc_Class,"delete_static_method",class_delete_st_method,      1)
     internal.lc_add_static(Lc_Class,"delete_instance_method",class_delete_ins_method,   1)
 
+    internal.lc_add_class_method(Lc_Class,"is_a?", is_a,                                1)
     internal.lc_add_class_method(Lc_Class,"its_class",class_class,                      0)
     internal.lc_add_class_method(Lc_Class,"remove_method",class_rm_method,              1)
     internal.lc_add_class_method(Lc_Class,"delete_method",class_delete_method,          1)
+    internal.lc_add_class_method(Lc_Class,"ancestors", class_ancestors,                 0)
 
 end

@@ -39,7 +39,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
         TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
-        TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY
+        TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT
     } + EXP_SYNC_SET
     
     NOOP = Node.new(NodeType::NOOP)
@@ -309,7 +309,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             when TkType::USE
                 return parseUse
             when TkType::RETURN
-                parseReturn
+                return parseReturn
+            when TkType::NEXT 
+                return parseNext
             when TkType::YIELD
                 return  parseYield
             when TkType::PRINT, TkType::PRINTL
@@ -1542,7 +1544,23 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseReturn : Node
         @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_RETURN,self) unless @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::RETURN_IN_BLOCK,self) if @block > 0
         node = @nodeFactory.makeNode(NodeType::RETURN)
+        setLine(node)
+        shift 
+        unless {TkType::SEMICOLON, TkType::EOL}.includes? @currentTk.ttype
+            sync(EXP_SYNC_SET)
+            node.addBranch(parseExp)
+        else
+            nullNode = @nodeFactory.makeNode(NodeType::NULL)
+            node.addBranch(nullNode)
+        end
+        return node
+    end
+
+    protected def parseNext : Node 
+        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_NEXT,self) unless @block > 0
+        node = @nodeFactory.makeNode(NodeType::NEXT)
         setLine(node)
         shift 
         unless {TkType::SEMICOLON, TkType::EOL}.includes? @currentTk.ttype

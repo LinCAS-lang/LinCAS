@@ -71,7 +71,7 @@ module LinCAS
     PRINTL
     PUSHDUP
     RETURN
-    B_NEXT
+    NEXT
     NEW_OBJ
     NOOP
     YIELD
@@ -80,7 +80,7 @@ module LinCAS
     FILENAME
     LEAVE
 
-    NEXT
+    QUIT
     HALT
   end
 

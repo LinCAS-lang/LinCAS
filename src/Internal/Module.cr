@@ -23,27 +23,53 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
+
+    def self.module_init(mod : LcModule)
+        mod.type      = SType::MODULE
+        mod.klass     = Lc_Module
+        mod.parent    = Obj
+        mod.allocator = Allocator::UNDEF
+    end
     
     def self.lc_build_module(name : String)
-        return LcModule.new(name)
+        mod = LcModule.new(name)
+        module_init(mod)
+        return mod
     end
 
     def self.lc_build_module(name : String, path : Path)
-        return LcModule.new(name,path)
+        mod = LcModule.new(name,path)
+        module_init(mod)
+        return mod
     end
 
-
     def self.lc_build_internal_module(name : String)
-        mod = lc_build_module(name,Path.new.forceAddName(name))
+        mod               = lc_build_module(name)
+        mod.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,mod)
+        return mod
+    end
+
+    @[AlwaysInline]
+    def self.lc_make_shared_module(mod : LcModule)
+        symTab = lc_make_shared_sym_tab(mod.symTab)
+        tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
+        return tmp
     end
 
     def self.lc_include_module(receiver : Structure, mod : LcModule)
-        if receiver.included.includes? mod.path
+        if mod.included.includes? receiver.id
             # lc_warn()
         else
-            internal.lc_copy_methods_as_instance_in(mod,receiver)
-            internal.lc_copy_consts_in(mod,receiver)
+            mod.included << receiver.id
+            s_mod                  = lc_make_shared_module(mod)
+            parent                 = receiver.parent 
+            if parent
+                s_mod.symTab.parent    = parent.symTab
+                s_mod.parent           = parent
+            end
+            receiver.symTab.parent = s_mod.symTab
+            receiver.parent        = s_mod 
         end
     end
 
@@ -52,11 +78,7 @@ module LinCAS::Internal
         internal.lc_add_static(mod,name,method,arity)
     end
 
-    def self.lc_module_extend(receiver : Structure, mod : LcModule)
-        internal.lc_copy_methods_as_static_in(mod,receiver)
-        internal.lc_copy_consts_in(mod,receiver)
-    end
-
-    #LcModule = internal.lc_build_module_only("Module")
+    Lc_Module = internal.lc_build_internal_class("cModule")
+    internal.lc_set_parent_class(Lc_Module,Obj)
 
 end

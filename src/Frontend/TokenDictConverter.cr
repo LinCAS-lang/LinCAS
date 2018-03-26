@@ -86,6 +86,7 @@ module LinCAS
                 "printl" => TkType::PRINTL,
                 "return" => TkType::RETURN,
                 "reads"  => TkType::READS,
+                "next"   => TkType::NEXT,
 
                 # Special chars
                 "."   => TkType::DOT,
@@ -132,7 +133,8 @@ module LinCAS
                 "\""  => TkType::QUOTES,
                 "'"   => TkType::S_QUOTE,
                 "$"   => TkType::DOLLAR,
-                "[]=" => TkType::ASSIGN_INDEX
+                "[]=" => TkType::ASSIGN_INDEX,
+                "$."  => TkType::ANS
             }
 
     protected def toTkType(tkName : String)

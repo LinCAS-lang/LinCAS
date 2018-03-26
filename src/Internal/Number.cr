@@ -81,7 +81,7 @@ module LinCAS::Internal
     end
 
     def self.lc_num_gr(n1 : Value, n2 : Value)
-        if n1.class.is_a? NumType && n2.class.is_a? NumType
+        if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) > num2num(n2))
         else 
             lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})

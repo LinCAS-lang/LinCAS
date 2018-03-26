@@ -61,6 +61,8 @@ enum LinCAS::ErrCode
     UNLOCATED_LIB
     UNEXPECTED_RETURN
     UNEXPECTED_YIELD
+    UNEXPECTED_NEXT
+    RETURN_IN_BLOCK
 end
 
 module LinCAS
@@ -101,7 +103,9 @@ module LinCAS
         ErrCode::INVALID_FILENAME    => "Invalid filename",
         ErrCode::UNLOCATED_LIB       => "Library not found",
         ErrCode::UNEXPECTED_RETURN   => "'return' statement out of void or block",
-        ErrCode::UNEXPECTED_YIELD     => "'yield' statement out of void"
+        ErrCode::UNEXPECTED_YIELD    => "'yield' statement out of void",
+        ErrCode::UNEXPECTED_NEXT     => "'next' statement out of block",
+        ErrCode::RETURN_IN_BLOCK     => "Cant't return in block"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]

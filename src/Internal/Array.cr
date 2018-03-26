@@ -160,7 +160,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.build_ary_new(__)
+    def self.build_ary_new
         ary = new_ary
         resize_ary_capa_2(ary)
         return ary.as(Value)
@@ -403,7 +403,7 @@ module LinCAS::Internal
 
     def self.lc_ary_map(ary : Value)
         arylen = ary_size(ary)
-        tmp    = build_ary_new nil 
+        tmp    = build_ary_new
         arylen.times do |i|
             lc_ary_push(tmp,Exec.lc_yield(ary_at_index(ary,i)))
         end
@@ -442,7 +442,7 @@ module LinCAS::Internal
 
     def self.lc_ary_flatten(ary : Value)
         arylen = ary_size(ary)
-        new_ary = build_ary_new(nil)
+        new_ary = build_ary_new
         arylen.times do |i|
             elem = ary_at_index(ary,i)
             if elem.is_a? LcArray
@@ -700,7 +700,7 @@ module LinCAS::Internal
     def self.lc_ary_compact(ary : Value)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        tmp    = build_ary_new nil 
+        tmp    = build_ary_new
         arylen.times do |i|
             if ptr[i] != Null 
                 lc_ary_push(tmp,ptr[i])

@@ -70,8 +70,7 @@ module LinCAS
         class LcError < BaseC
             @body      : String = ""
             @backtrace : String = ""
-            getter body, backtrace
-            setter body, backtrace
+            property body, backtrace
         end
 
         def self.build_error(error : ErrType,body : String, backtrace : String)
@@ -142,6 +141,24 @@ module LinCAS
             next err
         end
 
+        def self.lc_raise_err(error : Value)
+            if error.is_a? LcString 
+                err = build_error(LcRuntimeError,String.new(error.as(LcString).str_ptr),"")
+                Exec.lc_raise(err)
+                return Null
+            end 
+            if !(error.is_a? LcError)
+                lc_raise(LcTypeError,"(Error object expected)")
+                return Null
+            end 
+            Exec.lc_raise(error)
+        end
+
+        raise_err = LcProc.new do |args|
+            lc_raise_err(args.as(T2)[1])
+            next Null
+        end
+
         ErrClass = internal.lc_build_internal_class("Error")
         internal.lc_set_parent_class(ErrClass,Obj)
         internal.lc_set_allocator(ErrClass,err_allocator)
@@ -152,6 +169,9 @@ module LinCAS
         internal.lc_add_internal(ErrClass,"backtrace",err_backtrace,0)
         internal.lc_add_internal(ErrClass,"full_msg",err_full_msg,  0)
         internal.lc_add_internal(ErrClass,"defrost",err_defrost,    0)
+
+
+        lc_module_add_internal(LKernel,"raise",raise_err, 1)
 
         TypeErrClass = internal.lc_build_internal_class("TypeError")
         internal.lc_set_parent_class(TypeErrClass,ErrClass)

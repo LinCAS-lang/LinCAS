@@ -157,7 +157,7 @@ module LinCAS::Internal
     end
 
     def self.lc_range_map(range)
-        ary = build_ary_new(nil)
+        ary = build_ary_new
         lft = left(range)
         rht = right(range)
         lft,rht = rht,lft unless lft < rht

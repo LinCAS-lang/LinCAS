@@ -34,6 +34,25 @@ class LinCAS::Compiler
     Noop       = Bytecode.new(Code::NOOP)
     NEXTB      = Bytecode.new(Code::NEXTB)
     STstack    = Symbol_Table_Stack.new
+    SUM_ID     = "+"
+    SUB_ID     = "-"
+    PROD_ID    = "*"
+    IDIV_ID    = "\\"
+    FDIV_ID    = "/"
+    POW_ID     = "^"
+    MOD_ID     = "%"
+    EQ_ID      = "=="
+    GR_ID      = ">"
+    SM_ID      = "<"
+    GE_ID      = ">="
+    SE_ID      = "<="
+    NE_ID      = "!="
+    NOT_ID     = "!"
+    AND_ID     = "&&"
+    OR_ID      = "||"
+    APPEND_ID  = "<<"
+    UMINUS_ID  = "-@"
+    INCLUDE_ID = "include"
 
     macro internal
         LinCAS::Internal
@@ -78,6 +97,18 @@ class LinCAS::Compiler
     def initialize
         @ifactory    = IntermediateFactory.new
         @block_depth = 0
+    end
+
+    macro compile_binary_op(node,type)
+        nodes  = {{node}}.getBranches
+        exp1   = nodes[0]
+        exp2   = nodes[1]
+        c_exp  = compile_exp(exp1,false)
+        c_exp2 = compile_exp(exp2,false)
+        c_call = make_m_call_is({{type}},1)
+        link(c_exp,c_exp2,c_call)
+        set_last(c_exp,c_call)
+        return c_exp
     end
 
     @[AlwaysInline]
@@ -197,37 +228,38 @@ class LinCAS::Compiler
         case node.type
             when NodeType::PROGRAM
                 return compile_program(node) 
-            when NodeType::READS
-                return compile_reads(node)
-            when NodeType::PRINT, NodeType::PRINTL
-                return compile_print(node)
             when NodeType::CLASS
                 return compile_class(node)
             when NodeType::MODULE 
                 return compile_module(node)
             when NodeType::VOID
                 return compile_void(node)
+            when NodeType::IF 
+                return compile_if(node)
+            when NodeType::WHILE
+                return compile_while(node)
+            when NodeType::UNTIL
+                return compile_until(node)
+            when NodeType::BODY
+                return compile_for(node)
             else 
                 return compile_exp(node)
         end
     end
 
     protected def compile_reads(node : Node)
-        line   =new_line(node)
         pself  = @ifactory.makeBCode(Code::PUSHSELF)
-        pop_is = @ifactory.makeBCode(Code::POPOBJ)
         call   = make_call_is("reads",0)
-        link(line,pself,call)
-        set_last(line,call)
-        return line
+        link(pself,call)
+        set_last(pself,call)
+        return pself
     end
 
     protected def compile_print(node : Node)
-        line = new_line(node)
-        last     = pushself
+        first    = pushself
+        last     = first
         callname = node.type == NodeType::PRINT ? "print" : "printl"
         args     = node.getBranches
-        link(line,last)
         if args.size > 0
             args.each_with_index do |exp,i|
                 callis   = make_call_is(callname,1)  
@@ -247,8 +279,8 @@ class LinCAS::Compiler
             link(last,value,callis)
             last = callis
         end
-        set_last(line,last)
-        return line
+        set_last(first,last)
+        return first
     end
 
     protected def compile_namespace(node : Node,complete = true)
@@ -398,7 +430,7 @@ class LinCAS::Compiler
             if branch.type == NodeType::ASSIGN
                 name = unpack_name(branch.getBranches[0])
                 opt  = compile_exp(branch)
-                nxt  = @ifactory.makeBCode(Code::NEXT)
+                nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
                 arg         = @ifactory.makeVoidArg(name,true) 
                 arg.optcode = opt
@@ -444,6 +476,7 @@ class LinCAS::Compiler
             else 
                 iseq   = pushself
                 storeg = @ifactory.makeBCode(Code::STOREG)
+                storeg.text = name
                 link(iseq,c_expr,storeg,pop_is)
                 set_last(iseq,storeg)
                 return iseq
@@ -490,7 +523,7 @@ class LinCAS::Compiler
             if arg.type == NodeType::ASSIGN
                 name = unpack_name(arg.getBranches[0])
                 opt  = compile_exp(arg)
-                nxt  = @ifactory.makeBCode(Code::NEXT)
+                nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
                 arg         = @ifactory.makeVoidArg(name,true)
                 arg.optcode = opt 
@@ -506,7 +539,6 @@ class LinCAS::Compiler
                 arg.optcode = p_null 
                 follow_v << arg
             end
-            STstack.set(name)
         end 
         return follow_v
     end
@@ -539,6 +571,7 @@ class LinCAS::Compiler
             when NodeType::GLOBAL_ID
                 is  = pushself
                 var = @ifactory.makeBCode(Code::LOADG)
+                var.text = unpack_name(node)
                 link(is,var)
                 set_last(is,var)
             when NodeType::ASSIGN
@@ -566,6 +599,8 @@ class LinCAS::Compiler
                 is = compile_namespace(node)
             when NodeType::RETURN
                 is = compile_return(node)
+            when NodeType::NEXT 
+                is = compile_next(node)
             when NodeType::ARRAY
                 is = compile_array(node)
             when NodeType::IRANGE, NodeType::ERANGE
@@ -581,9 +616,13 @@ class LinCAS::Compiler
             when NodeType::SELF
                 is = pushself
             when NodeType::YIELD
-                id = compile_yield(node)
+                is = compile_yield(node)
+            when NodeType::RAISE
+                is = compile_raise(node)
+            when NodeType::INCLUDE
+                is = compile_include(node)
             else 
-                is = noop
+                is = compile_op(node)
         end
         if with_pop
             pop_is = popobj
@@ -593,6 +632,59 @@ class LinCAS::Compiler
             return is
         end 
         return line
+    end
+
+    protected def compile_op(node : Node)
+        case node.type 
+            when NodeType::SUM 
+                compile_binary_op(node,SUM_ID)
+            when NodeType::SUB
+                compile_binary_op(node,SUB_ID)
+            when NodeType::MUL 
+                compile_binary_op(node,PROD_ID)
+            when NodeType::FDIV
+                compile_binary_op(node,FDIV_ID)
+            when NodeType::IDIV 
+                compile_binary_op(node,IDIV_ID)
+            when NodeType::POWER
+                compile_binary_op(node,POW_ID)
+            when NodeType::MOD 
+                compile_binary_op(node,MOD_ID)
+            when NodeType::AND 
+                compile_binary_op(node,AND_ID)
+            when NodeType::OR 
+                compile_binary_op(node,OR_ID)
+            when NodeType::GE 
+                compile_binary_op(node,GE_ID)
+            when NodeType::SE 
+                compile_binary_op(node,SE_ID)
+            when NodeType::GR 
+                compile_binary_op(node,GR_ID)
+            when NodeType::SM 
+                compile_binary_op(node,SM_ID)
+            when NodeType::EQ 
+                compile_binary_op(node,EQ_ID)
+            when NodeType::APPEND 
+                compile_binary_op(node,APPEND_ID)
+            when NodeType::NE 
+                compile_binary_op(node,NE_ID)
+            when NodeType::NOT 
+                exp   = node.getBranches[0]
+                c_exp = compile_exp(exp,false)
+                call  = make_m_call_is(NOT_ID,0)
+                link(c_exp,call)
+                set_last(c_exp,call)
+                return c_exp 
+            when NodeType::INVERT
+                exp   = node.getBranches[0]
+                c_exp = compile_exp(exp,false)
+                call  = make_m_call_is(UMINUS_ID,0)
+                link(c_exp,call)
+                set_last(c_exp,call)
+                return c_exp
+            else 
+                raise CompilerError.new("Compiler did not handle '#{node.type}' node")
+        end
     end
 
     protected def compile_call(node : Node)
@@ -638,6 +730,15 @@ class LinCAS::Compiler
         exp   = node.getBranches[0]
         c_exp = compile_exp(exp,false)
         ret   = @ifactory.makeBCode(Code::RETURN)
+        link(c_exp,ret)
+        set_last(c_exp,ret)
+        return c_exp
+    end
+
+    protected def compile_next(node : Node)
+        exp   = node.getBranches[0]
+        c_exp = compile_exp(exp,false)
+        ret   = @ifactory.makeBCode(Code::NEXT)
         link(c_exp,ret)
         set_last(c_exp,ret)
         return c_exp
@@ -723,7 +824,7 @@ class LinCAS::Compiler
         namespace = branches[0]
         args      = branches[1]
         c_nspace  = compile_namespace(namespace)
-        c_args    = compile_call_args(args)                # Fix call_with_block
+        c_args    = compile_call_args(args)                
         n_obj     = @ifactory.makeBCode(Code::NEW_OBJ)
         c_init    = @ifactory.makeBCode(Code::OPT_CALL_INIT)
         p_dup     = @ifactory.makeBCode(Code::PUSHDUP)
@@ -736,12 +837,127 @@ class LinCAS::Compiler
         return c_nspace
     end
 
-    protected def compile_yield(node : Node)
-        c_args  = compile_call_args(node.getBranches[0])
-        c_yield = @ifactory.makeBCode(Code::YIELD)
+    protected def compile_yield(node : Node) : Bytecode
+        args         = node.getBranches[0]
+        c_args       = compile_call_args(args)[0]
+        c_yield      = @ifactory.makeBCode(Code::YIELD)
+        c_yield.argc = args.getBranches.size
         link(c_args,c_yield)
         set_last(c_args,c_yield)
         return c_args
+    end
+
+    protected def compile_if(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        then_b    = branches[1]
+        else_b    = branches[2]?
+        line      = new_line(condition)
+
+        c_condition = compile_exp(condition,false)
+        c_then_b    = compile_body(then_b)
+        c_else_b    = else_b ? compile_body(else_b) : nil 
+        jump        = @ifactory.makeBCode(Code::JUMPF)
+        noop_is     = noop
+        if c_else_b
+            u_jump      = @ifactory.makeBCode(Code::JUMP)
+            u_jump.jump = noop_is
+            jump.jump   = c_else_b
+            link(line,c_condition,jump,c_then_b,u_jump,c_else_b,noop_is)
+        else 
+            jump.jump = noop_is
+            link(line,c_condition,jump,c_then_b,noop_is)
+        end 
+        set_last(line,noop_is) 
+        return line
+    end
+
+    protected def compile_while(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        body      = branches[1]
+        c_body    = compile_body(body)
+        line      = new_line(condition)
+        c_condition = compile_exp(condition,false)
+        jumpf     = @ifactory.makeBCode(Code::JUMPF)
+        jump      = @ifactory.makeBCode(Code::JUMP)
+        noop_is   = noop 
+        jumpf.jump = noop_is
+        jump.jump  = line 
+        link(line,c_condition,jumpf,c_body,jump,noop_is)
+        set_last(line,noop_is)
+        return line
+    end
+
+    protected def compile_until(node : Node)
+        branches  = node.getBranches
+        body      = branches[0]
+        condition = branches[1]
+        c_body    = compile_body(body)
+        c_condition = compile_exp(condition,false)
+        line        = new_line(node)
+        jumpf       = @ifactory.makeBCode(Code::JUMPF)
+        jumpf.jump  = c_body
+        link(c_body,line,c_condition,jumpf)
+        set_last(c_body,jumpf)
+        return c_body 
+    end
+
+    protected def compile_for(node : Node)
+        branches = node.getBranches
+        assign   = branches[0]
+        w_loop   = branches[1]
+        loop_b   = w_loop.getBranches
+        condition = loop_b[0]
+        body     = loop_b[1]
+        c_body   = compile_body(body)
+        c_assign = compile_assign(assign)
+        c_condit = compile_for_condition(condition)
+        noop_is  = noop 
+        jumpf    = @ifactory.makeBCode(Code::JUMPF)
+        jump     = @ifactory.makeBCode(Code::JUMP)
+        jumpf.jump = noop_is
+        jump.jump  = c_condit
+        link(c_assign,c_condit,jumpf,c_body,jump,noop_is)
+        set_last(c_assign,noop_is)
+        return c_assign
+    end
+
+    protected def compile_for_condition(node : Node)
+        c_brnchs = node.getBranches
+        line     = new_line(node)
+        left     = c_brnchs[0]
+        right    = c_brnchs[1]
+        c_left   = compile_exp(left,false)
+        c_right  = compile_exp(right,false)
+        if node.type == NodeType::SE 
+            call = make_m_call_is(SE_ID,1)
+        else 
+            call = make_m_call_is(GE_ID,1)
+        end
+        link(line,c_left,c_right,call)
+        set_last(line,call)
+        return line
+    end
+
+    protected def compile_raise(node : Node)
+        exp    = node.getBranches[0]
+        p_self = pushself
+        c_exp  = compile_exp(exp,false)
+        call   = make_call_is("raise",1)
+        link(p_self,c_exp,call)
+        set_last(p_self,call)
+        return p_self
+    end
+
+    protected def compile_include(node : Node)
+        namespace = node.getBranches[0]
+        c_nspace  = compile_namespace(namespace)
+        pself     = pushself
+        call      = make_call_is(INCLUDE_ID,1)
+        link(pself,c_nspace,call)
+        set_last(pself,call)
+        return pself
     end
 
     @[AlwaysInline]
@@ -809,7 +1025,7 @@ class LinCAS::Compiler
 
     private def make_null_next
         null = pushn
-        ret  = @ifactory.makeBCode(Code::B_NEXT)
+        ret  = @ifactory.makeBCode(Code::NEXT)
         link(null,ret)
         set_last(null,ret)
         return null

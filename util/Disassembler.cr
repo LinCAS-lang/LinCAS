@@ -49,11 +49,11 @@ class LinCAS::Disassembler
     protected def print_is(iseq : Bytecode)
         code = iseq.code
         case code
-            when Code::CALL, Code::M_CALL
+            when Code::CALL, Code::M_CALL, Code::YIELD
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
             when Code::PRINT, Code::PRINTL, Code::PUSHSELF,Code::POPOBJ,Code::PUSHN,
                  Code::HALT,Code::LEAVE,Code::RETURN, Code::IRANGE_NEW,Code::ERANGE_NEW,
-                 Code::NEW_OBJ, Code::PUSHDUP
+                 Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF
                 puts code
             when Code::LINE
                 print_line(iseq.line)
@@ -80,6 +80,8 @@ class LinCAS::Disassembler
             when Code::PUT_CLASS, Code::PUT_MODULE
                 print code, ' ', '"', iseq.text, '"',' ', '\n'
                 print_scope(iseq.jump.as(Bytecode))
+            when Code::JUMP, Code::JUMPT, Code::JUMPF
+                print code, ' ', iseq.jump.to_s, '\n'
                 
         end
     end

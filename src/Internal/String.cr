@@ -626,7 +626,7 @@ module LinCAS::Internal
         strlen2 = str_size(str2)
         ptr     = Pointer(LibC::Char).malloc(strlen).copy_from(pointer_of(str1),strlen)
         ptr2    = pointer_of(str2)
-        ary = build_ary_new nil 
+        ary = build_ary_new
         beg = 0
         final_address = ptr + strlen
         while beg < strlen

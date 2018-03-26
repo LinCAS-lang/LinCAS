@@ -102,10 +102,22 @@ module LinCAS::Internal
     def self.lc_obj_to_s(obj : Value, io)
         io << '<'
         if obj.is_a? Structure 
-            io << obj.as(Structure).path.to_s
-            io << ((obj.is_a? LcClass) ? " : class" : " : module")
+            klass = obj.as(Structure)
+            path  = klass.path
+            if !path.empty?
+                io << path.to_s
+            else
+                io << klass.name 
+            end
+            io << (struct_type(klass,SType::CLASS) ? " : class" : " : module")
         else
-            io << obj.as(ValueR).klass.path.to_s
+            klass = class_of(obj)
+            path  = klass.path
+            if !path.empty?
+                io << path.to_s 
+            else
+                io << klass.name 
+            end
         end
         io << ":@0x"
         pointerof(obj).address.to_s(16,io)

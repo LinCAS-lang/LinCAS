@@ -75,6 +75,11 @@ module LinCAS::Internal
         VM.convert({{name}})
     end
 
+    @[AlwaysInline]
+    def self.struct_type(klass : Structure,type : SType)
+        klass.type == type
+    end
+
     def self.coerce(v1 : Value, v2 : Value)
         if internal.lc_obj_responds_to? v2,"coerce"
             return Exec.lc_call_fun(v2,"coerce",v1)
@@ -86,7 +91,7 @@ module LinCAS::Internal
 
     def self.lc_typeof(v : Value)
         if v.is_a? Structure 
-            if v.is_a? LcModule
+            if struct_type(v,SType::MODULE)
                 return "#{v.as(LcModule).name} : Module"
             else 
                 return "#{v.as(LcClass).name} : Class"
@@ -105,5 +110,10 @@ module LinCAS::Internal
             return obj
         end
     end
+
+    def self.lc_make_shared_sym_tab(symTab : SymTab)
+        return SymTab.new(symTab.sym_tab)
+    end
+
 
 end
