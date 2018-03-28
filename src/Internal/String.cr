@@ -614,39 +614,40 @@ module LinCAS::Internal
     # * argument:: string the method was called on
     # * argument:: delimiter
     # * returns:: array containing the splitted substrings
-    def self.lc_str_split(str1 : Value, str2 : Value = build_string(" "))
+    def self.lc_str_split(str1 : Value, str2 : Value? = nil)
         unless str2.is_a? LcString
-            lc_raise(
-                LcTypeError,
-                "No implicit conversion of #{lc_typeof(str2)} into String"
-            ) 
-            return Null 
-        end 
-        strlen  = str_size(str1)
-        strlen2 = str_size(str2)
-        ptr     = Pointer(LibC::Char).malloc(strlen).copy_from(pointer_of(str1),strlen)
-        ptr2    = pointer_of(str2)
-        ary = build_ary_new
-        beg = 0
-        final_address = ptr + strlen
-        while beg < strlen
-            tmp = libc.strtok(ptr.clone,ptr2)
-            if tmp.null? 
-                lc_ary_push(ary,str1)
-                return ary 
-            end 
-            str = build_string(tmp)
-            lc_ary_push(ary,str)
-            beg += libc.strlen(tmp) + strlen2
-            ptr = Pointer(LibC::Char).malloc(strlen).copy_from(
-                pointer_of(str1) + beg ,strlen - beg
-            ) unless beg > strlen  
+            if !str2.nil?
+                lc_raise(
+                    LcTypeError,
+                    "No implicit conversion of #{lc_typeof(str2)} into String"
+                ) 
+                return Null 
+            end
         end
-        return ary 
+        ptr1    = pointer_of(str1)
+        if str2
+            ptr2    = pointer_of(str2)
+        else
+            ptr2 = " ".to_unsafe
+        end
+        nullptr = Pointer(LibC::Char).null
+        ary     = build_ary_new
+        token   = libc.strtok(ptr1,ptr2)
+        if token
+            while !token.null?
+                tmp = build_string(token)
+                lc_ary_push(ary,tmp)
+                token = libc.strtok(nullptr,ptr2)
+            end
+        else
+            lc_ary_push(ary,str1)
+        end
+        return ary
     end
 
     str_split = LcProc.new do |args|
-        next internal.lc_str_split(*args.as(T2))
+        args = args.as(An)
+        next internal.lc_str_split(args[0],args[1]?)
     end
 
     # Converts a string into an integer number
@@ -724,6 +725,12 @@ module LinCAS::Internal
         next internal.lc_str_chars(*args.as(T1))
     end
 
+    # Clones the string and deletes the spaces on this last
+    # one
+    # ```
+    # "Compacting This String".compact() #=> "CompactingThisString"
+    # ```
+    # argument:: String the method is called on
     def self.lc_str_compact(str : Value)
         strlen = str_size(str)
         ptr    = pointer_of(str)
@@ -792,7 +799,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"upcase", str_upr,     0)
     internal.lc_add_internal(StringClass,"lowcase!",str_lwr_o,  0)
     internal.lc_add_internal(StringClass,"lowcase",str_lwr,     0)
-    internal.lc_add_internal(StringClass,"split",  str_split,   1)
+    internal.lc_add_internal(StringClass,"split",  str_split,  -1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)

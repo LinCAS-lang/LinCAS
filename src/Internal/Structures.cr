@@ -149,7 +149,6 @@ module LinCAS
         @arity     : Intnum                      = 0
         @static    = false
         @internal  = false
-        @singleton = false
 
         def initialize(@name : String,@visib : VoidVisib)
             @args = nil
@@ -157,7 +156,7 @@ module LinCAS
         end
 
         property name, args, code, owner, arity
-        property static, internal, singleton, visib 
+        property static, internal, visib 
     end 
 
     struct LcConst

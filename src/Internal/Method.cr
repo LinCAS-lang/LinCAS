@@ -45,33 +45,9 @@ module LinCAS::Internal
         {{m}}.arity    = {{arity}}
     end 
 
-    
-    #def 
-    #self.lc_define_usr_method(
-    #    name, args : Node, owner : LinCAS::Structure, code : Node,
-    #    arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC
-    #)
-    #    m       = LinCAS::MethodEntry.new(name.as(String),visib)
-    #    m.args  = args
-    #    m.owner = owner
-    #    m.code  = code
-    #    m.arity = arity
-    #    return m 
-    #end
-
-    #def 
-    #self.lc_define_static_usr_method(
-    #    name,args : Node, owner : LinCAS::Structure, code : Node, 
-    #    arity : Intnum, visib : VoidVisib = VoidVisib::PUBLIC 
-    #)
-    #    m        = self.lc_define_usr_method(name,args,owner,code,arity,visib)
-    #    m.static = true
-    #    return m
-    #end
-
     def self.lc_def_method(name : String, args : Array(VoidArgument),
                            arity : Intnum, code : Bytecode, visib : VoidVisib = VoidVisib::PUBLIC)
-        m       = LcMethod.new(name,visib)
+        m         = new_lc_method(name,visib)
         m.args    = args 
         m.code    = code 
         m.arity   = arity
@@ -85,7 +61,7 @@ module LinCAS::Internal
         return m 
     end
 
-    def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity)
+    def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity : Intnum)
         m          = new_lc_method(name, VoidVisib::PUBLIC)
         set_default(m,owner,code,arity)
         return m
@@ -100,18 +76,6 @@ module LinCAS::Internal
     def self.lc_define_internal_static_method(name, owner : LinCAS::Structure, code, arity)
         m        = self.lc_define_internal_method(name,owner,code,arity)
         m.static = true
-        return m
-    end
-
-    def self.lc_define_internal_singleton_method(name,owner : LinCAS::Structure,code,arity)
-        m           = self.lc_define_internal_method(name,owner,code,arity)
-        m.singleton = true
-        return m
-    end
-
-    def self.lc_define_internal_static_singleton_method(name,owner : LinCAS::Structure,code,arity)
-        m           = self.lc_define_internal_static_method(name,owner,code,arity)
-        m.singleton = true
         return m
     end
 
@@ -135,18 +99,6 @@ module LinCAS::Internal
         m = lc_undef_internal_method(name,owner)
         m.static = true 
         return m
-    end
-    
-    def self.lc_undef_internal_singleton(name,owner : Structure)
-        m = lc_undef_internal_method(name,owner)
-        m.singleton = true 
-        return m 
-    end
-
-    def self.lc_undef_internal_static_singleton(name,owner : Structure)
-        m = lc_undef_internal_static(name,owner)
-        m.singleton = true 
-        return m 
     end
 
     macro define_method(name,owner,code,arity)
@@ -175,25 +127,6 @@ module LinCAS::Internal
         internal.lc_undef_internal_static({{name}},{{owner}})
     end 
 
-    macro define_singleton(name,owner,code,arity)
-        internal.lc_define_internal_singleton_method(
-            {{name}},{{owner}},{{code}},{{arity}}
-        )
-    end
-
-    macro undef_singleton(name,owner)
-        internal.lc_undef_internal_singleton({{name}},{{owner}})
-    end
-
-    macro define_static_singleton(name,owner,code,arity)
-        internal.lc_define_internal_static_singleton_method(
-            {{name}},{{owner}},{{code}},{{arity}}
-        )
-    end
-
-    macro undef_static_singleton(name,owner)
-        internal.lc_undef_internal_static_singleton({{name}},{{owner}})
-    end
 
     def self.seek_method(receiver : Structure, name,protctd = false)
         method = seek_instance_method(receiver,name,!protctd)
