@@ -840,13 +840,17 @@ class LinCAS::Compiler
     end
 
     protected def compile_yield(node : Node) : Bytecode
-        args         = node.getBranches[0]
-        c_args       = compile_call_args(args)[0]
+        args         = node.getBranches[0]?
         c_yield      = @ifactory.makeBCode(Code::YIELD)
-        c_yield.argc = args.getBranches.size
-        link(c_args,c_yield)
-        set_last(c_args,c_yield)
-        return c_args
+        if args 
+            c_args       = compile_call_args(args)[0]
+            c_yield.argc = args.getBranches.size
+            link(c_args,c_yield)
+            set_last(c_args,c_yield)
+            return c_args
+        end
+        c_yield.argc = 0
+        return c_yield
     end
 
     protected def compile_if(node : Node)
