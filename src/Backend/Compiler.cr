@@ -242,6 +242,8 @@ class LinCAS::Compiler
                 return compile_until(node)
             when NodeType::BODY
                 return compile_for(node)
+            when NodeType::SELECT
+                return compile_slect(node)
             else 
                 return compile_exp(node)
         end
@@ -958,6 +960,103 @@ class LinCAS::Compiler
         link(pself,c_nspace,call)
         set_last(pself,call)
         return pself
+    end
+
+    protected def compile_slect(node : Node)
+        branches  = node.getBranches
+        condition = branches[0]
+        c_opts    = compile_opts(branches)
+        c_condition = compile_exp(condition,false)
+        pop_is      = popobj
+        link(c_condition,c_opts,pop_is)
+        set_last(c_condition,pop_is)
+        return c_condition
+    end
+
+    protected def compile_opts(branches : Array(Node))
+        len = branches.size
+        if len > 2
+            array    = StaticArray(Bytecode?,2).new(nil)
+            array[0] = noop
+            i     = 2
+            opt   = branches[1]
+            c_opt = compile_opt(opt,array.to_unsafe)
+            tmp   = c_opt
+            while i < len 
+                opt  = branches[i]
+                tmp2 = compile_opt(opt,array.to_unsafe)
+                link(tmp,tmp2)
+                tmp = tmp2 
+                i += 1
+            end 
+            set_last(c_opt,tmp)
+            _end_op = array[0].as(Bytecode)
+            if else_c = array[1]
+                link(c_opt,else_c,_end_op)
+            else 
+                link(c_opt,_end_op)
+            end 
+            set_last(c_opt,_end_op)
+            return c_opt
+        else 
+            return noop 
+        end
+    end
+
+    protected def compile_opt(node : Node,array)
+        if node.type == NodeType::CASE
+            return compile_case(node,array)
+        else 
+            _else = compile_body(node.getBranches[0])
+            array[1] = _else
+        end
+        noop
+    end
+
+    protected def compile_case(node : Node,array)
+        end_op   = array[0].as(Bytecode)
+        branches = node.getBranches
+        conditions = branches[0]
+        body       = branches[1]
+        c_body     = compile_body(body)
+        jump       = @ifactory.makeBCode(Code::JUMP)
+        jump.jump  = end_op 
+        noop_is    = noop
+        c_condts   = compile_opt_conditions(conditions,c_body)
+        jump2      = @ifactory.makeBCode(Code::JUMP)
+        jump2.jump = noop_is
+        link(c_condts,jump2,c_body,jump,noop_is)
+        set_last(c_condts,noop_is)
+        return c_condts
+    end
+
+    protected def compile_opt_conditions(node : Node,body : Bytecode)
+        branches = node.getBranches
+        first    = branches[0]
+        c_exp    = compile_exp(first,false)
+        first    = emit_case_is(c_exp,body)
+        tmp      = first
+        count    = branches.size 
+        i        = 1
+        while i < count 
+            c_exp = compile_exp(branches[i],false)
+            tmp2  = emit_case_is(c_exp,body)
+            link(tmp,tmp2)
+            tmp = tmp2 
+            i += 1
+        end
+        set_last(first,tmp)
+        return first
+    end
+
+    protected def emit_case_is(condition : Bytecode,body : Bytecode)
+        p_dup    = @ifactory.makeBCode(Code::PUSHDUP)
+        eq_cmp   = @ifactory.makeBCode(Code::EQ_CMP)
+        jumpt    = @ifactory.makeBCode(Code::JUMPT)
+        jumpt.jump = body
+        link(p_dup,condition,eq_cmp,jumpt)
+        set_last(p_dup,jumpt)
+        return p_dup
     end
 
     @[AlwaysInline]

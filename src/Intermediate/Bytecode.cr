@@ -75,6 +75,7 @@ module LinCAS
     NEW_OBJ
     NOOP
     YIELD
+    EQ_CMP
 
     LINE
     FILENAME

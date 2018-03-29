@@ -64,6 +64,7 @@ module LinCAS::Internal
         int.klass = IntClass
         int.data  = IntClass.data.clone
         int.frozen = true
+        int.id    = (value * 2 + 1).to_u64
         return int.as(Value)
     end 
 

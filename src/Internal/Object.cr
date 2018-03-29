@@ -45,6 +45,15 @@ module LinCAS::Internal
         return lcfalse
     end
 
+    def self.lc_obj_match(obj1 : Value,obj2 : Value)
+        cmp_result = Exec.lc_call_fun(obj1,"==",obj2)
+        if cmp_result == lctrue
+            return cmp_result
+        else
+            return lc_obj_eq(obj1,obj2)
+        end 
+    end
+
     @[AlwaysInline]
     def self.boot_main_object
         return internal.lc_obj_allocate(Obj)
@@ -125,8 +134,8 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_compare(obj1 : Value, obj2 : Value)
-        return lc_compare(obj1,obj2)
         return lctrue if obj1.id == obj2.id
+        return lc_compare(obj1,obj2)
     end
 
     def self.lc_obj_eq(obj1 : Value, obj2 : Value)

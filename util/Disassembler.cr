@@ -53,7 +53,7 @@ class LinCAS::Disassembler
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
             when Code::PRINT, Code::PRINTL, Code::PUSHSELF,Code::POPOBJ,Code::PUSHN,
                  Code::HALT,Code::LEAVE,Code::RETURN, Code::IRANGE_NEW,Code::ERANGE_NEW,
-                 Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF
+                 Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF, Code::EQ_CMP
                 puts code
             when Code::LINE
                 print_line(iseq.line)
@@ -82,6 +82,8 @@ class LinCAS::Disassembler
                 print_scope(iseq.jump.as(Bytecode))
             when Code::JUMP, Code::JUMPT, Code::JUMPF
                 print code, ' ', iseq.jump.to_s, '\n'
+            when Code::PUSHSTR
+                print code, ' ', '"',iseq.text,'"', '\n'
                 
         end
     end

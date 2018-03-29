@@ -484,6 +484,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     fm.pc = is.jump.as(Bytecode)
                 when Code::JUMPF
                     vm_jumpf(is.jump.as(Bytecode))
+                when Code::JUMPT
+                    vm_jumpt(is.jump.as(Bytecode))
+                when Code::EQ_CMP
+                    obj1 = unwrap_object(pop)
+                    obj2 = unwrap_object(pop)
+                    res = internal.lc_obj_match(obj2,obj1)
+                    push(wrap_object(res))
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -1050,6 +1057,14 @@ end
     protected def vm_jumpf(code : Bytecode)
         obj = unwrap_object(pop)
         if !test(obj)
+            fm    = current_frame
+            fm.pc = code 
+        end
+    end
+
+    protected def vm_jumpt(code : Bytecode)
+        obj = unwrap_object(pop)
+        if test(obj)
             fm    = current_frame
             fm.pc = code 
         end

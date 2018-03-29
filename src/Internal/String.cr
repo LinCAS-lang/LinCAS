@@ -119,6 +119,7 @@ module LinCAS::Internal
         str   = LcString.new
         str.klass = StringClass
         str.data  = StringClass.data.clone
+        str.id    = str.object_id
         return  str 
     end
 
