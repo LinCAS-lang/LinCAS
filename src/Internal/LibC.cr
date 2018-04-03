@@ -22,24 +22,22 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./LibC"
-require "./Overload.cr"
-require "big"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Kernel"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
+@[Link(ldflags: "#{__DIR__}/LibC/libc.a")]
+lib LibC
+    fun strstr(str1 : Char*, str2 : Char*) : Char*
+    fun printf(format : Char*, ... ) : Int 
+    fun toupper(str : Char*) : Char*
+    fun strlwr(str : Char*) : Char*
+    fun strlen(str : Char*) : SizeT
+    fun strtok(str : Char*, delimiter : Char*) : Char*
+    fun strtol(str : Char*, endptr : Char*, base : Int) : Int
+    fun strtod(str : Char*, endptr : Char**) : Double
+    fun strcmp(str1 : Char*, str2 : Char*) : Int
+
+    fun add_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
+    fun add_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
+    fun sub_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
+    fun sub_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
+    fun mul_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
+    fun mul_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
+end

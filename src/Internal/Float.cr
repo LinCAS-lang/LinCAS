@@ -46,6 +46,14 @@ module LinCAS::Internal
             return @val.to_s 
         end
     end
+
+    macro num2bigfloat(num)
+        BigFloat.new({{num}})
+    end
+
+    macro bigf2flo64(num)
+        ({{num}}.round(20)).to_f64
+    end
     
     @[AlwaysInline]
     def self.num2float(num : Floatnum)
@@ -68,7 +76,7 @@ module LinCAS::Internal
     def self.lc_float_sum(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val + n2.as(LcFloat).val)
+            return num2float(float2num(n1) + float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"+")
         end
@@ -81,7 +89,7 @@ module LinCAS::Internal
     def self.lc_float_sub(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val - n2.as(LcFloat).val)
+            return num2float(float2num(n1) - float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"-")
         end
@@ -96,7 +104,7 @@ module LinCAS::Internal
     def self.lc_float_mult(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val * n2.as(LcFloat).val)
+            return num2float(float2num(n1) * float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"*")
         end
@@ -145,7 +153,7 @@ module LinCAS::Internal
     def self.lc_float_power(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val ** n2.as(LcFloat).val)
+            return num2float(float2num(n1) ** float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"^")
         end
@@ -199,15 +207,22 @@ module LinCAS::Internal
         unless num.is_a? Intnum 
             num = internal.lc_num_to_cr_i(num).as(Intnum)
         end
-        next num2float(float.round(num))
+        next num2float(float.round(num.to_i64))
     end
 
     float_ceil = LcProc.new do |args|
         float = internal.lc_num_to_cr_f(*args.as(T1))
         if float.is_a? Float32
             next num2float(LibM.ceil_f32(float.as(Float32)))
-        else
+        {% if flag?(:fast_math) %}
+        else 
             next num2float(LibM.ceil_f64(float.as(Float64)))
+        {% else %}
+        elsif float.is_a? Float64
+            next num2float(LibM.ceil_f64(float.as(Float64)))
+        else
+            next num2float(float.as(BigFloat).ceil)
+        {% end %}
         end
     end
 

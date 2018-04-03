@@ -30,7 +30,7 @@ module LinCAS::Internal
     class LcString < BaseC
         def initialize
             @str_ptr = Pointer(LibC::Char).null
-            @size    = 0
+            @size    = 0.as(Intnum)
         end
         property str_ptr, size
 

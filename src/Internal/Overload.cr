@@ -22,24 +22,40 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require "./LibC"
-require "./Overload.cr"
-require "big"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Kernel"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
+macro expand_for_float
+    {% for sign in {"+", "-", "*", "/", "**"} %}
+        def {{sign.id}}(other : BigFloat)
+            return BigFloat.new(self) {{sign.id}} other 
+        end
+    {% end %}
+end
+
+struct Int32
+    def +(other : BigInt)
+        return BigInt.new(self) + other 
+    end
+
+    def -(other : BigInt)
+        return BigInt.new(self) - other 
+    end
+
+    def *(other : BigInt)
+        return BigInt.new(self) * other 
+    end
+
+    def /(other : BigInt)
+        return BigInt.new(self) / other 
+    end
+
+    def **(other : BigInt)
+        return BigInt.new(self) ** other 
+    end 
+end
+
+struct Float32
+    expand_for_float
+end
+
+struct Float64
+    expand_for_float
+end

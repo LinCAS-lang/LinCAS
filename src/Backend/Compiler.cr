@@ -244,6 +244,8 @@ class LinCAS::Compiler
                 return compile_for(node)
             when NodeType::SELECT
                 return compile_slect(node)
+            when NodeType::TRY 
+                return compile_try(node)
             else 
                 return compile_exp(node)
         end
@@ -1061,6 +1063,46 @@ class LinCAS::Compiler
         link(p_dup,condition,eq_cmp,jumpt)
         set_last(p_dup,jumpt)
         return p_dup
+    end
+
+    protected def compile_try(node : Node)
+        branches = node.getBranches
+        try      = branches[0]
+        catch    = branches[1]?
+        c_body   = compile_body(try)
+        set_ct   = @ifactory.makeBCode(Code::SET_C_T)
+        clear_ct = @ifactory.makeBCode(Code::CLEAR_C_T)
+        noop_is  = noop
+        if catch 
+            c_catch = compile_catch(catch)
+            c_table = new_catch_t(c_catch)
+        else 
+            c_catch = {noop,nil}
+            c_table = new_catch_t(c_catch)
+        end 
+        link(set_ct,c_body,clear_ct,noop_is)
+        link(c_catch[0],noop_is)
+        set_last(set_ct,noop_is)
+        set_ct.catch_t = c_table
+        return set_ct
+    end
+
+    protected def compile_catch(node : Node)
+        branches = node.getBranches
+        if branches.size > 1
+            id   = unpack_name(branches[0])
+            body = branches[1]
+        else 
+            id   = nil
+            body = branches[0]
+        end 
+        c_body = compile_body(body)
+        return {c_body,id}
+    end
+
+    @[AlwaysInline]
+    protected def new_catch_t(c_catch : Tuple(Bytecode,(String | Nil)))
+        return CatchTable.new(*c_catch)
     end
 
     @[AlwaysInline]

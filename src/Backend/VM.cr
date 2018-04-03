@@ -55,17 +55,17 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     private class ErrorHandler
         @error : Value? = nil 
-        @ex_h  = false
+        @ex_h  = 0
         getter error 
 
         @[AlwaysInline]
         def exception_handler?
-            return @ex_h
+            return @ex_h > 0
         end
 
         @[AlwaysInline]
-        def exception_handler=(value : Bool)
-            @ex_h = value
+        def exception_handler=(value : Int32)
+            @ex_h += value
         end
 
         @[AlwaysInline]
@@ -74,7 +74,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
 
         @[AlwaysInline]
-        def handle_error(error : Value)
+        def handle_error(error : Value?)
             @error = error 
         end
     end
@@ -105,11 +105,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @fp      = 0                          # frame pointer
         @pc      = uninitialized Bytecode     # program count
         @scp     = uninitialized Scope        # scope pointer
+        @catch_t : CatchTable? = nil
         
-        def initialize(@me : Value,@context : Structure,@argc : Intnum)  
+        def initialize(@me : Value,@context : Structure,@argc : IntnumR)  
         end
 
-        property fp,argc,pc,scp,me,context
+        property fp,argc,pc,scp,me,context, catch_t
 
         @[AlwaysInline]
         def fetch 
@@ -331,6 +332,14 @@ class LinCAS::VM < LinCAS::MsgGenerator
         push_frame(fm)
     end
 
+    protected def push_shared_frame
+        fm      = current_frame
+        tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32))
+        tmp.pc  = fm.pc 
+        tmp.scp = fm.scp
+        push_frame(tmp)
+    end
+
     @[AlwaysInline]
     protected def vm_pop_frame
         @vm_fp -= 1
@@ -491,6 +500,17 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     obj2 = unwrap_object(pop)
                     res = internal.lc_obj_match(obj2,obj1)
                     push(wrap_object(res))
+                when Code::SET_C_T
+                    current_frame.catch_t = is.catch_t.as(CatchTable)
+                    push_shared_frame
+                    ErrHandler.exception_handler = 1
+                when Code::CLEAR_C_T
+                    pc = current_frame.pc 
+                    vm_pop_frame
+                    fm         = current_frame
+                    fm.pc      = pc 
+                    fm.catch_t = nil
+                    ErrHandler.exception_handler = -1
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -1138,9 +1158,30 @@ end
         !!vm_get_block
     end
 
+    @[AlwaysInline]
+    protected def get_catch_t
+        catch_t = current_frame.catch_t
+        while !catch_t && @vm_fp > 0
+            vm_pop_frame
+            catch_t = current_frame.catch_t 
+        end 
+        if !catch_t
+            raise VMerror.new("Catch table not found")
+        end 
+        return catch_t
+    end
+
     protected def vm_handle_error(error : Value)
         if ErrHandler.exception_handler?
-
+            catch_t = get_catch_t
+            name = catch_t.var_name
+            iseq = catch_t.code 
+            if name 
+                store_local(name,ErrHandler.error.as(LcError))
+            end 
+            ErrHandler.handle_error(nil)
+            ErrHandler.exception_handler = -1
+            current_frame.pc = iseq
         else
             error = ErrHandler.error.as(LcError)
             msg   = String.build do |io|

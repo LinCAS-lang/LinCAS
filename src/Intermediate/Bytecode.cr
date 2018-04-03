@@ -77,6 +77,9 @@ module LinCAS
     YIELD
     EQ_CMP
 
+    SET_C_T
+    CLEAR_C_T
+
     LINE
     FILENAME
     LEAVE
@@ -91,14 +94,16 @@ module LinCAS
     @text  = ""
     @argc  = 0
     @value = 0.as(Num)
-    @opt_v = 0.as(Intnum)
+    @opt_v = 0.as(IntnumR)
     @jump  : Bytecode? = nil
-    @line  = 0.as(Intnum)
+    @line  = 0.as(IntnumR)
     @method : LcMethod? = nil
     @block  : LcBlock?  = nil
+    @catch_t : CatchTable? = nil
 
 
     def initialize(@code : Code); end
-    property code,nextc,text,argc,value,jump,lastc,line,method, block,opt_v
+    property code,nextc,text,argc,value,jump,lastc,line,method, 
+             block,opt_v, catch_t
   end
 end

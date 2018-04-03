@@ -188,7 +188,12 @@ module LinCAS::Internal
             lc_raise(LcMathError,"(Value out of domain)")
             next Null
         end
-        next num2float(val2 ** (1/val1.to_f))
+        if val1.is_a? BigInt
+            val1 = bigf2flo64(num2bigfloat(val1))
+        else 
+            val1 = val1.to_f
+        end
+        next num2float(val2 ** (1/val1))
     end
 
     m_copysign = LcProc.new do |args|

@@ -84,6 +84,8 @@ class LinCAS::Disassembler
                 print code, ' ', iseq.jump.to_s, '\n'
             when Code::PUSHSTR
                 print code, ' ', '"',iseq.text,'"', '\n'
+            when Code::SET_C_T
+                print code, ' ', "<catch table>", '\n'
                 
         end
     end

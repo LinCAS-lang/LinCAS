@@ -1,4 +1,5 @@
 
+require "big"
 module LinCAS
     EOF = "\u0003"
     ALLOWED_VOID_NAMES = 
@@ -7,11 +8,16 @@ module LinCAS
         TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
         TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
         TkType::NOT_EQ, TkType::SMALLER_EQ,
-        TkType::ASSIGN_INDEX
+        TkType::ASSIGN_INDEX, TkType::CLASS
     }
-    alias Intnum   = Int32 | Int64
+    alias IntnumR  = Int32   | Int64
     alias Floatnum = Float32 | Float64
-    alias Num      = Intnum | Floatnum
+    {% if flag?(:fast_math) %}
+        alias Intnum   = IntnumR
+    {% else %}
+        alias Intnum   = IntnumR | BigInt
+    {% end %}
+    alias Num = Intnum  | Floatnum
 end
 
 require "./Listeners"
@@ -35,11 +41,8 @@ require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
 require "./Intermediate/Bytecode"
 require "./Internal/Proc"
-#require "./Intermediate/SymbolTab"
-# require "./Backend/Eval"
 require "./Backend/Compiler"
 require "./Internal/LcInternal"
-#require "./Backend/CallStack"
 require "./Internal/Math"
 require "./Backend/VM"
 require "../util/AstPrinter"

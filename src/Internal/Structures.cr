@@ -174,6 +174,12 @@ module LinCAS
         getter body
     end
 
+    struct CatchTable
+        def initialize(@code : Bytecode, @var_name : String?)
+        end
+        getter code,var_name
+    end
+
     alias LcEntry   = LcBaseStruct | LcMethod | LcConst
     alias Structure = LcClass
 
