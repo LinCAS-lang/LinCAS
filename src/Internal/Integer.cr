@@ -90,16 +90,14 @@ module LinCAS::Internal
             return v1.to_big_i + v2.to_big_i
         end
         if v1.is_a? Int32 && v2.is_a? Int32
-            tmp1 = 0_i32
-            if libc.add_overflow_i(v1,v2,pointerof(tmp1)) == 0
+            if libc.add_overflow_i(v1,v2,out tmp1) == 0
                 return v1 + v2
             end
             return  v1.to_i64 + v2.to_i64
         else
             v1  = v1.to_i64
             v2  = v2.to_i64
-            tmp = 0_i64
-            if libc.add_overflow_l(v1,v2,pointerof(tmp)) == 0
+            if libc.add_overflow_l(v1,v2,out tmp) == 0
                 return v1 + v2
             end
             return  num2bigint(v1) + num2bigint(v2)
@@ -131,16 +129,14 @@ module LinCAS::Internal
             return v1 - v2
         end
         if v1.is_a? Int32 && v2.is_a? Int32
-            tmp1 = 0_i32 
-            if libc.sub_overflow_i(v1,v2,pointerof(tmp1)) == 0
+            if libc.sub_overflow_i(v1,v2,out tmp) == 0
                 return v1 - v2
             end 
             return v1.to_i64 - v2.to_i64
         else
             v1   = v1.to_i64
             v2   = v2.to_i64
-            tmp2 = 0_i64 
-            if libc.sub_overflow_l(v1,v2,pointerof(tmp2)) == 0
+            if libc.sub_overflow_l(v1,v2,out tmp2) == 0
                 return v1 - v2
             end
             return num2bigint(v1) - num2bigint(v2)
@@ -175,16 +171,14 @@ module LinCAS::Internal
             return v1.to_big_i * v2.to_big_i 
         end
         if v1.is_a? Int32 && v2.is_a? Int32
-            tmp1 = 0_i32 
-            if libc.mul_overflow_i(v1,v2,pointerof(tmp1)) == 0
+            if libc.mul_overflow_i(v1,v2,out tmp) == 0
                 return v1 * v2 
             end
             return v1.to_i64 * v2.to_i64 
         else 
             v1 = v1.to_i64
             v2 = v2.to_i64
-            tmp2 = 0_i64
-            if libc.mul_overflow_l(v1,v2,pointerof(tmp2)) == 0
+            if libc.mul_overflow_l(v1,v2,out tmp2) == 0
                 return v1 * v2 
             end
             return v1.to_big_i * v2.to_big_i 

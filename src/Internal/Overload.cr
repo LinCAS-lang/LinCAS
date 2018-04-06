@@ -30,26 +30,16 @@ macro expand_for_float
     {% end %}
 end
 
+macro expand_for_int
+    {% for sign in {"+", "-", "*", "/", "**"} %}
+        def {{sign.id}}(other : BigInt)
+            return BigInt.new(self) {{sign.id}} other 
+        end
+    {% end %}
+end
+
 struct Int32
-    def +(other : BigInt)
-        return BigInt.new(self) + other 
-    end
-
-    def -(other : BigInt)
-        return BigInt.new(self) - other 
-    end
-
-    def *(other : BigInt)
-        return BigInt.new(self) * other 
-    end
-
-    def /(other : BigInt)
-        return BigInt.new(self) / other 
-    end
-
-    def **(other : BigInt)
-        return BigInt.new(self) ** other 
-    end 
+   expand_for_int
 end
 
 struct Float32

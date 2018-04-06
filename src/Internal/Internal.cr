@@ -63,6 +63,10 @@ module LinCAS::Internal
         VM.convert({{name}})
     end
 
+    macro lc_cast(obj,type)
+        {{obj}}.as({{type}})
+    end
+
     @[AlwaysInline]
     def self.struct_type(klass : Structure,type : SType)
         klass.type == type

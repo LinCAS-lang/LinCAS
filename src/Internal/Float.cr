@@ -266,7 +266,7 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"\\",float_idiv,1)
     internal.lc_add_internal(FloatClass,"/",float_fdiv, 1)
     internal.lc_add_internal(FloatClass,"^",float_power,1)
-    internal.lc_add_internal(FloatClass,"invert",float_invert, 0)
+    internal.lc_add_internal(FloatClass,"-@",float_invert, 0)
     internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
     internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)

@@ -135,6 +135,16 @@ module LinCAS::Internal
         return ary.as(Value)
     end
 
+    private def self.ary_from_int(i_ary : Int32*,size : Int32)
+        ary   = build_ary(size)
+        prt   = ary_ptr(ary)
+        count = -1
+        ptr.map!(size) do
+            next num2int(i_ary[count += 1])
+        end
+        return ary
+    end
+
     def self.new_ary
         ary = LcArray.new
         ary.klass = AryClass
