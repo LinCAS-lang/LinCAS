@@ -49,3 +49,10 @@ end
 struct Float64
     expand_for_float
 end
+
+struct Crystal::Hasher
+    def reset
+        @a = @@seed[0]
+        @b = @@seed[1]
+    end
+end 

@@ -199,6 +199,11 @@ module LinCAS::Internal
         return false
     end
 
+    @[AlwaysInline]
+    private def self.string2slice(string : Value)
+        return pointer_of(string).to_slice(str_size(string))
+    end
+
     def self.lc_str_io_append(io , value : Value)
         #p value.class;gets
         if value.is_a? LcString 

@@ -44,6 +44,10 @@ module LinCAS::Internal
         return lcfalse 
     end
 
+    @[AlwaysInline]
+    def self.bool2val(value : Value)
+        return value == lctrue ? true : false
+    end
 
     def self.build_true
         lcTrue       = LcBTrue.new
