@@ -268,7 +268,7 @@ module LinCAS::Internal
         return nil
     end
 
-    def self.lc_hash_fetch(hash : Value,key : Value)
+    def self.hash_fetch(hash : Value,key : Value,default : Value)
         return Null if hash_empty?(hash)
         h_key   = fast_hash(key)
         capa    = hash_capa(hash)
@@ -276,8 +276,12 @@ module LinCAS::Internal
         buckets = hash_buckets(hash)
         entry   = buckets[index]
         entry   = fetch_entry_in_bucket(entry,key)
-        return entry ? entry.value : Null
+        return entry ? entry.value : default
     end
+
+    def self.lc_hash_fetch(hash : Value,key : Value)
+        return hash_fetch(hash,key,Null)
+    end 
 
     hash_fetch = LcProc.new do |args|
         next lc_hash_fetch(*lc_cast(args,T2))

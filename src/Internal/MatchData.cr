@@ -15,8 +15,8 @@
 
 module LinCAS::Internal
 
-    MATCH_DATA_HEADER = "#<MatchData: \""
-    MATCH_DATA_TAIL   = "\">"
+    MATCH_DATA_HEADER = "#<MatchData:"
+    MATCH_DATA_TAIL   = '>'
 
     class LcMatchData < BaseC
         def initialize(
@@ -104,9 +104,27 @@ module LinCAS::Internal
 
     def self.lc_mdata_inspect(mdata : Value)
         mdata_check(mdata)
-        buffer = string_buffer_new
+        buffer     = string_buffer_new
+        size       = get_mdata_size(mdata)
+        regex      = mdata_regexp(mdata)
+        name_table = lc_regex_name_table(regex)
         buffer_append(buffer,MATCH_DATA_HEADER)
-        buffer_append(buffer,matched_data(lc_cast(mdata,LcMatchData),0))
+        size.times do |i|
+            index = num2int(i)
+            buffer_append(buffer,' ')
+            if i > 0
+                value = hash_fetch(name_table,index,index)
+                if value.is_a? LcInt 
+                    string_buffer_appender(buffer,value)
+                elsif value.is_a? LcString
+                    buffer_append(buffer,pointer_of(value))
+                else 
+                    #lc_raise_internal()
+                end
+                buffer_append(buffer,':')
+            end 
+            string_buffer_appender(buffer,lc_mdata_index(mdata,index))
+        end
         buffer_append(buffer,MATCH_DATA_TAIL)
         buffer_trunc(buffer)
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
@@ -229,18 +247,47 @@ module LinCAS::Internal
         next lc_mdata_to_h(*lc_cast(args,T1))
     end
 
+    def self.lc_mdata_to_a(mdata : Value)
+        ary  = build_ary_new
+        size = get_mdata_size(mdata)
+        size.times do |i|
+            matched = matched_data(lc_cast(mdata,LcMatchData),i)
+            lc_ary_push(ary,matched.null? ? Null : build_string_with_ptr(matched))
+        end
+        return ary
+    end
+
+    mdata_to_a = LcProc.new do |args|
+        next lc_mdata_to_a(*lc_cast(args,T1))
+    end
+
+    def self.lc_mdata_to_s(mdata : Value)
+        match = matched_data(lc_cast(mdata,LcMatchData),0)
+        return match.null? ? Null : build_string_with_ptr(match)
+    end
+
+    mdata_to_s = LcProc.new do |args|
+        next lc_mdata_to_s(*lc_cast(args,T1))
+    end
+
+    mdata_string_ = LcProc.new do |args|
+        string = mdata_string(lc_cast(args,T1)[0])
+        next build_string(string)
+    end
+
     MatchDataClass = internal.lc_build_internal_class("MatchData")
     internal.lc_set_parent_class(MatchDataClass,Obj)
 
     internal.lc_undef_allocator(MatchDataClass)
 
     internal.lc_add_internal(MatchDataClass,"inspect",mdata_inspect,   0)
-    internal.lc_add_internal(MatchDataClass,"to_s",mdata_inspect,      0)
+    internal.lc_add_internal(MatchDataClass,"to_s",mdata_to_s,      0)
     internal.lc_add_internal(MatchDataClass,"size",mdata_size,         0)
     internal.lc_add_internal(MatchDataClass,"group_size",mdata_gsize_, 0)
     internal.lc_add_internal(MatchDataClass,"[]",mdata_index,          1)
     internal.lc_add_internal(MatchDataClass,"captured_names",mdata_c_names,    0)
     internal.lc_add_internal(MatchDataClass,"to_h",mdata_to_h,         0)
+    internal.lc_add_internal(MatchDataClass,"to_a",mdata_to_a,         0)
     
     
 
