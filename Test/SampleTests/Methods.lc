@@ -3,7 +3,7 @@
 * are accessed correctly, that is:
 * - PROTECTED: can be called only inside all the parent
 * classes
-* - PRIVATE: can be called only insithe trhe class it is 
+* - PRIVATE: can be called only inside the class it is 
 * defined in 
 *
 * protected and private methods can't be called with a receiver

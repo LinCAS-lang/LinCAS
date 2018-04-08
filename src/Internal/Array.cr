@@ -1,26 +1,17 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 module LinCAS::Internal
 
@@ -135,6 +126,30 @@ module LinCAS::Internal
         return ary.as(Value)
     end
 
+    private def self.ary_from_int(i_ary : Int32*,size : Int32)
+        ary   = build_ary(size)
+        prt   = ary_ptr(ary)
+        count = -1
+        ptr.map!(size) do
+            next num2int(i_ary[count += 1])
+        end
+        return ary
+    end
+
+    @[AlwaysInline]
+    private def self.ary_append(buffer : String_buffer,ary : Value)
+        size = ary_size(ary)
+        ptr  = ary_ptr(ary)
+        i    = 0
+        buffer_append(buffer,'[')
+        while i < size
+            string_buffer_appender(buffer,ptr[i])
+            buffer_append(buffer,',') if i < size - 1
+            i += 1
+        end
+        buffer_append(buffer,']')
+    end
+
     def self.new_ary
         ary = LcArray.new
         ary.klass = AryClass
@@ -160,18 +175,22 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.build_ary_new(__)
+    def self.build_ary_new
         ary = new_ary
         resize_ary_capa_2(ary)
         return ary.as(Value)
     end
 
-    def self.lc_build_ary_new(klass : Value)
-        return new_ary 
+    def self.lc_ary_allocate(klass : Value)
+        klass     = klass.as(LcClass)
+        ary       = LcArray.new
+        ary.klass = klass
+        ary.data  = klass.data.clone
+        return ary.as(Value)
     end
 
-    lc_new_ary = LcProc.new do |args|
-        next new_ary
+    ary_allocate = LcProc.new do |args|
+        next lc_ary_allocate(*args.as(T1))
     end
 
     def self.lc_ary_init(ary : Value, size : Value)
@@ -356,28 +375,19 @@ module LinCAS::Internal
     end
 
     def self.ary_to_string(ary : Value)
-        arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        return build_string("[]") if arylen == 0
-        string = String.build do |io|
-            io << '['
-            arylen.times do |i|
-                io << ptr[i].to_s
-                io << ',' unless i == arylen - 1
-            end 
-            io << ']'
-        end 
-        return string 
+        buffer = string_buffer_new
+        ary_append(buffer,ary)
+        buffer_trunc(buffer)
+        return buffer
     end 
 
     def self.lc_ary_to_s(ary : Value)
-        string = ary_to_string(ary).as(String)
-        if string.size > STR_MAX_CAPA
+        buffer = ary_to_string(ary)
+        if buff_size(buffer) > STR_MAX_CAPA
+            buffer_dispose(buffer)
             return lc_obj_to_s(ary)
         end
-        return build_string(string)
-    ensure 
-        GC.free(Box.box(string))
+        return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
     ary_to_s = LcProc.new do |args|
@@ -399,7 +409,7 @@ module LinCAS::Internal
 
     def self.lc_ary_map(ary : Value)
         arylen = ary_size(ary)
-        tmp    = build_ary_new nil 
+        tmp    = build_ary_new
         arylen.times do |i|
             lc_ary_push(tmp,Exec.lc_yield(ary_at_index(ary,i)))
         end
@@ -438,7 +448,7 @@ module LinCAS::Internal
 
     def self.lc_ary_flatten(ary : Value)
         arylen = ary_size(ary)
-        new_ary = build_ary_new(nil)
+        new_ary = build_ary_new
         arylen.times do |i|
             elem = ary_at_index(ary,i)
             if elem.is_a? LcArray
@@ -696,7 +706,7 @@ module LinCAS::Internal
     def self.lc_ary_compact(ary : Value)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        tmp    = build_ary_new nil 
+        tmp    = build_ary_new
         arylen.times do |i|
             if ptr[i] != Null 
                 lc_ary_push(tmp,ptr[i])
@@ -768,12 +778,42 @@ module LinCAS::Internal
     ary_o_sort_by = LcProc.new do |args|
         next internal.lc_ary_o_sort_by(*args.as(T1))
     end
+
+    def self.lc_ary_join(ary : Value, *args : Value)
+        if args[0] == Null
+            separator = ""
+        else 
+            separator = string2cr(args[0])
+        end 
+        arylen = ary_size(ary)
+        string = String.build do |io|
+            arylen.times do |i|
+                io << ary_at_index(ary,i).to_s 
+                io << separator if i < arylen - 1
+            end
+        end
+        if string.size > STR_MAX_CAPA
+            lc_raise(LcRuntimeError,"String overflows max length")
+            return Null 
+        end 
+        return build_string(string)
+    end 
+
+    ary_join = LcProc.new do |args|
+        args = args.as(An)
+        arg1 = args[0]
+        arg2 = args[1]?
+        if arg2
+            next internal.lc_ary_join(arg1,arg2)
+        end 
+        next internal.lc_ary_join(arg1,Null)
+    end
         
 
-    AryClass = internal.lc_build_class_only("Array")
+    AryClass = internal.lc_build_internal_class("Array")
     internal.lc_set_parent_class(AryClass,Obj)
+    internal.lc_set_allocator(AryClass,ary_allocate)
 
-    internal.lc_add_static_singleton(AryClass,"new",lc_new_ary,0)
     internal.lc_add_internal(AryClass,"init",ary_init,    1)
     internal.lc_add_internal(AryClass,"+",ary_add,        1)
     internal.lc_add_internal(AryClass,"push",ary_push,    1)
@@ -801,6 +841,7 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"sort!",ary_o_sort,   0)
     internal.lc_add_internal(AryClass,"reverse",ary_reverse,0)
     internal.lc_add_internal(AryClass,"shift",ary_shift,    0)
+    internal.lc_add_internal(AryClass,"join",ary_join,     -1)
     internal.lc_add_internal(AryClass,"sort_by",ary_sort_by,                  0)
     internal.lc_add_internal(AryClass,"sort_by!",ary_o_sort_by,               0)
     internal.lc_add_internal(AryClass,"reverse!",ary_o_reverse,               0)

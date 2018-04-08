@@ -13,28 +13,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-class LinCAS::MsgHandler
-
-    def initialize
-        @listeners = [] of Listener
-    end
-
-    def addListener(listener : Listener)
-        @listeners << listener
-    end
-
-    def removeListener(listener)
-        @listeners.remove(listener)
-    end 
-
-    def sendMsg(@msg : Msg)
-        notifyListeners
-    end 
-
-    private def notifyListeners
-        @listeners.each do |listener|
-            listener.receiveMsg(@msg.as(Msg))
-        end 
-    end
-
+macro expand_for_float
+    {% for sign in {"+", "-", "*", "/", "**"} %}
+        def {{sign.id}}(other : BigFloat)
+            return BigFloat.new(self) {{sign.id}} other 
+        end
+    {% end %}
 end
+
+macro expand_for_int
+    {% for sign in {"+", "-", "*", "/", "**"} %}
+        def {{sign.id}}(other : BigInt)
+            return BigInt.new(self) {{sign.id}} other 
+        end
+    {% end %}
+end
+
+struct Int32
+   expand_for_int
+end
+
+struct Float32
+    expand_for_float
+end
+
+struct Float64
+    expand_for_float
+end
+
+struct Crystal::Hasher
+    def reset
+        @a = @@seed[0]
+        @b = @@seed[1]
+    end
+end 
