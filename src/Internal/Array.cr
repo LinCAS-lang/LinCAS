@@ -145,6 +145,16 @@ module LinCAS::Internal
         return ary
     end
 
+    @[AlwaysInline]
+    private def self.ary_append(buffer : String_buffer,ary : Value)
+        size = ary_size(ary)
+        ptr  = ary_ptr(ary)
+        i    = 0
+        while i < size
+            string_buffer_appender(buffer,ptr[i])
+        end
+    end
+
     def self.new_ary
         ary = LcArray.new
         ary.klass = AryClass

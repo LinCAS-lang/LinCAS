@@ -193,6 +193,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @filename.last 
     end
 
+    macro test(value)
+        internal.test({{value}})
+    end 
+
     @[AlwaysInline]
     private def class_of(obj : Value)
         if obj.is_a? Structure 
@@ -219,13 +223,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
             else
                 return call_internal_n(method,args)
         end
-    end
-
-    def test(object : Value)
-        if object == Null || object == LcFalse
-            return false 
-        end 
-        return true 
     end
 
 

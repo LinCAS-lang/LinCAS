@@ -226,6 +226,30 @@ module LinCAS::Internal
         end
     end
 
+    private def self.string_buffer_appender(buffer : String_buffer,value : Value)
+        if value.is_a? LcString 
+            string_append(buffer,value)
+        elsif value.is_a? LcNum 
+            num_append(buffer,value)
+        elsif value == Null 
+            buffer_append(buffer,"null")
+        elsif value.is_a? LcBool
+            buffer_append(buffer,value == lctrue ? "true" : "false")
+        elsif value.is_a? LcArray
+            ary_append(buffer,value)
+        elsif lc_obj_responds_to? value,"inspect"
+            string = Exec.lc_call_fun(value,"inspect")
+            string_append(buffer,string)
+        else 
+            string_append(buffer,lc_obj_to_s(value))
+        end
+    end
+
+    @[AlwaysInline]
+    private def self.string_append(buffer : String_buffer,value : Value)
+        buffer_append_n(buffer,'"',pointer_of(value),'"')
+    end
+
     def self.lc_string_allocate(klass : Value)
         klass     = klass.as(LcClass)
         str       = LcString.new
@@ -446,7 +470,7 @@ module LinCAS::Internal
         str_ptr = pointer_of(str)
         i     = 0
         while i < range_size
-            ptr[left + i] = str_ptr[i]
+            ptr[i] = str_ptr[left + i]
             i += 1
         end  
         return ptr

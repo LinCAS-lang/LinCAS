@@ -31,7 +31,7 @@ module LinCAS::Internal
     alias Pcre      = LibPCRE::Pcre
     alias PcreExtra = LibPCRE::PcreExtra
 
-    PATTERN  = "\u{0}".to_unsafe.value
+    PATTERN  = '\u{0}'.ord.to_u8
     SUB      = "\\0".to_unsafe
     ESCAPE   = '\\'
     SLASH    = '/'
@@ -39,7 +39,10 @@ module LinCAS::Internal
     OPT_NONE = Regex::Options::None
     NO_UTF8_CHECK = Regex::Options::NO_UTF8_CHECK
 
-    INFO_CAPTURECOUNT = LibPCRE::INFO_CAPTURECOUNT
+    INFO_CAPTURECOUNT  = LibPCRE::INFO_CAPTURECOUNT
+    INFO_NAMECOUNT     = LibPCRE::INFO_NAMECOUNT
+    INFO_NAMEENTRYSIZE = LibPCRE::INFO_NAMEENTRYSIZE
+    INFO_NAMETABLE     = LibPCRE::INFO_NAMETABLE
 
     enum RegexpFlag 
         Uncompiled
@@ -111,10 +114,10 @@ module LinCAS::Internal
     end
 
     def self.build_regex
-        return lc_regex_allocator(RegexpClass)
+        return lc_regex_allocate(RegexpClass)
     end
 
-    def self.lc_regex_allocator(klass : Value)
+    def self.lc_regex_allocate(klass : Value)
         klass     = klass.as(LcClass)
         reg       = LcRegexp.new
         reg.klass = klass
@@ -124,7 +127,7 @@ module LinCAS::Internal
     end
 
     regex_allocate = LcProc.new do |args|
-        next lc_regex_allocator(*args.as(T1))
+        next lc_regex_allocate(*args.as(T1))
     end
 
     def self.lc_regex_initialize(regex : Value, source : Value)
@@ -200,6 +203,10 @@ module LinCAS::Internal
 
     regex_match = LcProc.new do |args|
         args = args.as(An)
+        if args.size < 2
+            lc_raise(LcArgumentError,"Wrong number of arguments (0 instead of 1)")
+            next Null 
+        end
         next lc_regex_match(args[0],args[1],args[2]?)
     end
 
@@ -266,8 +273,12 @@ module LinCAS::Internal
         args.shift
         next lc_regex_union(args)
     end
+    
+    regex_sum = LcProc.new do |args|
+        next lc_regex_union(lc_cast(args,T2).to_a)
+    end
 
-    def self.lc_regex_union_part(value)
+    def self.lc_regex_union_part(value : Value)
         if value.is_a? LcString
             return lc_regex_escape(value)
         elsif value.is_a? LcRegexp
@@ -290,6 +301,39 @@ module LinCAS::Internal
         next lc_regex_eq(*lc_cast(args,T2))
     end
 
+    def self.lc_regex_name_table(regex : Value)
+        compiled  = regex_compiled(regex)
+        extra     = regex_extra(regex)
+        t_pointer = CHAR_PTR.null
+        LibPCRE.full_info(compiled,extra,INFO_NAMECOUNT, out n_count)
+        LibPCRE.full_info(compiled,extra,INFO_NAMEENTRYSIZE, out n_entry_size)
+        LibPCRE.full_info(compiled,extra,INFO_NAMETABLE, pointerof(t_pointer).as(Pointer(Int32)))
+        n_table_size = n_count * n_entry_size
+        table        = build_hash
+        i            = 0
+        while i < n_count
+            offset   = i * n_entry_size
+            c_num    = (t_pointer[offset].to_i32 << 8) | t_pointer[offset + 1].to_i32
+            n_offset = offset + 2
+            if 0 <= n_entry_size - 3 <= n_table_size - n_offset
+                name = build_string(t_pointer + n_offset)
+            else 
+                name = build_string("")
+            end 
+            lc_hash_set_index(table,num2int(c_num),name)
+            i += 1
+        end
+        return table
+    end
+
+    regex_name_table = LcProc.new do |args|
+        next lc_regex_name_table(*lc_cast(args,T1))
+    end
+
+    regex_clone = LcProc.new do |args|
+        next lc_cast(args,T1)[0]
+    end
+
 
 
 
@@ -307,7 +351,10 @@ module LinCAS::Internal
     internal.lc_add_internal(RegexpClass,"inspect",regex_inspect_,      0)
     internal.lc_add_internal(RegexpClass,"origin",regex_to_s_, 0)
     internal.lc_add_internal(RegexpClass,"match",regex_match, -1)
-    internal.lc_add_internal(RegexpClass,"+",regex_union,      1)
+    internal.lc_add_internal(RegexpClass,"+",regex_sum,        1)
     internal.lc_add_internal(RegexpClass,"==",regex_eq,        1)
+    internal.lc_add_internal(RegexpClass,"name_table",regex_name_table, 0)
+    internal.lc_add_internal(RegexpClass,"clone",regex_clone,  1)
+    
     
 end

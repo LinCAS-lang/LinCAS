@@ -106,7 +106,7 @@ module LinCAS::Internal
     macro new_entry(key,h_key,value)
         Entry.new({{key}},{{h_key}},{{value}}) 
     end
-    
+
     private def self.get_new_capa(hash : LcHash)
         size = hash_size(hash)
         capa = 8
@@ -180,7 +180,7 @@ module LinCAS::Internal
     end
 
     def self.build_hash
-        return lc_hash_allocator(HashClass)
+        return lc_hash_allocate(HashClass)
     end
 
     def self.lc_hash_allocate(klass : Value)
@@ -292,6 +292,111 @@ module LinCAS::Internal
         next lc_hash_fetch(*lc_cast(args,T2))
     end
 
+    private def self.hash_iterate(hash : Value)
+        current = hash_first(hash)
+        while current 
+            ret = yield(current)
+            current = current.fore 
+        end
+    end
+
+    private def self.hash_iterate_with_index(hash : Value)
+        current = hash_first(hash)
+        i       = 0
+        while current 
+            yield(current,i)
+            current = current.fore 
+            i += 1
+        end
+    end
+
+    private def self.hash_each_key(hash : Value)
+        hash_iterate(hash) do |entry|
+            yield(entry.key)
+        end
+    end
+
+    private def self.hash_each_key_with_index(hash : Value)
+        count = 0
+        hash_iterate(hash) do |entry|
+            yield(entry.key,count)
+            count += 1
+        end
+    end
+
+    private def self.hash_each_value(hash : Value)
+        hash_iterate(hash) do |entry|
+            yield(entry.value)
+        end
+    end
+
+    private def self.hash_each_value_with_index(has : Value)
+        count = 0
+        hash_iterate(hash) do |entry|
+            yield(entry.value,count)
+            count += 1
+        end
+    end
+
+    def self.lc_hash_inspect(hash : Value)
+        size   = hash_size(hash) - 1
+        buffer = string_buffer_new
+        buffer_append(buffer,'{')
+        hash_iterate_with_index(hash) do |entry,i|
+            string_buffer_appender(buffer,entry.key)
+            buffer_append(buffer,"=>")
+            string_buffer_appender(buffer,entry.value)
+            buffer_append_n(buffer,',',' ') if i < size
+        end
+        buffer_append(buffer,'}')
+        buffer_trunc(buffer)
+        return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer)) 
+    end
+
+    hash_inspect = LcProc.new do |args|
+        next lc_hash_inspect(*lc_cast(args,T1))
+    end
+
+    def self.lc_hash_each_key(hash : Value)
+        hash_each_key(hash) do |key|
+            Exec.lc_yield(key)
+        end
+        return Null
+    end
+
+    hash_e_key = LcProc.new do |args|
+        next lc_hash_each_key(*lc_cast(args,T1))
+    end
+
+    def self.lc_hash_each_value(hash : Value)
+        hash_each_value(hash) do |value|
+            Exec.lc_yield(value)
+        end
+        return Null
+    end
+
+    hash_e_value = LcProc.new do |args|
+        next lc_hash_each_value(*lc_cast(args,T1))
+    end
+
+    private def self.hash_has_key(hash : Value, key : Value)
+        return false if hash_empty?(hash)
+        buckets = hash_buckets(hash)
+        capa    = hash_capa(hash)
+        h_key   = fast_hash(key)
+        index   = bucket_index(h_key,capa)
+        entry   = buckets[index]
+        return fetch_entry_in_bucket(entry,key) ? true : false
+    end
+
+    def self.lc_hash_has_key(hash : Value,key : Value)
+        return val2bool(hash_has_key(hash,key))
+    end
+
+    hash_h_key = LcProc.new do |args|
+        next lc_hash_has_key(*lc_cast(args,T2))
+    end
+
 
     HashClass = internal.lc_build_internal_class("Hash")
     internal.lc_set_parent_class(HashClass,Obj)
@@ -302,6 +407,11 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"empty?",hash_empty,   0)
     internal.lc_add_internal(HashClass,"fetch",hash_fetch,    1)
     internal.lc_add_internal(HashClass,"[]",hash_fetch,       1)
+    internal.lc_add_internal(HashClass,"inspect",hash_inspect,0)
+    internal.lc_add_internal(HashClass,"to_s",hash_inspect,   0)
+    internal.lc_add_internal(HashClass,"each_key",hash_e_key, 0)
+    internal.lc_add_internal(HashClass,"each_value",hash_e_value,    0)
+    internal.lc_add_internal(HashClass,"has_key",hash_h_key,  1)
 
 
 end

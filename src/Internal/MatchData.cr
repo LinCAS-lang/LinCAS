@@ -152,17 +152,90 @@ module LinCAS::Internal
         next lc_mdata_gsize(*lc_cast(args,T1))
     end
 
+    private def self.mdata_named_index(mdata : Value, index : Value)
+        m_start      = -1 
+        match        = nil
+        ary          = mdata_ary(mdata)
+        n_entry_size = LibPCRE.get_stringtable_entries(mdata_captured(mdata),pointer_of(index), out ptr_beg, out ptr_end)
+        return Null if n_entry_size < 0
+        while ptr_beg <= ptr_end  
+            c_number = (ptr_beg[0].to_i32 << 8) | ptr_beg[1].to_i32
+            beg      = ary[c_number * 2]
+            if beg > m_start
+                m_start = beg 
+                match   = matched_data(lc_cast(mdata,LcMatchData),c_number)
+            end
+            ptr_beg += n_entry_size
+        end
+        if match
+            if !match.null?
+                return build_string_with_ptr(match)
+            end 
+        end 
+        return Null 
+    end
+
     def self.lc_mdata_index(mdata : Value,index : Value)
-        mdata = lc_cast(mdata,LcMatchData)
-        i     = lc_num_to_cr_i(index)
-        return Null unless i 
-        return Null if i < 0 || i >= get_mdata_size(mdata)
-        return Null if match_start(mdata,i) < 0
-        return build_string_with_ptr(matched_data(mdata,i))
+        if index.is_a? LcString
+            return mdata_named_index(mdata,index)
+        elsif index.is_a? LcNum
+            mdata = lc_cast(mdata,LcMatchData)
+            i     = lc_num_to_cr_i(index)
+            return Null unless i 
+            return Null if i < 0 || i >= get_mdata_size(mdata)
+            return Null if match_start(mdata,i) < 0
+            return build_string_with_ptr(matched_data(mdata,i))
+        end
+        lc_raise(LcTypeError,"Integer or String expected (#{lc_typeof(index)} given)")
+        return Null
     end
 
     mdata_index = LcProc.new do |args|
         next lc_mdata_index(*lc_cast(args,T2))
+    end
+
+    def self.lc_mdata_captrured_names(mdata : Value)
+        regex      = mdata_regexp(mdata)
+        size       = get_mdata_size(mdata)
+        range      = 0...size 
+        name_table = lc_regex_name_table(regex)
+        hash       = build_hash 
+        hash_each_key(name_table) do |key|
+            index = int2num(key)
+            if range.includes? index 
+                name = lc_hash_fetch(name_table,key)
+                if !hash_has_key(hash,key)
+                    lc_hash_set_index(hash,name,lc_mdata_index(mdata,name))
+                end 
+            end
+        end
+        return hash
+    end
+
+    mdata_c_names = LcProc.new do |args|
+        next lc_mdata_captrured_names(*lc_cast(args,T1))
+    end
+
+    def self.lc_mdata_to_h(mdata : Value)
+        regex      = mdata_regexp(mdata)
+        size       = get_mdata_size(mdata)
+        range      = 0...size 
+        name_table = lc_regex_name_table(regex)
+        hash       = build_hash 
+        size.times do |i|
+            index = num2int(i)
+            name  = lc_hash_fetch(name_table,index)
+            if test(name) 
+                lc_hash_set_index(hash,index,name) if !hash_has_key(hash,index)
+            else 
+                lc_hash_set_index(hash,index,lc_mdata_index(mdata,index))
+            end 
+        end
+        return hash
+    end
+
+    mdata_to_h = LcProc.new do |args|
+        next lc_mdata_to_h(*lc_cast(args,T1))
     end
 
     MatchDataClass = internal.lc_build_internal_class("MatchData")
@@ -175,6 +248,8 @@ module LinCAS::Internal
     internal.lc_add_internal(MatchDataClass,"size",mdata_size,         0)
     internal.lc_add_internal(MatchDataClass,"group_size",mdata_gsize_, 0)
     internal.lc_add_internal(MatchDataClass,"[]",mdata_index,          1)
+    internal.lc_add_internal(MatchDataClass,"captured_names",mdata_c_names,    0)
+    internal.lc_add_internal(MatchDataClass,"to_h",mdata_to_h,         0)
     
     
 

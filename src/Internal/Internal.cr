@@ -67,6 +67,13 @@ module LinCAS::Internal
         {{obj}}.as({{type}})
     end
 
+    def self.test(object : Value)
+        if object == Null || object == LcFalse
+            return false 
+        end 
+        return true 
+    end
+
     @[AlwaysInline]
     def self.struct_type(klass : Structure,type : SType)
         klass.type == type

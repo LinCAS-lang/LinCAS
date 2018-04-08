@@ -42,6 +42,11 @@ module LinCAS::Internal
         property val 
     end
 
+    @[AlwaysInline]
+    protected def self.num_append(buffer : String_buffer,value : Value)
+        buffer_append(buffer,num2num(value).to_s)
+    end
+
     def self.new_number(klass : Value)
         klass      = klass.as(LcClass)
         num        = Num_.new
