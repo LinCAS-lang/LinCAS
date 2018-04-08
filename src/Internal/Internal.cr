@@ -1,17 +1,38 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
+lib LibC
+    fun strstr(str1 : Char*, str2 : Char*) : Char*
+    fun printf(format : Char*, ... ) : Int 
+    fun toupper(str : Char*) : Char*
+    fun strlwr(str : Char*) : Char*
+    fun strlen(str : Char*) : SizeT
+    fun strtok(str : Char*, delimiter : Char*) : Char*
+    fun strtol(str : Char*, endptr : Char*, base : Int) : Int
+    fun strtod(str : Char*, endptr : Char**) : Double
+    fun strcmp(str1 : Char*, str2 : Char*) : Int
+end
 
 module LinCAS::Internal
 
@@ -19,7 +40,7 @@ module LinCAS::Internal
     alias ValueR = BaseS | BaseC
 
     abstract struct BaseS
-        @klass  = uninitialized LcClass
+        @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
@@ -27,7 +48,7 @@ module LinCAS::Internal
     end
 
     abstract class BaseC
-        @klass  = uninitialized LcClass
+        @klass  = uninitialized ClassEntry
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
@@ -51,23 +72,7 @@ module LinCAS::Internal
     end
 
     macro convert(name)
-        VM.convert({{name}})
-    end
-
-    macro lc_cast(obj,type)
-        {{obj}}.as({{type}})
-    end
-
-    def self.test(object : Value)
-        if object == Null || object == LcFalse
-            return false 
-        end 
-        return true 
-    end
-
-    @[AlwaysInline]
-    def self.struct_type(klass : Structure,type : SType)
-        klass.type == type
+        Eval.convert({{name}})
     end
 
     def self.coerce(v1 : Value, v2 : Value)
@@ -81,10 +86,10 @@ module LinCAS::Internal
 
     def self.lc_typeof(v : Value)
         if v.is_a? Structure 
-            if struct_type(v,SType::MODULE)
-                return "#{v.as(LcModule).name} : Module"
+            if v.is_a? ModuleEntry
+                return "#{v.as(ModuleEntry).name} : Module"
             else 
-                return "#{v.as(LcClass).name} : Class"
+                return "#{v.as(ClassEntry).name} : Class"
             end 
         else 
             return v.as(ValueR).klass.name
@@ -100,10 +105,5 @@ module LinCAS::Internal
             return obj
         end
     end
-
-    def self.lc_make_shared_sym_tab(symTab : SymTab)
-        return SymTab.new(symTab.sym_tab)
-    end
-
 
 end

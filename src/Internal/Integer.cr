@@ -1,17 +1,26 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
 
@@ -23,22 +32,6 @@ module LinCAS::Internal
         def to_s 
             return @val.to_s 
         end
-
-        def to_s(io)
-            io << @val 
-        end
-    end
-
-    macro num2bigint(num)
-        BigInt.new({{num}})
-    end
-
-    macro big_int_power(v1,v2)
-        #lc_warn()
-        if {{v2}} < 0
-            return 0
-        end 
-        return Float64::INFINITY
     end
 
     @[AlwaysInline]
@@ -51,59 +44,19 @@ module LinCAS::Internal
         return int.as(LcInt).val
     end 
 
-    def self.lc_num_to_cr_i(value)
-        if value.is_a? LcInt
-            return value.as(LcInt).val
-        elsif value.is_a? LcFloat
-            return value.as(LcFloat).val.to_i
-        else
-            lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
-            return nil 
-        end
-    end
-
     def self.build_int(value : Intnum)
         int       = LcInt.new(value)
         int.klass = IntClass
         int.data  = IntClass.data.clone
         int.frozen = true
-        int.id    = (value * 2 + 1).to_u64
         return int.as(Value)
     end 
 
-    private def self.int_plus_int(n1 : Value,n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            return v1 + v2
-        end
-        if v1.is_a? BigInt || v2.is_a? BigInt
-            return v1.to_big_i + v2.to_big_i
-        end
-        if v1.is_a? Int32 && v2.is_a? Int32
-            if libc.add_overflow_i(v1,v2,out tmp1) == 0
-                return v1 + v2
-            end
-            return  v1.to_i64 + v2.to_i64
-        else
-            v1  = v1.to_i64
-            v2  = v2.to_i64
-            if libc.add_overflow_l(v1,v2,out tmp) == 0
-                return v1 + v2
-            end
-            return  num2bigint(v1) + num2bigint(v2)
-        end
-    end
-
     def self.lc_int_sum(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
-            {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) + int2num(n2))
-            {% else %}
-                return num2int(int_plus_int(n1,n2))
-            {% end %}
+            return internal.num2int(int2num(n1) + int2num(n2))
         else
-            return lc_num_coerce(n1,n2,"+")
+            return internal.lc_num_coerce(n1,n2,"+")
         end
         # Should never get here
         return Null
@@ -113,36 +66,11 @@ module LinCAS::Internal
         next internal.lc_int_sum(*args.as(T2))
     end
 
-    private def self.int_sub_int(n1 : Value, n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            return v1 - v2
-        end
-        if v1.is_a? Int32 && v2.is_a? Int32
-            if libc.sub_overflow_i(v1,v2,out tmp) == 0
-                return v1 - v2
-            end 
-            return v1.to_i64 - v2.to_i64
-        else
-            v1   = v1.to_i64
-            v2   = v2.to_i64
-            if libc.sub_overflow_l(v1,v2,out tmp2) == 0
-                return v1 - v2
-            end
-            return num2bigint(v1) - num2bigint(v2)
-        end
-    end
-
     def self.lc_int_sub(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
-            {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) - int2num(n2))
-            {% else %}
-                return num2int(int_sub_int(n1,n2))
-            {% end %}
+            return internal.num2int(int2num(n1) - int2num(n2))
         else
-            return lc_num_coerce(n1,n2,"-")
+            return internal.lc_num_coerce(n1,n2,"-")
         end
         # Should never get here
         return Null
@@ -152,37 +80,9 @@ module LinCAS::Internal
         next internal.lc_int_sub(*args.as(T2))
     end
 
-    private def self.int_mult_int(n1 : Value, n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            return v1 * v2 
-        end
-        if v1.is_a? BigInt || v2.is_a? BigInt
-            return v1.to_big_i * v2.to_big_i 
-        end
-        if v1.is_a? Int32 && v2.is_a? Int32
-            if libc.mul_overflow_i(v1,v2,out tmp) == 0
-                return v1 * v2 
-            end
-            return v1.to_i64 * v2.to_i64 
-        else 
-            v1 = v1.to_i64
-            v2 = v2.to_i64
-            if libc.mul_overflow_l(v1,v2,out tmp2) == 0
-                return v1 * v2 
-            end
-            return v1.to_big_i * v2.to_big_i 
-        end
-    end
-
     def self.lc_int_mult(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
-            {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) * int2num(n2))
-            {% else %}
-                return num2int(int_mult_int(n1,n2))
-            {% end %}
+            return internal.num2int(int2num(n1) * int2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"*")
         end
@@ -194,29 +94,13 @@ module LinCAS::Internal
         next internal.lc_int_mult(*args.as(T2))
     end
 
-    private def self.int_idiv_int(n1 : Value,n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            return v1 / v2 
-        end
-        if !(v1.is_a? BigInt || v2.is_a? BigInt)
-            return v1.as(IntnumR) / v2.as(IntnumR)
-        end
-        return v1.to_big_i / v1.to_big_i
-    end
-
     def self.lc_int_idiv(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             if int2num(n2) == 0
                 lc_raise(LcZeroDivisionError,"(Division by 0)")
                 return positive_num(n1) ? LcInfinity : LcNinfinity
             end
-            {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) / int2num(n2))
-            {% else %}
-                return num2int(int_idiv_int(n1,n2))
-            {% end %}
+            return internal.num2int(int2num(n1) / int2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"\\")
         end
@@ -228,31 +112,12 @@ module LinCAS::Internal
         next internal.lc_int_idiv(*args.as(T2))
     end
 
-    private def self.int_fdiv_int(n1 : Value, n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if !(v1.is_a? BigInt || v2.is_a? BigInt)
-            return v1.as(IntnumR) / v2.as(IntnumR).to_f
-        end
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            return bigf2flo64(v1.to_big_f / v2.to_big_f)
-        end
-        if v1.is_a? BigInt
-            return bigf2flo64(v1.to_big_f / v2.as(IntnumR).to_big_f)
-        end
-        return bigf2flo64(num2bigfloat(v1.as(IntnumR)) / v2.to_big_f)
-    end
-
     def self.lc_int_fdiv(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             if int2num(n1) == 0
                 return positive_num(n1) ? LcInfinity : LcNinfinity
             end
-            {% if flag?(:fast_math) %}
-                return num2float(int2num(n1) / int2num(n2).to_f)
-            {% else %}
-                return num2float(int_fdiv_int(n1,n2))
-            {% end %}
+            return internal.num2float(int2num(n1) / int2num(n2).to_f)
         else
             return internal.lc_num_coerce(n1,n2,"/")
         end
@@ -264,31 +129,9 @@ module LinCAS::Internal
         next internal.lc_int_fdiv(*args.as(T2))
     end
 
-    private def self.int_power_int(n1 : Value, n2 : Value)
-        v1 = int2num(n1)
-        v2 = int2num(n2)
-        if v1.is_a? BigInt && v2.is_a? BigInt
-            big_int_power(v1,v2)
-        end 
-        if !(v1.is_a? BigInt || v2.is_a? BigInt)
-            return v1.as(IntnumR) ** v2.as(IntnumR) 
-        end
-        v1 = v1.to_big_i
-        v2 = v2.to_big_i
-        big_int_power(v1,v2)
-    end
-
     def self.lc_int_power(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
-            {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) ** int2num(n2))
-            {% else %}
-                val = int_power_int(n1,n2)
-                if val.is_a? Floatnum
-                    return num2float(val)
-                end
-                return num2int(val)
-            {% end %}
+            return internal.num2int(int2num(n1) ** int2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"^")
         end
@@ -329,11 +172,7 @@ module LinCAS::Internal
     end
 
     def self.lc_int_to_f(n : Value)
-        val = int2num(n)
-        if val.is_a? BigInt
-            return num2float(bigf2flo64(val.to_big_f))
-        end
-        return internal.num2float(val.to_f)
+        return internal.num2float(int2num(n).to_f)
     end
 
     int_to_f = LcProc.new do |args|
@@ -357,7 +196,6 @@ module LinCAS::Internal
         val.times do |i|
             Exec.lc_yield(num2int(i))
         end
-        return Null
     end
 
     int_times = LcProc.new do |args|
@@ -371,23 +209,10 @@ module LinCAS::Internal
         next num2int(val.abs)
     end
 
-    def self.lc_int_eq(n : Value, obj : Value)
-        if obj.is_a? LcInt
-            return val2bool(int2num(n) == int2num(obj))
-        else 
-            return lc_compare(n,obj)
-        end
-    end
-
-    int_eq = LcProc.new do |args|
-        next internal.lc_int_eq(*args.as(T2))
-    end
-
     
 
-    IntClass = internal.lc_build_internal_class("Integer")
+    IntClass = internal.lc_build_class_only("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
-    internal.lc_undef_allocator(IntClass)
 
     internal.lc_add_internal(IntClass,"+",int_sum,  1)
     internal.lc_add_internal(IntClass,"-",int_sub,  1)
@@ -395,10 +220,9 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"\\",int_idiv,1)
     internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
     internal.lc_add_internal(IntClass,"^",int_power,1)
-    internal.lc_add_internal(IntClass,"==",int_eq,  1)
-    internal.lc_add_internal(NumClass,"odd?",int_odd,      0)
-    internal.lc_add_internal(NumClass,"even?",int_even,    0)
-    internal.lc_add_internal(IntClass,"-@",int_invert, 0)
+    internal.lc_add_internal(NumClass,"odd",int_odd,       0)
+    internal.lc_add_internal(NumClass,"even",int_even,     0)
+    internal.lc_add_internal(IntClass,"invert",int_invert, 0)
     internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
     internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)
     internal.lc_add_internal(IntClass,"to_i",int_to_i,     0)
