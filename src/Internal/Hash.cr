@@ -392,6 +392,95 @@ module LinCAS::Internal
         next lc_hash_has_key(*lc_cast(args,T2))
     end
 
+    def self.lc_hash_has_value(hash : Value,value : Value)
+        found = lcfalse
+        hash_each_value(hash) do |val|
+            if fast_compare(val,value)
+                found = lctrue
+                break 
+            end 
+        end
+        return found 
+    end 
+
+    hash_has_v = LcProc.new do |args|
+        next lc_hash_has_value(*lc_cast(args,T2))
+    end
+
+    def self.lc_hash_key_of(hash : Value,value : Value)
+        key = Null
+        hash_iterate(hash) do |entry|
+            val = entry.value
+            if fast_compare(val,value)
+                key = entry.key 
+                break 
+            end 
+        end
+        return key
+    end
+
+    hash_key_of = LcProc.new do |args|
+        next lc_hash_key_of(*lc_cast(args,T2))
+    end
+
+    def self.lc_hash_keys(hash : Value)
+        ary = build_ary_new
+        hash_each_key(hash) do |key|
+            lc_ary_push(ary,key)
+        end
+        return ary
+    end 
+
+    hash_keys = LcProc.new do |args|
+        next lc_hash_keys(*lc_cast(args,T1))
+    end
+
+    def self.lc_hash_delete(hash : Value,key : Value)
+        capa    = hash_capa(hash)
+        h_key   = fast_hash(key)
+        index   = bucket_index(h_key,capa)
+        buckets = hash_buckets(hash)
+        entry   = buckets[index]
+        p_entry = nil
+        while entry 
+            if fast_compare(entry.key,key)
+                b_entry = entry.prev 
+                f_entry = entry.fore 
+                if f_entry 
+                    if b_entry
+                        b_entry.fore = f_entry
+                        f_entry.prev = b_entry
+                    else
+                        set_hash_first(hash,f_entry)
+                        f_entry.prev = nil
+                    end
+                else 
+                    if b_entry
+                        b_entry.fore = nil 
+                        set_hash_last(hash,b_entry)
+                    else 
+                        set_hash_first(hash,nil)
+                        set_hash_last(hash,nil)
+                    end
+                end
+                if p_entry
+                    p_entry.next = entry.next 
+                else 
+                    buckets[index] = entry.next
+                end 
+                set_hash_size(hash,hash_size(hash) - 1)
+                return entry.value 
+            end
+            p_entry = entry 
+            entry = entry.next
+        end
+        return Null  
+    end 
+
+    hash_delete = LcProc.new do |args|
+        next lc_hash_delete(*lc_cast(args,T2))
+    end
+
 
     HashClass = internal.lc_build_internal_class("Hash")
     internal.lc_set_parent_class(HashClass,Obj)
@@ -407,6 +496,10 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"each_key",hash_e_key, 0)
     internal.lc_add_internal(HashClass,"each_value",hash_e_value,    0)
     internal.lc_add_internal(HashClass,"has_key",hash_h_key,  1)
+    internal.lc_add_internal(HashClass,"has_value",hash_has_v,1)
+    internal.lc_add_internal(HashClass,"key_of",hash_key_of,  1)
+    internal.lc_add_internal(HashClass,"keys",hash_keys,      0)
+    internal.lc_add_internal(HashClass,"delete",hash_delete,  1)
 
 
 end

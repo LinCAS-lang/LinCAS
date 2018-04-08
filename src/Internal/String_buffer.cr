@@ -124,5 +124,10 @@ module LinCAS::Internal
         resize_buff_capa_0(buffer,MIN_BUFFER_CAPA)
         set_buff_size(buffer,0)
     end
+
+    def self.buffer_dispose(buffer)
+        resize_buff_capa_0(buffer,0)
+        set_buff_size(buffer,0)
+    end
     
 end

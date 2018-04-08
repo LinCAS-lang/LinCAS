@@ -141,9 +141,13 @@ module LinCAS::Internal
         size = ary_size(ary)
         ptr  = ary_ptr(ary)
         i    = 0
+        buffer_append(buffer,'[')
         while i < size
             string_buffer_appender(buffer,ptr[i])
+            buffer_append(buffer,',') if i < size - 1
+            i += 1
         end
+        buffer_append(buffer,']')
     end
 
     def self.new_ary
@@ -371,28 +375,19 @@ module LinCAS::Internal
     end
 
     def self.ary_to_string(ary : Value)
-        arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        return build_string("[]") if arylen == 0
-        string = String.build do |io|
-            io << '['
-            arylen.times do |i|
-                io << ptr[i].to_s
-                io << ',' unless i == arylen - 1
-            end 
-            io << ']'
-        end 
-        return string 
+        buffer = string_buffer_new
+        ary_append(buffer,ary)
+        buffer_trunc(buffer)
+        return buffer
     end 
 
     def self.lc_ary_to_s(ary : Value)
-        string = ary_to_string(ary).as(String)
-        if string.size > STR_MAX_CAPA
+        buffer = ary_to_string(ary)
+        if buff_size(buffer) > STR_MAX_CAPA
+            buffer_dispose(buffer)
             return lc_obj_to_s(ary)
         end
-        return build_string(string)
-    ensure 
-        GC.free(Box.box(string))
+        return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
     ary_to_s = LcProc.new do |args|

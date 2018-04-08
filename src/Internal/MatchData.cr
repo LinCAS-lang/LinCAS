@@ -235,7 +235,7 @@ module LinCAS::Internal
             index = num2int(i)
             name  = lc_hash_fetch(name_table,index)
             if test(name) 
-                lc_hash_set_index(hash,index,name) if !hash_has_key(hash,index)
+                lc_hash_set_index(hash,name,lc_mdata_index(mdata,name)) if !hash_has_key(hash,index)
             else 
                 lc_hash_set_index(hash,index,lc_mdata_index(mdata,index))
             end 
@@ -275,6 +275,10 @@ module LinCAS::Internal
         next build_string(string)
     end
 
+    mdata_regex = LcProc.new do |args|
+        next mdata_regexp(lc_cast(args,T1)[0])
+    end
+
     MatchDataClass = internal.lc_build_internal_class("MatchData")
     internal.lc_set_parent_class(MatchDataClass,Obj)
 
@@ -288,6 +292,8 @@ module LinCAS::Internal
     internal.lc_add_internal(MatchDataClass,"captured_names",mdata_c_names,    0)
     internal.lc_add_internal(MatchDataClass,"to_h",mdata_to_h,         0)
     internal.lc_add_internal(MatchDataClass,"to_a",mdata_to_a,         0)
+    internal.lc_add_internal(MatchDataClass,"string",mdata_string_,    0)
+    internal.lc_add_internal(MatchDataClass,"regexp",mdata_regex,      0)
     
     
 
