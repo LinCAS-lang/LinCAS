@@ -1,17 +1,27 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
 #
-#      http://www.apache.org/licenses/LICENSE-2.0
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 
 module LinCAS::Internal
 
@@ -102,24 +112,15 @@ module LinCAS::Internal
     end
 
     def self.build_matrix
-        matrix       = Matrix.new
+        matrix = Matrix.new
         matrix.klass = MatrixClass 
         matrix.data  = MatrixClass.data.clone
         return matrix.as(Value)
     end
 
-    def self.lc_matrix_allocate(klass : Value)
-        klass        = klass.as(LcClass)
-        matrix       = Matrix.new 
-        matrix.klass = klass 
-        matrix.data  = klass.data.clone 
-        return matrix.as(Value)
-    end 
-
-    matrix_allocate = LcProc.new do |args|
-        next lc_matrix_allocate(*args.as(T1))
+    matrix_new = LcProc.new do |args|
+        next internal.build_matrix
     end
-    
 
     def self.lc_matrix_init(matrix : Value, rows : Value, cols : Value)
         r = lc_num_to_cr_i(rows)
@@ -251,7 +252,7 @@ module LinCAS::Internal
             return Null unless r 
             c = lc_num_to_cr_i(j)
             return Null unless c 
-            if ((r < 0) || (c < 0)) || ((r >= matrix_rws(matrix)) || (c >= matrix_cls(matrix)))
+            if (r < 0) && (c < 0) && (r >= matrix_rws(matrix)) && (c >= matrix_cls(matrix))
                 return Null 
             end 
             return matrix_at_index(matrix,r,c)
@@ -779,10 +780,10 @@ module LinCAS::Internal
     end
 
 
-    MatrixClass = internal.lc_build_internal_class("Matrix")
+    MatrixClass = internal.lc_build_class_only("Matrix")
     internal.lc_set_parent_class(MatrixClass,Obj)
-    internal.lc_set_allocator(MatrixClass,matrix_allocate)
 
+    internal.lc_add_static_singleton(MatrixClass,"new",matrix_new,0)
     internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)
     internal.lc_add_internal(MatrixClass,"init",matrix_init,      2)
     internal.lc_add_internal(MatrixClass,"to_s",matrix_to_s,      0)
