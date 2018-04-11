@@ -55,7 +55,7 @@ module LinCAS
             :frozen_module  => "Can't reopen a frozen module",
             :failed_comparison => "Comparison between %s and %s failed",
             :no_parent      => "Parent must be a class (%s given)",
-            :no_block       => "No block given"
+            :no_block       => "No block given %s"
         }
 
         class LcError < BaseC

@@ -92,16 +92,23 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     end
 
+    enum FrameType
+        CLASS_FRAME
+        BLOCK_FRAME
+        CALL_FRAME
+        MAIN_FRAME
+    end
+
     private class LcFrame
         @fp      = 0                          # frame pointer
         @pc      = uninitialized Bytecode     # program count
         @scp     = uninitialized Scope        # scope pointer
         @catch_t : CatchTable? = nil
         
-        def initialize(@me : Value,@context : Structure,@argc : IntnumR)  
+        def initialize(@me : Value,@context : Structure,@argc : IntnumR,@type : FrameType)  
         end
 
-        property fp,argc,pc,scp,me,context, catch_t
+        property fp,argc,pc,scp,me,context,catch_t,type
 
         @[AlwaysInline]
         def fetch 
@@ -300,9 +307,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end 
 
     @[AlwaysInline]
-    protected def new_frame(self_ref : Value, context : Structure,argc : Int32)
+    protected def new_frame(self_ref : Value, context : Structure,argc : Int32,type : FrameType)
         if @vm_fp >= @framev.size
-            return LcFrame.new(self_ref,context,argc)
+            return LcFrame.new(self_ref,context,argc,type)
         else
             fm         = @framev[@vm_fp]
             fm.me      = self_ref
@@ -314,8 +321,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc = 0)
-        fm           = new_frame(self_ref,context,argc)
+    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
+        fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new
         scp.previous = current_scope
@@ -325,8 +332,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc, scpr : Scope)
-        fm           = new_frame(self_ref,context,argc)
+    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
+        fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new
         scp.previous = scpr
@@ -337,7 +344,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def push_shared_frame
         fm      = current_frame
-        tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32))
+        tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
         tmp.pc  = fm.pc 
         tmp.scp = fm.scp
         push_frame(tmp)
@@ -402,13 +409,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
     @[AlwaysInline]
     def run(bytecode : Bytecode)
         obj    = internal.boot_main_object
-        fm     = new_frame(obj,class_of(obj),0)
+        fm     = new_frame(obj,class_of(obj),0,FrameType::MAIN_FRAME)
         fm.pc  = bytecode
         scp    = Scope.new 
         fm.scp = scp
         push(scp)
-        @framev.push(fm)
-        @vm_fp += 1
+        push_frame(fm)
         vm_run_bytecode
     end
 
@@ -552,8 +558,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::PUSHANS 
                     ans = current_frame.scp.ans
                     push(wrap_object(ans))
-                when Code::LEAVE_C
-                    vm_pop_location
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -727,6 +731,7 @@ begin
         CallTracker.pop_track
         vm_pop_location
         push(value)
+        current_frame.scp.lcblock = nil
     end
 
 end
@@ -943,7 +948,7 @@ end
        p_scope = class_of(obj)
        klass   = vm_create_class(name,parent,p_scope)
        if klass
-           vm_push_new_frame(klass,klass,0)
+           vm_push_new_frame(klass,klass,0,FrameType::CLASS_FRAME)
            current_frame.pc = bytecode
            CallTracker.push_track(filename,line,"<class:%s>" % name)
        end
@@ -993,7 +998,7 @@ end
         p_scope = class_of(obj)
         mod     = vm_create_module(name,p_scope)
         if mod 
-           vm_push_new_frame(mod,mod,0)
+           vm_push_new_frame(mod,mod,0,FrameType::CLASS_FRAME)
            current_frame.pc = bytecode
            CallTracker.push_track(filename,line,"<module:%s>" % name)
         end
@@ -1020,10 +1025,19 @@ end
     end
 
     protected def vm_leave
-        me = current_frame.me 
+        fm = current_frame
         vm_pop_frame
-        CallTracker.pop_track
-        vm_set_ans(me)
+        frame_t = fm.type
+        if frame_t == FrameType::CLASS_FRAME
+            me = fm.me 
+            CallTracker.pop_track
+            vm_set_ans(me)
+        elsif frame_t == FrameType::MAIN_FRAME
+            vm_set_ans(fm.scp.ans)
+            vm_pop_location
+        else 
+            raise VMerror.new("VM was asked to leave a wrong frame #{frame_t}")
+        end
     end
 
     protected def vm_next 
@@ -1036,25 +1050,37 @@ end
     end
 
     protected def vm_get_block
-        scp   = current_frame.scp
-        p_scp = scp.previous
-        if p_scp
-            return p_scp.lcblock
-        end 
+        fm    = current_frame
+        if fm.type == FrameType::BLOCK_FRAME
+            scp = previous_scope_of(fm.scp)
+            if !scp 
+                return nil
+            end
+            scp = previous_scope_of(scp)
+            if scp
+                return scp.lcblock
+            end
+        else
+            scp   = fm.scp
+            p_scp = scp.previous
+            if p_scp
+                return p_scp.lcblock
+            end 
+        end
         return nil
     end
 
     protected def vm_call_block(argc : Intnum)
-        CallTracker.push_track(filename,line,"<block>")
         block = vm_get_block
         fm    = current_frame
         if block 
+            CallTracker.push_track(filename,line,"<block>")
             vm_push_new_frame(fm.me,fm.context,argc,block.scp.as(Scope))
             fm = current_frame
             fm.pc = block.body
             vm_load_call_args(block.args,argc)
         else 
-            lc_raise(LcArgumentError,convert(:no_block)) 
+            lc_raise(LcArgumentError,convert(:no_block) % "(yield)")
         end
     end
 
