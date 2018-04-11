@@ -845,8 +845,41 @@ module LinCAS::Internal
         return buff_ptr(buffer)
     end
 
-    def self.lc_str_gsub(str : Value,pattern : Value, sub : Value)
+    private def self.str_gsub_str(string : Value,pattern : CHAR_PTR, sub : CHAR_PTR)
+        buffer = string_buffer_new
+        strlen = str_size(string)
+        ptr    = pointer_of(string)
+        len    = libc.strlen(pattern)
+        i      = 0
+        while i < strlen
+            if libc.memcmp(ptr,pattern,len) == 0
+                buffer_append(buffer,sub)
+                i   += len
+                ptr += len
+            else
+                buffer_append(buffer,ptr[0])
+                i   += 1
+                ptr += 1
+            end
+        end
+        buffer_trunc(buffer)
+        return buffer
+    end
 
+    def self.lc_str_gsub(str : Value,pattern : Value, sub : Value)
+        str_check(pattern)
+        str_check(sub)
+        return str if str_size(pattern) == 0
+        if str_size(pattern) == 1
+            return build_string_with_ptr(str_gsub_char(str,pointer_of(pattern)[0],pointer_of(sub)))
+        else
+            buffer = str_gsub_str(str,pointer_of(pattern),pointer_of(sub))
+            return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
+        end
+    end
+
+    str_gsub = LcProc.new do |args|
+        next lc_str_gsub(*lc_cast(args,T3))
     end
 
         
@@ -882,6 +915,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
     internal.lc_add_internal(StringClass,"compact",  str_compact,   0)
     internal.lc_add_internal(StringClass,"compact!",  str_o_compact,0)
+    internal.lc_add_internal(StringClass,"gsub",  str_gsub,         2)
 
 
 end

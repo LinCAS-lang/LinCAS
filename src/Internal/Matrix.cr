@@ -88,6 +88,13 @@ module LinCAS::Internal
         ((matrix_rws({{mx}})) == (matrix_cls({{mx}})))
     end
 
+    macro matrix_check(matrix)
+        unless {{matrix}}.is_a? Matrix 
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
+            return Null 
+        end
+    end
+
     @[AlwaysInline]
     def self.lc_set_matrix_index(matrix : Value, i : Intnum, j : Intnum, value : Value)
         set_matrix_index(matrix,i,j,value)
@@ -308,10 +315,7 @@ module LinCAS::Internal
     end
 
     def self.lc_matrix_sub(m1 : Value, m2 : Value)
-        unless m2.is_a? Matrix 
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
-            return Null 
-        end
+        matrix_check(m2)
         if !same_matrix_size(m1,m2)
             lc_raise(LcMathError,"Incompatible matrices for difference")
             return Null
@@ -780,6 +784,23 @@ module LinCAS::Internal
         next internal.lc_matrix_min(*args.as(T1))
     end
 
+    def self.lc_matrix_eq(mx : Value, mx2 : Value)
+        return lcfalse unless mx2.is_a? Matrix
+        return lcfalse unless same_matrix_size(mx,mx2)
+        rws = matrix_rws(mx)
+        cls = matrix_cls(mx)
+        rws.times do |i|
+            cls.times do |j|
+                return lcfalse unless fast_compare(matrix_at_index(mx,i,j),matrix_at_index(mx2,i,j))
+            end
+        end
+        return lctrue
+    end
+
+    matrix_eq = LcProc.new do |args|
+        next lc_matrix_eq(*lc_cast(args,T2))
+    end
+
 
     MatrixClass = internal.lc_build_internal_class("Matrix")
     internal.lc_set_parent_class(MatrixClass,Obj)
@@ -788,6 +809,7 @@ module LinCAS::Internal
     internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)
     internal.lc_add_internal(MatrixClass,"init",matrix_init,      2)
     internal.lc_add_internal(MatrixClass,"to_s",matrix_to_s,      0)
+    internal.lc_add_internal(MatrixClass,"==",matrix_eq,          1)
     internal.lc_add_internal(MatrixClass,"[]",matrix_index,       2)
     internal.lc_add_internal(MatrixClass,"[]=",matrix_set_index,  3)
     internal.lc_add_internal(MatrixClass,"+",matrix_sum,          1)
