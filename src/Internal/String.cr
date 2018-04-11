@@ -659,24 +659,37 @@ module LinCAS::Internal
     def self.lc_str_split(str1 : Value, str2 : Value? = nil)
         if str2
             str_check(str2)
-        end
-        ptr1    = pointer_of(str1)
-        if str2
-            ptr2    = pointer_of(str2)
+            ptr2 = pointer_of(str2)
+            len  = str_size(str2) 
         else
             ptr2 = " ".to_unsafe
+            len  = 1
         end
-        nullptr = Pointer(LibC::Char).null
+        beg_ptr = pointer_of(str1)
+        end_ptr = beg_ptr + str_size(str1)
         ary     = build_ary_new
-        token   = libc.strtok(ptr1,ptr2)
-        if token
-            while !token.null?
-                tmp = build_string(token)
-                lc_ary_push(ary,tmp)
-                token = libc.strtok(nullptr,ptr2)
+        i       = 0
+        j       = 0
+        while beg_ptr <= end_ptr
+            if libc.memcmp(beg_ptr,ptr2,len) == 0 || beg_ptr == end_ptr
+                unless i == j
+                    str = str_index_range(lc_cast(str1,LcString),j,i,false)
+                    if str.is_a? CHAR_PTR
+                        str = build_string_with_ptr(str)
+                    else
+                        str = Null 
+                    end
+                    lc_ary_push(ary,str)
+                end
+                unless beg_ptr > end_ptr
+                    beg_ptr += len 
+                    i       += len
+                    j        = i
+                end
+            else 
+                beg_ptr += 1
+                i += 1 
             end
-        else
-            lc_ary_push(ary,str1)
         end
         return ary
     end
