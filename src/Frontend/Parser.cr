@@ -19,10 +19,10 @@ end
 class LinCAS::Parser < LinCAS::MsgGenerator
 
     EXP_SYNC_SET   = {
-        TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::SELF, TkType::INT, TkType::FLOAT,
+        TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::CONST_ID,TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL
+        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS
     }
         
     START_SYNC_SET = { 
@@ -62,7 +62,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             if {{node}}.getBranches[0].getAttr(NKey::ID) != "[]"
                 @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
             end
-        elsif ! {NodeType::LOCAL_ID, NodeType::GLOBAL_ID}.includes? {{node}}.type
+        elsif !({NodeType::LOCAL_ID, NodeType::GLOBAL_ID, NodeType::CONST_ID}.includes? {{node}}.type)
             @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
         end
     end
@@ -583,7 +583,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseAssign(var = nil) : Node
         assign_sync_set = {
-            TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::COLON_EQ, 
+            TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::CONST_ID, TkType::COLON_EQ, 
             TkType::INT, TkType::FLOAT, TkType::SEMICOLON, TkType::EOL
         }
         sync(assign_sync_set)
@@ -592,6 +592,15 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         if @currentTk.ttype == TkType::COLON_EQ && !(var)
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
             node.addBranch(makeDummyName)
+        end
+        if var 
+            if var.type == NodeType::CONST_ID && @nestedVoids > 0
+                @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
+            end
+        else
+            if @currentTk.ttype == TkType::CONST_ID && @nestedVoids > 0
+                @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
+            end
         end
         var = parseAtom unless var
         assignCheck(var)
@@ -606,6 +615,13 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         else
             @errHandler.flag(@currentTk,ErrCode::MISSING_COLON_EQ,self)
             node.addBranch(parseExp)
+        end
+        if var.type == NodeType::CONST_ID
+            tmp = @nodeFactory.makeNode(NodeType::CONST)
+            tmp.addBranch(node)
+            line = var.getAttr(NKey::LINE).as(Int)
+            tmp.setAttr(NKey::LINE,line)
+            node = tmp 
         end
         return node
     end
@@ -726,7 +742,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     protected def parseProd(prevNode = NOOP) : Node
         root = parsePower(prevNode)
         tkType = @currentTk.ttype 
-        while opInclude? tkType
+        while prodOpInclude? tkType
             node = @nodeFactory.makeNode(convertOp(tkType).as(NodeType))
             shift
             skipEol
@@ -771,7 +787,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 root = parseNumber
             when TkType::L_PAR
                 shift
-                root = parseSum
+                root = parseExp
                 if @currentTk.ttype == TkType::R_PAR
                     shift
                 else
@@ -832,6 +848,16 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             when TkType::READS
                 shift
                 root = @nodeFactory.makeNode(NodeType::READS)
+            when TkType::CONST_ID 
+                root = @nodeFactory.makeNode(NodeType::CONST_ID)
+                name = @currentTk.text
+                name = name[1...name.size]
+                root.setAttr(NKey::ID,name)
+                setLine(root)
+                shift
+            when TkType::ANS 
+                root = @nodeFactory.makeNode(NodeType::ANS)
+                shift
             else
                 if @currentTk.ttype == TkType::ERROR
                     @errHandler.flag(@currentTk,@currentTk.value,self)
@@ -1456,6 +1482,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         const_sync_set = {
             TkType::COLON_EQ, TkType::SEMICOLON, TkType::EOL
         }
+        if @nestedVoids > 0
+            @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
+        end 
         node = @nodeFactory.makeNode(NodeType::CONST)
         setLine(node)
         shift 
@@ -1491,8 +1520,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             @errHandler.flag(@currentTk,ErrCode::MISSING_FILENAME,self)
             sync(require_sync_set)
         else
-            file = @currentTk.text
-            file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename)) unless File.exists? file
+            # file = @currentTk.text
+            file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename))# unless File.exists? file
             if File.exists?(file)
                 parser = frontendFact.makeParser(file)
                 parser.noSummary

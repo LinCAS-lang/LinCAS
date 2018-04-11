@@ -192,6 +192,7 @@ class LinCAS::Compiler
         last  = nil
         first = @ifactory.makeBCode(Code::FILENAME)
         first.text = get_node_file(ast)
+        leave_c    = @ifactory.makeBCode(Code::LEAVE_C)
         if ast
             branches = ast.getBranches
             branches.each do |b|
@@ -210,6 +211,8 @@ class LinCAS::Compiler
             if last
                 set_last(first,last)
             end
+            link(first,leave_c)
+            set_last(first,leave_c)
             return first
         end
         return Noop
@@ -237,6 +240,8 @@ class LinCAS::Compiler
                 return compile_slect(node)
             when NodeType::TRY 
                 return compile_try(node)
+            when NodeType::REQUIRE
+                return compile_require(node)
             else 
                 return compile_exp(node)
         end
@@ -279,17 +284,19 @@ class LinCAS::Compiler
     end
 
     protected def compile_namespace(node : Node,complete = true)
-        branches   = node.getBranches
-        final      = branches.size - (complete ? 0 : 1)
-        first      = @ifactory.makeBCode(Code::LOADC)
-        first.text = unpack_name(branches.first)
-        last       = first
+        branches    = node.getBranches
+        final       = branches.size - (complete ? 0 : 1)
+        first       = pushself
+        load_c      = @ifactory.makeBCode(Code::LOADC)
+        load_c.text = unpack_name(branches.first)
+        last        = load_c
         (1...final).each do |i|
             tmp      = @ifactory.makeBCode(Code::GETC)
             tmp.text = unpack_name(branches[i])
             link(last,tmp)
             last = tmp
         end
+        link(first,load_c)
         set_last(first,last)
         return first
     end
@@ -569,6 +576,12 @@ class LinCAS::Compiler
                 var.text = unpack_name(node)
                 link(is,var)
                 set_last(is,var)
+            when NodeType::CONST_ID
+                is          = pushself
+                load_c      = @ifactory.makeBCode(Code::LOADC)
+                load_c.text = unpack_name(node)
+                link(is,load_c)
+                set_last(is,load_c)
             when NodeType::ASSIGN
                 is = compile_assign(node)
             when NodeType::INT 
@@ -616,6 +629,10 @@ class LinCAS::Compiler
                 is = compile_raise(node)
             when NodeType::INCLUDE
                 is = compile_include(node)
+            when NodeType::CONST
+                is = compile_const(node)
+            when NodeType::ANS 
+                is = @ifactory.makeBCode(Code::PUSHANS)
             else 
                 is = compile_op(node)
         end
@@ -861,7 +878,7 @@ class LinCAS::Compiler
         if c_else_b
             u_jump      = @ifactory.makeBCode(Code::JUMP)
             u_jump.jump = noop_is
-            jump.jump   = c_else_b
+            jump.jump   = u_jump
             link(line,c_condition,jump,c_then_b,u_jump,c_else_b,noop_is)
         else 
             jump.jump = noop_is
@@ -1089,6 +1106,22 @@ class LinCAS::Compiler
         end 
         c_body = compile_body(body)
         return {c_body,id}
+    end
+
+    protected def compile_const(node : Node)
+        branch       = node.getBranches[0]
+        branches     = branch.getBranches
+        c_exp        = compile_exp(branches[1],false)
+        p_self       = pushself
+        store_c      = @ifactory.makeBCode(Code::STOREC)
+        store_c.text = unpack_name(branches[0])
+        link(p_self,c_exp,store_c)
+        set_last(p_self,store_c)
+        return p_self
+    end
+
+    protected def compile_require(node : Node)
+        return compile_program(node.getBranches[0])
     end
 
     @[AlwaysInline]

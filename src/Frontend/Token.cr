@@ -43,7 +43,7 @@ module LinCAS
         NOT ADD AND PIPE OR COLON SEMICOLON COMMA COLON_EQ APPEND
         L_PAR R_PAR L_BRACE R_BRACE L_BRACKET R_BRACKET PLUS_EQ
         MINUS_EQ STAR_EQ SLASH_EQ BSLASH_EQ MOD_EQ POWER_EQ QUOTES
-        S_QUOTE DOLLAR ASSIGN_INDEX ANS
+        S_QUOTE DOLLAR ASSIGN_INDEX ANS CONST_ID UMINUS
     end
     
     abstract struct Token
@@ -114,13 +114,14 @@ module LinCAS
 
     struct NumberTk < Token
         
+        NUMBER = /[0-9]/
+
         protected def extract
-            
             extractNumbers
-            if currentChar == "." && peekChar =~ /[0-9]/
+            if currentChar == "." && peekChar =~ NUMBER
                 @text += currentChar
                 nextChar
-                if currentChar =~ /[0-9]/
+                if currentChar =~ NUMBER
                     extractNumbers
                     @value = @text.to_f
                     @ttype = TkType::FLOAT
@@ -134,7 +135,7 @@ module LinCAS
         
         @[AlwaysInline]
         private def extractNumbers
-            while currentChar =~ /[0-9]/
+            while currentChar =~ NUMBER
                 @text += currentChar
                 nextChar
             end
@@ -182,6 +183,8 @@ module LinCAS
                 end
                 if @text[0] == '@'
                     @ttype = TkType::GLOBAL_ID
+                elsif @text[0] == '&'
+                    @ttype = TkType::CONST_ID
                 else
                     ttype  = toTkType(@text)
                     @ttype = ttype ? ttype : TkType::LOCAL_ID
@@ -196,9 +199,9 @@ module LinCAS
             @text += currentChar
             nextChar
             case @text
-                when "$", "(", ")", "]", "{", "}", ",", ";", "'"
+                when  "(", ")", "]", "{", "}", ",", ";", "'"
                     # nextChar
-                when ":","=", ">", "+", "-", "*", "^", "\\", "/", "%", "!"
+                when ":","=", ">", "+", "*", "^", "\\", "/", "%", "!"
                     if currentChar == "="
                         @text += currentChar
                         nextChar
@@ -231,6 +234,16 @@ module LinCAS
                         @text += currentChar + nextChar
                         nextChar
                     end 
+                when "-"
+                    if currentChar == "=" || currentChar == "@"
+                        @text += currentChar
+                        nextChar
+                    end
+                when "$"
+                    if currentChar == "!"
+                        @text += currentChar
+                        nextChar
+                    end
                 else
                   @ttype = TkType::ERROR
                   @value = ErrCode::ILLEGAL_EXPRESSION

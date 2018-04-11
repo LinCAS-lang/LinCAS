@@ -109,6 +109,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
+    private class FileInfo
+        @line = 0.as(IntnumR)
+        def initialize(@file : String)
+        end
+        property file,line
+    end
+
     alias StackValue  = ObjectWrapper | Intnum | Scope
 
     ErrHandler  = ErrorHandler.new 
@@ -181,8 +188,16 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     macro filename 
-        @filename.last 
+        @location[@lp - 1].file 
     end
+
+    macro line 
+        @location[@lp - 1].line 
+    end
+
+    macro set_line(line)
+        @location[@lp - 1].line = {{line}}
+    end 
 
     macro test(value)
         internal.test({{value}})
@@ -222,9 +237,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @framev  = [] of LcFrame
         @sp      = 0                          # stack pointer
         @vm_fp   = 0                          # frame pointer
-        @line    = 0.as(Intnum)
+        @lp      = 0                          # location pointer
 
-        @filename   = [] of String
+        @location   = [] of FileInfo
         @msgHandler = MsgHandler.new
         @internal   = false
 
@@ -337,6 +352,32 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
+    protected def new_fileinfo(filename : String)
+        loc = @location[@lp]?
+        if loc 
+            loc.file = filename
+        else 
+            loc = FileInfo.new(filename)
+        end 
+        return loc 
+    end
+
+    @[AlwaysInline]
+    protected def vm_push_location(filename : String)
+        loc = new_fileinfo(filename)
+        if @lp == @location.size
+            @location << loc
+        else 
+            @location[@lp] = loc
+        end
+        @lp += 1
+    end
+
+    macro vm_pop_location 
+        @lp -= 1
+    end
+
+    @[AlwaysInline]
     def error?
         return ErrHandler.handled_error?
     end
@@ -351,6 +392,11 @@ class LinCAS::VM < LinCAS::MsgGenerator
         else
             raise VMerror.new("VM failed to fetch bytecode")
         end 
+    end
+
+    @[AlwaysInline]
+    def vm_set_ans(obj : Value)
+        current_frame.scp.ans = obj 
     end
 
     @[AlwaysInline]
@@ -374,9 +420,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
             {% end %}
             case is.code
                 when Code::LINE
-                    @line = is.line
+                    set_line(is.line)
                 when Code::FILENAME
-                    @filename.push(is.text)
+                    vm_push_location(is.text)
                 when Code::HALT
                     exit 0
                 when Code::QUIT
@@ -399,7 +445,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     str = internal.build_string(is.text)
                     push(wrap_object(str))
                 when Code::POPOBJ
-                    pop
+                    obj = unwrap_object(pop)
+                    context = current_frame.scp 
+                    context.ans = obj
                 when Code::CALL
                     vm_call(is.text,is.argc)
                 when Code::M_CALL
@@ -499,6 +547,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     fm.pc      = pc 
                     fm.catch_t = nil
                     ErrHandler.exception_handler = -1
+                when Code::STOREC
+                    vm_store_c(is.text)
+                when Code::PUSHANS 
+                    ans = current_frame.scp.ans
+                    push(wrap_object(ans))
+                when Code::LEAVE_C
+                    vm_pop_location
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -601,7 +656,7 @@ begin
     end
 
     protected def vm_call(name : String, argc : Intnum)
-        CallTracker.push_track(filename,@line,name)
+        CallTracker.push_track(filename,line,name)
         selfr  = vm_get_receiver(argc)
         method = fetch_call_method(selfr,name)
         if method
@@ -619,7 +674,7 @@ begin
     end
 
     protected def vm_m_call(name : String, argc : Intnum)
-        CallTracker.push_track(filename,@line,name)
+        CallTracker.push_track(filename,line,name)
         receiver  = vm_get_receiver(argc)
         method    = fetch_method(receiver,name)
         if method
@@ -670,7 +725,7 @@ begin
         argc  = vm_pop_frame
         discard_arguments(argc + 1)
         CallTracker.pop_track
-        @filename.pop
+        vm_pop_location
         push(value)
     end
 
@@ -748,11 +803,24 @@ begin
         push(value)
     end
 
-    protected def vm_store_g(name)
+    protected def vm_store_g(name : String)
         value    = unwrap_object(pop)
         receiver = unwrap_object(pop)
         receiver.data.addVar(name,value)
         push(wrap_object(value))
+    end
+
+    protected def vm_store_c(name : String)
+        value = unwrap_object(pop)
+        obj   = unwrap_object(pop)
+        klass = class_of(obj)
+        const = internal.lc_seek_const(klass,name)
+        if const 
+            lc_raise_1(LcNameError,"Constant already defined")
+        else
+            internal.lc_define_const(klass,name,value)
+        end
+        push(wrap_object(obj))
     end
 end
 
@@ -824,7 +892,7 @@ begin
     end
 
     protected def vm_load_c(name : String)
-        selfr = current_frame.me 
+        selfr = unwrap_object(pop)
         if !(selfr.is_a? Structure)
             klass = class_of(selfr)
         else
@@ -834,7 +902,8 @@ begin
         if const
             push(wrap_object(const))
         else
-            lc_raise_1(LcNameError,convert(:undef_const_2) % {name,klass.path.to_s})
+            path = klass.path
+            lc_raise_1(LcNameError,convert(:undef_const_2) % {name,path.empty? ? klass.name : path.to_s})
             push(W_null)
         end
     end
@@ -876,7 +945,7 @@ end
        if klass
            vm_push_new_frame(klass,klass,0)
            current_frame.pc = bytecode
-           CallTracker.push_track(filename,@line,"<class:%s" % name)
+           CallTracker.push_track(filename,line,"<class:%s>" % name)
        end
     end
 
@@ -926,7 +995,7 @@ end
         if mod 
            vm_push_new_frame(mod,mod,0)
            current_frame.pc = bytecode
-           CallTracker.push_track(filename,@line,"<module:%s>" % name)
+           CallTracker.push_track(filename,line,"<module:%s>" % name)
         end
     end
 
@@ -954,7 +1023,7 @@ end
         me = current_frame.me 
         vm_pop_frame
         CallTracker.pop_track
-        # vm_set_ans(me)
+        vm_set_ans(me)
     end
 
     protected def vm_next 
@@ -962,7 +1031,7 @@ end
         argc  = vm_pop_frame
         discard_arguments(argc)
         CallTracker.pop_track
-        @filename.pop
+        vm_pop_location
         push(value)
     end
 
@@ -976,7 +1045,7 @@ end
     end
 
     protected def vm_call_block(argc : Intnum)
-        CallTracker.push_track(filename,@line,"<block>")
+        CallTracker.push_track(filename,line,"<block>")
         block = vm_get_block
         fm    = current_frame
         if block 
@@ -1038,7 +1107,7 @@ end
     end
 
     protected def vm_new_obj
-        CallTracker.push_track(filename,@line,"new")
+        CallTracker.push_track(filename,line,"new")
         klass = unwrap_object(pop)
         if !(klass.is_a? LcClass)
             lc_raise(LcTypeError,"Argument of new must be a class (#{internal.lc_typeof(klass)} given)")
@@ -1081,7 +1150,7 @@ end
 
     protected def lc_raise_1(code,msg)
         backtrace = String.build do |io|
-            io << "line: " << @line    << '\n'
+            io << "line: " << line    << '\n'
             io << "in: "   << filename << '\n'
             io << CallTracker.get_backtrace
         end

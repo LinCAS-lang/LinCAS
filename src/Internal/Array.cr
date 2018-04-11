@@ -143,7 +143,16 @@ module LinCAS::Internal
         i    = 0
         buffer_append(buffer,'[')
         while i < size
-            string_buffer_appender(buffer,ptr[i])
+            item = ptr[i]
+            if item.is_a? LcArray
+                if ary.id = item.id
+                    buffer_append(buffer,"[...]")
+                else 
+                    ary_append(buffer,item)
+                end
+            else
+                string_buffer_appender(buffer,item)
+            end
             buffer_append(buffer,',') if i < size - 1
             i += 1
         end

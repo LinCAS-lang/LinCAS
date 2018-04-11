@@ -23,7 +23,7 @@ module LinCAS
         TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
         TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
         TkType::NOT_EQ, TkType::SMALLER_EQ,
-        TkType::ASSIGN_INDEX, TkType::CLASS
+        TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
     }
     alias IntnumR  = Int32   | Int64
     alias Floatnum = Float32 | Float64

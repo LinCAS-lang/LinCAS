@@ -125,7 +125,8 @@ module LinCAS
                 "'"   => TkType::S_QUOTE,
                 "$"   => TkType::DOLLAR,
                 "[]=" => TkType::ASSIGN_INDEX,
-                "$."  => TkType::ANS
+                "$!"  => TkType::ANS,
+                "-@"  => TkType::UMINUS
             }
 
     protected def toTkType(tkName : String)

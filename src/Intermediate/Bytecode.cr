@@ -23,6 +23,7 @@ module LinCAS
     PUSHF 
     PUSHN  
     PUSHSELF  
+    PUSHANS
     PUT_CLASS         
     PUT_MODULE 
     PUT_STATIC_METHOD
@@ -74,6 +75,7 @@ module LinCAS
     LINE
     FILENAME
     LEAVE
+    LEAVE_C
 
     QUIT
     HALT

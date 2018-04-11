@@ -195,28 +195,6 @@ module LinCAS::Internal
         return pointer_of(string).to_slice(str_size(string))
     end
 
-    def self.lc_str_io_append(io , value : Value)
-        #p value.class;gets
-        if value.is_a? LcString 
-            io << '"'
-            io.write_utf8(pointer_of(value).to_slice(str_size(value)))
-            io << '"'
-        elsif value.is_a? LcNum 
-            io << num2num(value)
-        elsif value == Null 
-            io << "null"
-        elsif value.is_a? LcBool
-            io << (value == lctrue ? "true" : "false")
-        elsif value.is_a? LcArray
-            io << lc_ary_to_s(value)
-        elsif lc_obj_responds_to? value,"to_s"
-            string = Exec.lc_call_fun(value,"to_s")
-            io.write_utf8(pointer_of(string).to_slice(str_size(string)))
-        else 
-            lc_obj_to_s(value,io)
-        end
-    end
-
     private def self.string_buffer_appender(buffer : String_buffer,value : Value)
         if value.is_a? LcString 
             string_append(buffer,value)

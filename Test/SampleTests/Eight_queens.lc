@@ -19,13 +19,13 @@ class Queens
 
     void init(size := 8, queens := 8)
     { 
-        if !(size.is_a?(Integer))
+        if !(size.is_a? (Integer))
         { raise new ArgumentError("Size must be an integer")   }
         
         if size < 0
         { raise new ArgumentError("Size must be positive")     }
 
-        if !(queens.is_a?(Integer))
+        if !(queens.is_a? (Integer))
         { raise new ArgumentError("Queens must be an integer") }
 
         if queens < 0
@@ -54,7 +54,7 @@ class Queens
 
         for row : 0 to (@size - 1)
         {
-            if self.place?(row,queen)
+            if self.place? (row,queen)
             {
                 @sol[row,queen] := 1
                 if self.place(queen + 1) { return  true }
@@ -75,11 +75,11 @@ class Queens
         q2 := row + col 
         for i : 0 to (@size - 1)
         {
-            if (0...@size).include?(i + q1) 
+            if (0...@size).include? (i + q1) 
             { 
                 if @sol[i + q1,i] == 1 { return false } 
             }
-            if (0...@size).include?(i - q2)
+            if (0...@size).include? (i - q2)
             {
                 if @sol[i - q2,i] == 1 { return false }
             }
@@ -89,8 +89,7 @@ class Queens
 
 } /* end Queens */
 
-#const 
-queens := 12
+const queens := 3
 
 r := new Queens(queens,queens).solve()
 

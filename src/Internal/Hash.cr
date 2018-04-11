@@ -94,6 +94,13 @@ module LinCAS::Internal
         {{capa}}.times { |i| ptr[i] = nil }
     end
 
+    macro hash_check(hash)
+        if !({{hash}}.is_a? LcHash)
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{hash}})} into Hash")
+            return Null 
+        end
+    end
+
     macro new_entry(key,h_key,value)
         Entry.new({{key}},{{h_key}},{{value}}) 
     end
@@ -107,6 +114,27 @@ module LinCAS::Internal
         end
         lc_raise(LcRuntimeError,"(Hash table too big)")
         return size + 2
+    end
+
+    private def self.hash_append(buffer : String_buffer,hash : Value)
+        size   = hash_size(hash) - 1
+        buffer_append(buffer,'{')
+        hash_iterate_with_index(hash) do |entry,i|
+            string_buffer_appender(buffer,entry.key)
+            buffer_append(buffer,"=>")
+            value = entry.value
+            if value.is_a? LcHash
+                if value.id == hash.id
+                    buffer_append(buffer,"{...}")
+                else 
+                    hash_append(buffer,entry.value)
+                end
+            else
+                string_buffer_appender(buffer,entry.value)
+            end
+            buffer_append_n(buffer,',',' ') if i < size
+        end
+        buffer_append(buffer,'}')
     end
 
     private def self.fast_hash(item : Value)
@@ -334,17 +362,13 @@ module LinCAS::Internal
     end
 
     def self.lc_hash_inspect(hash : Value)
-        size   = hash_size(hash) - 1
         buffer = string_buffer_new
-        buffer_append(buffer,'{')
-        hash_iterate_with_index(hash) do |entry,i|
-            string_buffer_appender(buffer,entry.key)
-            buffer_append(buffer,"=>")
-            string_buffer_appender(buffer,entry.value)
-            buffer_append_n(buffer,',',' ') if i < size
-        end
-        buffer_append(buffer,'}')
+        hash_append(buffer,hash)
         buffer_trunc(buffer)
+        if buff_size(buffer) > STR_MAX_CAPA
+            buffer_dispose(buffer)
+            return lc_obj_to_s(hash)
+        end
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer)) 
     end
 
@@ -481,6 +505,44 @@ module LinCAS::Internal
         next lc_hash_delete(*lc_cast(args,T2))
     end
 
+    def self.lc_hash_clone(hash : Value)
+        new_hash = build_hash
+        hash_iterate(hash) do |entry|
+            lc_hash_set_index(new_hash,entry.key,entry.value)
+        end
+        return new_hash
+    end
+
+    hash_clone = LcProc.new do |args|
+        next lc_hash_clone(*lc_cast(args,T1))
+    end
+
+    def self.lc_hash_o_merge(hash : Value, h2 : Value)
+        hash_check(h2)
+        hash_iterate(h2) do |entry|
+            lc_hash_set_index(hash,entry.key,entry.value)
+        end
+        return hash
+    end
+
+    hash_o_merge = LcProc.new do |args|
+        next lc_hash_o_merge(*lc_cast(args,T2))
+    end
+
+    def self.lc_hash_merge(hash : Value,h2 : Value)
+       new_hash = lc_hash_clone(hash)
+       return lc_hash_o_merge(new_hash,h2)
+    end
+
+    hash_merge = LcProc.new do |args|
+        next lc_hash_merge(*lc_cast(args,T2))
+    end
+
+    hash_size = LcProc.new do |args|
+        next num2int(hash_size(lc_cast(args,T1)[0]))
+    end
+
+
 
     HashClass = internal.lc_build_internal_class("Hash")
     internal.lc_set_parent_class(HashClass,Obj)
@@ -500,6 +562,11 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"key_of",hash_key_of,  1)
     internal.lc_add_internal(HashClass,"keys",hash_keys,      0)
     internal.lc_add_internal(HashClass,"delete",hash_delete,  1)
+    internal.lc_add_internal(HashClass,"clone",hash_clone,    0)
+    internal.lc_add_internal(HashClass,"merge",hash_merge,    1)
+    internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
+    internal.lc_add_internal(HashClass,"size",hash_size,      0)
+    internal.lc_add_internal(HashClass,"length",hash_size,    0)
 
 
 end

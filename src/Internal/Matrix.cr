@@ -144,29 +144,31 @@ module LinCAS::Internal
     end
 
     def self.matrix_to_string(matrix : Value)
-        rws = matrix_rws(matrix)
-        cls = matrix_cls(matrix)
-        str = String.build do |io|
-            io << '|'
-            (0...rws).each do |i|
-                io << ' ' if i > 0
-                (0...cls).each do |j|
-                    io << (matrix_at_index(matrix,i,j)).to_s
-                    io << ',' if (j < cls - 1)
-                end
-                io << ';' << '\n' if (i < rws - 1)
+        rws    = matrix_rws(matrix)
+        cls    = matrix_cls(matrix)
+        buffer = string_buffer_new
+        buffer_append(buffer,'|')
+        (0...rws).each do |i|
+            buffer_append(buffer,' ') if i > 0
+            (0...cls).each do |j|
+                string_buffer_appender(buffer,(matrix_at_index(matrix,i,j)))
+                buffer_append(buffer,',') if (j < cls - 1)
             end
-            io << '|'
-        end
-        return str 
+            buffer_append_n(buffer,';','\n') if (i < rws - 1)
+         end
+        buffer_append(buffer,'|')
+        buffer_trunc(buffer)
+        return buffer
     end
 
     def self.lc_matrix_to_s(matrix : Value)
-        str = matrix_to_string(matrix)
-        return lc_obj_to_s(matrix) if str.size > STR_MAX_CAPA
-        return build_string(str)
-    ensure 
-        GC.free(Box.box(str))
+        buffer = matrix_to_string(matrix)
+        size   = buff_size(buffer)
+        if size > STR_MAX_CAPA
+            buffer_dispose(buffer)
+            return lc_obj_to_s(matrix) 
+        end
+        return build_string_with_ptr(buff_ptr(buffer),size)
     end
 
     matrix_to_s = LcProc.new do |args|
