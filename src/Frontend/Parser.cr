@@ -263,6 +263,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 program.addBranch(node)
             else
                 @errHandler.flag(@currentTk,@currentTk.value,self)
+                shift
             end
             skipEol
         end 

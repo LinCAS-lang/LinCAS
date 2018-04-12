@@ -15,9 +15,9 @@
 
 module LinCAS::Internal
 
-    REQUIRED = [] of Bytes
+    REQUIRED = [] of String
 
-    def self.check_required(path : Bytes)
+    def self.check_required(path : String)
         return REQUIRED.includes? path 
     end
 
@@ -27,10 +27,15 @@ module LinCAS::Internal
             return nil 
         else
             path   = String.new(file_expand_path(path))
+            if !check_required(path)
+                REQUIRED << path 
+            else
+                return nil 
+            end
             parser = FFactory.makeParser(path)
             parser.singleErrOutput
             parser.noSummary
-            ast    = parser.parse 
+            ast    = parser.parse
             if !(parser.errCount > 0) && ast
                 iseq = Compile.compile(ast,Code::LEAVE)
                 return iseq 

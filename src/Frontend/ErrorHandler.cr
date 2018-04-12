@@ -31,11 +31,11 @@ class LinCAS::ErrorHandler
     end
     
     def flag(token : Token, errCode , parser : Parser)
-        return if @singleOutput
+        return if @singleOutput && @errorCount > 0
         body = [convertErrCode(errCode),
                 token.line.to_s,
                 token.pos.to_s,
-                token.text.to_s,
+                token.text.to_s.chomp,
                 parser.filename]
         msg  = Msg.new(MsgType::SINTAX_ERROR,body)
         parser.sendMsg(msg)
