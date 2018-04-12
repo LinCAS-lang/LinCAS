@@ -1,3 +1,5 @@
 .vscode/*.*
 src/LinCAS
 src/Test.lc
+src/Internal/LibC/linc.a
+install.sh
