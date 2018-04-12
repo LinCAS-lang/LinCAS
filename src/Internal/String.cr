@@ -27,13 +27,6 @@ module LinCAS::Internal
         end
         property str_ptr, size
 
-        def to_s 
-            return String.new(@str_ptr)
-        end
-
-        def to_s(io)
-            io.write_utf8(@str_ptr.to_slice(size))
-        end
     end 
 
     macro ptr_init(ptr,length)
@@ -881,6 +874,12 @@ module LinCAS::Internal
     str_gsub = LcProc.new do |args|
         next lc_str_gsub(*lc_cast(args,T3))
     end
+
+    private def self.string_starts_with(string : Value,char : LibC::Char)
+        return false unless str_size(string) > 0
+        return str_char_at(string,0) == char
+    end
+
 
         
 

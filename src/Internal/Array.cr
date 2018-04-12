@@ -309,6 +309,26 @@ module LinCAS::Internal
         next internal.lc_ary_index_assign(*args)
     end
 
+    private def self.ary_iterate(ary : Value)
+        ary_p = ary_ptr(ary)
+        size  = ary_size(ary)
+        i     = 0
+        while i < size 
+            yield(ary_p[i])
+            i += 1
+        end
+    end
+
+    private def self.ary_iterate_with_index(ary : Value)
+        ary_p = ary_ptr(ary)
+        size  = ary_size(ary)
+        i     = 0
+        while i < size 
+            yield(ary_p[i],i)
+            i += 1
+        end
+    end
+
     def self.lc_ary_include(ary : Value, value : Value)
         a_ary_size = ary_size(ary)
         ptr        = ary.as(LcArray).ptr

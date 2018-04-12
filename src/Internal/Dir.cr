@@ -1,5 +1,4 @@
 
-
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,31 +13,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "./LibC"
-require "./Overload.cr"
-require "big"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Kernel"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
-require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
-require "./String_buffer"
-require "./Regexp"
-require "./MatchData"
-require "./Hash"
-require "./Dir"
-require "./File"
-require "./Load"
+module LinCAS::Internal
+
+    private def self.dir_current 
+        c_dir = libc.getcwd(nil,0)
+        if c_dir
+            strlen = libc.strlen(c_dir)
+            ptr    = CHAR_PTR.malloc(strlen + 1)
+            ptr.copy_from(c_dir,strlen)
+            libc.free(c_dir)
+        else
+            ptr = CHAR_PTR.null 
+        end
+        return ptr
+    end
+
+end

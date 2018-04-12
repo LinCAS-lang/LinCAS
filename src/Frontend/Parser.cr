@@ -188,6 +188,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         @withSummary = false
     end
 
+    def singleErrOutput
+        @errHandler.singleOutput
+    end
+
     def displayTokens
         @tokenDisplay = true
     end
@@ -1516,22 +1520,23 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         node = @nodeFactory.makeNode(NodeType::REQUIRE)
         setLine(node)
         shift 
-        if @currentTk.ttype != TkType::STRING
-            @errHandler.flag(@currentTk,ErrCode::MISSING_FILENAME,self)
-            sync(require_sync_set)
-        else
+        # if @currentTk.ttype != TkType::STRING
+        #    @errHandler.flag(@currentTk,ErrCode::MISSING_FILENAME,self)
+        #    sync(require_sync_set)
+        #else
             # file = @currentTk.text
-            file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename))# unless File.exists? file
-            if File.exists?(file)
-                parser = frontendFact.makeParser(file)
-                parser.noSummary
-                node.addBranch(parser.parse.as(Node))
-                @sourceLines += parser.sourceLines
-            else 
-                @errHandler.flag(@currentTk,ErrCode::INVALID_FILENAME,self)
-            end 
-            shift
-        end
+        #    file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename))# unless File.exists? file
+        #    if File.exists?(file)
+        #        parser = frontendFact.makeParser(file)
+        #        parser.noSummary
+        #        node.addBranch(parser.parse.as(Node))
+        #        @sourceLines += parser.sourceLines
+        #    else 
+        #        @errHandler.flag(@currentTk,ErrCode::INVALID_FILENAME,self)
+        #    end 
+        #    shift
+        #end
+        node.addBranch(parseExp)
         return node 
     end
 

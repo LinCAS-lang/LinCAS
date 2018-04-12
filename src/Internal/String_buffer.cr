@@ -108,24 +108,28 @@ module LinCAS::Internal
         buffer_append(buffer,char.ord.to_u8)
     end
 
+    def self.buffer_append(buffer : String_buffer,string : LcString)
+        buffer_append(buffer,pointer_of(string))
+    end
+
     def self.buffer_append_n(buffer : String_buffer,*args)
         args.each do |arg|
             buffer_append(buffer,arg)
         end
     end
 
-    def self.buffer_trunc(buffer)
+    def self.buffer_trunc(buffer : String_buffer)
         size = buff_size(buffer)
         resize_buff_capa_0(buffer,size + 1)
         buff_ptr(buffer)[size + 1] = END_CHR
     end
 
-    def self.buffer_flush(buffer)
+    def self.buffer_flush(buffer : String_buffer)
         resize_buff_capa_0(buffer,MIN_BUFFER_CAPA)
         set_buff_size(buffer,0)
     end
 
-    def self.buffer_dispose(buffer)
+    def self.buffer_dispose(buffer : String_buffer)
         resize_buff_capa_0(buffer,0)
         set_buff_size(buffer,0)
     end

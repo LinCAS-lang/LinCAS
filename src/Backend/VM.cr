@@ -249,6 +249,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @location   = [] of FileInfo
         @msgHandler = MsgHandler.new
         @internal   = false
+        @quit       = false
 
         self.addListener(RuntimeListener.new)
     end
@@ -315,6 +316,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             fm.me      = self_ref
             fm.context = context
             fm.argc    = argc
+            fm.type    = type
             return fm 
         end
     end
@@ -561,6 +563,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
+            end
+            if @quit
+                @quit = false
+                return Null
             end
             is = fetch
         end
@@ -1035,8 +1041,9 @@ end
         elsif frame_t == FrameType::MAIN_FRAME
             vm_set_ans(fm.scp.ans)
             vm_pop_location
+            @quit = true
         else 
-            raise VMerror.new("VM was asked to leave a wrong frame #{frame_t}")
+            raise VMerror.new("VM was asked to leave a wrong frame (#{frame_t})")
         end
     end
 
@@ -1273,6 +1280,11 @@ end
             end
             sendMsg(Msg.new(MsgType::RUNTIME_ERROR,[msg]))
         end
+    end
+
+    def print_end_backtrace
+        backtrace = CallTracker.get_backtrace
+        sendMsg(Msg.new(MsgType::BACKTRACE,[backtrace]))
     end
 
 end

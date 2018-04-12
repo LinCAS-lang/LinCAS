@@ -15,6 +15,9 @@
 
 
 require "big"
+ENV["libDir"] = ""
+FFactory = FrontendFactory.new
+Compile  = Compiler.new
 module LinCAS
     EOF = "\u0003"
     ALLOWED_VOID_NAMES = 
@@ -69,18 +72,15 @@ include LinCAS
 
 
 ast = nil
-factory = FrontendFactory.new
-ENV["libDir"] = ""
 dir = ARGV[0]?
 if dir 
     #begin
-        parser = factory.makeParser(File.expand_path(dir))
+        parser = FFactory.makeParser(File.expand_path(dir))
         #parser.displayTokens
         ast = parser.parse
         #astPrinter = AstPrinter.new
         #astPrinter.printAst(ast.as(Node)) if ast
-        compiler = Compiler.new
-        code   = compiler.compile(ast)
+        code   = Compile.compile(ast)
         disass = Disassembler.new 
         disass.disassemble(code)
         puts

@@ -18,14 +18,20 @@ class LinCAS::ErrorHandler
     MAX_ERR = 10
 
     def initialize
-        @errorCount = 0
+        @errorCount   = 0
+        @singleOutput = false
     end
 
     def errors
         return @errorCount
     end
+
+    def singleOutput
+        @singleOutput = true
+    end
     
     def flag(token : Token, errCode , parser : Parser)
+        return if @singleOutput
         body = [convertErrCode(errCode),
                 token.line.to_s,
                 token.pos.to_s,
@@ -42,11 +48,11 @@ class LinCAS::ErrorHandler
     def abortProcess(parser : Parser)
         msg = Msg.new(MsgType::FATAL,["Too many errors"])
         parser.sendMsg(msg)
-        exit 0
+        exit 1
     end
 
     def abortProcess
-        exit 0
+        exit 1
     end
 
 end

@@ -30,6 +30,7 @@ module LinCAS
             IndexError
             MathError
             InstanceError
+            LoadError
         end
 
         ERR_MESSAGE = {
@@ -200,6 +201,9 @@ module LinCAS
         InstanceErr = internal.lc_build_internal_class("InstanceError")
         internal.lc_set_parent_class(InstanceErr,ErrClass)
 
+        LoadErrClass = internal.lc_build_internal_class("LoadError")
+        internal.lc_set_parent_class(InstanceErr,ErrClass)
+
         ErrDict = {
             ErrType::TypeError      => TypeErrClass,
             ErrType::ArgumentError  => ArgErrClass,
@@ -211,7 +215,8 @@ module LinCAS
             ErrType::FrozenError       => FrozenErrClass,
             ErrType::IndexError     => IndexErrClass,
             ErrType::MathError      => MathErr,
-            ErrType::InstanceError  => InstanceErr 
+            ErrType::InstanceError  => InstanceErr,
+            ErrType::LoadError      => LoadErrClass 
         }
 
 
@@ -233,6 +238,7 @@ module LinCAS
     LcIndexError    = Internal::ErrType::IndexError
     LcMathError     = Internal::ErrType::MathError
     LcInstanceErr   = Internal::ErrType::InstanceError
+    LcLoadError     = Internal::ErrType::LoadError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

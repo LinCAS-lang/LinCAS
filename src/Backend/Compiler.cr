@@ -179,10 +179,11 @@ class LinCAS::Compiler
         return is 
     end
 
-    def compile(ast)
+    def compile(ast,end_code = Code::HALT)
         if ast
-            code       = compile_stmts(ast)
-            link(code,HALT)
+            code    = compile_stmts(ast)
+            e_code  = @ifactory.makeBCode(end_code)   
+            link(code,e_code)
             return code
         end
         return Noop
@@ -1121,7 +1122,14 @@ class LinCAS::Compiler
     end
 
     protected def compile_require(node : Node)
-        return compile_program(node.getBranches[0])
+        branch  = node.getBranches[0]
+        p_self  = pushself
+        c_exp   = compile_exp(branch,false)
+        call_is = make_call_is("require",1)
+        pop_is  = popobj
+        link(p_self,c_exp,call_is,pop_is)
+        set_last(p_self,pop_is)
+        return p_self
     end
 
     @[AlwaysInline]

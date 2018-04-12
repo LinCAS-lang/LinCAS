@@ -25,5 +25,6 @@ enum LinCAS::MsgType
     TOKEN
     IO_ERROR
     FATAL
+    BACKTRACE
   
 end
