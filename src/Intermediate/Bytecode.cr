@@ -40,7 +40,8 @@ module LinCAS
     STOREL                
     STOREG                  
     STOREC                         
-    ARY_NEW                 
+    ARY_NEW 
+    HASH_NEW                
     IRANGE_NEW 
     ERANGE_NEW
     STRING_NEW             

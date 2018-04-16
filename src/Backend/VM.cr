@@ -560,6 +560,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::PUSHANS 
                     ans = current_frame.scp.ans
                     push(wrap_object(ans))
+                when Code::HASH_NEW
+                    vm_hash_new(is.argc)
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))
@@ -1137,6 +1139,16 @@ end
             j  = 0
         end
         push(wrap_object(mx))
+    end
+
+    protected def vm_hash_new(size : IntnumR)
+        hash = internal.build_hash
+        size.times do
+            value = unwrap_object(pop)
+            key   = unwrap_object(pop)
+            internal.lc_hash_set_index(hash,key,value)
+        end
+        push(wrap_object(hash))
     end
 
     protected def vm_new_obj

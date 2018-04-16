@@ -636,6 +636,8 @@ class LinCAS::Compiler
                 is = compile_const(node)
             when NodeType::ANS 
                 is = @ifactory.makeBCode(Code::PUSHANS)
+            when NodeType::HASH
+                is = compile_hash(node)
             else 
                 is = compile_op(node)
         end
@@ -1143,6 +1145,33 @@ class LinCAS::Compiler
         link(p_self,c_exp,call_is,pop_is)
         set_last(p_self,pop_is)
         return p_self
+    end
+
+    protected def compile_hash(node : Node)
+        branches    = node.getBranches
+        n_hash      = @ifactory.makeBCode(Code::HASH_NEW)
+        n_hash.argc = branches.size
+        first       = compile_hash_atom(branches.last)
+        tmp         = first
+        (branches.size - 1).downto 0 do |i|
+            c_atom = compile_hash_atom(branches[i])
+            link(tmp,c_atom)
+            tmp = c_atom
+        end
+        set_last(first,tmp)
+        link(first,n_hash)
+        set_last(first,n_hash)
+        return first
+    end
+
+    protected def compile_hash_atom(node : Node)
+        branches = node.getBranches
+        line     = new_line(node)
+        c_key    = compile_exp(branches[0],false)
+        c_val    = compile_exp(branches[1],false)
+        link(line,c_key,c_val)
+        set_last(line,c_val)
+        return line
     end
 
     @[AlwaysInline]
