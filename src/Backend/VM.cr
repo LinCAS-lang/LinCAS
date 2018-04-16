@@ -1287,6 +1287,10 @@ end
         sendMsg(Msg.new(MsgType::BACKTRACE,[backtrace]))
     end
 
+    def get_current_filedir
+        return File.dirname(filename)
+    end
+
 end
 
 module LinCAS

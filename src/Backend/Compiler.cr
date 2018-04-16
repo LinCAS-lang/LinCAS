@@ -243,6 +243,8 @@ class LinCAS::Compiler
                 return compile_try(node)
             when NodeType::REQUIRE
                 return compile_require(node)
+            when NodeType::IMPORT
+                return compile_import(node)
             else 
                 return compile_exp(node)
         end
@@ -1126,6 +1128,17 @@ class LinCAS::Compiler
         p_self  = pushself
         c_exp   = compile_exp(branch,false)
         call_is = make_call_is("require",1)
+        pop_is  = popobj
+        link(p_self,c_exp,call_is,pop_is)
+        set_last(p_self,pop_is)
+        return p_self
+    end
+
+    protected def compile_import(node : Node)
+        branch  = node.getBranches[0]
+        p_self  = pushself
+        c_exp   = compile_exp(branch,false)
+        call_is = make_call_is("import",1)
         pop_is  = popobj
         link(p_self,c_exp,call_is,pop_is)
         set_last(p_self,pop_is)

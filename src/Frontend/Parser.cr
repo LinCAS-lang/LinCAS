@@ -30,7 +30,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
         TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
-        TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT
+        TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT,
+        TkType::IMPORT
     } + EXP_SYNC_SET
     
     NOOP = Node.new(NodeType::NOOP)
@@ -302,8 +303,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return parseInclude
             when TkType::REQUIRE
                 return parseRequire
-            when TkType::USE
-                return parseUse
+            when TkType::IMPORT
+                return parseImport
             when TkType::RETURN
                 return parseReturn
             when TkType::NEXT 
@@ -1521,50 +1522,35 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         node = @nodeFactory.makeNode(NodeType::REQUIRE)
         setLine(node)
         shift 
-        # if @currentTk.ttype != TkType::STRING
-        #    @errHandler.flag(@currentTk,ErrCode::MISSING_FILENAME,self)
-        #    sync(require_sync_set)
-        #else
-            # file = @currentTk.text
-        #    file = File.expand_path(@currentTk.text,File.dirname(@scanner.filename))# unless File.exists? file
-        #    if File.exists?(file)
-        #        parser = frontendFact.makeParser(file)
-        #        parser.noSummary
-        #        node.addBranch(parser.parse.as(Node))
-        #        @sourceLines += parser.sourceLines
-        #    else 
-        #        @errHandler.flag(@currentTk,ErrCode::INVALID_FILENAME,self)
-        #    end 
-        #    shift
-        #end
         node.addBranch(parseExp)
         return node 
     end
 
-    protected def parseUse : Node
+    protected def parseImport : Node
         use_sync_set = {
             TkType::SEMICOLON, TkType::EOL
         }
-        frontendFact = FrontendFactory.new
-        node = @nodeFactory.makeNode(NodeType::USE)
+        #frontendFact = FrontendFactory.new
+        node = @nodeFactory.makeNode(NodeType::IMPORT)
         setLine(node)
         shift 
-        if @currentTk.ttype != TkType::STRING
-            @errHandler.flag(@currentTk,ErrCode::MISSING_LIBNAME,self)
-            sync(use_sync_set) 
-        else 
-            libName = @currentTk.text
-            libName = "#{libName}.lc"
-            file = File.expand_path(libName,ENV["libDir"])
-            if File.exists? file
-                parser = frontendFact.makeParser(file)
-                parser.noSummary
-                node.addBranch(parser.parse.as(Node))
-            else 
-                @errHandler.flag(@currentTk,ErrCode::UNLOCATED_LIB,self)
-            end 
-            shift 
-        end 
+        #if @currentTk.ttype != TkType::STRING
+        #    @errHandler.flag(@currentTk,ErrCode::MISSING_LIBNAME,self)
+        #    sync(use_sync_set) 
+        #else 
+        #    libName = @currentTk.text
+        #    libName = "#{libName}.lc"
+        #    file = File.expand_path(libName,ENV["libDir"])
+        #    if File.exists? file
+        #        parser = frontendFact.makeParser(file)
+        #        parser.noSummary
+        #        node.addBranch(parser.parse.as(Node))
+        #    else 
+        #        @errHandler.flag(@currentTk,ErrCode::UNLOCATED_LIB,self)
+        #    end 
+        #    shift 
+        #end 
+        node.addBranch(parseExp)
         return node 
     end
 

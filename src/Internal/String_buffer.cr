@@ -78,13 +78,13 @@ module LinCAS::Internal
         size   = buff_size(buffer)
         capa   = buff_capa(buffer)
         if size + length >= capa 
-            if length > MIN_BUFFER_CAPA
+            if length >= MIN_BUFFER_CAPA
                 resize_buff_capa_1(buffer,length)
             else
                 resize_buff_capa_default(buffer)
             end
         end 
-        ptr = buff_ptr(buffer) + size 
+        ptr = buff_ptr(buffer) + size
         ptr.copy_from(string,length)
         set_buff_size(buffer,length + size)
     end
@@ -132,6 +132,10 @@ module LinCAS::Internal
     def self.buffer_dispose(buffer : String_buffer)
         resize_buff_capa_0(buffer,0)
         set_buff_size(buffer,0)
+    end
+
+    def self.buffer_empty(buffer : String_buffer)
+        return buff_size(buffer) == 0
     end
     
 end

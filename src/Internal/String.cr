@@ -797,7 +797,7 @@ module LinCAS::Internal
 
     # Deletes the spaces of a string
     # ```
-    # "Compacting This String".compact() #=> "CompactingThisString"
+    # "Compacting This String".compact!() #=> "CompactingThisString"
     # ```
     # * argument:: String the method is called on
     # * returns:: self
@@ -880,6 +880,31 @@ module LinCAS::Internal
         return str_char_at(string,0) == char
     end
 
+    private def self.string_starts_with(string1 : Value, string2 : Value)
+        strlen = str_size(string2)
+        ptr1   = pointer_of(string1)
+        ptr2   = pointer_of(string2)
+        return libc.memcmp(ptr1,ptr2,strlen) == 0
+    end
+
+    def self.lc_str_starts_with(string : Value, other : Value)
+        str_check(other)
+        strlen1 = str_size(string)
+        strlen2 = str_size(other)
+        return lctrue if (strlen1 == 0 && strlen2 == 0) || strlen2 == 0
+        return lcfalse if strlen1 == 0
+        if strlen2 > 1
+            return string_starts_with(string,other) ? lctrue : lcfalse
+        else
+            ptr2 = pointer_of(other)
+            return string_starts_with(string,ptr2[0]) ? lctrue : lcfalse 
+        end
+    end
+
+    str_s_with = LcProc.new do |args|
+        next lc_str_starts_with(*lc_cast(args,T2))
+    end
+
 
         
 
@@ -912,9 +937,10 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
-    internal.lc_add_internal(StringClass,"compact",  str_compact,   0)
+    internal.lc_add_internal(StringClass,"compact",str_compact,     0)
     internal.lc_add_internal(StringClass,"compact!",  str_o_compact,0)
-    internal.lc_add_internal(StringClass,"gsub",  str_gsub,         2)
+    internal.lc_add_internal(StringClass,"gsub",      str_gsub,     2)
+    internal.lc_add_internal(StringClass,"starts_with",str_s_with,  1)
 
 
 end

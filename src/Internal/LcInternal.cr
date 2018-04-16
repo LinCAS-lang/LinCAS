@@ -16,7 +16,6 @@
 
 require "./LibC"
 require "./Overload.cr"
-require "big"
 require "./Sort"
 require "./Internal"
 require "./Method"

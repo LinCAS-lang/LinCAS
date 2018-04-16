@@ -25,9 +25,25 @@ module LinCAS::Internal
     private def self.file_accessible(file : Value,flag)
         return LibC.access(pointer_of(file),flag) == 0
     end
+    private def self.file_accessible(file : String,flag)
+        return LibC.access(file,flag) == 0
+    end
 
     private def self.file_exist(file : Value)
         return file_accessible(file,F_OK)
+    end
+
+    private def self.file_exist(file : String)
+        return file_accessible(file,F_OK)
+    end
+
+    def self.lc_file_exist(file : Value)
+        str_check(file)
+        return val2bool(file_exist(file))
+    end
+
+    f_exist = LcProc.new do |args|
+        next lc_file_exist(lc_cast(args,T2)[1])
     end
 
     private def self.file_expand_path(file : Value,dir : Value? = nil)
@@ -50,6 +66,9 @@ module LinCAS::Internal
         if !string_starts_with(file,slash)
             dir = dir ? file_expand_path(dir) : dir_current
             buffer_append_n(path,dir,SLASH,p)
+        end
+        if buffer_empty(path)
+            buffer_append(path,lc_cast(file,LcString))
         end
         buffer_trunc(path)
         path_  = build_string_with_ptr(buff_ptr(path),buff_size(path))
@@ -74,5 +93,24 @@ module LinCAS::Internal
         buffer_trunc(path)
         return buff_ptr(path)
     end
+
+    def self.lc_file_expand_path(file : Value, dir : Value? = nil)
+        str_check(file)
+        str_check(dir) if dir 
+        return build_string_with_ptr(file_expand_path(file,dir))
+    end
+
+    f_expand_path = LcProc.new do |args|
+        args = lc_cast(args,An)
+        next lc_file_expand_path(args[1],args[2]?)
+    end
+
+    FileClass = internal.lc_build_internal_class("File")
+    internal.lc_set_parent_class(FileClass,Obj)
+    internal.lc_undef_allocator(FileClass)
+
+    internal.lc_add_static(FileClass,"exist?", f_exist,             1)
+    internal.lc_add_static(FileClass,"expand_path",f_expand_path,  -1)
+    
 
 end

@@ -59,6 +59,7 @@ module LinCAS
                 "require"    => TkType::REQUIRE,
                 "include"    => TkType::INCLUDE,
                 "use"        => TkType::USE,
+                "import"     => TkType::IMPORT,
                 "self"       => TkType::SELF,
                 "yield"      => TkType::YIELD,
                 "raise"      => TkType::RAISE,

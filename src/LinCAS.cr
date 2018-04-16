@@ -15,7 +15,7 @@
 
 
 require "big"
-ENV["libDir"] = ""
+ENV["libDir"] = File.expand_path("../lib",Dir.current)
 FFactory = FrontendFactory.new
 Compile  = Compiler.new
 module LinCAS

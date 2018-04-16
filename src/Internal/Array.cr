@@ -137,7 +137,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    private def self.ary_append(buffer : String_buffer,ary : Value)
+    private def self.ary_append(buffer : String_buffer,ary : Value, origin : Value? = nil)
         size = ary_size(ary)
         ptr  = ary_ptr(ary)
         i    = 0
@@ -145,10 +145,10 @@ module LinCAS::Internal
         while i < size
             item = ptr[i]
             if item.is_a? LcArray
-                if ary.id = item.id
+                if (ary.id == item.id) || (origin && (origin.id == item.id))
                     buffer_append(buffer,"[...]")
                 else 
-                    ary_append(buffer,item)
+                    ary_append(buffer,item,origin ? origin : ary)
                 end
             else
                 string_buffer_appender(buffer,item)
@@ -163,6 +163,7 @@ module LinCAS::Internal
         ary = LcArray.new
         ary.klass = AryClass
         ary.data  = AryClass.data.clone
+        ary.id    = ary.object_id
         return ary.as(Value)
     end
 
@@ -195,6 +196,7 @@ module LinCAS::Internal
         ary       = LcArray.new
         ary.klass = klass
         ary.data  = klass.data.clone
+        ary.id    = ary.object_id
         return ary.as(Value)
     end
 
@@ -332,8 +334,8 @@ module LinCAS::Internal
     def self.lc_ary_include(ary : Value, value : Value)
         a_ary_size = ary_size(ary)
         ptr        = ary.as(LcArray).ptr
-        (0...a_ary_size).each do |i|
-            if Exec.lc_call_fun(ptr[i],"==",value) == lctrue
+        ary_iterate(ary) do |el|
+            if test(Exec.lc_call_fun(el,"==",value))
                 return lctrue 
             end 
         end
@@ -348,10 +350,9 @@ module LinCAS::Internal
         a_ary_size = ary_size(ary)
         t_ary_size = ary_total_size(ary)
         ary2       = build_ary(t_ary_size)
+        ptr        = ary_ptr(ary2)
+        ptr.copy_from(ary_ptr(ary),a_ary_size)
         set_ary_size(ary2,a_ary_size)
-        (0...a_ary_size).each do |i|
-            ary_set_index(ary2,i,ary_at_index(ary,i))
-        end
         return ary2 
     end
 

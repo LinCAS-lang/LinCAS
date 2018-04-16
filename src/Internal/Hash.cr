@@ -542,6 +542,21 @@ module LinCAS::Internal
         next num2int(hash_size(lc_cast(args,T1)[0]))
     end
 
+    def self.lc_hash_to_a(hash : Value)
+        ary = build_ary_new
+        hash_iterate(hash) do |entry|
+            tmp = build_ary_new
+            lc_ary_push(tmp,entry.key)
+            lc_ary_push(tmp,entry.value)
+            lc_ary_push(ary,tmp)
+        end
+        return ary 
+    end
+
+    hash_to_a = LcProc.new do |args|
+        next lc_hash_to_a(*lc_cast(args,T1))
+    end
+
 
 
     HashClass = internal.lc_build_internal_class("Hash")
@@ -567,6 +582,7 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
     internal.lc_add_internal(HashClass,"size",hash_size,      0)
     internal.lc_add_internal(HashClass,"length",hash_size,    0)
+    internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
 
 
 end
