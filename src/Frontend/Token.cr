@@ -43,7 +43,7 @@ module LinCAS
         NOT ADD AND PIPE OR COLON SEMICOLON COMMA COLON_EQ APPEND
         L_PAR R_PAR L_BRACE R_BRACE L_BRACKET R_BRACKET PLUS_EQ
         MINUS_EQ STAR_EQ SLASH_EQ BSLASH_EQ MOD_EQ POWER_EQ QUOTES
-        S_QUOTE DOLLAR ASSIGN_INDEX ANS CONST_ID UMINUS
+        S_QUOTE DOLLAR ASSIGN_INDEX ANS CONST_ID UMINUS ARROW
     end
     
     abstract struct Token
@@ -201,7 +201,7 @@ module LinCAS
             case @text
                 when  "(", ")", "]", "{", "}", ",", ";", "'"
                     # nextChar
-                when ":","=", ">", "+", "*", "^", "\\", "/", "%", "!"
+                when ":", ">", "+", "*", "^", "\\", "/", "%", "!"
                     if currentChar == "="
                         @text += currentChar
                         nextChar
@@ -241,6 +241,11 @@ module LinCAS
                     end
                 when "$"
                     if currentChar == "!"
+                        @text += currentChar
+                        nextChar
+                    end
+                when "="
+                    if currentChar == ">"
                         @text += currentChar
                         nextChar
                     end

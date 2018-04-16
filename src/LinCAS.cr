@@ -78,13 +78,13 @@ if dir
         parser = FFactory.makeParser(File.expand_path(dir))
         #parser.displayTokens
         ast = parser.parse
-        #astPrinter = AstPrinter.new
-        #astPrinter.printAst(ast.as(Node)) if ast
+        astPrinter = AstPrinter.new
+        astPrinter.printAst(ast.as(Node)) if ast
         code   = Compile.compile(ast)
         disass = Disassembler.new 
-        disass.disassemble(code)
+        #disass.disassemble(code)
         puts
-        Exec.run(code)
+        #Exec.run(code)
         #s_printer = SymTabPrinter.new 
         #s_printer.printSTab(Id_Tab.getRoot)
     #rescue e

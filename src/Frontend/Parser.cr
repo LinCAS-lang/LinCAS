@@ -22,7 +22,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::CONST_ID,TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS
+        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS, TkType::L_BRACE
     }
         
     START_SYNC_SET = { 
@@ -864,6 +864,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             when TkType::ANS 
                 root = @nodeFactory.makeNode(NodeType::ANS)
                 shift
+            when TkType::L_BRACE
+                root = parseHash
             else
                 if @currentTk.ttype == TkType::ERROR
                     @errHandler.flag(@currentTk,@currentTk.value,self)
@@ -1530,26 +1532,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         use_sync_set = {
             TkType::SEMICOLON, TkType::EOL
         }
-        #frontendFact = FrontendFactory.new
         node = @nodeFactory.makeNode(NodeType::IMPORT)
         setLine(node)
         shift 
-        #if @currentTk.ttype != TkType::STRING
-        #    @errHandler.flag(@currentTk,ErrCode::MISSING_LIBNAME,self)
-        #    sync(use_sync_set) 
-        #else 
-        #    libName = @currentTk.text
-        #    libName = "#{libName}.lc"
-        #    file = File.expand_path(libName,ENV["libDir"])
-        #    if File.exists? file
-        #        parser = frontendFact.makeParser(file)
-        #        parser.noSummary
-        #        node.addBranch(parser.parse.as(Node))
-        #    else 
-        #        @errHandler.flag(@currentTk,ErrCode::UNLOCATED_LIB,self)
-        #    end 
-        #    shift 
-        #end 
         node.addBranch(parseExp)
         return node 
     end
@@ -1653,6 +1638,60 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             catchNode.addBranch(parseBody)
             node.addBranch(catchNode)
         end 
+        return node
+    end
+
+    protected def parseHash
+        hash_sync_set = {
+            TkType::COMMA, TkType::R_BRACE, TkType::EOL, TkType::SEMICOLON
+        } + EXP_SYNC_SET
+        node = @nodeFactory.makeNode(NodeType::HASH)
+        setLine(node)
+        shift
+        node.addBranch(parseHashAtom)
+        sync(hash_sync_set)
+        while @currentTk.ttype != TkType::R_BRACE && !(@currentTk.is_a? EofTk) && @currentTk.ttype == TkType::COMMA
+            shift
+            skipEol
+            node.addBranch(parseHashAtom)
+            sync(hash_sync_set)
+        end
+        if @currentTk.ttype == TkType::R_BRACE
+            shift
+        elsif @currentTk.is_a? EofTk
+            @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_EOF,self)
+            abort
+        else
+            @errHandler.flag(@currentTk,ErrCode::MISSING_R_BRACE,self)
+        end
+        return node 
+    end
+
+    protected def parseHashAtom
+        sync_set = { TkType::ARROW, TkType::EOL, TkType::COMMA } + EXP_SYNC_SET
+        sync(sync_set)
+        node = @nodeFactory.makeNode(NodeType::HASH_ATOM)
+        if !(EXP_SYNC_SET.includes? @currentTk.ttype )
+            @errHandler.flag(@currentTk,ErrCode::MISSING_EXPR,self)
+            tmp = NOOP
+        else
+            tmp = parseExp
+        end
+        node.addBranch(tmp)
+        sync(sync_set)
+        if !(@currentTk.ttype == TkType::ARROW)
+            @errHandler.flag(@currentTk,ErrCode::MISSING_ARROW,self)
+        else
+            shift
+            sync(sync_set)
+        end
+        if !(EXP_SYNC_SET.includes? @currentTk.ttype)
+            @errHandler.flag(@currentTk,ErrCode::MISSING_EXPR,self)
+            tmp = NOOP
+        else
+            tmp = parseExp
+        end
+        node.addBranch(tmp)
         return node
     end
 

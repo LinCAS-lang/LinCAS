@@ -38,6 +38,7 @@ enum LinCAS::ErrCode
     MISSING_DIR
     MISSING_FILENAME
     MISSING_LIBNAME
+    MISSING_ARROW
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
@@ -82,6 +83,7 @@ module LinCAS
         ErrCode::MISSING_DIR         => "Missing keyword 'to' or 'downto'",
         ErrCode::MISSING_FILENAME    => "Missing fileneme string token",
         ErrCode::MISSING_LIBNAME     => "Missing library name string token",
+        ErrCode::MISSING_ARROW       => "Missing '=>'",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
