@@ -116,7 +116,7 @@ module LinCAS::Internal
         return size + 2
     end
 
-    private def self.hash_append(buffer : String_buffer,hash : Value)
+    private def self.hash_append(buffer : String_buffer,hash : Value, origin : Value? = nil)
         size   = hash_size(hash) - 1
         buffer_append(buffer,'{')
         hash_iterate_with_index(hash) do |entry,i|
@@ -124,10 +124,10 @@ module LinCAS::Internal
             buffer_append(buffer,"=>")
             value = entry.value
             if value.is_a? LcHash
-                if value.id == hash.id
+                if (value.id == hash.id) || (origin && (origin.id == value.id))
                     buffer_append(buffer,"{...}")
                 else 
-                    hash_append(buffer,entry.value)
+                    hash_append(buffer,entry.value, origin ? origin : hash)
                 end
             else
                 string_buffer_appender(buffer,entry.value)
