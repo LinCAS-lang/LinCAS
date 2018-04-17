@@ -13,86 +13,50 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+macro LinCAS
+end
+
 module LinCAS::Internal
 
-    abstract struct SBaseS
-        macro num2sym(value)
-            Snumber.new({{value}})
-        end
-
-        macro sym2num(value)
-            {{value}}.as(Snumber).value
-        end
-
-        macro neg2val(value)
-            {{value}}.as(Negative).value 
-        end
+    macro base(type,name)
+        abstract {{type.id}} {{name}}
+            {{"macro num2sym(value)
+                Snumber.new({{value}})
+            end
     
-        macro string2sym(value)
-            Variable.new({{value}})
-        end
+            macro sym2num(value)
+                {{value.id}}.as(Snumber).value
+            end
+    
+            macro neg2val(value)
+                {{value.id}}.as(Negative).value 
+            end
+        
+            macro string2sym(value)
+                Variable.new({{value}})
+            end".id}}
 
-        macro return_with_top(obj,top)
-            {{obj.top}} == top 
-            return obj 
-        end
-
-        property top
-        def initialize(@top = true)
-        end
-
-        abstract def +(obj)
-        abstract def -(obj)
-        abstract def *(obj)
-        abstract def /(obj)
-        abstract def **(obj)
-        abstract def reduce()
-        abstract def diff()
-        abstract def eval(dict)
-        abstract def ==(obj)
-        abstract def =~(obj)
-        abstract def depend?(obj)
+            abstract def +(obj)
+            abstract def opt_sum(obj)
+            abstract def -(obj)
+            abstract def opt_sub(obj)
+            abstract def *(obj)
+            abstract def opt_prod(obj)
+            abstract def /(obj)
+            abstract def opt_div(obj)
+            abstract def **(obj)
+            abstract def opt_power(obj)
+            # abstract def reduce()
+            abstract def diff()
+            abstract def eval(dict)
+            abstract def ==(obj)
+            abstract def depend?(obj)
+        {{"end".id}}
     end
 
-    abstract class SBaseC
-        macro num2sym(value)
-            Snumber.new({{value}})
-        end
+    base("class",SBaseC)
+    base("struct",SBaseS)
 
-        macro sym2num(value)
-            {{value}}.as(Snumber).value
-        end
-
-        macro neg2val(value)
-            {{value}}.as(Negative).value 
-        end
-    
-        macro string2sym(value)
-            Variable.new({{value}})
-        end
-
-        macro return_with_top(obj,top)
-            {{obj.top}} == top 
-            return obj 
-        end
-
-        property top
-        def initialize(@top = true)
-        end
-
-        abstract def +(obj)
-        abstract def -(obj)
-        abstract def *(obj)
-        abstract def /(obj)
-        abstract def **(obj)
-        abstract def reduce()
-        abstract def diff()
-        abstract def eval(dict)
-        abstract def ==(obj)
-        abstract def =~(obj)
-        abstract def depend?(obj)
-    end
-
-    alias Sym = BaseS 
+    #alias Sym = BaseS 
 
 end
