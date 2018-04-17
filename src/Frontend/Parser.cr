@@ -561,7 +561,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         else
             namespaceCheck
         end
-        while @currentTk.ttype == TkType::COLON
+        while @currentTk.ttype == TkType::COLON2
             shift
             namespaceCheck
         end
@@ -884,7 +884,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             case @currentTk.ttype
                 when TkType::DOT, TkType::L_BRACKET
                     root = parseMethodCall(root)
-                when TkType::COLON
+                when TkType::COLON2
                     root = parseNameSpace(root)
                 when TkType::DOT_DOT, TkType::DOT_DOT_DOT
                     root = parseRange(root)

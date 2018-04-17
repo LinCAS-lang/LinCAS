@@ -105,6 +105,7 @@ module LinCAS
                 "|"   => TkType::PIPE,
                 "||"  => TkType::OR,
                 ":"   => TkType::COLON,
+                "::"  => TkType::COLON2,
                 ";"   => TkType::SEMICOLON,
                 ","   => TkType::COMMA,
                 ":="  => TkType::COLON_EQ,

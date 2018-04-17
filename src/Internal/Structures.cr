@@ -51,7 +51,7 @@ module LinCAS
         end
 
         def to_s
-            return @path.join(":")
+            return @path.join("::")
         end
 
     end
