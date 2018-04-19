@@ -15,98 +15,149 @@
 
 module LinCAS::Internal
 
-    struct Variable < BaseS
+    struct Variable < SBaseS
 
         getter name
 
         def initialize(@name : String)
-            super()
         end
 
         def +(obj : Variable)
-            return Sum.new(num2sym(2),self) if self == obj 
-            return nil unless self.top 
+            return Product.new(STWO,self) if self == obj 
             return Sum.new(self,obj)
         end
 
-        @[AlwaysInline]
         def +(obj : BinaryOp)
             return obj + self
         end
 
-        @[AlwaysInline]
+        def +(obj : Negative)
+            return self - obj.value 
+        end
+
+        def +(obj : Snumber)
+            return self if obj == 0
+            return Sum.new(self,obj)
+        end
+
         def +(obj)
-            return nil unless self.top
-            return Sum.new(self,obj).reduce
+            return Sum.new(self,obj)
+        end
+
+        def opt_sum(obj : Variable)
+            return Product.new(STWO,self) if self == obj 
+            return nil 
+        end
+
+        def opt_sum(obj)
+            nil 
         end
 
         def -(obj : Variable)
-            return num2sym(0) if self == obj
-            return nil unless self.top
+            return SZERO if self == obj
             return Sub.new(self,obj)
         end
 
-        @[AlwaysInline]
+        def -(obj : Negative)
+            return self + obj.value
+        end
+
+        def -(obj : Snumber)
+            return self if obj == 0
+            return Sub.new(self,obj)
+        end
+
         def -(obj)
-            return nil unless self.top
             return Sub.new(self,obj).reduce
         end
 
-        @[AlwaysInline]
         def -
             return Negative.new(self)
         end
 
+        def opt_sub(obj : Variable)
+            return SZERO if self == obj 
+            return nil 
+        end
+
+        def opt_sub(obj)
+            nil 
+        end
+
         def *(obj : Variable)
-            return Power.new(self,num2sym(2)) if self == obj 
-            return nil unless self.top
+            return Power.new(self,STWO) if self == obj 
             return Product.new(self,obj)
         end
 
-        @[AlwaysInline]
         def *(obj : BinaryOp)
             return obj * self 
         end
 
-        @[AlwaysInline]
         def *(obj : Snumber)
-            return nil unless self.top
+            return obj if obj == 0
+            return self if obj == 1
             return Product.new(obj, self)
         end
 
-        @[AlwaysInline]
         def *(obj)
-            return nil unless self.top
-            return Product.new(self,obj).reduce
+            return Product.new(self,obj)
+        end
+
+        def opt_prod(obj : Variable)
+            return Power.new(self,STWO) if self == obj
+            return nil 
+        end
+
+        def opt_prod(obj)
+            nil 
+        end
+
+        def /(obj : Snumber)
+            return self if obj == 1
+            return Division.new(self,obj)
         end
 
         def /(obj : Variable)
-            return num2sym(1) if self == obj 
-            return nil unless self.top
+            return SONE if self == obj 
             return Division.new(self,obj)
         end 
 
-        @[AlwaysInline]
-        def /(obj : BinaryOp)
-            return nil unless self.top
-            return Division.new(self,obj).reduce
+        def /(obj : Product)
+            return self / obj.right / obj.left
+        end
+
+        def /(obj : Division)
+            return (self * obj.right) / obj.left
+        end
+
+        def /(obj : Power)
+            if obj.left == self
+                exp = obj.right - SONE
+                return self ** (- exp)
+            end
+            return Division.new(self,obj)
         end
 
         @[AlwaysInline]
         def /(obj)
-            return nil unless self.top
             return Division.new(self,obj).reduce
         end
 
-        @[AlwaysInline]
+        def opt_div(obj : Variable)
+            return SONE if self == obj
+            nil 
+        end
+
+        def opt_div(obj)
+            nil 
+        end
+
         def **(obj)
-            return nil unless self.top
             return Power.new(self,obj)
         end
 
-        @[AlwaysInline]
-        def reduce
-            return self 
+        def opt_power(obj)
+            return nil 
         end
 
         def diff(obj)
@@ -128,9 +179,12 @@ module LinCAS::Internal
             return @name 
         end
 
+        def ==(obj : Variable)
+            return @name == obj.name
+        end
+        
         def ==(obj)
-            return false unless obj.is_a? Variable
-            return @name == name 
+            false 
         end
 
         @[AlwaysInline]
