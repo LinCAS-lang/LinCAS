@@ -61,10 +61,6 @@ module LinCAS::Internal
             return num2sym(@value + sym2num(obj))
         end
 
-        def opt_sum(obj)
-            nil 
-        end
-
         def -(obj : Snumber)
             return -obj if self == 0
             tmp = @value - obj.value
@@ -91,6 +87,7 @@ module LinCAS::Internal
         end
 
         def -
+            return self if self == 0
             return Negative.new(self)
         end
 
@@ -102,11 +99,6 @@ module LinCAS::Internal
             end
             return num2sym(tmp)
         end
-
-        def opt_sub(obj)
-            nil 
-        end
-
 
         def *(obj : Snumber)
             return self if self == 0
@@ -134,10 +126,6 @@ module LinCAS::Internal
 
         def opt_prod(obj : Snumber)
             return self * obj 
-        end
-
-        def opt_prod(obj)
-            nil 
         end
 
         def /(obj : Snumber)
@@ -172,10 +160,6 @@ module LinCAS::Internal
             return self / obj 
         end
 
-        def opt_div(obj)
-            nil 
-        end
-
         def **(obj : Snumber)
             return num2sym(@value ** obj.value)
         end
@@ -204,10 +188,6 @@ module LinCAS::Internal
 
         def opt_power(obj : Snumber)
             return self ** obj 
-        end
-
-        def opt_power(obj)
-            nil 
         end
 
         def eval(dict)

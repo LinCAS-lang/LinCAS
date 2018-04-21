@@ -49,10 +49,6 @@ module LinCAS::Internal
             return nil 
         end
 
-        def opt_sum(obj)
-            nil 
-        end
-
         def -(obj : Variable)
             return SZERO if self == obj
             return Sub.new(self,obj)
@@ -80,10 +76,6 @@ module LinCAS::Internal
             return nil 
         end
 
-        def opt_sub(obj)
-            nil 
-        end
-
         def *(obj : Variable)
             return Power.new(self,STWO) if self == obj 
             return Product.new(self,obj)
@@ -108,12 +100,9 @@ module LinCAS::Internal
             return nil 
         end
 
-        def opt_prod(obj)
-            nil 
-        end
-
         def /(obj : Snumber)
             return self if obj == 1
+            return PinfinityC if obj == 0
             return Division.new(self,obj)
         end
 
@@ -148,8 +137,10 @@ module LinCAS::Internal
             nil 
         end
 
-        def opt_div(obj)
-            nil 
+        def **(obj : Snumber)
+            return SONE if obj == 0
+            return self if obj == 1
+            return Power.new(self,obj)
         end
 
         def **(obj)

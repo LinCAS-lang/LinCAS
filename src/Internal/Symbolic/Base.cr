@@ -37,26 +37,27 @@ module LinCAS::Internal
             end".id}}
 
             abstract def +(obj)
-            abstract def opt_sum(obj)
             abstract def -(obj)
-            abstract def opt_sub(obj)
-            abstract def *(obj)
-            abstract def opt_prod(obj)
             abstract def /(obj)
-            abstract def opt_div(obj)
             abstract def **(obj)
-            abstract def opt_power(obj)
-            # abstract def reduce()
             abstract def diff()
             abstract def eval(dict)
             abstract def ==(obj)
             abstract def depend?(obj)
+
+            {% for name in %w|opt_sum opt_sub opt_div opt_prod opt_power| %}
+                def {{name.id}}(obj)
+                    nil 
+                end
+            {% end %}
+
+            
         {{"end".id}}
     end
 
     base("class",SBaseC)
     base("struct",SBaseS)
 
-    #alias Sym = BaseS 
+    alias Symbolic = SBaseS  | SBaseC
 
 end
