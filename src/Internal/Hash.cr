@@ -154,6 +154,8 @@ module LinCAS::Internal
                 return HASHER.float(float2num(item)).result
             elsif item.is_a? LcString
                 return HASHER.bytes(string2slice(item)).result
+            elsif item.is_a? Slice
+                return HASHER.bytes(item).result
             end 
             return HASHER.int(item.id).result
         end
@@ -176,6 +178,10 @@ module LinCAS::Internal
                 return bool2val(lc_float_eq(v1,v2))
             elsif v1.is_a? LcString
                 return bool2val(lc_str_compare(v1,v2))
+            elsif (v1.is_a? Slice(UInt8) && v2.is_a? LcString)
+                  return libc.strcmp(v1.to_unsafe,pointer_of(v2)) == 0
+            elsif (v2.is_a? Slice(UInt8) && v1.is_a? LcString)
+                return libc.strcmp(v2.to_unsafe,pointer_of(v1)) == 0
             #elsif v1.is_a? Matrix 
             #    return lc_matrix_eq(v1,v2)
             end
@@ -286,7 +292,7 @@ module LinCAS::Internal
         next lc_hash_empty(*lc_cast(args,T1))
     end
 
-    private def self.fetch_entry_in_bucket(entry : Entry?,key : Value)
+    private def self.fetch_entry_in_bucket(entry : Entry?,key)
         while entry 
             if fast_compare(entry.key,key)
                 return entry 
@@ -296,15 +302,26 @@ module LinCAS::Internal
         return nil
     end
 
-    def self.hash_fetch(hash : Value,key : Value,default : Value)
-        return Null if hash_empty?(hash)
-        h_key   = fast_hash(key)
+    private def self.get_entry(hash : Value,h_key : UInt64,key)
         capa    = hash_capa(hash)
         index   = bucket_index(h_key,capa)
         buckets = hash_buckets(hash)
         entry   = buckets[index]
-        entry   = fetch_entry_in_bucket(entry,key)
+        return fetch_entry_in_bucket(entry,key)
+    end
+
+    def self.hash_fetch(hash : Value,key : Value,default : Value)
+        return Null if hash_empty?(hash)
+        h_key   = fast_hash(key)
+        entry = get_entry(hash,h_key,key)
         return entry ? entry.value : default
+    end
+
+    def self.lc_hash_fetch(hash : Value, key : Slice)
+        return Null if hash_empty?(hash)
+        h_key = fast_hash(key)
+        entry = get_entry(hash,h_key,key)
+        return entry ? entry.value : Null
     end
 
     def self.lc_hash_fetch(hash : Value,key : Value)
