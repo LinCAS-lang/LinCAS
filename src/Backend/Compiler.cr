@@ -397,8 +397,8 @@ class LinCAS::Compiler
         line   = new_line(node)
         pop_is = popobj
         b_noop = noop
-        c_body = compile_body(body)
         c_args = compile_void_args(args)
+        c_body = compile_body(body)
         link(b_noop,file,c_body,ret_is)
         set_last(b_noop,ret_is)
         if {VoidVisib::PUBLIC,nil}.includes? visib
@@ -444,6 +444,7 @@ class LinCAS::Compiler
                 name = unpack_name(branch)
                 args << @ifactory.makeVoidArg(name) 
             end
+            STstack.set(name)
         end
         return args
     end
