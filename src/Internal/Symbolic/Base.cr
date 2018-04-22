@@ -34,6 +34,10 @@ module LinCAS::Internal
         
             macro string2sym(value)
                 Variable.new({{value}})
+            end
+            
+            macro num2num(num)
+                num.as(LcNum).value
             end".id}}
 
             abstract def +(obj)
