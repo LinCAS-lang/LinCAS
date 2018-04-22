@@ -31,7 +31,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
         TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT,
-        TkType::IMPORT
+        TkType::IMPORT, TkType::REQUIRE_RELATIVE
     } + EXP_SYNC_SET
     
     NOOP = Node.new(NodeType::NOOP)
@@ -301,7 +301,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return parseConst
             when TkType::INCLUDE
                 return parseInclude
-            when TkType::REQUIRE
+            when TkType::REQUIRE, TkType::REQUIRE_RELATIVE
                 return parseRequire
             when TkType::IMPORT
                 return parseImport
@@ -1522,6 +1522,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         }
         frontendFact = FrontendFactory.new
         node = @nodeFactory.makeNode(NodeType::REQUIRE)
+        node.setAttr(NKey::ID,@currentTk.ttype == TkType::REQUIRE ? "require" : "require_relative")
         setLine(node)
         shift 
         node.addBranch(parseExp)

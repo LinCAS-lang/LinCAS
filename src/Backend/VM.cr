@@ -1094,9 +1094,11 @@ end
     end
 
     protected def vm_put_static_method(name : String,method : LcMethod)
-        klass        = class_of(unwrap_object(pop))
+        object       = pop
+        klass        = class_of(unwrap_object(object))
         method.owner = klass
         klass.statics.addEntry(name,method)
+        push(object)
     end
 
     protected def vm_put_instance_method(name : String,method : LcMethod)

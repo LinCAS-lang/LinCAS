@@ -1129,7 +1129,7 @@ class LinCAS::Compiler
         branch  = node.getBranches[0]
         p_self  = pushself
         c_exp   = compile_exp(branch,false)
-        call_is = make_call_is("require",1)
+        call_is = make_call_is(unpack_name(node),1)
         pop_is  = popobj
         link(p_self,c_exp,call_is,pop_is)
         set_last(p_self,pop_is)

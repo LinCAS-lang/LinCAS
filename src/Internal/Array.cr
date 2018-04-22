@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    MAX_ARY_CAPA = 1000
+    MAX_ARY_CAPA = 10000
     MIN_ARY_CAPA = 5
 
     class LcArray < BaseC
@@ -180,7 +180,7 @@ module LinCAS::Internal
         if sz 
             return build_ary(sz)
         else 
-            return Null 
+            return build_ary_new
         end 
     end
 
@@ -366,11 +366,14 @@ module LinCAS::Internal
         a_size3 = a_size1 + a_size2
         t_ary_size = ary_total_size(ary1) + ary_total_size(ary2)
         tmp     = build_ary(t_ary_size)
-        set_ary_size(tmp,a_size3)
-        ary_range_to_null(tmp,0,t_ary_size)
-        ary_ptr(tmp).copy_from(ary_ptr(ary1),a_size1)
-        (ary_ptr(tmp)  + a_size1).copy_from(ary_ptr(ary2),a_size2)
-        return tmp
+        if test(tmp)
+            set_ary_size(tmp,a_size3)
+            ary_range_to_null(tmp,0,t_ary_size)
+            ary_ptr(tmp).copy_from(ary_ptr(ary1),a_size1)
+            (ary_ptr(tmp)  + a_size1).copy_from(ary_ptr(ary2),a_size2)
+            return tmp
+        end
+        return ary1
     end
 
     ary_add = LcProc.new do |args|

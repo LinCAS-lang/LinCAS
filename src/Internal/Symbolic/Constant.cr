@@ -21,24 +21,38 @@ module LinCAS::Internal
             super()
         end
 
+        def +(obj : Snumber)
+            return SZERO if obj == 0
+            return self if obj == 1
+            return Sum.new(self,obj)
+        end 
+
         def +(obj : Constant)
-            return Product.new(num2sym(2),obj) if self == obj
-            return nil unless self.top 
+            return Product.new(STWO,obj) if self == obj
             return Sum.new(self,obj)
         end
 
         def +(obj : Negative)
-            val = obj.value
-            return self - val 
+            return self - obj.value 
         end
 
-        @[AlwaysInline]
+        def +(obj : Infinity)
+            return obj 
+        end
+
+        def +(obj : BinaryOp)
+            return obj + self 
+        end
+
         def +(obj)
-            return nil unless self.top
             return Sum.new(self,obj)
         end
 
-        @[AlwaysInline]
+        def opt_sum(obj : Constant)
+            return Product.new(STWO,obj) if self == obj
+            nil 
+        end
+
         def -(obj : Constant)
             return num2sym(0) if self == obj 
             return nil unless self.top 

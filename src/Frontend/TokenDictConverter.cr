@@ -57,6 +57,7 @@ module LinCAS
                 "const"      => TkType::CONST,
                 "new"        => TkType::NEW,
                 "require"    => TkType::REQUIRE,
+                "require_relative" => TkType::REQUIRE_RELATIVE,
                 "include"    => TkType::INCLUDE,
                 "use"        => TkType::USE,
                 "import"     => TkType::IMPORT,
