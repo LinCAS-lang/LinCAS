@@ -931,8 +931,8 @@ class LinCAS::Compiler
         loop_b   = w_loop.getBranches
         condition = loop_b[0]
         body     = loop_b[1]
-        c_body   = compile_body(body)
         c_assign = compile_assign(assign)
+        c_body   = compile_body(body)
         c_condit = compile_for_condition(condition)
         noop_is  = noop 
         jumpf    = @ifactory.makeBCode(Code::JUMPF)

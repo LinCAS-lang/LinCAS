@@ -12,11 +12,12 @@ void power(n)
 {
     if !(n.is_a?(Integer))
     { raise "Expecting an integer" }
+    
     if n <= 0
     { return [[]] }
 
     vect := [[]]
-    (1..n).each() { (i)
+    for i : 1 to n {
         vect2 := vect.clone()
         vect2.map!() { (el)
             next el + [i]
@@ -30,7 +31,7 @@ void power(n)
 printl power(2)
 
 /* should return [[],[1],[2],[3],[1,2],[1,3],[2,3]] */
-printl power(10)
+printl power(3)
 
 /* should raise an error */
 #power("string")
