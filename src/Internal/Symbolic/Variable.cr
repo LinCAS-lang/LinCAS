@@ -156,8 +156,14 @@ module LinCAS::Internal
             return num2sym(0)
         end
 
-        def eval(dict)
-
+        def eval(dict : LcHash)
+            bytes = @name.to_slice
+            if Internal.lc_hash_hash_key(dict,bytes)
+                return num2num(lc_hash_fetch(dict,bytes))
+            else
+                Exec.lc_raise(LcKeyError,"Dictionary does not contain '#{@name}'")
+                return 1 
+            end
         end
 
         @[AlwaysInline]

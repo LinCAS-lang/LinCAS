@@ -153,8 +153,8 @@ module LinCAS::Internal
             return -obj.diff(obj)
         end
 
-        def eval(dict)
-
+        def eval(dict : LcHash)
+            return -value.eval(dict)
         end
 
         def to_s(io)
