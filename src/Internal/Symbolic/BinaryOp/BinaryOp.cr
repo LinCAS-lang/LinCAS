@@ -17,43 +17,18 @@ module LinCAS::Internal
 
     abstract struct BinaryOp < SBaseS
 
-        macro reduce_loop(val,tmp)
-            while {{val}} != {{tmp}}
-                {{tmp}} = {{val}}
-                {{val}} = {{val}}.reduce
-            end
-        end
-
         property left,right 
 
-        def initialize(left : Sym, right : Sym)
-            super()
-            left.top  = false 
-            right.top = false
-            @left     = left  
-            @right    = right
-        end
-
-        def initialize(left,right,top)
-            super(top)
-            initialize(left,right)
-        end
-
-        def reduce
-            tmp   = @left 
-            @left = @left.reduce 
-            reduce_loop(@left,tmp)
-            tmp    = @right 
-            @right = @right.reduce 
-            reduce_loop(@right,tmp)
+        def initialize(@left : Symbol, @right : Symbol)
         end
 
         def ==(obj : BinaryOp)
             return false unless self.class = obj.class
-            return (self.left == obj.left) && (self.right == obj.right)
+            return ((self.left == obj.left) && (self.right == obj.right)) ||
+                   ((self.right == obj.left) && (self.left == obj.right)) ||
+                   ((self.left == obj.right) && (self.right == obj.left))
         end 
 
-        @[AlwaysInline]
         def ==(obj)
             return false 
         end

@@ -18,33 +18,37 @@ module LinCAS::Internal
     
     struct Sum < BinaryOp
         
-        def +(obj : Variable | Snumber | Constant | Function)
-            lft = @left + obj 
-            return Sum.new(lft,@right) if lft 
-            rht = @right + obj 
-            return Sum.new(@left,rht) if rht 
-            return nil unless self.top 
-            return Sum.new(self,obj)
-        end
-
         def +(obj : Negative)
             return self - obj.value 
         end
 
         def +(obj : Sum)
-            tmp = self + obj.left + obj.right
-            # return nil unless self.top 
-            return tmp 
+            return self + obj.left + obj.right
         end
 
         def +(obj : Sub)
-            tmp = self + obj.left - obj.right
-            return tmp 
+            return self + obj.left - obj.right
         end
 
         def +(obj)
-            return nil unless sel.top 
+            return self if obj == 0
+            lft = @left.opt_sum(obj)
+            return left + @rigth if lft
+            rht = @right.opt_sum(obj)
+            return @left + rht if rht 
             return Sum.new(self,obj)
+        end
+
+        def opt_sum(obj)
+            lft = @left.opt_sum(obj)
+            return left + @rigth if lft
+            rht = @right.opt_sum(obj)
+            return @left + rht if rht 
+            nil 
+        end
+
+        def -(obj : Negative)
+            return self + obj.value
         end
 
         def -(obj : Sum)
@@ -55,17 +59,12 @@ module LinCAS::Internal
             return self - obj.left + obj.right 
         end
 
-        def -(obj : Variable | Snumber | Constant | Function)
-            lft = @left - obj 
-            return Sum.new(lft,@right) if lft 
-            rht = @right - obj 
-            return Sum.new(@left,rht) if rht 
-            return nil unless self.top 
-            return Sub.new(self,obj)
-        end
-
         def -(obj)
-            return nil unless self.top 
+            return self if obj == 0
+            lft = @left.opt_sub(obj)
+            return left + @rigth if lft
+            rht = @right.opt_sub(obj)
+            return @left + rht if rht 
             return Sub.new(self,obj)
         end
 
@@ -73,56 +72,83 @@ module LinCAS::Internal
             return Negative.new(self)
         end
 
-        def *(obj)
-            return nil unless self.top 
+        def opt_sub(obj)
+            lft = @left.opt_sub(obj)
+            return left + @rigth if lft
+            rht = @right.opt_sub(obj)
+            return @left + rht if rht 
+            nil 
+        end
+
+        def *(obj : Negative)
+            return -(self * obj.value)
+        end
+
+        def *(obj : Infinity)
+            lft = @left.opt_prod(obj)
+            return lft + @right if lft 
+            rht = @right.opt_prod(obj)
+            return @left + rht if rht 
             return Product.new(self,obj)
         end
 
-        def /(obj)
-            return nil unless self.top 
+        def *(obj)
+            return self if obj == 1
+            return SZERO if obj == 0
+            return Power.new(self,STWO) if self == obj
+            return Product.new(self,obj)
+        end
+
+        def opt_prod(obj)
+            return self if obj == 1
+            lft = @left.opt_prod(obj)
+            return lft + @right if lft 
+            rht = @right.opt_prod(obj)
+            return @left + rht if rht 
+            nil
+        end
+
+        def /(obj : Negative)
+            return -(self / obj.value)
+        end
+
+        def /(obj : Sum)
+            return SONE if self == obj
             return Division.new(self,obj)
         end
 
+        def /(obj)
+            return self if obj == 1
+            lft = @left.opt_div(obj)
+            return lft + @right if lft 
+            rht = @right.opt_div(obj)
+            return @left + rht if rht 
+            return Division.new(self,obj)
+        end
+
+        def opt_div(obj)
+            return self if obj == 1
+            lft = @left.opt_div(obj)
+            return lft + @right if lft 
+            rht = @right.opt_div(obj)
+            return @left + rht if rht 
+            nil
+        end
+
         def **(obj)
-            return nil unless self.top
+            return SONE if obj == 0
+            return self if obj == 1
             return Power.new(self,obj)
         end
 
-        def reduce
-            super 
-            if @left == 0
-                return @right 
-            elsif @right == 0
-                return @left 
-            elsif @left == InfinityC && @right == InfinityC
-                return InfinityC
-            elsif @left == NinfinityC && @right == NinfinityC
-                return NinfinityC
-            elsif @left.is_a? Infinity && @right.is_a? Infinity 
-                Exec.lc_raise(LcMathError,"(∞-∞)")
-                return @left 
-            elsif (@left.is_a? Snumber) && (@right.is_a? Snumber)
-                return sym2num(@left.value + @right.value)
-            elsif @left.is_a? Negative
-                return Sub.new(@right,@left.value)
-            elsif @right.is_a? Negative
-                return Sub.new(@left,@right.value)
-            elsif (@left.is_a? Constant) && (@right.is_a? Constant)
-                return @left + @right
-            elsif @left == @right
-                return Product.new(num2sym(2),@left) 
-            end 
-            return self
-        end 
-
         def diff(obj)
-            return num2sym(0) unless self.depend? obj
+            return SZERO unless self.depend? obj
             lft = @left.diff(obj)
             rht = @right.diff(obj)
             return lft + rht 
         end
 
-        def eval(dict)
+        def eval(dict : LcHash)
             lft = @left.eval(dict)
             rht = @right.eval(dict)
             return lft + rht 
