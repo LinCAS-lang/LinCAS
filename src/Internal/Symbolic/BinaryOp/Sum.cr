@@ -112,6 +112,10 @@ module LinCAS::Internal
             return -(self / obj.value)
         end
 
+        def /(obj : Infinity)
+            return SZERO
+        end
+
         def /(obj : Sum)
             return SONE if self == obj
             return Division.new(self,obj)
@@ -120,18 +124,17 @@ module LinCAS::Internal
         def /(obj)
             return self if obj == 1
             lft = @left.opt_div(obj)
-            return lft + @right if lft 
             rht = @right.opt_div(obj)
-            return @left + rht if rht 
+            return lft + rht if lft && rht 
+            return Product.new(self,PinfinityC) if obj == 0
             return Division.new(self,obj)
         end
 
         def opt_div(obj)
             return self if obj == 1
             lft = @left.opt_div(obj)
-            return lft + @right if lft 
             rht = @right.opt_div(obj)
-            return @left + rht if rht 
+            return lft + rht if lft && rht  
             nil
         end
 

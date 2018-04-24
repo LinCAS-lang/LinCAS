@@ -18,7 +18,7 @@ class LinCAS::VirtualFile
     @source : Array(String)
     def initialize(source : String,@filename : String,@line : IntnumR)
         @count = 0
-        @source = source.split("\n").map! { |line| line += "\n"}
+        @source = source.split("\n").map! &.+('\n')
     end
 
     def readLine
@@ -33,7 +33,6 @@ class LinCAS::VirtualFile
     end
 
     def close
-        @file.close
     end
 
     def getFilename
