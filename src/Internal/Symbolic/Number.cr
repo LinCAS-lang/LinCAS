@@ -131,7 +131,7 @@ module LinCAS::Internal
         def /(obj : Snumber)
             if self == 0 && obj == 0
                 Exec.lc_raise(LcMathError,"(0/0)")
-                return SnanC
+                self
             end
             return PinfinityC if obj == 0
             return self if obj == 1

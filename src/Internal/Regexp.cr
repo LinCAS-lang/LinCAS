@@ -98,8 +98,12 @@ module LinCAS::Internal
     end
 
     macro regex_check(regex)
-        if regex_flag({{regex}}) == RegexpFlag::Uncompiled
+        if !({{regex}}.is_a? LcRegexp)
             lc_raise(LcTypeError,"No impilicit conversion of #{lc_typeof({{regex}})} into Regexp")
+            return Null 
+        end
+        if regex_flag({{regex}}) == RegexpFlag::Uncompiled
+            #lc_raise(LcTypeError,"Uncompiled regexp fields")
             return Null 
         end
     end
@@ -148,7 +152,12 @@ module LinCAS::Internal
     end
 
     private def self.lc_regex_to_s(regex : Value)
-        return build_string(regex_origin(regex))
+        origin = regex_to_s(regex)
+        if origin.null?
+            return build_string("")
+        else
+            return build_string(origin)
+        end
     end
 
     regex_to_s_ = LcProc.new do |args|
@@ -157,7 +166,8 @@ module LinCAS::Internal
 
     def self.regex_inspect(regex : Value)
         buffer = string_buffer_new
-        buffer_append_n(buffer,SLASH,regex_origin(regex),SLASH)
+        origin = regex_origin(regex)
+        buffer_append_n(buffer,SLASH,origin.null? ? "" : origin,SLASH)
         buffer_trunc(buffer)
         return buffer
     end
