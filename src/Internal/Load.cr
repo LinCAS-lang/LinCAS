@@ -93,8 +93,45 @@ module LinCAS::Internal
         next lc_require_relative(lc_cast(args,T2)[1])
     end
 
+    private def self.normalize_iseq(iseq : Bytecode)
+        tmp = iseq
+        2.times do
+            break if iseq.nextc.nil?
+            iseq = iseq.nextc.as(Bytecode)
+        end
+        iseq.lastc = tmp.lastc
+        return iseq
+    end
+
+    def self.lc_replace(string : Value)
+        string = string2cr(string)
+        if string
+            parser = FFactory.makeParser(string,current_file,current_call_line)
+            parser.singleErrOutput
+            parser.noSummary
+            ast    = parser.parse
+            if !(parser.errCount > 0) && ast
+                iseq = Compile.compile(ast,Code::NOOP)
+                iseq = normalize_iseq(iseq)
+                #p iseq.code;gets
+                Exec.vm_replace_iseq(iseq)
+            else 
+                Exec.print_end_backtrace
+                return lcfalse
+            end
+            return lctrue
+        end 
+        return lcfalse
+    end
+
+    replace = LcProc.new do |args|
+        next lc_replace(lc_cast(args,T2)[1])
+    end
+
+
     internal.lc_module_add_internal(LKernel,"require",require_file_,                 1)
     internal.lc_module_add_internal(LKernel,"import",import_file,                    1)
     internal.lc_module_add_internal(LKernel,"require_relative",require_relative,     1)
+    internal.lc_module_add_internal(LKernel,"replace",replace,                       1)
 
 end

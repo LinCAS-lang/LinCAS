@@ -62,6 +62,14 @@ module LinCAS::Internal
         Exec.get_current_filedir 
     end
 
+    macro current_file 
+        Exec.get_current_filename 
+    end
+
+    macro current_call_line
+        Exec.get_current_call_line
+    end
+
     def self.test(object : Value)
         if object == Null || object == LcFalse
             return false 

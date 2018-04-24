@@ -112,7 +112,8 @@ class LinCAS::Compiler
                 tmp = is[0]
             end
             (1...is.size).each do |i|
-                tmp.nextc = is[i]
+                tmp.nextc  = is[i]
+                is[i].prev = tmp 
                 last = is[i].lastc
                 if last 
                     tmp = last

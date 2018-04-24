@@ -16,7 +16,7 @@
 class LinCAS::VMcall_tracker
  
     private struct Info
-        def initialize(@filename : String,@line : Intnum, @callname : String)
+        def initialize(@filename : String,@line : IntnumR, @callname : String)
         end   
         getter filename,line,callname     
     end
@@ -52,6 +52,10 @@ class LinCAS::VMcall_tracker
                 io << " items"
             end
         end
+    end
+
+    def current_call_line
+        return @stack.last.line 
     end
 
 end

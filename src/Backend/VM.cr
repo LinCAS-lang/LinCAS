@@ -104,11 +104,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @pc      = uninitialized Bytecode     # program count
         @scp     = uninitialized Scope        # scope pointer
         @catch_t : CatchTable? = nil
+        @last_is : Bytecode?   = nil
         
         def initialize(@me : Value,@context : Structure,@argc : IntnumR,@type : FrameType)  
         end
 
-        property fp,argc,pc,scp,me,context,catch_t,type
+        property fp,argc,pc,scp,me,context,catch_t,type,last_is
 
         @[AlwaysInline]
         def fetch 
@@ -210,6 +211,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         internal.test({{value}})
     end 
 
+    macro set_last_is(is)
+        current_frame.last_is = {{is}}
+    end
+
     @[AlwaysInline]
     private def class_of(obj : Value)
         if obj.is_a? Structure 
@@ -238,7 +243,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-
+    @to_replace : Bytecode?
     def initialize
         @stack   = [] of StackValue
         @framev  = [] of LcFrame
@@ -250,6 +255,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @msgHandler = MsgHandler.new
         @internal   = false
         @quit       = false
+        @to_replace = nil
 
         self.addListener(RuntimeListener.new)
     end
@@ -424,7 +430,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         is = current_frame.pc
         loop do
             {% if flag?(:debug) %}
-                puts "Executing code #{is.code}"
+                puts "Executing code #{is.code}";gets
             {% end %}
             case is.code
                 when Code::LINE
@@ -570,7 +576,33 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 @quit = false
                 return Null
             end
+            if !@to_replace.nil?
+                tmp = get_last_is(is)
+                tmp.nextc = @to_replace
+                @to_replace.as(Bytecode).prev = tmp
+                follow = is.nextc.as(Bytecode).nextc.as(Bytecode)
+                last = @to_replace.as(Bytecode).lastc.as(Bytecode)
+                last.prev.as(Bytecode).nextc = follow 
+                @to_replace = tmp
+            end
             is = fetch
+            #p "is: #{is.code}"
+            if @to_replace
+                current_frame.pc = @to_replace.as(Bytecode)
+                @to_replace = nil 
+            end
+        end
+    end
+
+    protected def get_last_is(is : Bytecode)
+        if is.code.to_s.includes? "CALL"
+            argc = is.argc 
+            (argc + 2).times do |i|
+                is = is.prev.as(Bytecode)
+            end
+            return is
+        else
+            raise VMerror.new("(failed to replace bytecode)")
         end
     end
 
@@ -1301,8 +1333,20 @@ end
         sendMsg(Msg.new(MsgType::BACKTRACE,[backtrace]))
     end
 
+    def vm_replace_iseq(iseq : Bytecode)
+        @to_replace = iseq
+    end
+
     def get_current_filedir
         return File.dirname(filename)
+    end
+
+    def get_current_filename
+        return filename 
+    end
+
+    def get_current_call_line
+        return CallTracker.current_call_line 
     end
 
 end

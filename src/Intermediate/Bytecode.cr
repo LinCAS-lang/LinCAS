@@ -84,6 +84,7 @@ module LinCAS
 
   class Bytecode
     @nextc : Bytecode? = nil
+    @prev  : Bytecode? = nil
     @lastc : Bytecode? = nil
     @text  = ""
     @argc  = 0
@@ -98,6 +99,6 @@ module LinCAS
 
     def initialize(@code : Code); end
     property code,nextc,text,argc,value,jump,lastc,line,method, 
-             block,opt_v, catch_t
+             block,opt_v, catch_t,prev
   end
 end

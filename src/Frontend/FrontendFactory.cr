@@ -20,6 +20,10 @@ struct LinCAS::FrontendFactory
         reader.addListener(ReaderListener.new)
         return reader
     end
+
+    def makeReader(string : String,filename : String,line : IntnumR)
+        return VirtualFile.new(string,filename,line)
+    end
     
     @[AlwaysInline]
     def makeSource(filename : String)
@@ -31,6 +35,14 @@ struct LinCAS::FrontendFactory
         Source.new(reader)
     end
 
+    def makeSource(reader : VirtualFile)
+        Source.new(reader)
+    end
+
+    def makeSource(string : String,filename : String,line : IntnumR)
+        return makeSource(makeReader(string,filename,line))
+    end
+
     @[AlwaysInline]
     def makeScanner(filename : String)
         makeScanner(makeSource(filename))
@@ -38,6 +50,12 @@ struct LinCAS::FrontendFactory
     
     def makeScanner(source : Source)
         scanner = Scanner.new(source)
+        scanner.addListener(ScannerListener.new)
+        return scanner
+    end
+
+    def makeScanner(string : String,filename : String,line : IntnumR)
+        scanner = makeScanner(makeSource(string,filename,line))
         scanner.addListener(ScannerListener.new)
         return scanner
     end
@@ -55,6 +73,12 @@ struct LinCAS::FrontendFactory
 
     def makeParser(scanner : Scanner)
         parser = Parser.new(scanner)
+        parser.addListener(ParserListener.new)
+        return parser
+    end
+
+    def makeParser(string : String,filename : String,line : IntnumR)
+        parser = Parser.new(makeScanner(string,filename,line))
         parser.addListener(ParserListener.new)
         return parser
     end
