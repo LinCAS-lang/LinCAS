@@ -105,6 +105,7 @@ module LinCAS::Internal
             return lft + @right if lft 
             rht = @right.opt_prod(obj)
             return @left + rht if rht 
+            return self ** STWO if self == obj
             nil
         end
 
@@ -136,6 +137,14 @@ module LinCAS::Internal
             rht = @right.opt_div(obj)
             return lft + rht if lft && rht  
             nil
+        end
+
+        def **(obj : PInfinity)
+            return obj 
+        end
+
+        def **(obj : NInfinity)
+            return SZERO
         end
 
         def **(obj)
