@@ -41,11 +41,7 @@ module LinCAS::Internal
             return obj + self
         end
 
-        def +(obj : NInfinity)
-            return obj 
-        end
-
-        def +(obj : PInfinity)
+        def +(obj : Infinity)
             return obj 
         end
 
@@ -54,18 +50,22 @@ module LinCAS::Internal
         end
 
         def +(obj)
-            return Sum.new(self,obj)
+            return Sum.new(obj,self)
         end
 
         def opt_sum(obj : Snumber)
             return num2sym(@value + sym2num(obj))
         end
 
+        def opt_sum(obj : Infinity)
+            return obj 
+        end
+
         def -(obj : Snumber)
             return -obj if self == 0
             tmp = @value - obj.value
             if tmp < 0
-                return num2sym(-tmp)
+                return -num2sym(-tmp)
             end
             return num2sym(tmp)
         end
@@ -87,17 +87,24 @@ module LinCAS::Internal
         end
 
         def -
-            return self if self == 0
-            return Negative.new(self)
+            return Negative.create(self)
         end
 
         def opt_sub(obj : Snumber)
             return -obj if self == 0
             tmp = @value - obj.value
             if tmp < 0
-                return num2sym(-tmp)
+                return -num2sym(-tmp)
             end
             return num2sym(tmp)
+        end
+
+        def opt_sub(obj : PInfinity)
+            return NinfinityC
+        end
+
+        def opt_sub(obj : NInfinity)
+            return PinfinityC
         end
 
         def *(obj : Snumber)
@@ -111,12 +118,11 @@ module LinCAS::Internal
         end
 
         def *(obj : Negative)
-            tmp = self * obj.value 
-            return Negative.new(tmp)
+            return -(self * obj.value )
         end
 
         def *(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(0*∞)")
+            return NanC if self == 0
             return obj 
         end
 
@@ -129,10 +135,7 @@ module LinCAS::Internal
         end
 
         def /(obj : Snumber)
-            if self == 0 && obj == 0
-                Exec.lc_raise(LcMathError,"(0/0)")
-                self
-            end
+            return NanC if self == 0 && obj == 0
             return PinfinityC if obj == 0
             return self if obj == 1
             _mcd = mcd(@value,obj.value)
@@ -140,20 +143,21 @@ module LinCAS::Internal
             v1 = @value / _mcd 
             v2 = obj.value / _mcd 
             return sym2num(v1) if v2 == 1 
-            return Division.new(v1,v2)
+            return Division.new(num2sym(v1),num2sym(v2))
         end 
 
         def /(obj : Negative)
-            return Negative.new(self / obj.value)
+            return -(self / obj.value)
         end
 
         def /(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(0/∞)") if self == 0
+            NanC if self == 0
             return SZERO
         end
 
         def /(obj)
-            return Division.new(self,obj).reduce
+            return self if self == 0
+            return Division.new(self,obj)
         end
 
         def opt_div(obj : Snumber)
@@ -165,32 +169,35 @@ module LinCAS::Internal
         end
 
         def **(obj : Negative)
+            return self if self == 1 || self == 0
             tmp = self ** obj.value 
-            if tmp.abs == Float::INFINITY
+            if tmp.is_a? Infinity
                 return SZERO
             end
-            return Division.new(SONE,num2sym(obj))
+            return SONE / tmp
         end
 
         def **(obj : PInfinity)
-            Exec.lc_raise(LcMathError,"(0 ^ ∞)")
-            return SZERO 
+            return NanC if self == 0
+            return self if self == 1
+            return obj
         end
 
         def **(obj : NInfinity)
-            Exec.lc_raise(LcMathError,"(0 ^ ∞)")
-            return PinfinityC
+            return NanC if self == 0
+            return self if self == 0
+            return SZERO
         end
 
         def **(obj)
-            return Power.new(self,obj).reduce
+            return Power.new(self,obj)
         end
 
         def opt_power(obj : Snumber)
             return self ** obj 
         end
 
-        def eval(dict)
+        def eval(dict : LcHash)
             return @value 
         end
 
