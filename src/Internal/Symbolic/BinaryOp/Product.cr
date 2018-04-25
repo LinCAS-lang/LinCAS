@@ -92,7 +92,8 @@ module LinCAS::Internal
             return lft * @right if lft 
             rht = @right.opt_prod(obj) 
             return @left * rht if rht
-            return Product.new(self,obj)
+            return Product.new(self,obj) unless obj.is_a? Snumber
+            return Product.new(obj,self)
         end
 
         def opt_prod(obj)
@@ -175,6 +176,14 @@ module LinCAS::Internal
 
         def eval(dict : LcHash)
             return @left.eval(dict) * @right.eval(dict)
+        end
+
+        private def append(io,elem)
+            if elem.is_a? BinaryOp
+                io << '('
+                elem.to_s(io)
+                io << ')'
+            end 
         end
 
     end
