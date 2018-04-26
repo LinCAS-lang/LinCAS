@@ -37,14 +37,14 @@ module LinCAS::Internal
                 num.as(LcNum).value
             end".id}}
 
-            # abstract def +(obj)
-            #abstract def -(obj)
-            #abstract def /(obj)
-            #abstract def **(obj)
-            #abstract def diff(obj)
-            #abstract def eval(dict)
-            #abstract def ==(obj)
-            #abstract def depend?(obj)
+            abstract def +(obj)
+            abstract def -(obj)
+            abstract def /(obj)
+            abstract def **(obj)
+            abstract def diff(obj)
+            abstract def eval(dict)
+            abstract def ==(obj)
+            abstract def depend?(obj)
 
             {% for name in %w|opt_sum opt_sub opt_div opt_prod opt_power| %}
                 def {{name.id}}(obj : Symbolic)

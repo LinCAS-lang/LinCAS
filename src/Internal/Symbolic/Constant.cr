@@ -186,6 +186,8 @@ module LinCAS::Internal
         end
     end
 
+    EC = E.new
+
     struct PI < Constant
 
         def eval(dict)
@@ -200,5 +202,7 @@ module LinCAS::Internal
             return 'π'
         end
     end
+
+    PiC = PI.new
     
 end

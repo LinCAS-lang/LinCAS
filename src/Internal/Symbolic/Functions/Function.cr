@@ -21,6 +21,216 @@ module LinCAS::Internal
 
         def initialize(@value : Symbolic)
         end
+
+        def +(obj : Snumber)
+            return self if obj == 1
+            return Sum.new(self,obj)
+        end
+
+        def +(obj : Negative)
+            return self - obj.value 
+        end
+
+        def +(obj : PInfinity)
+            if value.is_a? Snumber
+                return obj 
+            end
+            return Sum.new(self,obj)
+        end 
+
+        def +(obj : NInfinity)
+            if value.is_a? Snumber
+                return obj 
+            end
+            return Sub.new(self,PinfinityC)
+        end
+
+        def +(obj : Sum)
+            return obj + self 
+        end
+
+        def +(obj : Sub)
+            return obj + self 
+        end
+
+        def +(obj)
+            return Sum.new(self,obj)
+        end
+
+        def opt_sum(obj : Snumber)
+            return self if obj == 0
+            nil 
+        end
+
+        def opt_sum(obj : Infinity)
+            return obj if value.is_a? Snumber
+        end
+
+        def -(obj : Snumber)
+            return self if obj == 0
+            return Sub.new(self,obj)
+        end
+
+        def -(obj : Negative)
+            return self + obj.value 
+        end
+
+        def -(obj : PInfinity)
+            if value.is_a? Snumber
+                return NInfinity
+            end
+            return Sub.new(self,obj)
+        end
+
+        def -(obj : NInfinity)
+            if value.is_a? Snumber
+                return PinfinityC 
+            end
+            return Sum.new(self,PinfinityC)
+        end
+
+        def -(obj : Sum)
+            return self - obj.left - obj.right 
+        end
+
+        def -(obj : Sub)
+            return self - obj.left + obj.right 
+        end
+
+        def -(obj)
+            return Sub.new(self,obj)
+        end
+
+        def -
+            return Negative.new(self)
+        end
+
+        def opt_sub(obj : Snumber)
+            return self if obj == 0
+            nil 
+        end
+
+        def opt_sub(obj : PInfinity)
+            return NinfinityC if value.is_a? Snumber
+            nil 
+        end
+
+        def opt_sub(obj : NInfinity)
+            return PinfinityC if value.is_a? Snumber
+            nil 
+        end
+
+        def *(obj : Snumber)
+            return self if obj == 1
+            return SZERO if obj == 0
+            return Product.new(obj,self)
+        end
+
+        def *(obj : Negative)
+            return -(self * obj.value)
+        end
+
+        def *(obj : PInfinity)
+            return obj if value.is_a? Snumber
+            return Product.new(self,obj)
+        end
+
+        def *(obj : NInfinity)
+            return obj if value.is_a? Snumber
+            return -Product.new(self,obj)
+        end
+
+        def *(obj : Product)
+            return obj * self 
+        end
+
+        def *(obj : Division)
+            return self / obj.right * obj.left 
+        end
+
+        def *(obj)
+            return Product.new(self,obj)
+        end
+
+        def opt_prod(obj : Snumber)
+            return self if obj == 1
+            return SZERO if obj == 0
+        end
+
+        def opt_prod(obj : Infinity)
+            return obj if value.is_a? Snumber
+            nil 
+        end
+
+        def /(obj : Snumber)
+            return self if obj == 1
+            return self * PinfinityC if obj == 0
+            return Division.new(self,obj)
+        end
+
+        def /(obj : Negative)
+            return -(self / obj.value)
+        end
+
+        def /(obj : Infinity)
+            return SZERO
+        end
+
+        def /(obj : Product)
+            return self / obj.left / obj.right 
+        end
+
+        def /(obj : Division)
+            return self / obj.left * obj.right
+        end
+
+        def /(obj)
+            return Division.new(self,obj)
+        end
+
+        def opt_div(obj : Snumber)
+            return self if obj == 1
+            return self.opt_prod PinfinityC if obj == 0
+            nil 
+        end
+
+        def **(obj : Snumber)
+            return SONE if obj == 0
+            return self if obj == 1
+            return Power.new(self,obj)
+        end
+
+        def **(obj : Negative)
+            return SONE / self ** obj.value
+        end
+
+        def **(obj : PInfinity)
+            return obj if value.is_a? Snumber
+            return Power.new(self,obj)
+        end
+
+        def **(obj : NInfinity)
+            return SONE / self ** PinfinityC
+        end
+
+        def **(obj)
+            return Power.new(self,obj)
+        end
+
+        def opt_power(obj : Snumber)
+            return self if obj == 1
+            return SONE if obj == 0
+            nil 
+        end
+
+        def opt_power(obj : Infinity)
+            return self ** obj if value.is_a? Snumber
+            nil 
+        end
+
+        def depend?(obj : Symbolic)
+            return value.depend? obj 
+        end
     
         def ==(obj : Function)
             return false unless self.class == obj.class 

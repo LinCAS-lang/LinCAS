@@ -40,7 +40,7 @@ module LinCAS::Internal
             return Sum.new(self,obj)
         end
 
-        def +(obj : Symbolic) : Symbolic
+        def +(obj) : Symbolic
             return Sum.new(self,obj)
         end
 
@@ -63,7 +63,7 @@ module LinCAS::Internal
             return Sub.new(self,obj)
         end
 
-        def -(obj : Symbolic) : Symbolic
+        def -(obj) : Symbolic
             return Sub.new(self,obj)
         end
 
@@ -91,7 +91,7 @@ module LinCAS::Internal
             return Product.new(obj, self)
         end
 
-        def *(obj : Symbolic) : Symbolic
+        def *(obj) : Symbolic
             return Product.new(self,obj)
         end
 
@@ -127,7 +127,7 @@ module LinCAS::Internal
             return Division.new(self,obj)
         end
 
-        def /(obj : Symbolic) : Symbolic
+        def /(obj) : Symbolic
             return Division.new(self,obj)
         end
 
@@ -142,7 +142,7 @@ module LinCAS::Internal
             return Power.new(self,obj)
         end
 
-        def **(obj : Symbolic) : Symbolic
+        def **(obj) : Symbolic
             return Power.new(self,obj)
         end
 
