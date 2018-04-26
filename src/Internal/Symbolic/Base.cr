@@ -20,16 +20,13 @@ module LinCAS::Internal
 
     macro base(type,name)
         abstract {{type.id}} {{name}}
-            {{"macro num2sym(value)
+            {{"
+            macro num2sym(value)
                 Snumber.new({{value}})
             end
     
             macro sym2num(value)
                 {{value.id}}.as(Snumber).value
-            end
-    
-            macro neg2val(value)
-                {{value.id}}.as(Negative).value 
             end
         
             macro string2sym(value)
@@ -52,6 +49,12 @@ module LinCAS::Internal
             {% for name in %w|opt_sum opt_sub opt_div opt_prod opt_power| %}
                 def {{name.id}}(obj)
                     nil 
+                end
+            {% end %}
+
+            {% for name in %w|+ - * / ** opt_sum opt_div opt_prod opt_power| %}
+                def {{name.id}}(obj : Nan)
+                    return NanC 
                 end
             {% end %}
 

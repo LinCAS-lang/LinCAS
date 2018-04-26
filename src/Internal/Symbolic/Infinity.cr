@@ -34,8 +34,7 @@ module LinCAS::Internal
         end
 
         def +(obj : NInfinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self 
+            return NanC
         end
 
         def +(obj : Function)
@@ -75,8 +74,7 @@ module LinCAS::Internal
         end
 
         def -(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self 
+            return NanC
         end
 
         def -(obj : Constant)
@@ -112,8 +110,7 @@ module LinCAS::Internal
         end
 
         def *(obj : Snumber)
-            Exec.lc_raise(LcMathError,"(∞*0)") if obj == 0
-            return self 
+            return NanC
         end
 
         def *(obj : Variable)
@@ -148,9 +145,8 @@ module LinCAS::Internal
             return self 
         end
 
-        def /(obj : Infinity | NInfinity)
-            Exec.lc_raise(LcMathError,"(∞/∞)")
-            return num2sym(0)
+        def /(obj : Infinity)
+            return NanC
         end
 
         def /(obj : Constant)
@@ -171,15 +167,17 @@ module LinCAS::Internal
 
         def **(obj : Snumber)
             if obj == 0
-                Exec.lc_raise(LcMathError,"(∞^0)")
-                return SZERO
+                return SONE
             end
             return self 
         end
 
-        def **(obj : Infinity | Ninfinity)
-            Exec.lc_raise(LcMathError,"(∞^∞)")
+        def **(obj : PInfinity)
             return self 
+        end
+
+        def **(obj : NInfinity)
+            return SZERO
         end
 
         def **(obj : Constant)
@@ -210,17 +208,12 @@ module LinCAS::Internal
 
     struct NInfinity < PInfinity
 
-        def +(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self  
+        def +(obj : PInfinity)
+            return  NanC
         end
 
         def +(obj : NInfinity)
             return self 
-        end
-
-        def opt_sum(obj : PInfinity)
-            nil 
         end
 
         def opt_sum(obj : NInfinity)
@@ -228,8 +221,7 @@ module LinCAS::Internal
         end
 
         def -(obj : NInfinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self 
+            return NanC
         end
 
         def -(obj : Infinity)
