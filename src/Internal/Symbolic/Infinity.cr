@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    abstract struct Infinity SBaseS
+    abstract struct Infinity < SBaseS
 
         def +(obj : Variable)
             return Sum.new(self,obj)
@@ -200,6 +200,10 @@ module LinCAS::Internal
             return "∞"
         end
 
+        def depend?(obj)
+            false 
+        end
+
     end
 
     struct PInfinity < Infinity
@@ -228,7 +232,7 @@ module LinCAS::Internal
         end
 
         def - 
-            return InfinityC
+            return NinfinityC
         end
 
         def opt_sub(obj : NInfinity)
@@ -239,7 +243,7 @@ module LinCAS::Internal
             return self 
         end
 
-        def *(obj : Ninfinity)
+        def *(obj : NInfinity)
             return PinfinityC
         end
 
@@ -261,7 +265,7 @@ module LinCAS::Internal
 
     end
 
-    PinfinityC  = PInfinity.new.as(Symbolic) 
-    NinfinityC  = NInfinity.new.as(Symbolic)
+    PinfinityC  = PInfinity.new 
+    NinfinityC  = NInfinity.new
 
 end

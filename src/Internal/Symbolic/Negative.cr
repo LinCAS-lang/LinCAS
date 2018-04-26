@@ -160,7 +160,7 @@ module LinCAS::Internal
 
         def to_s(io)
             io << 'i'
-            if v.is_a? (Sum | Sub | Product | Division)
+            if value.is_a? (Sum | Sub | Product | Division)
                 io << '('
                 value.to_s(io)
                 io << ')'

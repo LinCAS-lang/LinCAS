@@ -199,7 +199,7 @@ module LinCAS::Internal
             if d_rht == 0
                 return @left ** (@right - SONE) * @right * d_lft
             elsif d_lft == 0
-                return self * d_rht * Log.create(lft)
+                return self * d_rht * Log.create(@left)
             end
             return self * (d_rht * Log.create(@left) + @right * d_lft / @left)
         end

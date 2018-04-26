@@ -77,7 +77,7 @@ module LinCAS::Internal
 
         def -(obj : PInfinity)
             if value.is_a? Snumber
-                return NInfinity
+                return NinfinityC
             end
             return Sub.new(self,obj)
         end
@@ -132,7 +132,7 @@ module LinCAS::Internal
 
         def *(obj : PInfinity)
             return obj if value.is_a? Snumber
-            return Product.new(self,obj)
+            return Product.new(self,obj.as(Symbolic))
         end
 
         def *(obj : NInfinity)
