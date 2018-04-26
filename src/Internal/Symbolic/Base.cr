@@ -26,7 +26,7 @@ module LinCAS::Internal
             end
     
             macro sym2num(value)
-                {{value.id}}.as(Snumber).value
+                {{value.id}}.as(Snumber).val
             end
         
             macro string2sym(value)
@@ -37,17 +37,17 @@ module LinCAS::Internal
                 num.as(LcNum).value
             end".id}}
 
-            abstract def +(obj)
-            abstract def -(obj)
-            abstract def /(obj)
-            abstract def **(obj)
-            abstract def diff()
-            abstract def eval(dict)
-            abstract def ==(obj)
-            abstract def depend?(obj)
+            # abstract def +(obj)
+            #abstract def -(obj)
+            #abstract def /(obj)
+            #abstract def **(obj)
+            #abstract def diff(obj)
+            #abstract def eval(dict)
+            #abstract def ==(obj)
+            #abstract def depend?(obj)
 
             {% for name in %w|opt_sum opt_sub opt_div opt_prod opt_power| %}
-                def {{name.id}}(obj)
+                def {{name.id}}(obj : Symbolic)
                     nil 
                 end
             {% end %}
@@ -65,6 +65,6 @@ module LinCAS::Internal
     base("class",SBaseC)
     base("struct",SBaseS)
 
-    alias Symbolic = SBaseS  | SBaseC
+    alias Symbolic = SBaseS | SBaseC
 
 end

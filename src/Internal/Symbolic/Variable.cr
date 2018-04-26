@@ -22,104 +22,104 @@ module LinCAS::Internal
         def initialize(@name : String)
         end
 
-        def +(obj : Variable)
+        def +(obj : Variable) : Symbolic
             return Product.new(STWO,self) if self == obj 
             return Sum.new(self,obj)
         end
 
-        def +(obj : BinaryOp)
+        def +(obj : BinaryOp) : Symbolic
             return obj + self
         end
 
-        def +(obj : Negative)
+        def +(obj : Negative) : Symbolic
             return self - obj.value 
         end
 
-        def +(obj : Snumber)
+        def +(obj : Snumber) : Symbolic
             return self if obj == 0
             return Sum.new(self,obj)
         end
 
-        def +(obj)
+        def +(obj : Symbolic) : Symbolic
             return Sum.new(self,obj)
         end
 
-        def opt_sum(obj : Variable)
+        def opt_sum(obj : Variable) : Symbolic?
             return Product.new(STWO,self) if self == obj 
             return nil 
         end
 
-        def -(obj : Variable)
+        def -(obj : Variable) : Symbolic
             return SZERO if self == obj
             return Sub.new(self,obj)
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             return self + obj.value
         end
 
-        def -(obj : Snumber)
+        def -(obj : Snumber) : Symbolic
             return self if obj == 0
             return Sub.new(self,obj)
         end
 
-        def -(obj)
-            return Sub.new(self,obj).reduce
+        def -(obj : Symbolic) : Symbolic
+            return Sub.new(self,obj)
         end
 
-        def -
+        def - : Symbolic
             return Negative.new(self)
         end
 
-        def opt_sub(obj : Variable)
+        def opt_sub(obj : Variable) : Symbolic?
             return SZERO if self == obj 
             return nil 
         end
 
-        def *(obj : Variable)
+        def *(obj : Variable) : Symbolic
             return Power.new(self,STWO) if self == obj 
             return Product.new(self,obj)
         end
 
-        def *(obj : BinaryOp)
+        def *(obj : BinaryOp) : Symbolic
             return obj * self 
         end
 
-        def *(obj : Snumber)
+        def *(obj : Snumber) : Symbolic
             return obj if obj == 0
             return self if obj == 1
             return Product.new(obj, self)
         end
 
-        def *(obj)
+        def *(obj : Symbolic) : Symbolic
             return Product.new(self,obj)
         end
 
-        def opt_prod(obj : Variable)
+        def opt_prod(obj : Variable) : Symbolic?
             return Power.new(self,STWO) if self == obj
             return nil 
         end
 
-        def /(obj : Snumber)
+        def /(obj : Snumber) : Symbolic
             return self if obj == 1
             return PinfinityC if obj == 0
             return Division.new(self,obj)
         end
 
-        def /(obj : Variable)
+        def /(obj : Variable) : Symbolic
             return SONE if self == obj 
             return Division.new(self,obj)
         end 
 
-        def /(obj : Product)
-            return self / obj.right / obj.left
+        def /(obj : Product) : Symbolic
+            return self / (obj.right / obj.left).as(Symbolic)
         end
 
-        def /(obj : Division)
-            return (self * obj.right) / obj.left
+        def /(obj : Division) : Symbolic
+            return (self * obj.right).as(Symbolic) / obj.left
         end
 
-        def /(obj : Power)
+        def /(obj : Power) : Symbolic
             if obj.left == self
                 exp = obj.right - SONE
                 return self ** (- exp)
@@ -127,36 +127,31 @@ module LinCAS::Internal
             return Division.new(self,obj)
         end
 
-        @[AlwaysInline]
-        def /(obj)
-            return Division.new(self,obj).reduce
+        def /(obj : Symbolic) : Symbolic
+            return Division.new(self,obj)
         end
 
-        def opt_div(obj : Variable)
+        def opt_div(obj : Variable) : Symbolic?
             return SONE if self == obj
             nil 
         end
 
-        def **(obj : Snumber)
+        def **(obj : Snumber) : Symbolic
             return SONE if obj == 0
             return self if obj == 1
             return Power.new(self,obj)
         end
 
-        def **(obj)
+        def **(obj : Symbolic) : Symbolic
             return Power.new(self,obj)
         end
 
-        def opt_power(obj)
-            return nil 
+        def diff(obj : Symbolic) : Symbolic
+            return SONE if self == obj 
+            return SZERO
         end
 
-        def diff(obj)
-            return num2sym(1) if self == obj 
-            return num2sym(0)
-        end
-
-        def eval(dict : LcHash)
+        def eval(dict : LcHash) : Num
             bytes = @name.to_slice
             if Internal.lc_hash_hash_key(dict,bytes)
                 return num2num(lc_hash_fetch(dict,bytes))

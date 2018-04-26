@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    struct Product < BinaryOp
+    class Product < BinaryOp
 
         def +(obj : Negative)
             return self - obj.value
@@ -28,7 +28,7 @@ module LinCAS::Internal
 
         def +(obj)
             return self if obj == 0
-            return Sum.new(self,obj).reduce 
+            return Sum.new(self,obj)
         end
 
         def opt_sum(obj)
@@ -50,7 +50,7 @@ module LinCAS::Internal
 
         def -(obj)
             return self if obj == 0
-            return Bub.new(self,obj)
+            return Sub.new(self,obj)
         end
 
         def -
@@ -69,40 +69,40 @@ module LinCAS::Internal
 
         def *(obj : Product)
             return self * STWO if self == obj
-            return self * obj.left * obj.right 
+            return (self * obj.left).as(Symbolic) * obj.right 
         end
 
         def *(obj : Division)
-            return (self * obj.left) / obj.right
+            return (self * obj.left).as(Symbolic) / obj.right
         end
 
         def *(obj : Power)
             if self == obj.left 
                 return Power.new(self,obj.right + SONE)
             end
-            lft = @left.opt_prod(obj)
+            lft = @left.opt_prod(obj).as(Symbolic)
             return lft * @right if lft 
-            rht = @right.opt_prod(obj) 
+            rht = @right.opt_prod(obj).as(Symbolic) 
             return @left * rht if rht
             return Product.new(self,obj)
         end
 
         def *(obj)
-            lft = @left.opt_prod(obj)
+            lft = @left.opt_prod(obj).as(Symbolic?)
             return lft * @right if lft 
-            rht = @right.opt_prod(obj) 
+            rht = @right.opt_prod(obj).as(Symbolic) 
             return @left * rht if rht
             return Product.new(self,obj) unless obj.is_a? Snumber
             return Product.new(obj,self)
         end
 
         def opt_prod(obj)
-            return szero if obj == 0
+            return SZERO if obj == 0
             return self if obj == 1
             return self ** STWO if self == obj 
-            lft = @left.opt_prod(obj)
+            lft = @left.opt_prod(obj).as(Symbolic?)
             return lft * @right if lft 
-            rht = @right.opt_prod(obj) 
+            rht = @right.opt_prod(obj).as(Symbolic?) 
             return @left * rht if rht
             nil 
         end
@@ -113,15 +113,15 @@ module LinCAS::Internal
 
         def /(obj : Product)
             return SONE if self == obj
-            return self / obj.left / obj.right
+            return (self / obj.left).as(Symbolic) / obj.right
         end
 
         def /(obj)
             return self if obj == 1
             return PinfinityC if obj == 0
-            lft = @left.opt_div obj 
+            lft = @left.opt_div(obj).as(Symbolic?) 
             return lft * @right if lft 
-            rht = @right.opt_div obj 
+            rht = @right.opt_div(obj).as(Symbolic?) 
             return @left * rht if rht 
             return Division.new(self,obj)
         end
@@ -129,9 +129,9 @@ module LinCAS::Internal
         def opt_div(obj)
             return self if obj == 1
             return PinfinityC if obj == 0
-            lft = @left.opt_div obj 
+            lft = @left.opt_div(obj).as(Symbolic) 
             return lft * @right if lft 
-            rht = @right.opt_div obj 
+            rht = @right.opt_div(obj).as(Symbolic) 
             return @left * rht if rht 
             nil
         end
@@ -184,6 +184,8 @@ module LinCAS::Internal
                 io << '('
                 elem.to_s(io)
                 io << ')'
+            else
+                elem.to_s(io)
             end 
         end
 

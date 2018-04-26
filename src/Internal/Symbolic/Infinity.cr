@@ -14,12 +14,8 @@
 # limitations under the License.
 
 module LinCAS::Internal
-    
 
-    abstract struct Infinity < SBaseS
-    end
-
-    struct PInfinity < Infinity
+    abstract struct Infinity SBaseS
 
         def +(obj : Variable)
             return Sum.new(self,obj)
@@ -206,7 +202,10 @@ module LinCAS::Internal
 
     end
 
-    struct NInfinity < PInfinity
+    struct PInfinity < Infinity
+    end
+
+    struct NInfinity < Infinity
 
         def +(obj : PInfinity)
             return  NanC
@@ -262,7 +261,7 @@ module LinCAS::Internal
 
     end
 
-    PinfinityC  = Infinity.new 
-    NinfinityC  = NInfinity.new
+    PinfinityC  = PInfinity.new.as(Symbolic) 
+    NinfinityC  = NInfinity.new.as(Symbolic)
 
 end

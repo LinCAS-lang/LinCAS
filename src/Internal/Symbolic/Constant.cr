@@ -15,150 +15,145 @@
 
 module LinCAS::Internal
 
-    abstract struct Constant < BaseS
-    
-        def initialize
-            super()
-        end
+    abstract struct Constant < SBaseS
 
-        def +(obj : Snumber)
+        def +(obj : Snumber) : Symbolic
             return SZERO if obj == 0
             return self if obj == 1
             return Sum.new(self,obj)
         end 
 
-        def +(obj : Constant)
+        def +(obj : Constant) : Symbolic
             return Product.new(STWO,obj) if self == obj
             return Sum.new(self,obj)
         end
 
-        def +(obj : Negative)
+        def +(obj : Negative) : Symbolic
             return self - obj.value 
         end
 
-        def +(obj : Infinity)
+        def +(obj : Infinity) : Symbolic
             return obj 
         end
 
-        def +(obj : BinaryOp)
+        def +(obj : BinaryOp) : Symbolic
             return obj + self 
         end
 
-        def +(obj)
+        def +(obj : Symbolic) : Symbolic
             return Sum.new(self,obj)
         end
 
-        def opt_sum(obj : Constant)
+        def opt_sum(obj : Constant) : Symbolic?
             return Product.new(STWO,obj) if self == obj
             nil 
         end
 
-        def -(obj : Constant)
-            return num2sym(0) if self == obj 
-            return nil unless self.top 
+        def -(obj : Constant) : Symbolic
+            return SZERO if self == obj 
             return Sub.new(self,obj)
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             val = obj.value 
             return self - obj 
         end
 
-        def -(obj : Sum)
+        def -(obj : Sum) : Symbolic
              return self - obj.left - obj.right
         end
 
-        def -(obj : Sub)
+        def -(obj : Sub) : Symbolic
             return self - obj.left + obj.right
         end
 
-        def -(obj)
-            return nil unless self.top
-            return Sub.new(self,obj).reduce
+        def -(obj : Symbolic) : Symbolic
+            return Sub.new(self,obj)
         end
 
-        def - 
+        def - : Symbolic
             return Negative.new(self)
         end
 
-        def *(obj : Snumber)
+        def *(obj : Snumber) : Symbolic
             return obj if obj == 0
             return self if obj == 1
             return Product.new(obj,self)
         end
 
-        def *(obj : Constant)
+        def *(obj : Constant) : Symbolic
             return Power.new(self,STWO) if self == obj
             return Product.new(self,obj)
         end
 
-        def *(obj : Negative)
+        def *(obj : Negative) : Symbolic
             return -(self * obj.value)
         end
 
-        def *(obj : BinaryOp)
+        def *(obj : BinaryOp) : Symbolic
             return obj * self 
         end
 
-        def *(obj : Infinity)
+        def *(obj : Infinity) : Symbolic
             return obj 
         end
 
-        def *(obj)
-            return Prod.new(self,obj)
+        def *(obj : Symbolic) : Symbolic
+            return Product.new(self,obj)
         end
 
-        def opt_prod(obj : Constant)
+        def opt_prod(obj : Constant) : Symbolic?
             return self * obj if self == obj 
+            nil
         end
 
-        def /(obj : Snumber)
+        def /(obj : Snumber) : Symbolic
             return PinfinityC if obj == 0
             return self if obj == 1
             return Division.new(self,obj)
         end
 
-        def /(obj : Negative)
+        def /(obj : Negative) : Symbolic
             return -(self / obj.value)
         end
 
-        def /(obj : Infinity)
+        def /(obj : Infinity) : Symbolic
             return SZERO
         end
 
-        def /(obj : Constant)
+        def /(obj : Constant) : Symbolic
             return SONE if obj == self
             return Division.new(self,obj)
         end
 
-        def /(obj)
+        def /(obj : Symbolic) : Symbolic
             return Division.new(self,obj)
         end
 
-        def opt_div(obj : Constant)
+        def opt_div(obj : Constant) : Symbolic?
             return SONE if self == obj 
             nil 
         end
 
-        def **(obj : Snumber)
+        def **(obj : Snumber) : Symbolic
             return SONE if obj == 0
             return self if obj == 1
             return  Power.new(self,obj)
         end
 
-        def **(obj : Negative)
-            return SONE / (self ** obj.value)
+        def **(obj : Negative) : Symbolic
+            return SONE / (self ** obj.value).as(Symbolic)
         end
 
-        def **(obj : PInfinity)
+        def **(obj : PInfinity) : Symbolic
             return obj 
         end
 
-        def **(obj : NInfinity)
+        def **(obj : NInfinity) : Symbolic
             return SZERO
         end
 
-        def **(obj)
+        def **(obj : Symbolic) : Symbolic
             return Power.new(self,obj)
         end
 

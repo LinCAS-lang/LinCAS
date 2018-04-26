@@ -15,9 +15,10 @@
 
 module LinCAS::Internal
 
-    struct Negative 
+    class Negative < SBaseC
 
-        getter value
+        getter value : Symbolic
+
 
         def self.create(obj : Snumber)
             return obj if obj == 0
@@ -36,7 +37,7 @@ module LinCAS::Internal
             return obj.value
         end
 
-        def self.create(obj)
+        def self.create(obj : Symbolic)
             return Negative.new(obj)
         end
 
@@ -48,7 +49,7 @@ module LinCAS::Internal
             return Negative.create(tmp)
         end
 
-        def +(obj)
+        def +(obj : Symbolic)
             return obj - value
         end
 
@@ -102,7 +103,7 @@ module LinCAS::Internal
         end
 
         def opt_prod(obj)
-            tmp = value.opt_prod(obj)
+            tmp = value.opt_prod(obj).as(Symbolic?)
             return Negative.create(tmp) if tmp 
             nil 
         end
@@ -111,22 +112,22 @@ module LinCAS::Internal
             return value / obj.value
         end
 
-        def /(obj)
-            return Negative.create(value / obj)
+        def /(obj : Symbolic)
+            return Negative.create((value / obj).as(Symbolic))
         end
 
         def opt_div(obj : Negative)
             return value.opt_div(obj.value)
         end
 
-        def opt_div(obj)
-            tmp = value.opt_div(obj)
+        def opt_div(obj : Symbolic)
+            tmp = value.opt_div(obj).as(Symbolic?)
             return Negative.create(tmp) if tmp 
             nil 
         end
 
         def **(obj : Negative)
-            tmp = value ** obj.value
+            tmp = (value ** obj.value).as(Symbolic)
             return -(SONE / tmp)
         end
 

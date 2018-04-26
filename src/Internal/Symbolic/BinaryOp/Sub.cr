@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    struct Sub < BinaryOp
+    class Sub < BinaryOp
 
         def +(obj : Negative)
             return self - obj.value
@@ -31,18 +31,18 @@ module LinCAS::Internal
 
         def +(obj)
             return self if obj == 0
-            lft = @left.opt_sum(obj)
+            lft = @left.opt_sum(obj).as(Symbolic?)
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_sum(obj)
+            rht = @right.opt_sum(obj).as(Symbolic?)
             return Sub.new(@left,rht) if rht 
             return Sum.new(self,obj)
         end
 
         def opt_sum(obj)
             return self if obj == 0
-            lft = @left.opt_sum(obj)
+            lft = @left.opt_sum(obj).as(Symbolic?)
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_sum(obj)
+            rht = @right.opt_sum(obj).as(Symbolic?)
             return Sub.new(@left,rht) if rht
             nil
         end
@@ -61,9 +61,9 @@ module LinCAS::Internal
 
         def -(obj)
             return self if obj == 0
-            lft = @left.opt_sub(obj)
+            lft = @left.opt_sub(obj).as(Symbolic?)
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_sub(obj)
+            rht = @right.opt_sub(obj).as(Symbolic?)
             return Sub.new(@left,rht) if rht 
             return Sub.new(self,obj)
         end
@@ -74,9 +74,9 @@ module LinCAS::Internal
 
         def opt_sub(obj)
             return self if obj == 0
-            lft = @left.opt_sub(obj)
+            lft = @left.opt_sub(obj).as(Symbolic?)
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_sub(obj)
+            rht = @right.opt_sub(obj).as(Symbolic?)
             return Sub.new(@left,rht) if rht 
             nil
         end
@@ -92,9 +92,9 @@ module LinCAS::Internal
         def *(obj)
             return SZERO if obj == 0
             return self if obj == 1
-            lft = @left.opt_prod obj 
+            lft = @left.opt_prod(obj).as(Symbolic?) 
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_prod obj 
+            rht = @right.opt_prod(obj).as(Symbolic?) 
             return Sub.new(@left,rht) if rht 
             return Product.new(self,obj) unless obj.is_a? Snumber
             return Product.new(obj,self)
@@ -103,9 +103,9 @@ module LinCAS::Internal
         def opt_prod(obj)
             return SZERO if obj == 0
             return self if obj == 1
-            lft = @left.opt_prod obj 
+            lft = @left.opt_prod(obj).as(Symbolic?) 
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_prod obj 
+            rht = @right.opt_prod(obj).as(Symbolic?) 
             return self ** STWO if self == obj
             return Sub.new(@left,rht) if rht
             nil 
@@ -125,28 +125,28 @@ module LinCAS::Internal
         end
 
         def /(obj : Division)
-            return self / obj.left * obj.right
+            return (self / obj.left).as(Symbolic) * obj.right
         end
 
         def /(obj)
             return self if obj == 1
-            lft = @left.opt_div obj 
-            rht = @right.opt_div obj
+            lft = @left.opt_div(obj).as(Symbolic?)
+            rht = @right.opt_div(obj).as(Symbolic?)
             return lft - rht if lft && rht
             return Product.new(self,PinfinityC) if obj == 0
             return Division.new(self,obj)
         end
 
-        def opt_div(obj)
+        def opt_div(obj) : Symbolic?
             return self if obj == 1
-            lft = @left.opt_div obj 
-            rht = @right.opt_div obj
+            lft = @left.opt_div(obj).as(Symbolic?) 
+            rht = @right.opt_div(obj).as(Symbolic?)
             return lft - rht if lft && rht
             nil
         end
 
         def **(obj : Negative)
-            return SONE / (self ** obj.value)
+            return SONE / (self ** obj.value).as(Symbolic)
         end
 
         def **(obj : PInfinity)
@@ -164,7 +164,7 @@ module LinCAS::Internal
         end
 
         def diff(obj)
-            return SZERO unless self.depends? obj 
+            return SZERO unless self.depend? obj 
             lft = @left.diff(obj)
             rht = @right.diff(obj)
             return lft - rht 

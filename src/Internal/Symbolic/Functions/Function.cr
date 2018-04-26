@@ -15,44 +15,22 @@
 
 module LinCAS::Internal
 
-    struct Nan < SBaseS
+    abstract class Function < SBaseC
 
-        {% for name in %w|+ - * / ** opt_sum opt_sub opt_prod opt_div opt_power diff depend?| %}
-            def {{name.id}}(obj)
-                return self 
-            end
-        {% end %}
+        getter value : Symbolic
 
-        def -
-            return self 
+        def initialize(@value : Symbolic)
+        end
+    
+        def ==(obj : Function)
+            return false unless self.class == obj.class 
+            return value == obj.value 
         end
 
-        def eval(dict)
-            return Float64::NAN
-        end
-
-        def to_s(io)
-            io << "Nan"
-        end
-
-        def to_s 
-            "Nan"
-        end
-
-        def depend?
+        def ==(obj : Symbolic)
             false 
         end
 
-        def ==(obj : Nan)
-            true 
-        end
-
-        def ==(obj)
-            false 
-        end
-        
     end
 
-    NanC = Nan.new
-    
 end

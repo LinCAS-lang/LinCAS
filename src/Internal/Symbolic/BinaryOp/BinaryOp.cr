@@ -15,15 +15,15 @@
 
 module LinCAS::Internal
 
-    abstract struct BinaryOp < SBaseS
+    abstract class BinaryOp < SBaseC
 
-        property left,right 
+        property left : Symbolic,right : Symbolic 
 
-        def initialize(@left : Symbol, @right : Symbol)
+        def initialize(@left : Symbolic, @right : Symbolic)
         end
 
         def ==(obj : BinaryOp)
-            return false unless self.class = obj.class
+            return false unless self.class == obj.class
             return ((self.left == obj.left) && (self.right == obj.right)) ||
                    ((self.right == obj.left) && (self.left == obj.right)) ||
                    ((self.left == obj.right) && (self.right == obj.left))

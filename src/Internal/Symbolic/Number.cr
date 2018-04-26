@@ -25,183 +25,189 @@ module LinCAS::Internal
             return a 
         end
 
-        getter value
-
-        def initialize(@value : Num)
+        def val 
+            @value 
         end
 
-        @[AlwaysInline]
-        def +(obj : Snumber)
+        def initialize(@value : IntnumR)
+        end
+
+        def +(obj : Snumber) : Symbolic
             return obj if self == 0
             return num2sym(@value + sym2num(obj))
         end
 
-        def +(obj : BinaryOp)
+        def +(obj : BinaryOp) : Symbolic
             return obj if self == 0
             return obj + self
         end
 
-        def +(obj : Infinity)
+        def +(obj : Infinity) : Symbolic
             return obj 
         end
 
-        def +(obj : Negative)
+        def +(obj : Negative) : Symbolic
             return self - obj.value 
         end
 
-        def +(obj)
+        def +(obj : Symbolic) : Symbolic
             return Sum.new(obj,self)
         end
 
-        def opt_sum(obj : Snumber)
+        def opt_sum(obj : Snumber) : Symbolic
             return num2sym(@value + sym2num(obj))
         end
 
-        def opt_sum(obj : Infinity)
+        def opt_sum(obj : Infinity) : Symbolic
             return obj 
         end
 
-        def -(obj : Snumber)
+        def -(obj : Snumber) : Symbolic
             return -obj if self == 0
-            tmp = @value - obj.value
+            tmp = @value - obj.val
             if tmp < 0
                 return -num2sym(-tmp)
             end
             return num2sym(tmp)
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             return self + obj.value 
         end
 
-        def -(obj : NInfinity)
+        def -(obj : NInfinity) : Symbolic
             return PinfinityC
         end
 
-        def -(obj : PInfinity)
+        def -(obj : PInfinity) : Symbolic
             return NinfinityC
         end
 
-        def -(obj)
+        def -(obj : Symbolic) : Symbolic
             return Sub.new(self,obj)
         end
 
-        def -
+        def - : Symbolic
             return Negative.create(self)
         end
 
-        def opt_sub(obj : Snumber)
+        def opt_sub(obj : Snumber) : Symbolic
             return -obj if self == 0
-            tmp = @value - obj.value
+            tmp = @value - obj.val
             if tmp < 0
                 return -num2sym(-tmp)
             end
             return num2sym(tmp)
         end
 
-        def opt_sub(obj : PInfinity)
+        def opt_sub(obj : PInfinity) : Symbolic?
             return NinfinityC
         end
 
-        def opt_sub(obj : NInfinity)
+        def opt_sub(obj : NInfinity) : Symbolic?
             return PinfinityC
         end
 
-        def *(obj : Snumber)
+        def *(obj : Snumber) : Symbolic
             return self if self == 0
             return obj if self == 1
-            return num2sym(@value * obj.value)
+            return num2sym(@value * obj.val)
         end
 
-        def *(obj : BinaryOp)
+        def *(obj : BinaryOp) : Symbolic
             return obj * self 
         end
 
-        def *(obj : Negative)
+        def *(obj : Negative) : Symbolic
             return -(self * obj.value )
         end
 
-        def *(obj : Infinity)
+        def *(obj : Infinity) : Symbolic
             return NanC if self == 0
             return obj 
         end
 
-        def *(obj)
+        def *(obj : Symbolic) : Symbolic
             return Product.new(self,obj)
         end
 
-        def opt_prod(obj : Snumber)
+        def opt_prod(obj : Snumber) : Symbolic?
             return self * obj 
         end
 
-        def /(obj : Snumber)
+        def /(obj : Snumber) : Symbolic
             return NanC if self == 0 && obj == 0
             return PinfinityC if obj == 0
             return self if obj == 1
-            _mcd = mcd(@value,obj.value)
-            return Division.new(@value,obj.value) if _mcd == 1
+            _mcd = mcd(@value,obj.val)
+            return Division.new(self,obj) if _mcd == 1
             v1 = @value / _mcd 
-            v2 = obj.value / _mcd 
-            return sym2num(v1) if v2 == 1 
+            v2 = obj.val / _mcd 
+            return num2sym(v1) if v2 == 1 
             return Division.new(num2sym(v1),num2sym(v2))
         end 
 
-        def /(obj : Negative)
+        def /(obj : Negative) : Symbolic
             return -(self / obj.value)
         end
 
-        def /(obj : Infinity)
+        def /(obj : Infinity) : Symbolic
             NanC if self == 0
             return SZERO
         end
 
-        def /(obj)
+        def /(obj : Symbolic) : Symbolic
             return self if self == 0
             return Division.new(self,obj)
         end
 
-        def opt_div(obj : Snumber)
-            return self / obj 
+        def opt_div(obj : Snumber) : Symbolic
+            return self / obj
         end
 
-        def **(obj : Snumber)
-            return num2sym(@value ** obj.value)
+        def **(obj : Snumber) : Symbolic
+            return num2sym(@value ** obj.val)
         end
 
-        def **(obj : Negative)
+        def **(obj : Negative) : Symbolic
             return self if self == 1 || self == 0
             tmp = self ** obj.value 
             if tmp.is_a? Infinity
                 return SZERO
             end
-            return SONE / tmp
+            return SONE / tmp.as(Symbolic)
         end
 
-        def **(obj : PInfinity)
+        def **(obj : PInfinity) : Symbolic
             return NanC if self == 0
             return self if self == 1
             return obj
         end
 
-        def **(obj : NInfinity)
+        def **(obj : NInfinity) : Symbolic
             return NanC if self == 0
             return self if self == 0
             return SZERO
         end
 
-        def **(obj)
+        def **(obj : Symbolic) : Symbolic
             return Power.new(self,obj)
         end
 
-        def opt_power(obj : Snumber)
-            return self ** obj 
+        def opt_power(obj : Snumber) : Symbolic?
+            tmp = val ** obj.val
+            if tmp != Float64::INFINITY
+                return num2sym(tmp)
+            else
+                return Power.new(self,obj)
+            end 
         end
 
-        def eval(dict : LcHash)
+        def eval(dict : LcHash) : Num
             return @value 
         end
 
-        def diff(obj)
+        def diff(obj : Symbolic) : Symbolic
             return SZERO
         end
 
@@ -218,7 +224,7 @@ module LinCAS::Internal
         end
 
         def ==(obj : Snumber)
-            return @value == obj.value 
+            return @value == obj.val
         end
 
         def ==(obj)

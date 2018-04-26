@@ -13,182 +13,183 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module LinCAS 
+module LinCAS::Internal 
 
-    struct Division < BinaryOp 
+    class Division < BinaryOp 
         
-        def +(obj : Negative)
+        def +(obj : Negative) : Symbolic
             return self - obj.value 
         end
 
-        def +(obj : Division)
+        def +(obj : Division) : Symbolic
             return self * STWO if self == obj 
             return (@left * obj.right + @right * obj.left) / (@right * obj.right)
         end 
 
-        def +(obj)
+        def +(obj : Symbolic) : Symbolic
             return self if obj == 0
             return Sum.new(self,obj)
         end
 
-        def opt_sum(obj : Snumber)
+        def opt_sum(obj : Snumber) : Symbolic?
             return self if obj == 0
             nil
         end
 
-        def opt_sum(obj : Division)
+        def opt_sum(obj : Division) : Symbolic?
             return self * STWO if self == obj 
             nil 
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             return self + obj.value 
         end
 
-        def -(obj : Division)
+        def -(obj : Division) : Symbolic
             return SZERO if self == obj 
-            return (@left * obj.right - @right * obj.left) / (@right * obj.right)
+            return ((@left * obj.right).as(Symbolic) - (@right * obj.left).as(Symbolic)).as(Symbolic) / 
+            (@right * obj.right).as(Symbolic)
         end
 
-        def -(obj)
+        def -(obj : Symbolic) : Symbolic
             return self if obj == 0
             return Sub.new(self,obj)
         end
 
-        def -
+        def - : Symbolic
             return Negative.new(self)
         end
 
-        def opt_sub(obj : Snumber)
+        def opt_sub(obj : Snumber) : Symbolic?
             return self if obj == 0
             nil 
         end
 
-        def opt_sub(obj : Division)
+        def opt_sub(obj : Division) : Symbolic?
             return SZERO if self == obj 
             nil 
         end
 
-        def *(obj : Negative)
+        def *(obj : Negative) : Symbolic
             return -(self * obj.value)
         end
 
-        def *(obj : Division)
-            return (@left * obj.left) / @right / obj.right
+        def *(obj : Division) : Symbolic
+            return ((@left * obj.left).as(Symbolic) / @right).as(Symbolic) / obj.right
         end
 
-        def *(obj : Product)
+        def *(obj : Product) : Symbolic
             return self ** STWO if self == obj 
-            return self * obj.left * obj.right 
+            return (self * obj.left).as(Symbolic) * obj.right 
         end
 
-        def *(obj)
+        def *(obj : Symbolic) : Symbolic
             return SZERO if obj == 0
             return SONE if obj == 1
-            return self * obj.left / obj.right 
+            return Product.new(self,obj)
         end
 
-        def opt_prod(obj : Snumber)
+        def opt_prod(obj : Snumber) : Symbolic?
             return self if obj == 1
             return SZERO if obj == 0
             nil
         end
 
-        def opt_prod(obj : Division)
+        def opt_prod(obj : Division) : Symbolic?
             return self ** STWO if self == obj 
             nil 
         end
 
-        def opt_prod(obj : Infinity)
+        def opt_prod(obj : Infinity) : Symbolic?
             return obj 
         end
 
-        def opt_prod(obj)
-            tmp = @left.opt_prod obj 
+        def opt_prod(obj) : Symbolic?
+            tmp = @left.opt_prod(obj).as(Symbolic?) 
             return tmp / @right if tmp 
-            tmp = obj.opt_div obj
+            tmp = obj.opt_div(obj).as(Symbolic?)
             return @left / tmp if tmp 
             nil 
         end
 
-        def /(obj : Snumber)
+        def /(obj : Snumber) : Symbolic
             return self if obj == 1
             return PinfinityC if obj == 0
             return @left * obj / @right 
         end
 
-        def /(obj : Negative)
-            return -(self / obj.right)
+        def /(obj : Negative) : Symbolic
+            return -(self / obj.value)
         end
 
-        def /(obj : Infinity)
+        def /(obj : Infinity) : Symbolic
             return SZERO
         end
 
-        def /(obj : Product)
-            return @left / obj / @right
+        def /(obj : Product) : Symbolic
+            return (@left / obj).as(Symbolic) / @right
         end
 
-        def /(obj : Division)
+        def /(obj : Division) : Symbolic
             return self * obj.right / obj.left 
         end
 
-        def /(obj)
-            lft = @left.opt_div obj 
+        def /(obj : Symbolic) : Symbolic
+            lft = @left.opt_div(obj).as(Symbolic?) 
             return lft / @right if lft 
-            return @left / (@right * obj)
+            return @left / (@right * obj).as(Symbolic)
         end
 
-        def opt_div(obj : Snumber)
-            return self if obj == 1
+        def opt_div(obj : Snumber) : Symbolic?
+            return self.as(Symbolic) if obj == 1
             return PinfinityC if obj == 0 
             nil 
         end
 
-        def opt_div(obj : Infinity)
+        def opt_div(obj : Infinity) : Symbolic
             return SZERO
         end
         
-        def opt_div(obj : Division)
+        def opt_div(obj : Division) : Symbolic?
             return SONE if obj == self 
             nil 
         end
 
-        def opt_div(obj)
-            tmp = @left.opt_div obj 
+        def opt_div(obj : Symbolic) : Symbolic?
+            tmp = @left.opt_div(obj).as(Symbolic) 
             return tmp / @right if tmp 
             nil 
         end
 
-        def **(obj : Snumber)
+        def **(obj : Snumber) : Symbolic
             return self if obj == 1
             return SONE if obj == 0
             return Power.new(self,obj)
         end
 
-        def **(obj : PInfinity)
+        def **(obj : PInfinity) : Symbolic
             return obj 
         end
 
-        def **(obj : NInfinity)
+        def **(obj : NInfinity) : Symbolic
             return SZERO 
         end
 
-        def **(obj)
+        def **(obj : Symbolic) : Symbolic
             return Power.new(self,obj)
         end
 
-        def opt_power(obj : Snumber)
+        def opt_power(obj : Snumber) : Symbolic?
             return SONE if obj == 0
             return self if obj == 1
             nil 
         end
 
-        def opt_power(obj : PInfinity)
+        def opt_power(obj : PInfinity) : Symbolic?
             return obj 
         end
 
-        def opt_power(obj : NInfinity)
+        def opt_power(obj : NInfinity) : Symbolic?
             return SZERO
         end
 
@@ -227,6 +228,8 @@ module LinCAS
                 io << '('
                 elem.to_s(io)
                 io << ')'
+            else
+                elem.to_s(io)
             end 
         end
 

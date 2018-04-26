@@ -1,5 +1,4 @@
 
-
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,31 +13,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "./LibC"
-require "./Overload.cr"
-require "./Sort"
-require "./Internal"
-require "./Method"
-require "./Structures"
-require "./Class"
-require "./Module"
-require "./Kernel"
-require "./Raise"
-require "./Matrix"
-require "./Object"
-require "./Null"
-require "./Boolean"
-require "./Range"
-require "./Array"
+require "./Base"
 require "./Number"
-require "./Integer"
-require "./Float"
-require "./String"
-require "./String_buffer"
-require "./Regexp"
-require "./MatchData"
-require "./Hash"
-require "./Dir"
-require "./File"
-require "./Load"
-require "./Symbolic/Symbolic"
+require "./Variable"
+require "./Negative"
+require "./Constant"
+require "./Infinity"
+require "./Nan"
+require "./BinaryOp/BinaryOp"
+require "./BinaryOp/Sum"
+require "./BinaryOp/Sub"
+require "./BinaryOp/Product"
+require "./BinaryOp/Division"
+require "./BinaryOp/Power"
+require "./Functions/Function"
+require "./Functions/Log"

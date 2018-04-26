@@ -16,151 +16,151 @@
 
 module LinCAS::Internal
     
-    struct Sum < BinaryOp
+    class Sum < BinaryOp
         
-        def +(obj : Negative)
-            return self - obj.value 
+        def +(obj : Negative) : Symbolic
+            return self - obj.value.as(Symbolic) 
         end
 
-        def +(obj : Sum)
-            return self + obj.left + obj.right
+        def +(obj : Sum) : Symbolic
+            return (self + obj.left).as(Symbolic) + obj.right
         end
 
-        def +(obj : Sub)
+        def +(obj : Sub) : Symbolic
             return self + obj.left - obj.right
         end
 
-        def +(obj)
+        def +(obj : Symbolic) : Symbolic
             return self if obj == 0
-            lft = @left.opt_sum(obj)
-            return left + @rigth if lft
-            rht = @right.opt_sum(obj)
+            lft = @left.opt_sum(obj).as(Symbolic?)
+            return left + @right if lft
+            rht = @right.opt_sum(obj).as(Symbolic?)
             return @left + rht if rht 
             return Sum.new(self,obj)
         end
 
-        def opt_sum(obj)
-            lft = @left.opt_sum(obj)
-            return left + @rigth if lft
-            rht = @right.opt_sum(obj)
+        def opt_sum(obj : Symbolic) : Symbolic?
+            lft = @left.opt_sum(obj).as(Symbolic?)
+            return left + @right if lft
+            rht = @right.opt_sum(obj).as(Symbolic?)
             return @left + rht if rht 
             nil 
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             return self + obj.value
         end
 
-        def -(obj : Sum)
+        def -(obj : Sum) : Symbolic
             return self - obj.left - obj.right 
         end
 
-        def -(obj : Sub)
+        def -(obj : Sub) : Symbolic
             return self - obj.left + obj.right 
         end
 
-        def -(obj)
+        def -(obj : Symbolic) : Symbolic
             return self if obj == 0
             lft = @left.opt_sub(obj)
-            return left + @rigth if lft
+            return left + @right if lft
             rht = @right.opt_sub(obj)
             return @left + rht if rht 
             return Sub.new(self,obj)
         end
 
-        def -
+        def - : Symbolic
             return Negative.new(self)
         end
 
-        def opt_sub(obj)
-            lft = @left.opt_sub(obj)
-            return left + @rigth if lft
-            rht = @right.opt_sub(obj)
+        def opt_sub(obj : Symbolic) : Symbolic?
+            lft = @left.opt_sub(obj).as(Symbolic?)
+            return left + @right if lft
+            rht = @right.opt_sub(obj).as(Symbolic?)
             return @left + rht if rht 
             nil 
         end
 
-        def *(obj : Negative)
+        def *(obj : Negative) : Symbolic
             return -(self * obj.value)
         end
 
-        def *(obj : Infinity)
-            lft = @left.opt_prod(obj)
+        def *(obj : Infinity) : Symbolic
+            lft = @left.opt_prod(obj).as(Symbolic?)
             return lft + @right if lft 
-            rht = @right.opt_prod(obj)
+            rht = @right.opt_prod(obj).as(Symbolic?)
             return @left + rht if rht 
             return Product.new(self,obj)
         end
 
-        def *(obj)
+        def *(obj : Symbolic) : Symbolic
             return self if obj == 1
             return SZERO if obj == 0
             return Power.new(self,STWO) if self == obj
             return Product.new(self,obj)
         end
 
-        def opt_prod(obj)
+        def opt_prod(obj : Symbolic) : Symbolic?
             return self if obj == 1
-            lft = @left.opt_prod(obj)
+            lft = @left.opt_prod(obj).as(Symbolic?)
             return lft + @right if lft 
-            rht = @right.opt_prod(obj)
+            rht = @right.opt_prod(obj).as(Symbolic?)
             return @left + rht if rht 
             return self ** STWO if self == obj
             nil
         end
 
-        def /(obj : Negative)
+        def /(obj : Negative) : Symbolic
             return -(self / obj.value)
         end
 
-        def /(obj : Infinity)
+        def /(obj : Infinity) : Symbolic
             return SZERO
         end
 
-        def /(obj : Sum)
+        def /(obj : Sum) : Symbolic
             return SONE if self == obj
             return Division.new(self,obj)
         end
 
-        def /(obj)
+        def /(obj : Symbolic) : Symbolic
             return self if obj == 1
-            lft = @left.opt_div(obj)
-            rht = @right.opt_div(obj)
+            lft = @left.opt_div(obj).as(Symbolic?)
+            rht = @right.opt_div(obj).as(Symbolic?)
             return lft + rht if lft && rht 
             return Product.new(self,PinfinityC) if obj == 0
             return Division.new(self,obj)
         end
 
-        def opt_div(obj)
+        def opt_div(obj : Symbolic) : Symbolic?
             return self if obj == 1
-            lft = @left.opt_div(obj)
-            rht = @right.opt_div(obj)
+            lft = @left.opt_div(obj).as(Symbolic?)
+            rht = @right.opt_div(obj).as(Symbolic?)
             return lft + rht if lft && rht  
             nil
         end
 
-        def **(obj : PInfinity)
+        def **(obj : PInfinity) : Symbolic
             return obj 
         end
 
-        def **(obj : NInfinity)
+        def **(obj : NInfinity) : Symbolic
             return SZERO
         end
 
-        def **(obj)
+        def **(obj : Symbolic) : Symbolic
             return SONE if obj == 0
             return self if obj == 1
             return Power.new(self,obj)
         end
 
-        def diff(obj)
+        def diff(obj : Symbolic) : Symbolic
             return SZERO unless self.depend? obj
             lft = @left.diff(obj)
             rht = @right.diff(obj)
             return lft + rht 
         end
 
-        def eval(dict : LcHash)
+        def eval(dict : LcHash) : Num
             lft = @left.eval(dict)
             rht = @right.eval(dict)
             return lft + rht 

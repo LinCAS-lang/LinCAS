@@ -35,7 +35,8 @@ module LinCAS
     {% else %}
         alias Intnum   = IntnumR | BigInt
     {% end %}
-    alias Num = Intnum  | Floatnum
+    alias Num  = Intnum  | Floatnum
+    alias NumR = IntnumR | Floatnum
 end
 
 require "./Listeners"
@@ -71,6 +72,9 @@ require "../util/Disassembler"
 
 include LinCAS
 
+a = Internal::Variable.new("a")
+b = Internal::Variable.new("b")
+puts (a + a).diff(a)
 
 ast = nil
 dir = ARGV[0]?
