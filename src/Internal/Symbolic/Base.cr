@@ -52,7 +52,7 @@ module LinCAS::Internal
                 end
             {% end %}
 
-            {% for name in %w|+ - * / ** opt_sum opt_div opt_prod opt_power| %}
+            {% for name in %w|+ - * / ** opt_sum opt_sub opt_div opt_prod opt_power| %}
                 def {{name.id}}(obj : Nan)
                     return NanC 
                 end
