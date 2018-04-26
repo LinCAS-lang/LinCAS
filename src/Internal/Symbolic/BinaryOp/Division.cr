@@ -212,7 +212,7 @@ module LinCAS
 
         def to_s(io)
             append(io,@left)
-            io << '/'
+            io << " / "
             append(io,@right)
         end
 
