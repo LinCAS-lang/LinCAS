@@ -166,6 +166,18 @@ module LinCAS::Internal
             return lft + rht 
         end
 
+        def to_s(io)
+            @left.to_s(io)
+            io << " + "
+            @right.to_s(io)
+        end
+
+        def to_s 
+            return String.build do |io|
+                to_s(io)
+            end
+        end
+
     end
 
 end

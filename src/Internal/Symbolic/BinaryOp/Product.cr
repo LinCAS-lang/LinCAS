@@ -165,6 +165,7 @@ module LinCAS::Internal
 
         def to_s(io)
             append(io,@left)
+            io << " * "
             append(io,@right)
         end
 
