@@ -39,6 +39,10 @@ module LinCAS
             "Nan"
         end
 
+        def depend?
+            false 
+        end
+
         def ==(obj : Nan)
             true 
         end
