@@ -128,6 +128,8 @@ module LinCAS::Internal
         end
 
         def *(obj) : Symbolic
+            return SZERO if self == 0
+            return obj if self == 1
             return Product.new(self,obj)
         end
 

@@ -160,7 +160,7 @@ module LinCAS::Internal
             return SZERO unless self.depend? obj 
             lft = @left.diff(obj)
             rht = @right.diff(obj)
-            return lft * @right + @left * lft 
+            return lft * @right + @left * rht
         end
 
         def to_s(io)
