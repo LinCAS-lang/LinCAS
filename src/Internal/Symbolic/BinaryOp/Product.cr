@@ -179,16 +179,6 @@ module LinCAS::Internal
             return @left.eval(dict) * @right.eval(dict)
         end
 
-        private def append(io,elem)
-            if elem.is_a? BinaryOp
-                io << '('
-                elem.to_s(io)
-                io << ')'
-            else
-                elem.to_s(io)
-            end 
-        end
-
     end
 
 end
