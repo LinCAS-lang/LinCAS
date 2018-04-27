@@ -72,7 +72,6 @@ require "../util/Disassembler"
 
 include LinCAS
 
-
 ast = nil
 dir = ARGV[0]?
 if dir 

@@ -16,17 +16,17 @@ module LinCAS::Internal
 
     class Exp < Function
         
-        def create(obj : Snumber)
+        def self.create(obj : Snumber)
             return SONE if obj == 0
             return EC if obj == 1
             return Exp.new(obj)
         end
 
-        def create(obj : Log)
+        def self.create(obj : Log)
             return obj.value 
         end
 
-        def create(obj)
+        def self.create(obj)
             return Exp.new(obj)
         end
 
@@ -71,6 +71,7 @@ module LinCAS::Internal
         end
 
         def diff(obj : Symbolic)
+            return SZERO unless self.depend? obj
             return value.diff(obj) * self 
         end
 
