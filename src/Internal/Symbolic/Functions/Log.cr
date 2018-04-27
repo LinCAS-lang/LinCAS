@@ -21,6 +21,19 @@ module LinCAS::Internal
             return SONE 
         end
 
+        def self.create(obj : Snumber)
+            return SZERO if obj == 1
+            return NinfinityC if obj == 0
+            return Log.new(obj)
+        end
+
+        def self.create(obj : Negative)
+            if obj.value.is_a? Snumber 
+                return NanC 
+            end
+            return Log.new(obj)
+        end
+
         def self.create(obj : Product)
             tmp = obj.opt_div(EC)
             return Log.create(tmp) if tmp 
@@ -33,6 +46,10 @@ module LinCAS::Internal
             tmp = obj.opt_prod(EC)
             return Log.create(tmp) if tmp 
             return Log.new(obj)
+        end
+
+        def self.create(obj : Power)
+            return obj.right * Log.create(obj.left)
         end
 
         def self.create(obj)
@@ -79,14 +96,31 @@ module LinCAS::Internal
             nil 
         end
 
-
-
         def diff(obj : Symbolic)
-            SONE 
+            tmp = value 
+            return SONE / tmp * tmp.diff(obj)
         end
         
         def eval(dict : LcHash)
-            return Math.log(value.eval(dict))
+            val = value.eval(dict)
+            if val > 0
+                return Math.log(value.eval(dict))
+            elsif val == 0
+                return -Float64::INFINITY 
+            end
+            return Float::NAN 
+        end
+
+        def to_s(io)
+            io << "log("
+            value.to_s(io)
+            io << ')'
+        end
+
+        def to_s
+            return String.build do |io|
+                to_s(io)
+            end
         end
 
     end

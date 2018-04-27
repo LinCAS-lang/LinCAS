@@ -72,9 +72,6 @@ require "../util/Disassembler"
 
 include LinCAS
 
-a = Internal::Variable.new("a")
-b = Internal::Variable.new("b")
-puts (a + a).diff(a)
 
 ast = nil
 dir = ARGV[0]?

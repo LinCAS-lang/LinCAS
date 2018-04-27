@@ -58,6 +58,16 @@ module LinCAS::Internal
                 end
             {% end %}
 
+            protected def append(io,elem)
+                if elem.is_a? BinaryOp
+                    io << '('
+                    elem.to_s(io)
+                    io << ')'
+                else
+                    elem.to_s(io)
+                end 
+            end
+
             
         {{"end".id}}
     end

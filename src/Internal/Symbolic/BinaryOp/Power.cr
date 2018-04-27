@@ -228,17 +228,6 @@ module LinCAS::Internal
             false 
         end
 
-        private def append(io,elem)
-            if elem.is_a? BinaryOp
-                io << '('
-                elem.to_s(io)
-                io << ')'
-            else
-                elem.to_s(io)
-            end 
-        end
-
-
     end
     
 end
