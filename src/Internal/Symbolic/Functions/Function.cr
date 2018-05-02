@@ -243,4 +243,76 @@ module LinCAS::Internal
 
     end
 
+    macro define_function(name)
+
+        {% string_n = "#{name}".downcase %}
+
+        class {{name}} < Function
+            def self.create(obj)
+                return Sin.new(obj)
+            end
+
+            def +(obj : {{name}})
+                return self * STWO if self == obj 
+                return Sum.new(self,obj)
+            end
+
+            def opt_sum(obj : {{name}})
+                return self * STWO if self == obj
+                nil 
+            end
+
+            def -(obj : {{name}})
+                return SZERO if self == obj 
+                return Diff.new(self,obj)
+            end
+
+            def opt_sub(obj : {{name}})
+                return SZERO if self == obj
+                nil 
+            end
+
+            def *(obj : {{name}})
+                return self ** STWO if self == obj 
+                return Product.new(self,obj)
+            end
+
+            def opt_prod(obj : {{name}})
+                return self ** STWO if self == obj 
+                nil 
+            end
+
+            def /(obj : {{name}})
+                return SONE if self == obj 
+                return Division.new(self,obj)
+            end
+
+            def opt_div(obj : {{name}})
+                return SONE if self == obj
+                nil 
+            end
+
+            def diff(obj)
+                {{yield}}
+            end
+
+            def eval(dict : LcHash)
+                return Math.{{string_n.id}}(value.eval(dict))
+            end
+
+            def to_s(io)
+                io << "#{{{string_n}}}("
+                value.to_s(io)
+                io << ')'
+            end
+
+            def to_s
+                return String.new do |io|
+                    to_s(io)
+                end
+            end
+        end
+ 
+    end
+
 end
