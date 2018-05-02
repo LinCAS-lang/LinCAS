@@ -285,7 +285,7 @@ module LinCAS::Internal
     internal.lc_undef_allocator(MatchDataClass)
 
     internal.lc_add_internal(MatchDataClass,"inspect",mdata_inspect,   0)
-    internal.lc_add_internal(MatchDataClass,"to_s",mdata_to_s,      0)
+    internal.lc_add_internal(MatchDataClass,"to_s",mdata_to_s,         0)
     internal.lc_add_internal(MatchDataClass,"size",mdata_size,         0)
     internal.lc_add_internal(MatchDataClass,"group_size",mdata_gsize_, 0)
     internal.lc_add_internal(MatchDataClass,"[]",mdata_index,          1)

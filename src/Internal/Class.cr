@@ -399,7 +399,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"ancestors", class_ancestors,                       0)
 
     internal.lc_add_class_method(Lc_Class,"is_a?", is_a,                                1)
-    internal.lc_add_class_method(Lc_Class,"class",class_class,                      0)
+    internal.lc_add_class_method(Lc_Class,"class",class_class,                          0)
     internal.lc_add_class_method(Lc_Class,"remove_method",class_rm_method,              1)
     internal.lc_add_class_method(Lc_Class,"delete_method",class_delete_method,          1)
 
