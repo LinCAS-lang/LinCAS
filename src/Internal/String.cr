@@ -167,6 +167,13 @@ module LinCAS::Internal
         return str
     end
 
+    def self.build_string_recycle(string : String)
+        str = new_string
+        str.str_ptr = string.to_unsafe 
+        set_size(str,string.size)
+        return str
+    end
+
     def self.string_char_iterate(string : LcString)
         ptr    = pointer_of(string)
         strlen = str_size(string)

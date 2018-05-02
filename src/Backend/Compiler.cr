@@ -640,6 +640,8 @@ class LinCAS::Compiler
                 is = @ifactory.makeBCode(Code::PUSHANS)
             when NodeType::HASH
                 is = compile_hash(node)
+            when NodeType::SYMBOLIC
+                is = compile_symbolic(node)
             else 
                 is = compile_op(node)
         end
@@ -1174,6 +1176,51 @@ class LinCAS::Compiler
         link(line,c_key,c_val)
         set_last(line,c_val)
         return line
+    end
+
+    protected def compile_symbolic(node : Node)
+        branch = node.getBranches[0]
+        is    = compile_sym_tree(branch)
+        new_f = @ifactory.makeBCode(Code::NEW_FUNC)
+        link(is,new_f)
+        set_last(is,new_f)
+        return is
+    end
+
+    macro compile_sym_op(code)
+        branches = node.getBranches
+        left  = compile_sym_tree(branches[0])
+        right = compile_sym_tree(branches[1])
+        op    = @ifactory.makeBCode(Code::{{code.id}})
+        link(left,right,op)
+        set_last(left,op) 
+        return left 
+    end
+
+    protected def compile_sym_tree(node : Node)
+        {% begin %}
+
+        case node.type 
+            when NodeType::LOCAL_ID
+                tmp = @ifactory.makeBCode(Code::NEW_SVAR) 
+                tmp.text = unpack_name(node)
+                return tmp
+            when NodeType::INT
+                tmp = @ifactory.makeBCode(Code::NEW_SNUM)
+                tmp.value = node.getAttr(NKey::VALUE).as(Intnum)
+            end
+            {% for block in { {"SUM","S_SUM"},{"SUB","S_SUB"},{"MUL","S_PROD"},
+                              {"FDIV","S_DIV"},{"IDIV","S_DIV"},{"POWER","S_POW"} } %}
+
+            when NodeType::{{block[0].id}}
+                compile_sym_op({{block[1]}})
+
+            {% end %}
+            else
+                return compile_exp(node)
+        end
+
+        {% end %}
     end
 
     @[AlwaysInline]

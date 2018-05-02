@@ -19,12 +19,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     MAX_STACK_DEPTH = 2000
 
-    alias Value   = Internal::Value
-    alias ValueR  = Internal::ValueR
-    alias LcError = Internal::LcError
-    Null          = Internal::Null
-    LcTrue        = Internal::LcTrue
-    LcFalse       = Internal::LcFalse
+    alias Value    = Internal::Value
+    alias ValueR   = Internal::ValueR
+    alias LcError  = Internal::LcError
+    alias Symbolic = Internal::Symbolic
+    Null           = Internal::Null
+    LcTrue         = Internal::LcTrue
+    LcFalse        = Internal::LcFalse
 
 
     private struct ObjectWrapper
@@ -124,7 +125,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         property file,line
     end
 
-    alias StackValue  = ObjectWrapper | Intnum | Scope
+    alias StackValue  = ObjectWrapper | Scope | Symbolic
 
     ErrHandler  = ErrorHandler.new 
     CallTracker = VMcall_tracker.new
@@ -426,10 +427,18 @@ class LinCAS::VM < LinCAS::MsgGenerator
         vm_run_bytecode
     end
 
+    def opt_unwrap(obj)
+        if obj.is_a? Symbolic 
+            return obj 
+        else
+            return unwrap_object(obj)
+        end
+    end
+
     protected def vm_run_bytecode(handle_return = false)
         is = current_frame.pc
         loop do
-            {% if flag?(:debug) %}
+            {% if flag?(:vm_debug) %}
                 puts "Executing code #{is.code}";gets
             {% end %}
             case is.code
@@ -568,6 +577,34 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     push(wrap_object(ans))
                 when Code::HASH_NEW
                     vm_hash_new(is.argc)
+                when Code::NEW_SVAR
+                    push(Internal::Variable.new(is.text))
+                when Code::S_SUM
+                    right = opt_unwrap(pop)
+                    left  = opt_unwrap(pop)
+                    push(internal.s_sum(left,right))
+                when Code::S_SUB
+                    right = opt_unwrap(pop)
+                    left  = opt_unwrap(pop)
+                    push(internal.s_sub(left,right))
+                when Code::S_PROD
+                    right = opt_unwrap(pop)
+                    left  = opt_unwrap(pop)
+                    push(internal.s_prod(left,right))
+                when Code::S_DIV
+                    right = opt_unwrap(pop)
+                    left  = opt_unwrap(pop)
+                    push(internal.s_div(left,right))
+                when Code::S_POW
+                    right = opt_unwrap(pop)
+                    left  = opt_unwrap(pop)
+                    push(internal.s_power(left,right))
+                when Code::NEW_FUNC
+                    tmp = pop
+                    if tmp.is_a? Symbolic
+                        tmp = wrap_object(internal.build_function(tmp))
+                    end
+                    push(tmp)
             end
             if ErrHandler.handled_error?
                 vm_handle_error(ErrHandler.error.as(Value))

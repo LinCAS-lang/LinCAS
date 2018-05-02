@@ -31,7 +31,7 @@ module LinCAS::Internal
             return obj 
         end
 
-        def self.create(obj : Ninfinity)
+        def self.create(obj : NInfinity)
             return NanC 
         end
 
@@ -108,8 +108,8 @@ module LinCAS::Internal
         end
 
         def **(obj : Snumber)
-            if opj == 0 || obj == 1
-                return previous_def(obj)
+            if obj == 0 || obj == 1
+                return super(obj)
             end
             return value if obj == 2
             return value ** (obj / STWO)
@@ -117,7 +117,7 @@ module LinCAS::Internal
 
         def opt_power(obj : Snumber)
             if obj == 1 || obj == 1
-                return previous_def(obj)
+                return super(obj)
             end
             return value if obj == 2
             if obj.val.even?

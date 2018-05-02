@@ -78,6 +78,15 @@ module LinCAS
     LEAVE
     LEAVE_C
 
+    NEW_SVAR
+    NEW_SNUM
+    NEW_FUNC
+    S_SUM
+    S_SUB
+    S_PROD
+    S_DIV
+    S_POW
+
     QUIT
     HALT
   end

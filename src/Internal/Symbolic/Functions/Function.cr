@@ -264,7 +264,7 @@ module LinCAS::Internal
 
             def -(obj : {{name}})
                 return SZERO if self == obj 
-                return Diff.new(self,obj)
+                return Sub.new(self,obj)
             end
 
             def opt_sub(obj : {{name}})
@@ -307,7 +307,7 @@ module LinCAS::Internal
             end
 
             def to_s
-                return String.new do |io|
+                return String.build do |io|
                     to_s(io)
                 end
             end
