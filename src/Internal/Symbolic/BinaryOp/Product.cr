@@ -60,6 +60,11 @@ module LinCAS::Internal
 
         def -(obj)
             return self if obj == 0
+            if @left == obj
+                return @left * (@right - SONE)
+            elsif @right == obj 
+                return @right * (@left - SONE)
+            end
             return Sub.new(self,obj)
         end
 
@@ -70,6 +75,11 @@ module LinCAS::Internal
         def opt_sub(obj)
             return self if obj == 0
             return SZERO if self == obj 
+            if @left == obj
+                return @left * (@right - SONE)
+            elsif @right == obj 
+                return @right * (@left - SONE)
+            end
             nil 
         end
 
