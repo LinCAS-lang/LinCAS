@@ -22,8 +22,8 @@ module LinCAS::Internal
         end
 
         def +(obj : Product)
-            return self * STWO
-            return self * obj.left * obj.right 
+            return self * STWO if self == obj
+            return Sum.new(self,obj)
         end
 
         def +(obj)
@@ -89,7 +89,7 @@ module LinCAS::Internal
 
         def *(obj : Product)
             return self * STWO if self == obj
-            return (self * obj.left).as(Symbolic) * obj.right 
+            return self * obj.left * obj.right 
         end
 
         def *(obj : Division)

@@ -46,10 +46,11 @@ module LinCAS::Internal
 
         def +(obj : Negative)
             tmp = value + obj.value
+            puts tmp;gets
             return Negative.create(tmp)
         end
 
-        def +(obj : Symbolic)
+        def +(obj)
             return obj - value
         end
 
