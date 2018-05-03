@@ -199,7 +199,7 @@ module LinCAS::Internal
             nil 
         end
 
-        def diff(obj : Symbolic?)
+        def diff(obj : Symbolic)
             return SZERO unless self.depend? obj 
             d_lft = @left.diff(obj)
             d_rht = @right.diff(obj)
