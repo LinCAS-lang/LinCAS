@@ -110,7 +110,7 @@ module LinCAS::Internal
         end
 
         def /(obj : Negative)
-            return -(self / obj)
+            return -(self / obj.value)
         end
 
         def /(obj : Sub)

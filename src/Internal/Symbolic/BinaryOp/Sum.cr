@@ -85,9 +85,9 @@ module LinCAS::Internal
         end
 
         def *(obj : Infinity) : Symbolic
-            lft = @left.opt_prod(obj).as(Symbolic?)
+            lft = @left.opt_prod(obj)
             return lft + @right if lft 
-            rht = @right.opt_prod(obj).as(Symbolic?)
+            rht = @right.opt_prod(obj)
             return @left + rht if rht 
             return Product.new(self,obj)
         end
@@ -101,9 +101,9 @@ module LinCAS::Internal
 
         def opt_prod(obj : Symbolic) : Symbolic?
             return self if obj == 1
-            lft = @left.opt_prod(obj).as(Symbolic?)
+            lft = @left.opt_prod(obj)
             return lft + @right if lft 
-            rht = @right.opt_prod(obj).as(Symbolic?)
+            rht = @right.opt_prod(obj)
             return @left + rht if rht 
             return self ** STWO if self == obj
             nil
@@ -122,7 +122,7 @@ module LinCAS::Internal
             return Division.new(self,obj)
         end
 
-        def /(obj : Symbolic) : Symbolic
+        def /(obj) : Symbolic
             return self if obj == 1
             lft = @left.opt_div(obj).as(Symbolic?)
             rht = @right.opt_div(obj).as(Symbolic?)
