@@ -22,6 +22,20 @@ module LinCAS::Internal
         property func
     end
 
+    macro check_fun(f)
+        if !({{f}}.is_a? LcFunction)
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{f}})} into Function")
+            return Null 
+        end
+    end
+
+    macro ensure_var(var)
+        if !(get_function({{var}}).is_a? Variable)
+            lc_raise(LcTypeError,"Argument must be Variable, not #{lc_typeof({{var}})}")
+            return Null 
+        end
+    end
+
     macro set_function(obj,func)
         lc_cast({{obj}},LcFunction).func = {{func}}
     end
@@ -37,6 +51,8 @@ module LinCAS::Internal
                 tmp << el.func
             elsif el.is_a? Symbolic
                 tmp << el
+            elsif el.is_a? LcNum
+                tmp << Snumber.new(num2num(el).as(IntnumR))
             else
                 lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(el)} into Function")
                 tmp << NanC
@@ -83,12 +99,68 @@ module LinCAS::Internal
         next lc_func_to_s(*lc_cast(args,T1))
     end
 
+    {% for name in %w|sum sub prod div power|%}
+        def self.lc_func_{{name.id}}(f1 : Value, f2 : Value)
+            check_fun(f2)
+            return build_function(s_{{name.id}}(get_function(f1),get_function(f2)))
+        end
+    {% end %}
+
+    func_sum = LcProc.new do |args|
+        next lc_func_sum(*lc_cast(args,T2))
+    end
+
+    func_sub = LcProc.new do |args|
+        next lc_func_sub(*lc_cast(args,T2))
+    end
+
+    func_prod = LcProc.new do |args|
+        next lc_func_prod(*lc_cast(args,T2))
+    end
+
+    func_div = LcProc.new do |args|
+        next lc_func_div(*lc_cast(args,T2))
+    end
+
+    func_power = LcProc.new do |args|
+        next lc_func_power(*lc_cast(args,T2))
+    end
+
+    def self.lc_func_uminus(f : Value)
+        return build_function(-get_function(f))
+    end
+
+    func_uminus = LcProc.new do |args|
+        next lc_func_uminus(*lc_cast(args,T1))
+    end
+
+    def self.lc_func_diff(f : Value, var : Value)
+        check_fun(var)
+        ensure_var(var)
+        func = get_function(f)
+        v    = get_function(var)
+        return build_function(func.diff(v))
+    end
+
+    func_diff = LcProc.new do |args|
+        next lc_func_diff(*lc_cast(args,T2))
+    end
+
     FunctionClass = internal.lc_build_internal_class("Function")
     internal.lc_set_parent_class(FunctionClass,Obj)
 
     internal.lc_set_allocator(FunctionClass,function_allocator)
 
     internal.lc_add_internal(FunctionClass,"to_s",func_to_s,     0)
+    internal.lc_add_internal(FunctionClass,"inspect",func_to_s,  0)
+    internal.lc_add_internal(FunctionClass,"+",func_sum,         1)
+    internal.lc_add_internal(FunctionClass,"-",func_sub,         1)
+    internal.lc_add_internal(FunctionClass,"*",func_prod,        1)
+    internal.lc_add_internal(FunctionClass,"/",func_div,         1)
+    internal.lc_add_internal(FunctionClass,"\\",func_div,        1)
+    internal.lc_add_internal(FunctionClass,"^",func_power,       1)
+    internal.lc_add_internal(FunctionClass,"-@",func_power,      0)
+    internal.lc_add_internal(FunctionClass,"diff",func_diff,     1)
 
     
     

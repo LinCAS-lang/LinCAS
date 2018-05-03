@@ -1217,7 +1217,7 @@ class LinCAS::Compiler
 
             {% end %}
             else
-                return compile_exp(node)
+                return compile_exp(node,false)
         end
 
         {% end %}

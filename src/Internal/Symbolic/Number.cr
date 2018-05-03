@@ -95,7 +95,7 @@ module LinCAS::Internal
             return -obj if self == 0
             tmp = @value - obj.val
             if tmp < 0
-                return -num2sym(-tmp)
+                return -num2sym(tmp.abs)
             end
             return num2sym(tmp)
         end

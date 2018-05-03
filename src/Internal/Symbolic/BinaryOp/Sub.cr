@@ -61,9 +61,9 @@ module LinCAS::Internal
 
         def -(obj)
             return self if obj == 0
-            lft = @left.opt_sub(obj).as(Symbolic?)
+            lft = @left.opt_sub(obj)
             return Sub.new(lft,@right) if lft 
-            rht = @right.opt_sub(obj).as(Symbolic?)
+            rht = @right.opt_sum(obj)
             return Sub.new(@left,rht) if rht 
             return Sub.new(self,obj)
         end
