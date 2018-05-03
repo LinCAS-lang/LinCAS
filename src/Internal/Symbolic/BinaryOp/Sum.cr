@@ -30,10 +30,10 @@ module LinCAS::Internal
             return self + obj.left - obj.right
         end
 
-        def +(obj : Symbolic) : Symbolic
+        def +(obj) : Symbolic
             return self if obj == 0
             lft = @left.opt_sum(obj).as(Symbolic?)
-            return left + @right if lft
+            return lft + @right if lft
             rht = @right.opt_sum(obj).as(Symbolic?)
             return @left + rht if rht 
             return Sum.new(self,obj)

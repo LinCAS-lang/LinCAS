@@ -579,6 +579,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     vm_hash_new(is.argc)
                 when Code::NEW_SVAR
                     push(Internal::Variable.new(is.text))
+                when Code::NEW_SNUM
+                    push(Internal::Snumber.new(is.value.as(IntnumR)))
                 when Code::S_SUM
                     right = opt_unwrap(pop)
                     left  = opt_unwrap(pop)

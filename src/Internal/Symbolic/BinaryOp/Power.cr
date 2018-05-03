@@ -90,7 +90,7 @@ module LinCAS::Internal
             return Product.new(self,obj)
         end
 
-        def *(obj : Symbolic)
+        def *(obj)
             return @left ** (@right + SONE) if @left == obj
             return Product.new(self,obj)
         end
@@ -103,6 +103,13 @@ module LinCAS::Internal
         def opt_prod(obj : Snumber)
             return SZERO if obj == 0
             return self if obj == 1
+            nil 
+        end
+
+        def opt_prod(obj)
+            if @left == obj 
+                return @left ** (@right + SONE)
+            end
             nil 
         end
 

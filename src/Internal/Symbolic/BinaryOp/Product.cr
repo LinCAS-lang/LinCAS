@@ -28,11 +28,21 @@ module LinCAS::Internal
 
         def +(obj)
             return self if obj == 0
+            if @left == obj
+                return @left * (@right + SONE)
+            elsif @right == obj 
+                return @right * (@left + SONE)
+            end
             return Sum.new(self,obj)
         end
 
         def opt_sum(obj)
             return self if obj == 0
+            if @left == obj
+                return @left * (@right + SONE)
+            elsif @right == obj 
+                return @right * (@left + SONE)
+            end
             return self * STWO if self == obj
             nil 
         end
@@ -88,9 +98,9 @@ module LinCAS::Internal
         end
 
         def *(obj)
-            lft = @left.opt_prod(obj).as(Symbolic?)
+            lft = @left.opt_prod(obj)
             return lft * @right if lft 
-            rht = @right.opt_prod(obj).as(Symbolic) 
+            rht = @right.opt_prod(obj)
             return @left * rht if rht
             return Product.new(self,obj) unless obj.is_a? Snumber
             return Product.new(obj,self)

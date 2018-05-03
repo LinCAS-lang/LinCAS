@@ -1208,7 +1208,7 @@ class LinCAS::Compiler
             when NodeType::INT
                 tmp = @ifactory.makeBCode(Code::NEW_SNUM)
                 tmp.value = node.getAttr(NKey::VALUE).as(Intnum)
-            end
+                return tmp
             {% for block in { {"SUM","S_SUM"},{"SUB","S_SUB"},{"MUL","S_PROD"},
                               {"FDIV","S_DIV"},{"IDIV","S_DIV"},{"POWER","S_POW"} } %}
 
