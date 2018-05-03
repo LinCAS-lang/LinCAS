@@ -72,6 +72,7 @@ module LinCAS::Internal
         end
 
         def -(obj : Negative) : Symbolic
+            return obj.value if self == 0
             return self + obj.value 
         end
 
@@ -84,6 +85,7 @@ module LinCAS::Internal
         end
 
         def -(obj) : Symbolic
+            return -obj if self == 0
             return Sub.new(self,obj)
         end
 
