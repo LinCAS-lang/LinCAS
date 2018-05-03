@@ -92,10 +92,9 @@ module LinCAS::Internal
         def *(obj)
             return SZERO if obj == 0
             return self if obj == 1
-            lft = @left.opt_prod(obj).as(Symbolic?) 
-            return Sub.new(lft,@right) if lft 
-            rht = @right.opt_prod(obj).as(Symbolic?) 
-            return Sub.new(@left,rht) if rht 
+            lft = @left.opt_prod(obj)
+            rht = @right.opt_prod(obj)
+            return lft - rht if lft && rht 
             return Product.new(self,obj) unless obj.is_a? Snumber
             return Product.new(obj,self)
         end
@@ -103,11 +102,10 @@ module LinCAS::Internal
         def opt_prod(obj)
             return SZERO if obj == 0
             return self if obj == 1
-            lft = @left.opt_prod(obj).as(Symbolic?) 
-            return Sub.new(lft,@right) if lft 
-            rht = @right.opt_prod(obj).as(Symbolic?) 
+            lft = @left.opt_prod(obj)
+            rht = @right.opt_prod(obj)
+            return lft - rht if lft && rht
             return self ** STWO if self == obj
-            return Sub.new(@left,rht) if rht
             nil 
         end
 
