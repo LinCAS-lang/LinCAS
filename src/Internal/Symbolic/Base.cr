@@ -34,7 +34,7 @@ module LinCAS::Internal
             end
             
             macro num2num(num)
-                num.as(LcNum).value
+                {{num}}.as(LcNum).val.as(NumR)
             end".id}}
 
             abstract def +(obj)

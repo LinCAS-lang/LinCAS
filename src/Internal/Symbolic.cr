@@ -146,6 +146,20 @@ module LinCAS::Internal
         next lc_func_diff(*lc_cast(args,T2))
     end
 
+    def self.lc_func_eval(f : Value, dict : Value)
+        hash_check(dict)
+        tmp = get_function(f).eval(lc_cast(dict,LcHash))
+        if tmp.is_a? Float 
+            return num2float(tmp)
+        else
+            return num2int(tmp)
+        end
+    end
+
+    func_eval = LcProc.new do |args|
+        next lc_func_eval(*lc_cast(args,T2))
+    end
+
     FunctionClass = internal.lc_build_internal_class("Function")
     internal.lc_set_parent_class(FunctionClass,Obj)
 
@@ -161,6 +175,9 @@ module LinCAS::Internal
     internal.lc_add_internal(FunctionClass,"^",func_power,       1)
     internal.lc_add_internal(FunctionClass,"-@",func_power,      0)
     internal.lc_add_internal(FunctionClass,"diff",func_diff,     1)
+    internal.lc_add_internal(FunctionClass,"eval",func_eval,     1)
+
+    
 
     
     

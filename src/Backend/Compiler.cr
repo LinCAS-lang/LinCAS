@@ -260,8 +260,9 @@ class LinCAS::Compiler
     end
 
     protected def compile_print(node : Node)
+        beg      = true
         first    = pushself
-        last     = first
+        last     = first 
         callname = node.type == NodeType::PRINT ? "print" : "printl"
         args     = node.getBranches
         if args.size > 0
@@ -271,12 +272,25 @@ class LinCAS::Compiler
                 link(last,exp_iseq,callis)
                 if i < args.size - 1
                     pop_is = popobj
-                    link(callis,pop_is)
+                    link(last,exp_iseq,callis,pop_is) if beg 
+                    if !beg
+                        p_self = pushself
+                        link(last,p_self,exp_iseq,callis,pop_is)  
+                    end
+                    beg = false if beg
                     last = pop_is
                 else 
+                    if beg 
+                        link(last,exp_iseq,callis)
+                    else
+                        p_self = pushself
+                        link(last,p_self,exp_iseq,callis)
+                    end
                     last = callis
                 end
+                link(last)
             end
+            
         else
             value  = @ifactory.makeBCode(Code::PUSHN)
             callis = make_call_is(callname,1)

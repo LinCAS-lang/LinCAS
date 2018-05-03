@@ -137,7 +137,10 @@ module LinCAS::Internal
         buffer_append(buffer,'}')
     end
 
-    private def self.fast_hash(item : Value)
+    private def self.fast_hash(item : Value | Slice)
+        if item.is_a? Slice
+            return HASHER.bytes(item).result 
+        end
         if lc_obj_has_internal_m? item,"hash"
             if item.is_a? LcInt
                 value = int2num(item)
@@ -154,8 +157,6 @@ module LinCAS::Internal
                 return HASHER.float(float2num(item)).result
             elsif item.is_a? LcString
                 return HASHER.bytes(string2slice(item)).result
-            elsif item.is_a? Slice
-                return HASHER.bytes(item).result
             end 
             return HASHER.int(item.id).result
         end
@@ -169,19 +170,23 @@ module LinCAS::Internal
         HASHER.reset
     end
 
-    private def self.fast_compare(v1 : Value,v2 : Value)
+    private def self.fast_compare(v1 : Value | Slice,v2 : Value | Slice)
+        if (v1.is_a? Slice(UInt8) && v2.is_a? LcString)
+            return libc.strcmp(v1.to_unsafe,pointer_of(v2)) == 0
+        elsif (v2.is_a? Slice(UInt8) && v1.is_a? LcString)
+            return libc.strcmp(v2.to_unsafe,pointer_of(v1)) == 0
+        end
+        return false if v1.is_a? Slice || v2.is_a? Slice
+        v1 = lc_cast(v1,Value)
+        v2 = lc_cast(v2,Value)
         return true if v1.id == v2.id 
-        if lc_obj_has_internal_m? v1,"=="
+        if lc_obj_has_internal_m? lc_cast(v1,Value),"=="
             if v1.is_a? LcInt 
                 return bool2val(lc_int_eq(v1,v2))
             elsif v1.is_a? LcFloat
                 return bool2val(lc_float_eq(v1,v2))
             elsif v1.is_a? LcString
                 return bool2val(lc_str_compare(v1,v2))
-            elsif (v1.is_a? Slice(UInt8) && v2.is_a? LcString)
-                  return libc.strcmp(v1.to_unsafe,pointer_of(v2)) == 0
-            elsif (v2.is_a? Slice(UInt8) && v1.is_a? LcString)
-                return libc.strcmp(v2.to_unsafe,pointer_of(v1)) == 0
             #elsif v1.is_a? Matrix 
             #    return lc_matrix_eq(v1,v2)
             end

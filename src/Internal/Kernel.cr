@@ -83,7 +83,7 @@ module LinCAS::Internal
             end
             internal.lc_include_module(klass.as(Lc_Class),mod.as(LcModule))
         end
-        return Null
+        return lctrue
     end
 
     include_m = LcProc.new do |args|

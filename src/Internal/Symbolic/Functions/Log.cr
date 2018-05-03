@@ -108,7 +108,7 @@ module LinCAS::Internal
             elsif val == 0
                 return -Float64::INFINITY 
             end
-            return Float::NAN 
+            return Float64::NAN 
         end
 
         def to_s(io)

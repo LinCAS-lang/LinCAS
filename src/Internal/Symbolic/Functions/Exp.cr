@@ -76,7 +76,7 @@ module LinCAS::Internal
             return value.diff(obj) * self 
         end
 
-        def eval(dict : LcHahs)
+        def eval(dict : LcHash)
             return Math.exp(value.eval(dict))
         end
 
