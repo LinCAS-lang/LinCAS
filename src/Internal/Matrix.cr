@@ -24,11 +24,6 @@ module LinCAS::Internal
         @cols = 0.as(Intnum)
         @rw_magnitude = true 
         property ptr, rows, cols, rw_magnitude
-
-        @[AlwaysInline]
-        def to_s 
-            return Internal.matrix_to_string(self)
-        end
     end
 
     macro matrix_ptr(mx)
