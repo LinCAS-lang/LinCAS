@@ -228,7 +228,7 @@ module LinCAS::Internal
     def self.lc_mdata_to_h(mdata : Value)
         regex      = mdata_regexp(mdata)
         size       = get_mdata_size(mdata)
-        range      = 0...size 
+        #range      = 0...size 
         name_table = lc_regex_name_table(regex)
         hash       = build_hash 
         size.times do |i|

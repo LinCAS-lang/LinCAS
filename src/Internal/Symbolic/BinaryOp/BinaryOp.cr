@@ -37,6 +37,11 @@ module LinCAS::Internal
             return (@left.depend? obj) || (@right.depend? obj)
         end
 
+        def get_params(ary)
+            @left.get_params(ary)
+            @right.get_params(ary)
+        end
+
     end
     
 end

@@ -241,6 +241,10 @@ module LinCAS::Internal
             false 
         end
 
+        def get_params(ary)
+            value.get_params(ary)
+        end
+
     end
 
     macro define_function(name)

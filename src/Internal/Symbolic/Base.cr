@@ -68,6 +68,9 @@ module LinCAS::Internal
                 end 
             end
 
+            def get_params(ary)
+            end
+
             
         {{"end".id}}
     end

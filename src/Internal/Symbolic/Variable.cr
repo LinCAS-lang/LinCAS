@@ -185,6 +185,10 @@ module LinCAS::Internal
             return self == obj 
         end
 
+        def get_params(ary)
+            ary << self unless ary.includes? self
+        end
+
     end
 
 end

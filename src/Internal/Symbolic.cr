@@ -160,6 +160,21 @@ module LinCAS::Internal
         next lc_func_eval(*lc_cast(args,T2))
     end
 
+    def self.lc_func_params(f : Value)
+        func = get_function(f)
+        tmp  = [] of Variable
+        ary  = build_ary_new
+        func.get_params(tmp)
+        tmp.each do |param|
+            lc_ary_push(ary,build_function(param))
+        end
+        return ary 
+    end
+
+    func_params = LcProc.new do |args|
+        next lc_func_params(*lc_cast(args,T1))
+    end
+
     FunctionClass = internal.lc_build_internal_class("Function")
     internal.lc_set_parent_class(FunctionClass,Obj)
 
@@ -176,6 +191,7 @@ module LinCAS::Internal
     internal.lc_add_internal(FunctionClass,"-@",func_power,      0)
     internal.lc_add_internal(FunctionClass,"diff",func_diff,     1)
     internal.lc_add_internal(FunctionClass,"eval",func_eval,     1)
+    internal.lc_add_internal(FunctionClass,"params",func_params, 0)
 
     
 
