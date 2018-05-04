@@ -124,14 +124,7 @@ module LinCAS::Internal
         end
 
         def /(obj : Product)
-            #puts "left #{obj.left}","right #{obj.right}"
-            puts "dividing for #{obj.left}"
-            tmp =  self / obj.left  
-            puts tmp;gets
-            puts "dividing #{tmp} for #{obj.right}";gets
-            tmp /= obj.right
-            puts tmp;gets 
-            return tmp
+            return self / (obj.left  / obj.right)
         end
 
         def /(obj : Division)
@@ -144,8 +137,6 @@ module LinCAS::Internal
         end
         
         def /(obj)
-            puts "called"
-            puts "  #{self}","  #{obj}"
             return @left ** (@right - SONE) if @left == obj 
             return Division.new(self,obj)
         end
