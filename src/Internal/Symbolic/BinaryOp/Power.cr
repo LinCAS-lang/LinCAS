@@ -124,11 +124,18 @@ module LinCAS::Internal
         end
 
         def /(obj : Product)
-            return self / (obj.left  / obj.right).as(Symbolic) 
+            #puts "left #{obj.left}","right #{obj.right}"
+            puts "dividing for #{obj.left}"
+            tmp =  self / obj.left  
+            puts tmp;gets
+            puts "dividing #{tmp} for #{obj.right}";gets
+            tmp /= obj.right
+            puts tmp;gets 
+            return tmp
         end
 
         def /(obj : Division)
-            return self / (obj.left * obj.right).as(Symbolic) 
+            return self / (obj.left * obj.right)
         end
 
         def /(obj : Power)
@@ -136,7 +143,9 @@ module LinCAS::Internal
             return Division.new(self,obj)
         end
         
-        def /(obj : Symbolic?)
+        def /(obj)
+            puts "called"
+            puts "  #{self}","  #{obj}"
             return @left ** (@right - SONE) if @left == obj 
             return Division.new(self,obj)
         end
@@ -187,10 +196,10 @@ module LinCAS::Internal
             return SONE / self ** PinfinityC
         end
 
-        def **(obj : Symbolic)
+        def **(obj)
             return SONE if obj == 0
             return self if obj == 1
-            return @left ** (@right * obj).as(Symbolic)
+            return @left ** (@right * obj)
         end
 
         def opt_power(obj : Symbolic?)

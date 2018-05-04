@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+require "colorize"
 module LinCAS::Internal 
 
     class Division < BinaryOp 
@@ -134,10 +134,14 @@ module LinCAS::Internal
             return self * obj.right / obj.left 
         end
 
-        def /(obj : Symbolic) : Symbolic
-            lft = @left.opt_div(obj).as(Symbolic?) 
+        def /(obj) : Symbolic
+            lft = @left.opt_div(obj)
             return lft / @right if lft 
-            return @left / (@right * obj).as(Symbolic)
+            if !(tmp = @right.opt_prod(obj))
+                return Product.new(@left,@right * obj)
+            else
+                return @left / (@right * obj)
+            end
         end
 
         def opt_div(obj : Snumber) : Symbolic?
