@@ -138,7 +138,7 @@ module LinCAS::Internal
             lft = @left.opt_div(obj)
             return lft / @right if lft 
             if !(tmp = @right.opt_prod(obj))
-                return Product.new(@left,@right * obj)
+                return Division.new(@left,@right * obj)
             else
                 return @left / (@right * obj)
             end

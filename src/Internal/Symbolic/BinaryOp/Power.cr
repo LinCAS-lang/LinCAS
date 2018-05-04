@@ -124,11 +124,11 @@ module LinCAS::Internal
         end
 
         def /(obj : Product)
-            return self / (obj.left  / obj.right)
+            return self / obj.left  / obj.right
         end
 
         def /(obj : Division)
-            return self / (obj.left * obj.right)
+            return self / obj.left * obj.right
         end
 
         def /(obj : Power)
@@ -212,7 +212,10 @@ module LinCAS::Internal
         end
 
         def eval(dict : LcHash)
-            return @left.eval(dict) ** @right.eval(dict)
+            exp = @right.eval(dict)
+            arg = @left.eval(dict)
+            return  arg ** exp unless exp < 0
+            return  arg.to_f ** exp
         end
 
         def to_s(io)
