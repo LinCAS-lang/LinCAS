@@ -26,7 +26,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     }
         
     START_SYNC_SET = { 
-        TkType::IF, TkType::SELECT, TkType::DO, TkType::FOR,
+        TkType::IF, TkType::SELECT, TkType::DO, TkType::WHILE,TkType::FOR,
         TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
         TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
@@ -286,9 +286,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return parseVisibility
             when TkType::SELECT
                 return parseSelect
-            when TkType::DO
+            when TkType::DO, TkType::WHILE
                 if @nextTk.ttype == TkType::WHILE
                     shift
+                    return parseWhile
+                elsif @currentTk.ttype == TkType::WHILE
                     return parseWhile
                 else
                     return parseUntil
