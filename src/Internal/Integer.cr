@@ -271,7 +271,11 @@ module LinCAS::Internal
             big_int_power(v1,v2)
         end 
         if !(v1.is_a? BigInt || v2.is_a? BigInt)
-            return v1.as(IntnumR) ** v2.as(IntnumR) 
+            if v2 < 0
+                return v1.to_f64 ** v2.as(IntnumR)
+            else
+                return v1.as(IntnumR) ** v2.as(IntnumR) 
+            end
         end
         v1 = v1.to_big_i
         v2 = v2.to_big_i
@@ -281,7 +285,12 @@ module LinCAS::Internal
     def self.lc_int_power(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) ** int2num(n2))
+                exp = int2num(n2)
+                if exp < 0
+                    return num2int(int2num(n1).to_f ** int2num(n2))
+                else
+                    return num2int(int2num(n1) ** int2num(n2))
+                end
             {% else %}
                 val = int_power_int(n1,n2)
                 if val.is_a? Floatnum
