@@ -82,12 +82,13 @@ module LinCAS::Internal
 
         def *(obj : Product) : Symbolic
             return self ** STWO if self == obj 
-            return (self * obj.left).as(Symbolic) * obj.right 
+            return (self * obj.left) * obj.right 
         end
 
-        def *(obj : Symbolic) : Symbolic
+        def *(obj) : Symbolic
             return SZERO if obj == 0
             return SONE if obj == 1
+            return obj / @right if @left == 1
             return Product.new(self,obj)
         end
 
@@ -162,7 +163,7 @@ module LinCAS::Internal
         end
 
         def opt_div(obj : Symbolic) : Symbolic?
-            tmp = @left.opt_div(obj).as(Symbolic) 
+            tmp = @left.opt_div(obj)
             return tmp / @right if tmp 
             nil 
         end

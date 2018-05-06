@@ -65,6 +65,16 @@ module LinCAS::Internal
             return Sub.new(self,obj)
         end
 
+        def -(obj : Product)
+            if (lft = obj.left) == self 
+                return lft * (-obj.right + SONE) 
+            elsif (rht = obj.right) == self 
+                puts (-obj.left + SONE ) * rht
+                return (-obj.left + SONE ) * rht
+            end
+            return Sub.new(self,obj)
+        end
+
         def -(obj) : Symbolic
             return Sub.new(self,obj)
         end
