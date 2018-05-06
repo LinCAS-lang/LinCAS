@@ -79,6 +79,21 @@ module LinCAS::Internal
         end
     end
 
+    smath_const = LcProc.new do |args|
+        arg = lc_cast(args,T2)[1]
+        if arg.is_a? LcNum 
+            v = num2num(arg)
+            if v < 0 
+                next build_function(Negative.new(Snumber.new(v.abs)))
+            else
+                next build_function(Snumber.new(v))
+            end
+        else
+            lc_raise(LcTypeError,"Expecting number (#{lc_typeof(arg)} given)")
+            next Null 
+        end
+    end
+
     SmathM = internal.lc_build_internal_module("Smath")
     
     internal.lc_module_add_internal(SmathM,"s_cos",smath_cos,          1)
@@ -92,6 +107,7 @@ module LinCAS::Internal
     internal.lc_module_add_internal(SmathM,"s_log",smath_log,          1)
     internal.lc_module_add_internal(SmathM,"s_sqrt",smath_sqrt,        1)
     internal.lc_module_add_internal(SmathM,"variable",smath_variable,  1)
+    internal.lc_module_add_internal(SmathM,"const",smath_const,        1)
 
     internal.lc_define_const(SmathM,"S_NAN",     build_function(NanC)        )
     internal.lc_define_const(SmathM,"S_PI",      build_function(PiC)         )
