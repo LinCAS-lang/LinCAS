@@ -19,6 +19,7 @@ module LinCAS::Internal
 
         getter value : Symbolic
 
+        nan_ops
 
         def self.create(obj : Snumber)
             return obj if obj == 0

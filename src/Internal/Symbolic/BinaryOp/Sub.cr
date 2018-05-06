@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     class Sub < BinaryOp
 
+        nan_ops
+
         def +(obj : Negative)
             return self - obj.value
         end

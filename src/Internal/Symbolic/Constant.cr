@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     abstract struct Constant < SBaseS
 
+        nan_ops
+
         def +(obj : Snumber) : Symbolic
             return SZERO if obj == 0
             return self if obj == 1

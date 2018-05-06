@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     class Product < BinaryOp
 
+        nan_ops
+
         def +(obj : Negative)
             return self - obj.value
         end

@@ -16,6 +16,8 @@
 module LinCAS::Internal
 
     class Power < BinaryOp
+
+        nan_ops
         
         def +(obj : Negative)
             return self - obj 

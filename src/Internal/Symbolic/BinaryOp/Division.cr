@@ -16,6 +16,8 @@ require "colorize"
 module LinCAS::Internal 
 
     class Division < BinaryOp 
+
+        nan_ops
         
         def +(obj : Negative) : Symbolic
             return self - obj.value 

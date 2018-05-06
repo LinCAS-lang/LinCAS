@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     struct Snumber < SBaseS
 
+        nan_ops
+
         private def mcd(a,b)
             a,b = b,a unless b < a 
             while b != 0 

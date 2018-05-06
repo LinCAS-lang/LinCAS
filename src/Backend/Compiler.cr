@@ -88,6 +88,7 @@ class LinCAS::Compiler
     def initialize
         @ifactory    = IntermediateFactory.new
         @block_depth = 0
+        @symbolic    = false
     end
 
     macro compile_binary_op(node,type)
@@ -587,8 +588,12 @@ class LinCAS::Compiler
         line = new_line(node)
         case node.type 
             when NodeType::LOCAL_ID
-                name = unpack_name(node)
-                is   = emit_load_v(name)
+                if @symbolic
+                    is = compile_symbolic_atom(node)
+                else
+                    name = unpack_name(node)
+                    is   = emit_load_v(name)
+                end
             when NodeType::GLOBAL_ID
                 is  = pushself
                 var = @ifactory.makeBCode(Code::LOADG)
@@ -604,11 +609,19 @@ class LinCAS::Compiler
             when NodeType::ASSIGN
                 is = compile_assign(node)
             when NodeType::INT 
-                is       = @ifactory.makeBCode(Code::PUSHINT)
-                is.value = node.getAttr(NKey::VALUE).as(Intnum)
+                if @symbolic
+                    is = compile_symbolic_atom(node)
+                else
+                    is       = @ifactory.makeBCode(Code::PUSHINT)
+                    is.value = node.getAttr(NKey::VALUE).as(Intnum)
+                end
             when NodeType::FLOAT
-                is       = @ifactory.makeBCode(Code::PUSHFLO)
-                is.value = node.getAttr(NKey::VALUE).as(Floatnum)
+                if @symbolic
+                    is = compile_symbolic_atom(node)
+                else
+                    is       = @ifactory.makeBCode(Code::PUSHFLO)
+                    is.value = node.getAttr(NKey::VALUE).as(Floatnum)
+                end
             when NodeType::CALL
                 is = compile_call(node)
             when NodeType::METHOD_CALL
@@ -1193,11 +1206,13 @@ class LinCAS::Compiler
     end
 
     protected def compile_symbolic(node : Node)
+        @symbolic = true
         branch = node.getBranches[0]
         is    = compile_sym_tree(branch)
         new_f = @ifactory.makeBCode(Code::NEW_FUNC)
         link(is,new_f)
         set_last(is,new_f)
+        @symbolic = false
         return is
     end
 
@@ -1235,6 +1250,14 @@ class LinCAS::Compiler
         end
 
         {% end %}
+    end
+    
+    protected def compile_symbolic_atom(node : Node)
+        is    = compile_sym_tree(node)
+        new_f = @ifactory.makeBCode(Code::NEW_FUNC)
+        link(is,new_f)
+        set_last(is,new_f)
+        return is
     end
 
     @[AlwaysInline]

@@ -17,6 +17,8 @@
 module LinCAS::Internal
     
     class Sum < BinaryOp
+
+        nan_ops
         
         def +(obj : Negative) : Symbolic
             return self - obj.value.as(Symbolic) 

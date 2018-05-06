@@ -52,11 +52,15 @@ module LinCAS::Internal
                 end
             {% end %}
 
+            macro nan_ops
+
             {% for name in %w|+ - * / ** opt_sum opt_sub opt_div opt_prod opt_power| %}
                 def {{name.id}}(obj : Nan)
                     return NanC 
                 end
             {% end %}
+
+            end
 
             protected def append(io,elem)
                 if elem.is_a? BinaryOp

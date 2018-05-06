@@ -103,7 +103,7 @@ module LinCAS::Internal
             return Null 
         end
         if regex_flag({{regex}}) == RegexpFlag::Uncompiled
-            #lc_raise(LcTypeError,"Uncompiled regexp fields")
+            lc_raise(LcTypeError,"Uncompiled regexp")
             return Null 
         end
     end

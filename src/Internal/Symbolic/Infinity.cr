@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     abstract struct Infinity < SBaseS
 
+        nan_ops
+
         def +(obj : Variable)
             return Sum.new(self,obj)
         end

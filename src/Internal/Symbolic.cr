@@ -22,10 +22,14 @@ module LinCAS::Internal
         property func
     end
 
-    macro check_fun(f)
+    macro check_fun(f,ret = true)
         if !({{f}}.is_a? LcFunction)
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{f}})} into Function")
-            return Null 
+            {% if ret %}
+                return Null 
+            {% else %}
+                next Null 
+            {% end %}
         end
     end
 

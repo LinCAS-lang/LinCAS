@@ -22,6 +22,8 @@ module LinCAS::Internal
         def initialize(@value : Symbolic)
         end
 
+        nan_ops
+
         def +(obj : Snumber)
             return self if obj == 1
             return Sum.new(self,obj)
@@ -253,7 +255,7 @@ module LinCAS::Internal
 
         class {{name}} < Function
             def self.create(obj)
-                return Sin.new(obj)
+                return {{name}}.new(obj)
             end
 
             def +(obj : {{name}})

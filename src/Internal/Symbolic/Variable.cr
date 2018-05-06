@@ -19,6 +19,8 @@ module LinCAS::Internal
 
         getter name
 
+        nan_ops
+
         def initialize(@name : String)
         end
 
