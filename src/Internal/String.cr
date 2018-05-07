@@ -93,6 +93,10 @@ module LinCAS::Internal
         end
     end
 
+    macro check_string(string)
+        str_check({{string}})
+    end
+
     macro strcmp(str1,str2)
         libc.strcmp({{str1}},{{str2}})
     end

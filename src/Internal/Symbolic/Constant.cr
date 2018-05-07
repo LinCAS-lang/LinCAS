@@ -19,6 +19,8 @@ module LinCAS::Internal
 
         nan_ops
 
+        abstract def value
+
         def +(obj : Snumber) : Symbolic
             return SZERO if obj == 0
             return self if obj == 1
@@ -175,6 +177,11 @@ module LinCAS::Internal
 
 
     struct E < Constant
+        
+        def value 
+            return Math::E 
+        end 
+
         def eval(dict)
             return Math::E 
         end
@@ -191,6 +198,10 @@ module LinCAS::Internal
     EC = E.new
 
     struct PI < Constant
+
+        def value 
+            return Math::E 
+        end
 
         def eval(dict)
             return Math::PI

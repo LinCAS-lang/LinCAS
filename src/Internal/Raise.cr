@@ -32,6 +32,7 @@ module LinCAS
             InstanceError
             LoadError
             KeyError
+            NotSupportedError
         end
 
         ERR_MESSAGE = {
@@ -194,6 +195,8 @@ module LinCAS
 
         KeyError = internal.lc_build_internal_class("KeyError",ErrClass)
 
+        NotSupportedError = internal.lc_build_internal_class("NotSupportedError",ErrClass)
+
         ErrDict = {
             ErrType::TypeError      => TypeErrClass,
             ErrType::ArgumentError  => ArgErrClass,
@@ -207,7 +210,8 @@ module LinCAS
             ErrType::MathError      => MathErr,
             ErrType::InstanceError  => InstanceErr,
             ErrType::LoadError      => LoadErrClass,
-            ErrType::KeyError       => KeyError 
+            ErrType::KeyError       => KeyError, 
+            ErrType::NotSupportedError => NotSupportedError
         }
 
 
@@ -231,6 +235,7 @@ module LinCAS
     LcInstanceErr   = Internal::ErrType::InstanceError
     LcLoadError     = Internal::ErrType::LoadError
     LcKeyError      = Internal::ErrType::KeyError
+    LcNotSupportedError = Internal::ErrType::NotSupportedError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]

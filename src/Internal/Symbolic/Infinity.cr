@@ -17,6 +17,8 @@ module LinCAS::Internal
 
     abstract struct Infinity < SBaseS
 
+        abstract def value
+
         nan_ops
 
         def +(obj : Variable)
@@ -209,9 +211,16 @@ module LinCAS::Internal
     end
 
     struct PInfinity < Infinity
+        def value 
+            return Float64::INFINITY
+        end
     end
 
     struct NInfinity < Infinity
+
+        def value 
+            return -Float64::INFINITY
+        end
 
         def +(obj : PInfinity)
             return  NanC

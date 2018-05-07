@@ -57,6 +57,7 @@ module LinCAS::Internal
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
         lc_set_parent_class(klass,parent ? parent : Obj)
+        return klass
     end
 
     @[AlwaysInline]
