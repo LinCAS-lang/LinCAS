@@ -15,6 +15,8 @@
 
 
 require "big"
+require "option_parser"
+
 ENV["libDir"] = File.expand_path("../lib",Dir.current)
 FFactory = FrontendFactory.new
 Compile  = Compiler.new
@@ -63,7 +65,6 @@ require "./Intermediate/Bytecode"
 require "./Internal/Proc"
 require "./Backend/Compiler"
 require "./Internal/LcInternal"
-require "./Internal/Math"
 require "./Backend/VM"
 require "../util/AstPrinter"
 require "../util/SymTabPrinter"
@@ -72,25 +73,49 @@ require "../util/Disassembler"
 
 include LinCAS
 
-ast = nil
+tk_display   = false
+ast_display  = false 
+iseq_display = false
+exec         = true
+
+begin
+    OptionParser.parse! do |parser|
+        parser.on("-t","--tokens") { tk_display   = true }
+        parser.on("-a","--ast")    { ast_display  = true }
+        parser.on("-i","--iseq")   { iseq_display = true }
+        parser.on("-n","--no-exec"){ exec         = false}
+    end
+rescue e 
+    puts e
+    exit 1
+end
+
 dir = ARGV[0]?
 if dir 
-    #begin
+    begin
         parser = FFactory.makeParser(File.expand_path(dir))
-        #parser.displayTokens
-        ast = parser.parse
-        #astPrinter = AstPrinter.new
-        #astPrinter.printAst(ast.as(Node)) if ast
-        code   = Compile.compile(ast)
-        disass = Disassembler.new 
-        disass.disassemble(code)
+        if tk_display
+            parser.displayTokens
+        end
+        ast    = parser.parse
+        if ast && parser.errCount == 0
+            if ast_display
+                ast_p = AstPrinter.new 
+                ast_p.printAst(ast)
+                puts
+            end
+            code   = Compile.compile(ast)
+            if iseq_display
+                iseq_p = Disassembler.new 
+                iseq_p.disassemble(code)
+                puts
+            end
+            Exec.run(code) if exec
+        end
+    rescue e
+        puts e 
         puts
-        Exec.run(code)
-        #s_printer = SymTabPrinter.new 
-        #s_printer.printSTab(Id_Tab.getRoot)
-    #rescue e
-    #    puts e 
-    #    puts
-    #    Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
-    #end
+        # lc_bug(LcInternalError,
+        #  "An internal error occourred. Please open an issue and report the code which caused this message")
+    end
 end

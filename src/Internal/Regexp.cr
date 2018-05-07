@@ -339,7 +339,6 @@ module LinCAS::Internal
 
 
     RegexpClass = internal.lc_build_internal_class("Regexp")
-    internal.lc_set_parent_class(RegexpClass,Obj)
     internal.lc_set_allocator(RegexpClass,regex_allocate)
 
     internal.lc_add_static(RegexpClass,"error?",regex_error,   1)

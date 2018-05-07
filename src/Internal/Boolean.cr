@@ -133,7 +133,6 @@ module LinCAS::Internal
     end
 
     BoolClass = internal.lc_build_internal_class("Boolean")
-    internal.lc_set_parent_class(BoolClass, Obj)
     internal.lc_undef_allocator(BoolClass)
 
     internal.lc_remove_internal(BoolClass,"defrost")

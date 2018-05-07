@@ -153,7 +153,6 @@ module LinCAS
         end
 
         ErrClass = internal.lc_build_internal_class("Error")
-        internal.lc_set_parent_class(ErrClass,Obj)
         internal.lc_set_allocator(ErrClass,err_allocator)
         
         internal.lc_add_internal(ErrClass,"init",err_init,          1)
@@ -166,47 +165,34 @@ module LinCAS
 
         lc_module_add_internal(LKernel,"raise",raise_err, 1)
 
-        TypeErrClass = internal.lc_build_internal_class("TypeError")
-        internal.lc_set_parent_class(TypeErrClass,ErrClass)
+        TypeErrClass = internal.lc_build_internal_class("TypeError",ErrClass)
 
-        ArgErrClass  = internal.lc_build_internal_class("ArgumentError")
-        internal.lc_set_parent_class(ArgErrClass,ErrClass)
+        ArgErrClass  = internal.lc_build_internal_class("ArgumentError",ErrClass)
 
-        RuntimeErrClass = internal.lc_build_internal_class("RuntimeError")
-        internal.lc_set_parent_class(RuntimeErrClass,ErrClass)
+        RuntimeErrClass = internal.lc_build_internal_class("RuntimeError",ErrClass)
 
 #        InternalErrClass = internal.lc_build_class_only("InternalError")
 #        internal.lc_set_parent_class(ErrClass,Obj)
 
-        NameErrClass = internal.lc_build_internal_class("NameError")
-        internal.lc_set_parent_class(NameErrClass,ErrClass)
+        NameErrClass = internal.lc_build_internal_class("NameError",ErrClass)
 
-        NoMErrClass  = internal.lc_build_internal_class("NoMethodError")
-        internal.lc_set_parent_class(NoMErrClass,ErrClass)
+        NoMErrClass  = internal.lc_build_internal_class("NoMethodError",ErrClass)
 
-        FrozenErrClass = internal.lc_build_internal_class("FrozenError")
-        internal.lc_set_parent_class(FrozenErrClass,ErrClass)
+        FrozenErrClass = internal.lc_build_internal_class("FrozenError",ErrClass)
 
-        ZeroDivErrClass = internal.lc_build_internal_class("ZeroDivisionError")
-        internal.lc_set_parent_class(ZeroDivErrClass,ErrClass)
+        ZeroDivErrClass = internal.lc_build_internal_class("ZeroDivisionError",ErrClass)
 
-        SysStackErrClass = internal.lc_build_internal_class("SystemStackError")
-        internal.lc_set_parent_class(SysStackErrClass,ErrClass)
+        SysStackErrClass = internal.lc_build_internal_class("SystemStackError",ErrClass)
 
-        IndexErrClass = internal.lc_build_internal_class("IndexError")
-        internal.lc_set_parent_class(IndexErrClass,ErrClass)
+        IndexErrClass = internal.lc_build_internal_class("IndexError",ErrClass)
 
-        MathErr = internal.lc_build_internal_class("MathError")
-        internal.lc_set_parent_class(MathErr,ErrClass)
+        MathErr = internal.lc_build_internal_class("MathError",ErrClass)
 
-        InstanceErr = internal.lc_build_internal_class("InstanceError")
-        internal.lc_set_parent_class(InstanceErr,ErrClass)
+        InstanceErr = internal.lc_build_internal_class("InstanceError",ErrClass)
 
-        LoadErrClass = internal.lc_build_internal_class("LoadError")
-        internal.lc_set_parent_class(InstanceErr,ErrClass)
+        LoadErrClass = internal.lc_build_internal_class("LoadError",ErrClass)
 
-        KeyError = internal.lc_build_internal_class("KeyError")
-        internal.lc_set_parent_class(KeyError,ErrClass)
+        KeyError = internal.lc_build_internal_class("KeyError",ErrClass)
 
         ErrDict = {
             ErrType::TypeError      => TypeErrClass,

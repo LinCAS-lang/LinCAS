@@ -151,7 +151,6 @@ module LinCAS::Internal
 
 
     NumClass = internal.lc_build_internal_class("Number")
-    internal.lc_set_parent_class(NumClass,Obj)
     internal.lc_set_allocator(NumClass,number_allocator)
 
     internal.lc_remove_internal(NumClass,"defrost")

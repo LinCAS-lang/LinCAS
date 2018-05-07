@@ -280,7 +280,6 @@ module LinCAS::Internal
     end
 
     MatchDataClass = internal.lc_build_internal_class("MatchData")
-    internal.lc_set_parent_class(MatchDataClass,Obj)
 
     internal.lc_undef_allocator(MatchDataClass)
 

@@ -24,7 +24,7 @@ module LinCAS::Internal
 
     macro check_fun(f,ret = true)
         if !({{f}}.is_a? LcFunction)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{f}})} into Function")
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{f}})} into Symbolicn")
             {% if ret %}
                 return Null 
             {% else %}
@@ -58,7 +58,7 @@ module LinCAS::Internal
             elsif el.is_a? LcNum
                 tmp << Snumber.new(num2num(el).as(IntnumR))
             else
-                lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(el)} into Function")
+                lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(el)} into Symbolic")
                 tmp << NanC
             end
         end
@@ -179,7 +179,7 @@ module LinCAS::Internal
         next lc_func_params(*lc_cast(args,T1))
     end
 
-    FunctionClass = internal.lc_build_internal_class("Function")
+    FunctionClass = internal.lc_build_internal_class("Symbolic")
     internal.lc_set_parent_class(FunctionClass,Obj)
 
     internal.lc_set_allocator(FunctionClass,function_allocator)
@@ -196,6 +196,10 @@ module LinCAS::Internal
     internal.lc_add_internal(FunctionClass,"diff",func_diff,     1)
     internal.lc_add_internal(FunctionClass,"eval",func_eval,     1)
     internal.lc_add_internal(FunctionClass,"params",func_params, 0)
+
+    VariableClass = internal.lc_build_internal_class("Variable")
+
+    
 
     
 

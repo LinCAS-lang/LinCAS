@@ -83,7 +83,6 @@ module LinCAS::Internal
     end
 
     NullClass = internal.lc_build_internal_class("NullClass")
-    internal.lc_set_parent_class(NullClass,Obj)
     internal.lc_undef_allocator(NullClass)
 
     internal.lc_remove_internal(NullClass,"defrost")

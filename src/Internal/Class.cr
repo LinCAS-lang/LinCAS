@@ -51,11 +51,12 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_build_internal_class(name : String)
+    def self.lc_build_internal_class(name : String,parent : LcClass? = nil)
         klass               = lc_build_class(name)
         klass.klass         = Lc_Class
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
+        lc_set_parent_class(klass,parent ? parent : Obj)
     end
 
     @[AlwaysInline]
@@ -98,7 +99,7 @@ module LinCAS::Internal
         receiver.statics.addEntry(name,m)
     end
 
-    def self.lc_add_class_method(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
+    def self.lc_class_add_method(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
         lc_add_internal(receiver,name,proc,arity)
         lc_add_static(receiver,name,proc,arity)
     end
@@ -117,10 +118,6 @@ module LinCAS::Internal
     def self.lc_undef_allocator(klass : LcClass)
         klass.allocator = Allocator::UNDEF 
     end
-
-    #def self.lc_define_const_locally(name : String, const : Value)
-    #    Id_Tab.addConst(name,const)
-    #end
 
     def self.lc_copy_consts_in(sender : Structure, receiver : Structure)
         stab = sender.symTab
@@ -380,9 +377,8 @@ module LinCAS::Internal
 
 
     MainClass      = lc_build_class("BaseClass")
-    Lc_Class       = internal.lc_build_internal_class("cClass")
+    Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
     Lc_Class.klass = Lc_Class
-    internal.lc_set_parent_class(Lc_Class,MainClass)
 
     internal.lc_remove_static(Lc_Class,"new")
 
@@ -398,9 +394,9 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"delete_instance_method",class_delete_ins_method,   1)
     internal.lc_add_static(Lc_Class,"ancestors", class_ancestors,                       0)
 
-    internal.lc_add_class_method(Lc_Class,"is_a?", is_a,                                1)
-    internal.lc_add_class_method(Lc_Class,"class",class_class,                          0)
-    internal.lc_add_class_method(Lc_Class,"remove_method",class_rm_method,              1)
-    internal.lc_add_class_method(Lc_Class,"delete_method",class_delete_method,          1)
+    internal.lc_class_add_method(Lc_Class,"is_a?", is_a,                                1)
+    internal.lc_class_add_method(Lc_Class,"class",class_class,                          0)
+    internal.lc_class_add_method(Lc_Class,"remove_method",class_rm_method,              1)
+    internal.lc_class_add_method(Lc_Class,"delete_method",class_delete_method,          1)
 
 end

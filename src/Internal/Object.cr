@@ -214,15 +214,14 @@ module LinCAS::Internal
     end
 
 
-    Obj       = internal.lc_build_internal_class("Object")
-    internal.lc_set_parent_class(Obj,Lc_Class)
+    Obj       = internal.lc_build_internal_class("Object",Lc_Class)
     internal.lc_set_allocator(Obj,obj_allocator)
 
     internal.lc_add_internal(Obj,"init",obj_init,     0)
     internal.lc_add_internal(Obj,"==",obj_eq,         1)
     internal.lc_add_internal(Obj,"!=",obj_eq,         1)
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
-    internal.lc_add_internal(Obj,"frozen?",obj_frozen, 0)
+    internal.lc_add_internal(Obj,"frozen?",obj_frozen,0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
@@ -241,7 +240,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"&&",obj_and,          1)
     internal.lc_add_static(Lc_Class,"!",obj_not,           0)
 
-    internal.lc_add_class_method(Lc_Class,"respond_to?",obj_responds_to, 1)
+    internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
 
 
 end

@@ -844,7 +844,6 @@ module LinCAS::Internal
         
 
     AryClass = internal.lc_build_internal_class("Array")
-    internal.lc_set_parent_class(AryClass,Obj)
     internal.lc_set_allocator(AryClass,ary_allocate)
 
     internal.lc_add_internal(AryClass,"init",ary_init,       1)

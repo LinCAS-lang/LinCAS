@@ -919,7 +919,6 @@ module LinCAS::Internal
 
 
     StringClass = internal.lc_build_internal_class("String")
-    internal.lc_set_parent_class(StringClass, Obj)
     internal.lc_set_allocator(StringClass,string_allocate)
 
 

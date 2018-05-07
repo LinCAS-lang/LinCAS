@@ -70,6 +70,5 @@ module LinCAS::Internal
     end
 
     Lc_Module = internal.lc_build_internal_class("cModule")
-    internal.lc_set_parent_class(Lc_Module,Obj)
 
 end

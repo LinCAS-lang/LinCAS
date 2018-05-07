@@ -798,7 +798,6 @@ module LinCAS::Internal
 
 
     MatrixClass = internal.lc_build_internal_class("Matrix")
-    internal.lc_set_parent_class(MatrixClass,Obj)
     internal.lc_set_allocator(MatrixClass,matrix_allocate)
 
     internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)

@@ -106,7 +106,6 @@ module LinCAS::Internal
     end
 
     FileClass = internal.lc_build_internal_class("File")
-    internal.lc_set_parent_class(FileClass,Obj)
     internal.lc_undef_allocator(FileClass)
 
     internal.lc_add_static(FileClass,"exist?", f_exist,             1)

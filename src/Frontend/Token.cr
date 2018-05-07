@@ -245,7 +245,7 @@ module LinCAS
                         nextChar
                     end
                 when "="
-                    if currentChar == ">"
+                    if currentChar == ">" || currentChar == "="
                         @text += currentChar
                         nextChar
                     end

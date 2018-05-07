@@ -89,7 +89,7 @@ class Queens
 
 } /* end Queens */
 
-const queens := 3
+const queens := 9
 
 r := new Queens(queens,queens).solve()
 

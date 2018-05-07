@@ -83,9 +83,15 @@ module LinCAS::Internal
         arg = lc_cast(args,T2)[1]
         if arg.is_a? LcNum 
             v = num2num(arg)
+            if v.is_a? Float 
+                # lc_warn()
+                v = v.round(0).to_i 
+            end
             if v < 0 
+                next build_function(NinfinityC) if v.is_a? BigInt
                 next build_function(Negative.new(Snumber.new(v.abs)))
             else
+                next build_function(PinfinityC) if v.is_a? BigInt
                 next build_function(Snumber.new(v))
             end
         else

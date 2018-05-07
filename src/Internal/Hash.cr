@@ -582,7 +582,6 @@ module LinCAS::Internal
 
 
     HashClass = internal.lc_build_internal_class("Hash")
-    internal.lc_set_parent_class(HashClass,Obj)
 
     internal.lc_set_allocator(HashClass,hash_allocator)
 

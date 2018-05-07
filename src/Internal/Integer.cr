@@ -394,8 +394,7 @@ module LinCAS::Internal
 
     
 
-    IntClass = internal.lc_build_internal_class("Integer")
-    internal.lc_set_parent_class(IntClass,NumClass)
+    IntClass = internal.lc_build_internal_class("Integer",NumClass)
     internal.lc_undef_allocator(IntClass)
 
     internal.lc_add_internal(IntClass,"+",int_sum,  1)
