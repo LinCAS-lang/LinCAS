@@ -1586,7 +1586,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parsePrint : Node
         print_sync_set = {
-            TkType::COMMA, TkType::SEMICOLON, TkType::EOL 
+            TkType::COMMA, TkType::SEMICOLON, TkType::R_BRACE, TkType::EOL 
         } + EXP_SYNC_SET
         if @currentTk.ttype == TkType::PRINT
             node = @nodeFactory.makeNode(NodeType::PRINT)
@@ -1595,7 +1595,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         end 
         setLine(node) 
         shift 
-        unless {TkType::SEMICOLON, TkType::EOL}.includes? @currentTk.ttype 
+        unless {TkType::SEMICOLON, TkType::EOL, TkType::R_BRACE}.includes? @currentTk.ttype
             sync(EXP_SYNC_SET)
             node.addBranch(parseExp)
             sync(print_sync_set)
