@@ -89,6 +89,18 @@ module LinCAS::Internal
     include_m = LcProc.new do |args|
         next internal.lc_include(*args.as(T2))
     end
+
+    private def self.define_argv
+        ary = build_ary_new
+        (1...ARGV.size).each do |i|
+            lc_ary_push(ary,build_string(ARGV[i]))
+        end
+        return ary
+    end
+
+    private def self.define_env
+        return build_hash
+    end
     
 
     
@@ -101,6 +113,9 @@ module LinCAS::Internal
     lc_module_add_internal(LKernel,"print",lc_print,   1)
     lc_module_add_internal(LKernel,"reads",reads,      0)
     lc_module_add_internal(LKernel,"include",include_m,1)
+
+    lc_define_const(LKernel,"ARGV",define_argv)
+    lc_define_const(LKernel,"ENV", define_env)
 
     lc_include_module(Lc_Class,LKernel)
 

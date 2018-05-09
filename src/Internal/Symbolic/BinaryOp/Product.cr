@@ -57,6 +57,11 @@ module LinCAS::Internal
             if self == obj 
                 return SZERO
             end
+            if @left.is_a? Snumber && 
+               obj.left.is_a? Snumber && 
+               @right == obj.right
+                return (@left - obj.left) * @right 
+            end
             return Sub.new(self,obj)
         end
 
@@ -101,6 +106,11 @@ module LinCAS::Internal
         def *(obj : Power)
             if self == obj.left 
                 return Power.new(self,obj.right + SONE)
+            end
+            if @left == obj.left 
+                return @left * obj * @right 
+            elsif @right == obj.left 
+                return @left * (@right  * obj)
             end
             lft = @left.opt_prod(obj)
             return lft * @right if lft 

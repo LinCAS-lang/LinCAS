@@ -19,12 +19,17 @@ module LinCAS::Internal
         lc_hash_set_index({{dict}},{{key}},{{value}})
     end
 
+    @[AlwaysInline]
     private def self.create_dict(param : Value, beg : Value)
         hash = build_hash
         lc_hash_set_index(hash,param,beg)
         return lc_cast(hash,LcHash)
     end
 
+    # TODO: this methods is affected by computation issues and assumes the 
+    # 4th derivative is continue. this provides sometimes a too low number of
+    # intervals which does not ensures a precision of 10 ^ -8
+    #
     private def self.simpson_intervals(f : Symbolic, a : Value, b : Value)
         params   = [] of Variable
         f.get_params(params)
@@ -40,14 +45,19 @@ module LinCAS::Internal
         if (tmp = f.eval(dict)) > max 
             max = tmp 
         end
-        max = max.round(0).to_i + 3
+        max = max.round(0).to_i + 10
         av  = lc_num_to_cr_f(a).as(Floatnum)
         bv  = lc_num_to_cr_f(b).as(Floatnum)
         n   = Math.sqrt(Math.sqrt(max * (bv - av) / (180 * 10E-9))).round(0).to_i
+        p n
         return n + 1 if n.odd?
         return n
     end
 
+    # TODO: method optimization. This methods uses LinCAS hashes as
+    # dictionary, but passing to f a Crystal hash would spare LinCAS object
+    # allocation such as strings (and numbers)
+    #
     private def self.simpson(f : Symbolic,a : Value, b : Value)
         params   = [] of Variable
         f.get_params(params)

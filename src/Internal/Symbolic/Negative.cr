@@ -186,6 +186,10 @@ module LinCAS::Internal
             return value.depend? obj 
         end
 
+        def get_params(ary)
+            value.get_params(ary)
+        end
+
         
     end
     
