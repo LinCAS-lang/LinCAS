@@ -16,79 +16,76 @@
 
 module LinCAS
   enum Code
-    PUSHINT                
-    PUSHFLO
-    PUSHSTR 
-    PUSHT 
-    PUSHF 
-    PUSHN  
-    PUSHSELF  
-    PUSHANS
-    PUT_CLASS         
-    PUT_MODULE 
-    PUT_STATIC_METHOD
-    PUT_INSTANCE_METHOD        
-    CALL 
-    CALL_WITH_BLOCK
-    M_CALL         
-    M_CALL_WITH_BLOCK 
-    OPT_CALL_INIT         
-    POPOBJ
-    STOREL_0
-    STOREL_1 
-    STOREL_2
-    STOREL                
-    STOREG                  
-    STOREC                         
-    ARY_NEW 
-    HASH_NEW                
-    IRANGE_NEW 
-    ERANGE_NEW
-    STRING_NEW             
-    SYMC_NEW              
-    SYMN_NEW                
-    SYMF_NEW  
-    MX_NEW              
-    LOADV
-    LOADL_0
-    LOADL_1
-    LOADL_2
-    LOADL                   
-    LOADG
-    LOADC 
-    GETC
-    JUMP
-    JUMPT
-    JUMPF
-    PRINT
-    PRINTL
-    PUSHDUP
-    RETURN
-    NEXT
-    NEW_OBJ
+    PUSHINT             #         
+    PUSHFLO             #
+    PUSHSTR             #
+    PUSHT               #
+    PUSHF               #
+    PUSHN               #
+    PUSHSELF            #
+    PUSHANS             #
+    PUT_CLASS           #
+    PUT_MODULE          #
+    PUT_STATIC_METHOD   #
+    PUT_INSTANCE_METHOD #       
+    CALL                #
+    CALL_WITH_BLOCK     #
+    M_CALL              #        
+    M_CALL_WITH_BLOCK   #
+    OPT_CALL_INIT       #   
+    POPOBJ              #
+    STOREL_0            #
+    STOREL_1            #
+    STOREL_2            #
+    STOREL              #          
+    STOREG              #              
+    STOREC              #                    
+    ARY_NEW             #
+    HASH_NEW            #   
+    IRANGE_NEW          #
+    ERANGE_NEW          #
+    STRING_NEW          #            
+    MX_NEW              #        
+    LOADV               #
+    LOADL_0             #
+    LOADL_1             #
+    LOADL_2             #
+    LOADL               #              
+    LOADG               #
+    LOADC               #
+    GETC                #
+    JUMP                #
+    JUMPT               #
+    JUMPF               #
+    PRINT               #
+    PRINTL              #
+    PUSHDUP             #
+    RETURN              #
+    NEXT                #
+    NEW_OBJ             #
     NOOP
-    YIELD
-    EQ_CMP
+    YIELD               #
+    EQ_CMP              #
 
-    SET_C_T
-    CLEAR_C_T
+    SET_C_T             #
+    CLEAR_C_T           #
 
-    LINE
-    FILENAME
-    LEAVE
-    LEAVE_C
+    LINE                #
+    FILENAME            #
+    LEAVE               #
+    LEAVE_C             #
 
-    NEW_SVAR
-    NEW_SNUM
-    NEW_FUNC
-    S_SUM
-    S_SUB
-    S_PROD
-    S_DIV
-    S_POW
+    NEW_SVAR            #
+    NEW_SNUM            #
+    NEW_FUNC            #
+    S_SUM               #
+    S_SUB               #
+    S_PROD              #
+    S_DIV               #
+    S_POW               #
 
-    QUIT
-    HALT
+    QUIT                #
+    HALT                #
   end
 
   class Bytecode

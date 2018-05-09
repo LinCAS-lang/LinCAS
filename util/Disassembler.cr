@@ -45,7 +45,9 @@ class LinCAS::Disassembler
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
             when Code::PRINT, Code::PRINTL, Code::PUSHSELF,Code::POPOBJ,Code::PUSHN,
                  Code::HALT,Code::LEAVE,Code::RETURN, Code::IRANGE_NEW,Code::ERANGE_NEW,
-                 Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF, Code::EQ_CMP
+                 Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF, Code::EQ_CMP,
+                 Code::CLEAR_C_T, Code::LEAVE_C, Code::NEW_FUNC, Code::S_SUM, Code::S_SUB,
+                 Code::S_PROD, Code::S_DIV, Code::S_POW, Code::QUIT, Code::PUSHANS
                 puts code
             when Code::LINE
                 print_line(iseq.line)
@@ -53,14 +55,15 @@ class LinCAS::Disassembler
                 print_filename(iseq.text)
             when Code::STRING_NEW, Code::LOADC, Code::GETC,
                  Code::STOREL_0, Code::STOREL_1, Code::STOREL_2, Code::STOREG, Code::STOREC, 
-                 Code::LOADV, Code::LOADL_0, Code::LOADL_1,Code::LOADL_2, Code::LOADG
+                 Code::LOADV, Code::LOADL_0, Code::LOADL_1,Code::LOADL_2, Code::LOADG,
+                 Code::NEW_SVAR
                 print code, ' ', '"', iseq.text, '"',' ', '\n'
             when Code::STOREL, Code::LOADL 
                 print code, ' ', '"', iseq.text, '"',',', iseq.value,'\n'
             when Code::PUT_INSTANCE_METHOD, Code::PUT_STATIC_METHOD
                 print code, ' ', '"', iseq.text, '"',' ', '\n'
                 print_method_is(iseq)
-            when Code::PUSHINT, Code::PUSHFLO, Code::ARY_NEW
+            when Code::PUSHINT, Code::PUSHFLO, Code::ARY_NEW, Code::HASH_NEW, Code::NEW_SNUM
                 print code, ' ', iseq.value, '\n'
             when Code::CALL_WITH_BLOCK, Code::M_CALL_WITH_BLOCK
                 print code, ' ', '"', iseq.text, '"', ' ', iseq.argc, '\n'
