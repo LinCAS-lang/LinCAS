@@ -153,11 +153,7 @@ module LinCAS::Internal
     def self.lc_func_eval(f : Value, dict : Value)
         hash_check(dict)
         tmp = get_function(f).eval(lc_cast(dict,LcHash))
-        if tmp.is_a? Float 
-            return num2float(tmp)
-        else
-            return num2int(tmp)
-        end
+        return num_auto(tmp)
     end
 
     func_eval = LcProc.new do |args|
@@ -177,6 +173,29 @@ module LinCAS::Internal
 
     func_params = LcProc.new do |args|
         next lc_func_params(*lc_cast(args,T1))
+    end
+
+    def self.lc_func_integrate(f : Value, a : Value, b : Value)
+        a1   = lc_num_to_cr_f(a)
+        return Null unless a1
+        b1   = lc_num_to_cr_f(b)
+        return Null unless b1
+        sign = 0
+        if a1 > b1 
+            sign = 1 
+            a,b = b,a 
+        end
+        func = get_function(f)
+        if func.is_a? Snumber
+            val = (-1) ** sign * (b1 - a1) * func.val
+        else
+            val = (-1) ** sign * simpson(func,a,b)
+        end
+        return num_auto(val)
+    end
+
+    func_integrate = LcProc.new do |args|
+        next lc_func_integrate(*lc_cast(args,T3))
     end
 
     def self.lc_var_init(f : Value, string : Value)
@@ -356,6 +375,26 @@ module LinCAS::Internal
         next lc_sfunc_arg(*lc_cast(args,T1))
     end
 
+    def self.lc_binop_left(f : Value)
+        func = get_function(f)
+        return Null if func == NanC
+        return build_function(lc_cast(func,BinaryOp).left)
+    end
+
+    binop_left = LcProc.new do |args|
+        next lc_binop_left(*lc_cast(args,T1))
+    end
+
+    def self.lc_binop_right(f : Value)
+        func = get_function(f)
+        return Null if func == NanC
+        return build_function(lc_cast(func,BinaryOp).right)
+    end
+
+    binop_right = LcProc.new do |args|
+        next lc_binop_right(*lc_cast(args,T1))
+    end
+
     SymbolicClass = internal.lc_build_internal_class("Symbolic")
 
     internal.lc_set_allocator(SymbolicClass,function_allocator)
@@ -372,6 +411,7 @@ module LinCAS::Internal
     internal.lc_add_internal(SymbolicClass,"diff",func_diff,     1)
     internal.lc_add_internal(SymbolicClass,"eval",func_eval,     1)
     internal.lc_add_internal(SymbolicClass,"params",func_params, 0)
+    internal.lc_add_internal(SymbolicClass,"integrate",func_integrate, 2)
 
     VarClass = internal.lc_build_internal_class("Variable",SymbolicClass)
 
@@ -404,6 +444,8 @@ module LinCAS::Internal
     internal.lc_add_internal(NegClass,"init",neg_init,           1)
 
     BinaryOpC = internal.lc_build_internal_class("BinaryOp",SymbolicClass)
+    internal.lc_add_internal(BinaryOpC,"left",binop_left,        0)
+    internal.lc_add_internal(BinaryOpC,"right",binop_right,      0)
 
     SumClass  = internal.lc_build_internal_class("Sum",BinaryOpC)
     internal.lc_add_internal(SumClass,"init",sum_init,           2)
@@ -468,7 +510,17 @@ module LinCAS::Internal
         Sub          => SubClass,
         Product      => ProdClass,
         Division     => DivClass,
-        Power        => PowClass   
+        Power        => PowClass,
+        Function     => FunctionClass,
+        Cos          => CosClass,
+        Acos         => AcosClass,
+        Sin          => SinClass,
+        Asin         => AsinClass,
+        Tan          => TanClass,
+        Atan         => AtanClass,
+        Log          => LogClass,
+        Exp          => ExpClass,
+        Sqrt         => SqrtClass
     }
 
 

@@ -152,7 +152,7 @@ module LinCAS::Internal
 
         def diff(obj)
             return SZERO unless self.depend?(obj)
-            return -obj.diff(obj)
+            return -value.diff(obj)
         end
 
         def eval(dict : LcHash)

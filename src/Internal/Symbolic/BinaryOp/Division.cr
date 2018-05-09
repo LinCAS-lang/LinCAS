@@ -87,7 +87,7 @@ module LinCAS::Internal
 
         def *(obj) : Symbolic
             return SZERO if obj == 0
-            return SONE if obj == 1
+            return self if obj == 1
             return obj / @right if @left == 1
             return Product.new(self,obj)
         end

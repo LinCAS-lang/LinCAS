@@ -25,6 +25,13 @@ module LinCAS::Internal
         {{v}}.as(LcNum).val 
     end
 
+    macro check_num(v)
+        if !({{v}}.is_a? LcNum)
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Number")
+            return Null 
+        end
+    end
+
     abstract struct LcNum < BaseS
     end
 
@@ -36,6 +43,14 @@ module LinCAS::Internal
     @[AlwaysInline]
     protected def self.num_append(buffer : String_buffer,value : Value)
         buffer_append(buffer,num2num(value).to_s)
+    end
+
+    @[AlwaysInline]
+    protected def self.num_auto(value : Num)
+        if value.is_a? Float 
+            return num2float(value)
+        end
+        return num2int(value)
     end
 
     def self.new_number(klass : Value)

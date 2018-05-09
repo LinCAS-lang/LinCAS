@@ -95,16 +95,16 @@ module LinCAS::Internal
         end
 
         def *(obj : Division)
-            return (self * obj.left).as(Symbolic) / obj.right
+            return self * obj.left / obj.right
         end
 
         def *(obj : Power)
             if self == obj.left 
                 return Power.new(self,obj.right + SONE)
             end
-            lft = @left.opt_prod(obj).as(Symbolic)
+            lft = @left.opt_prod(obj)
             return lft * @right if lft 
-            rht = @right.opt_prod(obj).as(Symbolic) 
+            rht = @right.opt_prod(obj)
             return @left * rht if rht
             return Product.new(self,obj)
         end
@@ -141,9 +141,9 @@ module LinCAS::Internal
         def /(obj)
             return self if obj == 1
             return PinfinityC if obj == 0
-            lft = @left.opt_div(obj).as(Symbolic?) 
+            lft = @left.opt_div(obj)
             return lft * @right if lft 
-            rht = @right.opt_div(obj).as(Symbolic?) 
+            rht = @right.opt_div(obj) 
             return @left * rht if rht 
             return Division.new(self,obj)
         end
