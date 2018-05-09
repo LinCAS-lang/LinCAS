@@ -1182,17 +1182,20 @@ class LinCAS::Compiler
         branches    = node.getBranches
         n_hash      = @ifactory.makeBCode(Code::HASH_NEW)
         n_hash.argc = branches.size
-        first       = compile_hash_atom(branches.last)
-        tmp         = first
-        (branches.size - 1).downto 0 do |i|
-            c_atom = compile_hash_atom(branches[i])
-            link(tmp,c_atom)
-            tmp = c_atom
+        if branches.size > 0
+            first       = compile_hash_atom(branches.last)
+            tmp         = first
+            (branches.size - 1).downto 0 do |i|
+                c_atom = compile_hash_atom(branches[i])
+                link(tmp,c_atom)
+                tmp = c_atom
+            end
+            set_last(first,tmp)
+            link(first,n_hash)
+            set_last(first,n_hash)
+            return first
         end
-        set_last(first,tmp)
-        link(first,n_hash)
-        set_last(first,n_hash)
-        return first
+        return n_hash
     end
 
     protected def compile_hash_atom(node : Node)

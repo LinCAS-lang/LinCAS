@@ -1651,6 +1651,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         node = @nodeFactory.makeNode(NodeType::HASH)
         setLine(node)
         shift
+        if @currentTk.ttype == TkType::R_BRACE
+            shift
+            return node 
+        end
         node.addBranch(parseHashAtom)
         sync(hash_sync_set)
         while @currentTk.ttype != TkType::R_BRACE && !(@currentTk.is_a? EofTk) && @currentTk.ttype == TkType::COMMA

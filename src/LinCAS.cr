@@ -131,7 +131,7 @@ if dir
             Exec.run(code) if exec
         end
     rescue e
-        puts e 
+        puts e.inspect_with_backtrace
         puts
         # lc_bug(LcInternalError,
         #  "An internal error occourred. Please open an issue and report the code which caused this message")
