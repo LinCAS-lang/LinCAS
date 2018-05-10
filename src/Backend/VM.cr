@@ -680,8 +680,8 @@ begin
 
     @[AlwaysInline]
     protected def vm_handle_static_method_exception(owner : Structure)
-        s_type = (owner.is_a? LcClass) ? "Class" : "Module"
-        lc_raise(LcNoMethodError,convert(:no_s_method) % {owner.path.to_s,s_type})
+        s_type = (owner.type == SType::CLASS) ? "Class" : "Module"
+        lc_raise(LcNoMethodError,convert(:no_s_method) % {owner.name,s_type})
     end
 
     @[AlwaysInline]

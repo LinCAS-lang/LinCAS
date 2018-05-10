@@ -45,6 +45,7 @@ module LinCAS::Internal
     def self.lc_make_shared_module(mod : LcModule)
         symTab = lc_make_shared_sym_tab(mod.symTab)
         tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
+        module_init(tmp)
         return tmp
     end
 

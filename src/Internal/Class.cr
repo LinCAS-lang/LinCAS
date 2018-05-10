@@ -376,6 +376,16 @@ module LinCAS::Internal
         next lc_class_ancestors(*args.as(T1))
     end
 
+    def self.lc_class_parent(klass : Value)
+        s_klass = parent_of(klass)
+        return s_klass if s_klass
+        return Null 
+    end
+
+    class_parent = LcProc.new do |args|
+        next lc_class_parent(*lc_cast(args,T1))
+    end
+
 
     MainClass      = lc_build_class("BaseClass")
     Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
@@ -389,6 +399,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"to_s", class_to_s,       0)
     internal.lc_add_static(Lc_Class,"inspect",class_inspect,  0)
     internal.lc_add_static(Lc_Class,"defrost",class_defrost,  0)
+    internal.lc_add_static(Lc_Class,"parent",class_parent,    0)
     internal.lc_add_static(Lc_Class,"remove_instance_method",class_rm_instance_method,  1)
     internal.lc_add_static(Lc_Class,"remove_static_method",class_rm_static_method,      1)
     internal.lc_add_static(Lc_Class,"delete_static_method",class_delete_st_method,      1)

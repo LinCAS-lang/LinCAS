@@ -33,6 +33,7 @@ module LinCAS
             LoadError
             KeyError
             NotSupportedError
+            SintaxError
         end
 
         ERR_MESSAGE = {
@@ -197,21 +198,24 @@ module LinCAS
 
         NotSupportedError = internal.lc_build_internal_class("NotSupportedError",ErrClass)
 
+        SintaxErr = internal.lc_build_internal_class("SintaxError",ErrClass)
+
         ErrDict = {
-            ErrType::TypeError      => TypeErrClass,
-            ErrType::ArgumentError  => ArgErrClass,
-            ErrType::RuntimeError   => RuntimeErrClass,
-            ErrType::NameError      => NameErrClass,
-            ErrType::NoMethodError  => NoMErrClass,
+            ErrType::TypeError         => TypeErrClass,
+            ErrType::ArgumentError     => ArgErrClass,
+            ErrType::RuntimeError      => RuntimeErrClass,
+            ErrType::NameError         => NameErrClass,
+            ErrType::NoMethodError     => NoMErrClass,
             ErrType::ZeroDivisionError => ZeroDivErrClass,
             ErrType::SystemStackError  => SysStackErrClass,
             ErrType::FrozenError       => FrozenErrClass,
-            ErrType::IndexError     => IndexErrClass,
-            ErrType::MathError      => MathErr,
-            ErrType::InstanceError  => InstanceErr,
-            ErrType::LoadError      => LoadErrClass,
-            ErrType::KeyError       => KeyError, 
-            ErrType::NotSupportedError => NotSupportedError
+            ErrType::IndexError        => IndexErrClass,
+            ErrType::MathError         => MathErr,
+            ErrType::InstanceError     => InstanceErr,
+            ErrType::LoadError         => LoadErrClass,
+            ErrType::KeyError          => KeyError, 
+            ErrType::NotSupportedError => NotSupportedError,
+            ErrType::SintaxError       => SintaxErr
         }
 
 
@@ -236,6 +240,7 @@ module LinCAS
     LcLoadError     = Internal::ErrType::LoadError
     LcKeyError      = Internal::ErrType::KeyError
     LcNotSupportedError = Internal::ErrType::NotSupportedError
+    LcSintaxError   = Internal::ErrType::SintaxError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]
