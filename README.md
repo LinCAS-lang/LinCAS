@@ -15,7 +15,7 @@ will be made.
 
 ## To do:
   * [ ] Unit Test library
-  * [ ] Improving parsing. Maybe using a Bison-generated one
+  * [ ] Improving parsing time. Maybe using a Bison-generated parser
   * [ ] Compile time optimizations
   * [ ] Speeding up the VM
   * [ ] Inline caches
@@ -28,4 +28,4 @@ will be made.
 ## Contributing
 Any help or idea is welcome. The project is ambitious and reuires a lot of work. Whoever wants to contribure can open a branch, make some changes and then pull a request. 
 
-To report bugs, or to suggest some feature, open an issue ensuring it does not already exist
+To report bugs, or to suggest some feature, open an issue ensuring it does not already exist.
