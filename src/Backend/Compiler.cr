@@ -1219,8 +1219,8 @@ class LinCAS::Compiler
         return is
     end
 
-    macro compile_sym_op(code)
-        branches = node.getBranches
+    macro compile_sym_op(code,node)
+        branches = {{node}}.getBranches
         left  = compile_sym_tree(branches[0])
         right = compile_sym_tree(branches[1])
         op    = @ifactory.makeBCode(Code::{{code.id}})
@@ -1245,9 +1245,15 @@ class LinCAS::Compiler
                               {"FDIV","S_DIV"},{"IDIV","S_DIV"},{"POWER","S_POW"} } %}
 
             when NodeType::{{block[0].id}}
-                compile_sym_op({{block[1]}})
+                compile_sym_op({{block[1]}},node)
 
             {% end %}
+            when NodeType::INVERT
+                op = compile_exp(node.getBranches[0],false)
+                is = @ifactory.makeBCode(Code::S_INVERT)
+                link(op,is)
+                set_last(op,is)
+                return is 
             else
                 return compile_exp(node,false)
         end

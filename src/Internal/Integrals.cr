@@ -27,7 +27,7 @@ module LinCAS::Internal
     end
 
     # TODO: this methods is affected by computation issues and assumes the 
-    # 4th derivative is continue. this provides sometimes a too low number of
+    # 4th derivative is continue. This provides sometimes a too low number of
     # intervals which does not ensures a precision of 10 ^ -8
     #
     private def self.simpson_intervals(f : Symbolic, a : Value, b : Value)

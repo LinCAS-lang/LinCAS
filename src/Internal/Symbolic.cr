@@ -72,6 +72,11 @@ module LinCAS::Internal
         end
     {% end %}
 
+    def self.s_invert(obj : Symbolic_t)
+        v = to_symbolic(obj)[0]
+        return -v
+    end
+
     def self.function_allocate(klass : LcClass)
         tmp = LcFunction.new
         tmp.klass = klass 

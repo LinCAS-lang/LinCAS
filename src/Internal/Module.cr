@@ -41,6 +41,13 @@ module LinCAS::Internal
         return mod
     end
 
+    def self.lc_build_internal_module_in(name : String,nest : Structure)
+        mod = lc_build_module(name)
+        mod.symTab.parent = nest.symTab
+        nest.symTab.addEntry(name,mod)
+        return mod
+    end
+
     @[AlwaysInline]
     def self.lc_make_shared_module(mod : LcModule)
         symTab = lc_make_shared_sym_tab(mod.symTab)

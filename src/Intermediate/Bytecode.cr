@@ -83,6 +83,7 @@ module LinCAS
     S_PROD              #
     S_DIV               #
     S_POW               #
+    S_INVERT            #
 
     QUIT                #
     HALT                #

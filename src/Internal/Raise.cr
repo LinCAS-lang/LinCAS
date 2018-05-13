@@ -173,9 +173,6 @@ module LinCAS
 
         RuntimeErrClass = internal.lc_build_internal_class("RuntimeError",ErrClass)
 
-#        InternalErrClass = internal.lc_build_class_only("InternalError")
-#        internal.lc_set_parent_class(ErrClass,Obj)
-
         NameErrClass = internal.lc_build_internal_class("NameError",ErrClass)
 
         NoMErrClass  = internal.lc_build_internal_class("NoMethodError",ErrClass)

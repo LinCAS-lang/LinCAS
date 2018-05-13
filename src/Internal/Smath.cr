@@ -84,11 +84,14 @@ module LinCAS::Internal
         if arg.is_a? LcNum 
             v = num2num(arg)
             if v.is_a? Float 
-                # lc_warn()
+                lc_warn("Symbolic floats not supported yiet")
                 v = v.round(0).to_i 
             end
             if v < 0 
-                next build_function(NinfinityC) if v.is_a? BigInt
+                if v.is_a? BigInt
+                    lc_warn("Symbolic BigInt not supported yiet")
+                    next build_function(NinfinityC) 
+                end
                 next build_function(Negative.new(Snumber.new(v.abs)))
             else
                 next build_function(PinfinityC) if v.is_a? BigInt
@@ -113,7 +116,7 @@ module LinCAS::Internal
     internal.lc_module_add_internal(SmathM,"s_log",smath_log,          1)
     internal.lc_module_add_internal(SmathM,"s_sqrt",smath_sqrt,        1)
     internal.lc_module_add_internal(SmathM,"variable",smath_variable,  1)
-    internal.lc_module_add_internal(SmathM,"const",smath_const,        1)
+    internal.lc_module_add_internal(SmathM,"constant",smath_const,     1)
 
     internal.lc_define_const(SmathM,"S_NAN",     build_function(NanC)        )
     internal.lc_define_const(SmathM,"S_PI",      build_function(PiC)         )

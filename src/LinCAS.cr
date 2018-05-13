@@ -45,6 +45,7 @@ module LinCAS
     {% end %}
     alias Num  = Intnum  | Floatnum
     alias NumR = IntnumR | Floatnum
+
 end
 
 require "./Listeners"
@@ -101,6 +102,7 @@ begin
         parser.on("-a","--ast")    { ast_display  = true }
         parser.on("-i","--iseq")   { iseq_display = true }
         parser.on("-n","--no-exec"){ exec         = false}
+        parser.on("-h","--help")   { puts header; exit 0 }
     end
 rescue e 
     puts e.to_s.colorize(:red),
@@ -131,9 +133,6 @@ if dir
             Exec.run(code) if exec
         end
     rescue e
-        puts e.inspect_with_backtrace
-        puts
-        # lc_bug(LcInternalError,
-        #  "An internal error occourred. Please open an issue and report the code which caused this message")
+        LinCAS.lc_bug(e.inspect_with_backtrace)
     end
 end

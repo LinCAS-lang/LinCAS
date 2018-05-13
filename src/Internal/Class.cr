@@ -51,12 +51,21 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_build_internal_class(name : String,parent : LcClass? = nil)
+    def self.lc_build_internal_class(name : String,parent : LcClass? = Obj)
         klass               = lc_build_class(name)
         klass.klass         = Lc_Class
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
-        lc_set_parent_class(klass,parent ? parent : Obj)
+        lc_set_parent_class(klass,parent)
+        return klass
+    end
+
+    def self.lc_build_internal_class_in(name : String,nest : Structure,parent : LcClass? = nil)
+        klass               = lc_build_class(name)
+        klass.symTab.parent = nest.symTab
+        klass.klass         = Lc_Class
+        nest.symTab.addEntry(name,klass)
+        lc_set_parent_class(klass,parent)
         return klass
     end
 

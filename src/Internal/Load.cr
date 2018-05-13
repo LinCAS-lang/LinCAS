@@ -103,6 +103,28 @@ module LinCAS::Internal
         return iseq
     end
 
+    private def self.get_last_is(is : Bytecode)
+        if is.code.to_s.includes? "CALL"
+            argc = is.argc 
+            (argc + 2).times do |i|
+                is = is.prev.as(Bytecode)
+            end
+            return is
+        else
+            lc_bug("(failed to replace bytecode)")
+        end
+    end
+
+    def self.inline_iseq(iseq : Bytecode,is : Bytecode)
+        tmp       = get_last_is(is)
+        tmp.nextc = iseq
+        iseq.prev = tmp
+        follow    = is.nextc.as(Bytecode).nextc.as(Bytecode)
+        last      = iseq.lastc.as(Bytecode)
+        last.prev.as(Bytecode).nextc = follow 
+        return tmp
+    end
+
     def self.lc_replace(string : Value)
         string = string2cr(string)
         if string
@@ -113,7 +135,6 @@ module LinCAS::Internal
             if !(parser.errCount > 0) && ast
                 iseq = Compile.compile(ast,Code::NOOP)
                 iseq = normalize_iseq(iseq)
-                #p iseq.code;gets
                 Exec.vm_replace_iseq(iseq)
             else 
                 Exec.print_end_backtrace

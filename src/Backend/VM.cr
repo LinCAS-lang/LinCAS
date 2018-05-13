@@ -601,6 +601,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     right = opt_unwrap(pop)
                     left  = opt_unwrap(pop)
                     push(internal.s_power(left,right))
+                when Code::S_INVERT
+                    obj = opt_unwrap(pop)
+                    push(internal.s_invert(obj))
                 when Code::NEW_FUNC
                     tmp = pop
                     if tmp.is_a? Symbolic
@@ -615,17 +618,11 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 @quit = false
                 return Null
             end
+            
             if !@to_replace.nil?
-                tmp = get_last_is(is)
-                tmp.nextc = @to_replace
-                @to_replace.as(Bytecode).prev = tmp
-                follow = is.nextc.as(Bytecode).nextc.as(Bytecode)
-                last = @to_replace.as(Bytecode).lastc.as(Bytecode)
-                last.prev.as(Bytecode).nextc = follow 
-                @to_replace = tmp
+                @to_replace = internal.inline_iseq(@to_replace.as(Bytecode),is)
             end
             is = fetch
-            #p "is: #{is.code}"
             if @to_replace
                 current_frame.pc = @to_replace.as(Bytecode)
                 @to_replace = nil 

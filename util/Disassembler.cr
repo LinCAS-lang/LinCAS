@@ -47,7 +47,7 @@ class LinCAS::Disassembler
                  Code::HALT,Code::LEAVE,Code::RETURN, Code::IRANGE_NEW,Code::ERANGE_NEW,
                  Code::NEW_OBJ, Code::PUSHDUP, Code::NEXT, Code::PUSHT, Code::PUSHF, Code::EQ_CMP,
                  Code::CLEAR_C_T, Code::LEAVE_C, Code::NEW_FUNC, Code::S_SUM, Code::S_SUB,
-                 Code::S_PROD, Code::S_DIV, Code::S_POW, Code::QUIT, Code::PUSHANS
+                 Code::S_PROD, Code::S_DIV, Code::S_POW, Code::QUIT, Code::PUSHANS, Code::S_INVERT
                 puts code
             when Code::LINE
                 print_line(iseq.line)

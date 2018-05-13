@@ -47,3 +47,18 @@ struct Crystal::Hasher
         @b = @@seed[1]
     end
 end 
+
+class Object
+
+    def lc_bug(msg : String)
+        print "Bug: ".colorize(:red)
+        puts "#{msg}\n","An internal error occourred.\n\
+        Please open an issue and report the code which caused this message".colorize(:yellow)
+        exit 1
+    end
+
+    def lc_warn(msg : String)
+        puts "Warning: #{msg}\n"
+    end
+
+end
