@@ -41,6 +41,7 @@ will be made.
   * [ ] BigInt conversion from string
   * [ ] Adding a 'break' statement for loops
   * [ ] File IO (The classes are in a primitive status)
+  * [ ] Symbols
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
   
