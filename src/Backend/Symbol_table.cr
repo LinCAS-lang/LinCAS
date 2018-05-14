@@ -32,7 +32,7 @@ class LinCAS::Symbol_Table_Stack
             end
         end
 
-        {% if flag?(:debug)%}
+        {% if flag?(:c_debug)%}
             def print_table
                 p @cache
             end
@@ -49,7 +49,7 @@ class LinCAS::Symbol_Table_Stack
     def fetch(name : String, max_depth : Intnum)
         count = 0
         @stack.reverse_each do |table|
-            {% if flag?(:debug) %}
+            {% if flag?(:c_debug) %}
                 print "seeking in table"
                 table.print_table 
             {% end %}
@@ -65,7 +65,7 @@ class LinCAS::Symbol_Table_Stack
 
     @[AlwaysInline]
     def set(name : String)
-        {% if flag?(:debug) %}
+        {% if flag?(:c_debug) %}
             puts "Set variable '#{name}' in symbol table"
         {% end %}
         @stack.last.set(name)
@@ -73,7 +73,7 @@ class LinCAS::Symbol_Table_Stack
 
     @[AlwaysInline]
     def push_table
-        {% if flag?(:debug) %}
+        {% if flag?(:c_debug) %}
             puts "push new symbol table"
         {% end %}
         @stack.push ID_table.new 
@@ -82,7 +82,7 @@ class LinCAS::Symbol_Table_Stack
 
     @[AlwaysInline]
     def pop_table
-        {% if flag?(:debug) %}
+        {% if flag?(:c_debug) %}
             puts "pop symbol table"
         {% end %}
         @stack.pop
