@@ -16,22 +16,6 @@
 module LinCAS
     private TokenDictConverter = 
             {
-                # Math functions
-                # "log"   => TkType::LOG,
-                # "exp"   => TkType::EXP,
-                # "tan"   => TkType::TAN,
-                # "atan"  => TkType::ATAN,
-                # "cos"   => TkType::COS,
-                # "acos"  => TkType::ACOS,
-                # "sin"   => TkType::SIN,
-                # "asin"  => TkType::ASIN,
-                # "sqrt"  => TkType::SQRT,
-
-                # Math constants
-                # "inf"  => TkType::INF,
-                # "ninf" => TkType::NINF,
-                # "e"    => TkType::E,
-                # "pi"   => TkType::PI,
 
                 # Keywords
                 "if"         => TkType::IF,
@@ -90,7 +74,8 @@ module LinCAS
                 "*"   => TkType::STAR,
                 "/"   => TkType::SLASH,
                 "\\"  => TkType::BSLASH,
-                "^"   => TkType::POWER,
+                "**"  => TkType::POWER,
+                "^"   => TkType::B_XOR,
                 ">"   => TkType::GREATER,
                 "<"   => TkType::SMALLER,
                 ">="  => TkType::GREATER_EQ,
@@ -123,7 +108,8 @@ module LinCAS
                 "/="  => TkType::SLASH_EQ,
                 "\\=" => TkType::BSLASH_EQ,
                 "%="  => TkType::MOD_EQ,
-                "^="  => TkType::POWER_EQ,
+                "**=" => TkType::POWER_EQ,
+                "^="  => TkType::B_XOR_EQ,
                 "\""  => TkType::QUOTES,
                 "'"   => TkType::S_QUOTE,
                 "$"   => TkType::DOLLAR,
