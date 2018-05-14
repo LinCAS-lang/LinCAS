@@ -108,9 +108,9 @@ module LinCAS::Internal
         end
 
         def opt_prod(obj) : Symbolic?
-            tmp = @left.opt_prod(obj).as(Symbolic?) 
+            tmp = @left.opt_prod(obj)
             return tmp / @right if tmp 
-            tmp = obj.opt_div(obj).as(Symbolic?)
+            tmp = @right.opt_div(obj)
             return @left / tmp if tmp 
             nil 
         end
