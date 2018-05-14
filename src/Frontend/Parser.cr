@@ -1,60 +1,37 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 enum LinCAS::VoidVisib
     PUBLIC PROTECTED PRIVATE UNDEFINED
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
 
-#    MATH_FUNCT     = {
-#        TkType::LOG, TkType::EXP, TkType::TAN, TkType::ATAN, TkType::COS, TkType::ACOS,
-#        TkType::SIN, TkType::ASIN, TkType::SQRT
-#    }
-
     EXP_SYNC_SET   = {
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::CONST_ID,TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-<<<<<<< HEAD
-        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL
-    } # + MATH_FUNCT
-=======
         TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS, TkType::L_BRACE
     }
->>>>>>> lc-vm
         
     START_SYNC_SET = { 
         TkType::IF, TkType::SELECT, TkType::DO, TkType::WHILE,TkType::FOR,
         TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
         TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
-<<<<<<< HEAD
-        TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY
-=======
         TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT,
         TkType::IMPORT, TkType::REQUIRE_RELATIVE
->>>>>>> lc-vm
     } + EXP_SYNC_SET
     
     NOOP = Node.new(NodeType::NOOP)
@@ -343,7 +320,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             when TkType::IMPORT
                 return parseImport
             when TkType::RETURN
-                parseReturn
+                return parseReturn
+            when TkType::NEXT 
+                return parseNext
             when TkType::YIELD
                 return  parseYield
             when TkType::PRINT, TkType::PRINTL
@@ -1577,7 +1556,23 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     protected def parseReturn : Node
         @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_RETURN,self) unless @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::RETURN_IN_BLOCK,self) if @block > 0
         node = @nodeFactory.makeNode(NodeType::RETURN)
+        setLine(node)
+        shift 
+        unless {TkType::SEMICOLON, TkType::EOL}.includes? @currentTk.ttype
+            sync(EXP_SYNC_SET)
+            node.addBranch(parseExp)
+        else
+            nullNode = @nodeFactory.makeNode(NodeType::NULL)
+            node.addBranch(nullNode)
+        end
+        return node
+    end
+
+    protected def parseNext : Node 
+        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_NEXT,self) unless @block > 0
+        node = @nodeFactory.makeNode(NodeType::NEXT)
         setLine(node)
         shift 
         unless {TkType::SEMICOLON, TkType::EOL}.includes? @currentTk.ttype

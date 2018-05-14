@@ -1,25 +1,17 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
@@ -28,9 +20,7 @@ module LinCAS::Internal
         @left  : Intnum = 0
         @right : Intnum = 0
         @inclusive = true
-        attr left 
-        attr right
-        attr inclusive
+        property left,right,inclusive
         def to_s
             return "#{@left}#{@inclusive ? ".." : "..."}#{@right}"
         end
@@ -58,6 +48,18 @@ module LinCAS::Internal
 
     macro inclusive(range)
         {{range}}.as(LcRange).inclusive 
+    end
+
+    def self.lc_range_allocate(klass : Value)
+        klass = klass.as(LcClass)
+        range       = LcRange.new 
+        range.klass = klass 
+        range.data  = klass.data.clone 
+        return range.as(Value)
+    end
+    
+    range_allocator = LcProc.new do |args|
+        next lc_range_allocate(*args.as(T1))
     end
 
     def self.range_new
@@ -147,7 +149,7 @@ module LinCAS::Internal
     end
 
     def self.lc_range_map(range)
-        ary = build_ary_new(nil)
+        ary = build_ary_new
         lft = left(range)
         rht = right(range)
         lft,rht = rht,lft unless lft < rht
@@ -181,13 +183,8 @@ module LinCAS::Internal
     end
 
 
-<<<<<<< HEAD
-    RangeClass = internal.lc_build_class_only("Range")
-    internal.lc_set_parent_class(RangeClass,Obj)
-=======
     RangeClass = internal.lc_build_internal_class("Range")
     internal.lc_set_allocator(RangeClass,range_allocator)
->>>>>>> lc-vm
     
     internal.lc_add_internal(RangeClass,"include?",range_include,  1)
     internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)

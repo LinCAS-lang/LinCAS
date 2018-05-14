@@ -1,49 +1,40 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 
 module LinCAS::Internal
 
-    STR_MAX_CAPA = 30000
+    STR_MAX_CAPA   = 30000
+    END_CHR        = '\u{0}'.ord.to_u8
+    alias CHAR_PTR = Pointer(LibC::Char)
 
     class LcString < BaseC
         def initialize
-            @str_ptr = Pointer(LibC::Char).null
-            @size    = 0
+            @str_ptr = CHAR_PTR.null
+            @size    = 0.as(Intnum)
         end
         property str_ptr, size
 
-<<<<<<< HEAD
-        def to_s 
-            return String.new(@str_ptr)
-        end
-=======
->>>>>>> lc-vm
     end 
 
-    macro lc_str2str(str)
-        String.new(pointer_of({{str}}))
+    macro ptr_init(ptr,length)
+        i = 0
+        while i < {{length}}
+            {{ptr}}[i] = END_CHR
+            i += 1
+        end
     end
 
     macro set_size(lcStr,size)
@@ -51,7 +42,7 @@ module LinCAS::Internal
     end
 
     macro str_size(lcStr)
-        {{lcStr}}.as(LcString).size.as(Int32)
+        {{lcStr}}.as(LcString).size
     end
 
     macro pointer_of(value)
@@ -70,6 +61,16 @@ module LinCAS::Internal
         end 
     end
 
+    macro resize_str_capacity_2(str,value)
+        if {{value}} > STR_MAX_CAPA
+            lc_raise(LcIndexError, "String size too big")
+            return Null
+        else
+            {{str}}.as(LcString).str_ptr = pointer_of({{str}}).realloc({{value}})
+            set_size({{str}},{{value}})
+        end 
+    end
+
     macro str_add_char(lcStr,index,char)
         pointer_of({{lcStr}})[{{index}}] = {{char}}
     end
@@ -85,9 +86,6 @@ module LinCAS::Internal
         end 
     end
 
-<<<<<<< HEAD
-    def self.compute_total_string_size(array : An)
-=======
     macro str_check(string)
         if !({{string}}.is_a? LcString)
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{string}})} into String")
@@ -114,7 +112,6 @@ module LinCAS::Internal
     end
 
     private def self.compute_total_string_size(array : An)
->>>>>>> lc-vm
         size = 0
         array.each do |val|
             if val.is_a? LcString
@@ -127,17 +124,11 @@ module LinCAS::Internal
         return size 
     end
 
-    def self.string2cr(value : Value)
-        value = value.as(LcString)
-        ptr   = value.str_ptr
-        size  = value.size
-        return String.new(pointer_of(value))
-    end
-
     def self.new_string
         str   = LcString.new
         str.klass = StringClass
         str.data  = StringClass.data.clone
+        str.id    = str.object_id
         return  str 
     end
 
@@ -162,29 +153,6 @@ module LinCAS::Internal
         return str 
     end
 
-<<<<<<< HEAD
-    def self.lc_str_io_append(io , value : Value)
-        #p value.class;gets
-        if value.is_a? LcString 
-            io << '"'
-            io.write_utf8(pointer_of(value).to_slice(str_size(value)))
-            io << '"'
-        elsif value.is_a? LcNum 
-            io << num2num(value)
-        elsif value == Null 
-            io << "null"
-        elsif value.is_a? LcBool
-            io << (value == lctrue ? "true" : "false")
-        elsif value.is_a? LcArray
-            io << lc_ary_to_s(value)
-        elsif lc_obj_responds_to? value,"to_s"
-            string = Exec.lc_call_fun(value,"to_s")
-            io.write_utf8(pointer_of(string).to_slice(str_size(string)))
-        else 
-            lc_obj_to_s(value,io)
-        end
-    end
-=======
     def self.build_string_with_ptr(ptr : LibC::Char*,size : Intnum = -1)
         str = new_string
         str.str_ptr = ptr 
@@ -266,7 +234,6 @@ module LinCAS::Internal
     string_allocate = LcProc.new do |args|
         next lc_string_allocate(*args.as(T1))
     end
->>>>>>> lc-vm
     
     # Initializes a new string trough the keyword 'new' or just
     # assigning it. This is the 'init' method of the class
@@ -306,13 +273,7 @@ module LinCAS::Internal
     # * argument:: second string to concatenate
     # * returns:: new string
     def self.lc_str_add(lcStr : Value, str : Value)
-        unless str.is_a? LcString
-            lc_raise(
-                LcTypeError,
-                "No implicit conversion of #{lc_typeof(str)} into String"
-            )
-            return Null
-        end
+        str_check(str)
         concated_str = build_string("")
         strlen1      = str_size(lcStr)
         strlen2      = str_size(str)
@@ -345,6 +306,7 @@ module LinCAS::Internal
         resize_str_capacity(str1,len)
         ptr    = pointer_of(str1) + strlen
         str2.each do |str|
+            str_check(str)
             tmp = str_size(str)
             ptr.copy_from(pointer_of(str),tmp)
             ptr += tmp
@@ -395,13 +357,7 @@ module LinCAS::Internal
     # * argument:: string to be searched
     # * returns:: true if the two strings equal; false else;
     def self.lc_str_include(str1 : Value ,str2 : Value)
-        unless str2.is_a? LcString
-            lc_raise(
-                LcTypeError,
-                "No implicit conversion of #{lc_typeof(str2)} into String"
-            )
-            return Null
-        end
+        str_check(str2)
         s_ptr = libc.strstr(pointer_of(str1),pointer_of(str2))
         if s_ptr.null?
              return lcfalse
@@ -474,6 +430,25 @@ module LinCAS::Internal
         next internal.lc_str_clone(args[0])
     end
 
+    private def self.str_index_range(str : LcString,left : Intnum,right : Intnum,inclusive = true)
+        strlen = str_size(str)
+        return Null if strlen < left
+        return CHAR_PTR.null if strlen == left
+        range_size = right - left + (inclusive ? 1 : 0)
+        if strlen < left + range_size -1 
+            range_size = str_size(str) - left 
+        end
+        ptr     = CHAR_PTR.malloc(range_size + 1)
+        ptr_init(ptr,range_size + 1)
+        str_ptr = pointer_of(str)
+        i     = 0
+        while i < range_size
+            ptr[i] = str_ptr[left + i]
+            i += 1
+        end  
+        return ptr
+    end
+
     # Access the string characters at the given index
     # ```
     # str := "A quite long string"
@@ -486,20 +461,12 @@ module LinCAS::Internal
     # * argument:: index
     def self.lc_str_index(str : Value, index : Value)
         if index.is_a? LcRange
-            strlen = str_size(str)
-            return Null if index.left > index.right 
             left    = index.left 
             right   = index.right
-            return Null if strlen < left
-            return build_string("") if strlen == left
-            range_size = right - left + (index.inclusive ? 1 : 0)
-            if strlen < left + range_size -1 
-                range_size = str_size(str) - left 
-            end
-            new_str = new_string
-            resize_str_capacity(new_str, range_size)
-            pointer_of(new_str).copy_from(pointer_of(str) + left,range_size)
-            return new_str
+            return Null if left > right 
+            ptr = str_index_range(lc_cast(str,LcString),left,right,index.inclusive)
+            return ptr if ptr.is_a? Value 
+            return build_string_with_ptr(ptr)
         else
             x = internal.lc_num_to_cr_i(index)
             if x 
@@ -534,13 +501,7 @@ module LinCAS::Internal
             lc_raise(LcIndexError,"(index #{x} out of String)")
             return Null
         else 
-            unless value.is_a? LcString
-                lc_raise(
-                    LcTypeError,
-                    "No implicit conversion of #{lc_typeof(value)} into String"
-                ) 
-                return Null 
-            end
+            str_check(value)
             st_size    = str_size(str)
             val_size   = str_size(value)
             final_size = 0
@@ -573,13 +534,7 @@ module LinCAS::Internal
         if x > str_size(str) || x < 0
             lc_raise(LcIndexError,"(Index #{x} out of String)")
         else
-            unless value.is_a? LcString
-                lc_raise(
-                    LcTypeError,
-                    "No implicit conversion of #{lc_typeof(value)} into String"
-                ) 
-                return Null 
-            end
+            str_check(value)
             st_size  = str_size(str)
             val_size = str_size(value)
             if val_size > 1
@@ -705,35 +660,6 @@ module LinCAS::Internal
     # * argument:: string the method was called on
     # * argument:: delimiter
     # * returns:: array containing the splitted substrings
-<<<<<<< HEAD
-    def self.lc_str_split(str1 : Value, str2 : Value = build_string(" "))
-        unless str2.is_a? LcString
-            lc_raise(
-                LcTypeError,
-                "No implicit conversion of #{lc_typeof(str2)} into String"
-            ) 
-            return Null 
-        end 
-        strlen  = str_size(str1)
-        strlen2 = str_size(str2)
-        ptr     = Pointer(LibC::Char).malloc(strlen).copy_from(pointer_of(str1),strlen)
-        ptr2    = pointer_of(str2)
-        ary = build_ary_new nil 
-        beg = 0
-        final_address = ptr + strlen
-        while beg < strlen
-            tmp = libc.strtok(ptr.clone,ptr2)
-            if tmp.null? 
-                lc_ary_push(ary,str1)
-                return ary 
-            end 
-            str = build_string(tmp)
-            lc_ary_push(ary,str)
-            beg += libc.strlen(tmp) + strlen2
-            ptr = Pointer(LibC::Char).malloc(strlen).copy_from(
-                pointer_of(str1) + beg ,strlen - beg
-            ) unless beg > strlen  
-=======
     def self.lc_str_split(str1 : Value, str2 : Value? = nil)
         if str2
             str_check(str2)
@@ -768,13 +694,13 @@ module LinCAS::Internal
                 beg_ptr += 1
                 i += 1 
             end
->>>>>>> lc-vm
         end
-        return ary 
+        return ary
     end
 
     str_split = LcProc.new do |args|
-        next internal.lc_str_split(*args.as(T2))
+        args = args.as(An)
+        next internal.lc_str_split(args[0],args[1]?)
     end
 
     # Converts a string into an integer number
@@ -838,6 +764,7 @@ module LinCAS::Internal
     # "abc".chars() #=> ["a","b","c"]
     # ```
     # * argument:: string on which the method is called
+    # * returns:: array of chars
     def self.lc_str_chars(str : Value)
         strlen = str_size(str)
         ptr    = pointer_of(str)
@@ -852,13 +779,33 @@ module LinCAS::Internal
         next internal.lc_str_chars(*args.as(T1))
     end
 
+    # Clones the string and deletes the spaces on this last
+    # one
+    # ```
+    # "Compacting This String".compact() #=> "CompactingThisString"
+    # ```
+    # * argument:: String the method is called on
+    def self.lc_str_compact(str : Value)
+        strlen = str_size(str)
+        ptr    = pointer_of(str)
+        tmp    = new_string
+        resize_str_capacity(tmp,strlen)
+        tmp_ptr = pointer_of(tmp)
+        count   = 0
+        strlen.times do |i|
+            if ptr[i] != ' '.ord.to_u8
+                tmp_ptr[count] = ptr[i]
+                count += 1
+            end
+        end
+        resize_str_capacity_2(tmp,count)
+        return tmp
+    end
 
-<<<<<<< HEAD
+    str_compact = LcProc.new do |args|
+        next internal.lc_str_compact(*args.as(T1))
+    end
 
-
-    StringClass = internal.lc_build_class_only("String")
-    internal.lc_set_parent_class(StringClass, Obj)
-=======
     # Deletes the spaces of a string
     # ```
     # "Compacting This String".compact!() #=> "CompactingThisString"
@@ -978,7 +925,6 @@ module LinCAS::Internal
     StringClass = internal.lc_build_internal_class("String")
     internal.lc_set_allocator(StringClass,string_allocate)
 
->>>>>>> lc-vm
 
     internal.lc_add_internal(StringClass,"+",      str_add,     1)
     internal.lc_add_internal(StringClass,"concat", str_concat, -1)
@@ -996,20 +942,15 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"upcase", str_upr,     0)
     internal.lc_add_internal(StringClass,"lowcase!",str_lwr_o,  0)
     internal.lc_add_internal(StringClass,"lowcase",str_lwr,     0)
-    internal.lc_add_internal(StringClass,"split",  str_split,   1)
+    internal.lc_add_internal(StringClass,"split",  str_split,  -1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
-<<<<<<< HEAD
-    internal.lc_add_internal(StringClass,"each_char",str_each_char,0)
-    internal.lc_add_internal(StringClass,"chars",  str_chars,   0)
-=======
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
     internal.lc_add_internal(StringClass,"compact",str_compact,     0)
     internal.lc_add_internal(StringClass,"compact!",  str_o_compact,0)
     internal.lc_add_internal(StringClass,"gsub",      str_gsub,     2)
     internal.lc_add_internal(StringClass,"starts_with",str_s_with,  1)
->>>>>>> lc-vm
 
 
 end

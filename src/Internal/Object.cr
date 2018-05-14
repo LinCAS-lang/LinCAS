@@ -1,26 +1,17 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 module LinCAS::Internal
 
@@ -30,24 +21,60 @@ module LinCAS::Internal
         end
     end
 
-    struct VirtualObj < BaseS
+    @[AlwaysInline]
+    def self.compare_by_type?(obj1 : Value, obj2 : Value)
+        return obj1.is_a? NumType && obj2.is_a? NumType
     end
 
+    def self.lc_compare(obj1 : Value, obj2 : Value)
+        if compare_by_type?(obj1,obj2)
+            return val2bool(num2num(obj1) == num2num(obj2))
+        end
+        if (lc_obj_has_internal_m? obj2,"==") == 1
+            return Exec.lc_call_fun(obj2,"==",obj1)
+        end
+        return lcfalse
+    end
+
+    def self.lc_obj_match(obj1 : Value,obj2 : Value)
+        cmp_result = Exec.lc_call_fun(obj1,"==",obj2)
+        if cmp_result == lctrue
+            return cmp_result
+        else
+            return lc_obj_eq(obj1,obj2)
+        end 
+    end
+
+    @[AlwaysInline]
     def self.boot_main_object
-        return internal.lc_obj_new(MainClass)
+        return internal.lc_obj_allocate(Obj)
     end
 
-    def self.lc_obj_new(klass : Value)
-        klass = klass.as(ClassEntry)
-        obj = LcObject.new
+    def self.lc_new_object(klass : Value)
+        klass = klass.as(LcClass)
+        allocator = lc_find_allocator(klass)
+        if allocator == Allocator::UNDEF
+            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.path.to_s)
+            return Null 
+        end
+        if allocator.is_a? LcProc
+            return allocator.call(klass).as(Value)
+        end
+        lc_raise(LcInstanceErr,"Undefined allocator for %s" % klass.path.to_s)
+        return Null
+    end
+
+    def self.lc_obj_allocate(klass : Value)
+        klass     = klass.as(LcClass)
+        obj       = LcObject.new
         obj.klass = klass
         obj.data  = klass.data.clone
         obj.id    = pointerof(obj).address
         return obj.as(Value) 
     end
 
-    obj_new = LcProc.new do |args|
-        next internal.lc_obj_new(*args.as(T1))
+    obj_allocator = LcProc.new do |args|
+        next internal.lc_obj_allocate(*args.as(T1))
     end
 
     def self.lc_obj_init(obj : Value)
@@ -75,10 +102,22 @@ module LinCAS::Internal
     def self.lc_obj_to_s(obj : Value, io)
         io << '<'
         if obj.is_a? Structure 
-            io << obj.as(Structure).path.to_s
-            io << ((obj.is_a? ClassEntry) ? " : class" : " : module")
+            klass = obj.as(Structure)
+            path  = klass.path
+            if !path.empty?
+                io << path.to_s
+            else
+                io << klass.name 
+            end
+            io << (struct_type(klass,SType::CLASS) ? " : class" : " : module")
         else
-            io << obj.as(ValueR).klass.path.to_s
+            klass = class_of(obj)
+            path  = klass.path
+            if !path.empty?
+                io << path.to_s 
+            else
+                io << klass.name 
+            end
         end
         io << ":@0x"
         pointerof(obj).address.to_s(16,io)
@@ -86,31 +125,8 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_compare(obj1 : Value, obj2 : Value)
-        return lcfalse unless obj1.class == obj2.class 
         return lctrue if obj1.id == obj2.id
-        case obj1.class 
-            when LcString
-                return lc_str_compare(obj1,obj2)
-            when LcNum
-                return lc_num_eq(obj1,obj2)
-            when LcBool
-                return lc_bool_eq(obj1,obj2)
-            when LcRange 
-                return lc_range_eq(obj1,obj2)
-            when LcNull 
-                return lctrue 
-            when Structure
-                return lc_class_eq(obj1,obj2)
-            when LcArray
-                return lc_ary_eq(obj1,obj2)
-            else 
-                if lc_obj_responds_to? obj1,"=="
-                    return Exec.lc_call_fun(obj1,"==",obj2)
-                elsif lc_obj_responds_to? obj1,"!="
-                    return lc_bool_invert(Exec.lc_call_fun(obj1,"==",obj2))
-                end
-                return lcfalse 
-        end 
+        return lc_compare(obj1,obj2)
     end
 
     def self.lc_obj_eq(obj1 : Value, obj2 : Value)
@@ -178,13 +194,12 @@ module LinCAS::Internal
         next obj
     end
 
+    def self.lc_obj_responds_to(obj : Value,name : Value)
+        sname = string2cr(name)
+        return Null unless sname
+        return val2bool(lc_obj_responds_to?(obj,sname))
+    end
 
-<<<<<<< HEAD
-    Obj       = internal.lc_build_class_only("Object")
-    MainClass = Id_Tab.getRoot.as(ClassEntry)
-    internal.lc_set_parent_class(Obj,LcClass)
-    internal.lc_set_parent_class(MainClass,Obj)
-=======
     obj_responds_to = LcProc.new do |args|
         next internal.lc_obj_responds_to(*args.as(T2))
     end
@@ -201,33 +216,19 @@ module LinCAS::Internal
 
     Obj       = internal.lc_build_internal_class("Object",Lc_Class)
     internal.lc_set_allocator(Obj,obj_allocator)
->>>>>>> lc-vm
 
-    internal.lc_add_static(Obj,"new",obj_new,         0)
     internal.lc_add_internal(Obj,"init",obj_init,     0)
     internal.lc_add_internal(Obj,"==",obj_eq,         1)
     internal.lc_add_internal(Obj,"!=",obj_eq,         1)
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
-<<<<<<< HEAD
-    internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
-=======
     internal.lc_add_internal(Obj,"frozen?",obj_frozen,0)
->>>>>>> lc-vm
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
-    internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
     internal.lc_add_internal(Obj,"||",obj_or,         1)
     internal.lc_add_internal(Obj,"&&",obj_and,        1)
     internal.lc_add_internal(Obj,"!",obj_not,         0)
-<<<<<<< HEAD
-
-    internal.lc_add_static(LcClass,"freeze",obj_freeze,   0)
-    internal.lc_add_static(LcClass,"defrost",obj_defrost, 0)
-    internal.lc_add_static(LcClass,"frozen?",obj_frozen,  0)
-    internal.lc_add_static(LcClass,"is_null",obj_null,    0)
-=======
     internal.lc_add_internal(Obj,"to_a",obj_to_a,     0)
 
     internal.lc_add_static(Lc_Class,"freeze",obj_freeze,   0)
@@ -240,7 +241,6 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"!",obj_not,           0)
 
     internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
->>>>>>> lc-vm
 
 
 end

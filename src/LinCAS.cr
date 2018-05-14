@@ -1,6 +1,4 @@
 
-<<<<<<< HEAD
-=======
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -28,7 +26,6 @@ require "colorize"
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
 
->>>>>>> lc-vm
 module LinCAS
     EOF = "\u0003"
     ALLOWED_VOID_NAMES = 
@@ -37,17 +34,10 @@ module LinCAS
         TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
         TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
         TkType::NOT_EQ, TkType::SMALLER_EQ,
-<<<<<<< HEAD
-        TkType::ASSIGN_INDEX
-=======
         TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
->>>>>>> lc-vm
     }
-    alias Intnum   = Int32 | Int64
+    alias IntnumR  = Int32   | Int64
     alias Floatnum = Float32 | Float64
-<<<<<<< HEAD
-    alias Num      = Intnum | Floatnum
-=======
     {% if flag?(:fast_math) %}
         alias Intnum   = IntnumR
     {% else %}
@@ -56,7 +46,6 @@ module LinCAS
     alias Num  = Intnum  | Floatnum
     alias NumR = IntnumR | Floatnum
 
->>>>>>> lc-vm
 end
 
 require "./Listeners"
@@ -79,18 +68,14 @@ require "./Intermediate/NodeType"
 require "./Intermediate/Nkey"
 require "./Intermediate/Node"
 require "./Intermediate/IntermediateFactory"
+require "./Intermediate/Bytecode"
 require "./Internal/Proc"
-require "./Intermediate/SymbolTab"
-require "./Backend/Eval"
+require "./Backend/Compiler"
 require "./Internal/LcInternal"
-<<<<<<< HEAD
-require "./Backend/CallStack"
-require "./Internal/Math"
-=======
 require "./Backend/VM"
->>>>>>> lc-vm
 require "../util/AstPrinter"
 require "../util/SymTabPrinter"
+require "../util/Disassembler"
 
 
 include LinCAS
@@ -128,20 +113,6 @@ end
 dir = ARGV[0]?
 if dir 
     begin
-<<<<<<< HEAD
-        parser = factory.makeParser(File.expand_path(dir))
-        #parser.displayTokens
-        ast = parser.parse
-        #astPrinter = AstPrinter.new
-        #astPrinter.printAst(ast.as(Node)) if ast
-        Exec.eval(ast) unless parser.errCount > 0
-        #s_printer = SymTabPrinter.new 
-        #s_printer.printSTab(Id_Tab.getRoot)
-    rescue e
-        puts e 
-        puts
-        Exec.lc_raise(LcInternalError,"An internal error occourred. Maybe a LinCAS bug")
-=======
         parser = FFactory.makeParser(File.expand_path(dir))
         if tk_display
             parser.displayTokens
@@ -163,6 +134,5 @@ if dir
         end
     rescue e
         LinCAS.lc_bug(e.inspect_with_backtrace)
->>>>>>> lc-vm
     end
 end

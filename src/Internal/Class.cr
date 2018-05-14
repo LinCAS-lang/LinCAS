@@ -1,67 +1,55 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 module LinCAS::Internal
 
     macro parent_of(klass)
-       {{klass}}.as(ClassEntry).parent
+       {{klass}}.as(LcClass).parent
     end
 
     macro class_of(obj)
-        {{obj}}.as(ValueR).klass 
+        {{obj}}.klass 
     end
 
-    macro ensure_string(name, _return = true)
-        {% if _return == true %}
-            if !{{name}}.is_a? LcString 
-                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
-                return Null
-            end
-        {% else %}
-            if !{{name}}.is_a? LcString 
-                lc_raise(LcArgumentError,"Expecting String, not #{lc_typeof({{name}})}")
-            end
-        {% end %}
+    macro path_of(obj)
+        {{obj}}.as(Structure).path 
     end
 
+    macro type_of(obj)
+        {{obj}}.as(Structure).type
+    end
+
+    macro class_name(klass)
+        {{klass}}.as(LcClass).name 
+    end
     
-    def self.lc_build_class_only(name : String)
-        return Id_Tab.addClass(name,true)
-    end
-
+    @[AlwaysInline]
     def self.lc_build_class(name : String)
-        return Id_Tab.addClass(name)
+        klass      = LcClass.new(name)
+        klass.type = SType::CLASS
+        return klass
     end
 
-    def self.lc_set_parent_class(klass : ClassEntry,parent : ClassEntry)
-        klass.parent = parent
+    @[AlwaysInline]
+    def self.lc_build_class(name : String,path : Path)
+        klass       = LcClass.new(name,path)
+        klass.type  = SType::CLASS
+        klass.klass = Lc_Class
+        return klass
     end
 
-<<<<<<< HEAD
-    def self.lc_add_method(receiver : Structure, name : String, method : MethodEntry)
-        receiver.methods.addEntry(name,method)
-=======
     @[AlwaysInline]
     def self.lc_build_internal_class(name : String,parent : LcClass? = Obj)
         klass               = lc_build_class(name)
@@ -79,23 +67,30 @@ module LinCAS::Internal
         nest.symTab.addEntry(name,klass)
         lc_set_parent_class(klass,parent)
         return klass
->>>>>>> lc-vm
     end
 
-    def self.lc_add_undef_method(receiver : Structure,name : String,method : MethodEntry)
+    @[AlwaysInline]
+    def self.lc_set_parent_class(klass : LcClass,parent : LcClass)
+        klass.parent = parent
+    end
+
+    @[AlwaysInline]
+    def self.lc_add_method(receiver : Structure, name : String, method : LcMethod)
         receiver.methods.addEntry(name,method)
     end
 
-    def self.lc_add_method_locally(name : String, method : MethodEntry)
-        Id_Tab.addMethod(name,method)
-    end
-
-    def self.lc_add_undef_method_locally(name : String,method : MethodEntry)
-        lc_add_undef_method(Id_Tab.getCurrent,name,method) 
+    @[AlwaysInline]
+    def self.lc_add_undef_method(receiver : Structure,name : String,method : LcMethod)
+        receiver.methods.addEntry(name,method)
     end
 
     def self.lc_add_internal(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
         m = define_method(name,receiver,proc,arity)
+        receiver.methods.addEntry(name,m)
+    end
+
+    def self.lc_add_internal_protected(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
+        m = define_protected_method(name,receiver,proc,arity)
         receiver.methods.addEntry(name,m)
     end
 
@@ -114,77 +109,61 @@ module LinCAS::Internal
         receiver.statics.addEntry(name,m)
     end
 
-<<<<<<< HEAD
-    def self.lc_add_singleton(receiver : Structure, name : String, proc : LcProc,arity : Intnum)
-        m = define_singleton(name,receiver,proc,arity)
-        receiver.methods.addEntry(name,m)
-    end
-
-    def self.lc_remove_singleton(receiver : Structure,name : String)
-        m = undef_singleton(name,receiver,proc,arity)
-        receiver.methods.addEntry(name,m)
-    end
-
-    def self.lc_add_static_singleton(receiver : Structure, name : String, proc : LcProc, arity : Intnum)
-        m = define_static_singleton(name,receiver,proc,arity)
-        receiver.statics.addEntry(name,m)
-    end
-
-    def self.lc_remove_static_singleton(receiver : Structure,name : String)
-        m = undef_static_singleton(receiver,name)
-        receiver.statics.addEntry(name,m)
-    end
-
-    def self.lc_add_class_method(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
-=======
     def self.lc_class_add_method(receiver : Structure,name : String,proc : LcProc,arity : Intnum)
->>>>>>> lc-vm
         lc_add_internal(receiver,name,proc,arity)
         lc_add_static(receiver,name,proc,arity)
     end
 
     def self.lc_define_const(str : Structure, name : String, const : Value)
-        centry = ConstEntry.new(name,const)
+        centry = LcConst.new(name,const)
         str.symTab.addEntry(name,centry)
     end
 
-    def self.lc_define_const_locally(name : String, const : Value)
-        Id_Tab.addConst(name,const)
+    @[AlwaysInline]
+    def self.lc_set_allocator(klass : LcClass,allocator : LcProc)
+        klass.allocator = allocator 
     end
 
-<<<<<<< HEAD
-=======
     @[AlwaysInline]
     def self.lc_undef_allocator(klass : LcClass)
         klass.allocator = Allocator::UNDEF 
     end
 
->>>>>>> lc-vm
     def self.lc_copy_consts_in(sender : Structure, receiver : Structure)
         stab = sender.symTab
         rtab = receiver.symTab
         stab.each_key do |name|
             entry = stab.lookUp(name)
-            if entry.is_a? ConstEntry
+            if entry.is_a? LcConst
                 rtab.addEntry(name,entry)
             end
         end
     end
 
+    def self.seek_const_in_scope(scp : SymTab,name : String) : Value?
+        const = scp.lookUp(name)
+        return unpack_const(const).as(Value) if const
+        scp = scp.parent 
+        while scp 
+            const = scp.lookUp(name)
+            return unpack_const(const).as(Value) if const
+            scp = scp.parent
+        end 
+        return nil
+    end 
+
     def self.lc_seek_const(str : Structure, name : String)
-        const = Id_Tab.lookUp(name)
-        return unpack_const(const) if const 
-        if str.is_a? ModuleEntry
-            return str.as(ModuleEntry).symTab.lookUp(name)
-        else
-            const = str.as(ClassEntry).symTab.lookUp(name)
-            return unpack_const(const) if const 
-            parent = parent_of(str)
-            while parent
-                const = parent.symTab.lookUp(name)
-                return unpack_const(const) if const
-                parent = parent_of(parent)
-            end
+        const = seek_const_in_scope(str.symTab,name)
+        if const
+            return const.as(Value)
+        end
+        const = str.as(LcClass).symTab.lookUp(name)
+        return unpack_const(const).as(Value) if const 
+        parent = parent_of(str)
+         while parent
+            const = parent.symTab.lookUp(name)
+            return unpack_const(const).as(Value) if const
+            parent = parent_of(parent)
         end
         return nil
     end
@@ -193,32 +172,45 @@ module LinCAS::Internal
         if const.is_a? Structure
             return const 
         else
-            return const.as(ConstEntry).val
+            return const.as(LcConst).val
         end
+    end
+
+    def self.lc_find_allocator(klass : LcClass)
+        alloc = klass.allocator 
+        return alloc if alloc
+        klass = parent_of(klass)
+        while klass
+            alloc = klass.allocator 
+            return alloc if alloc
+            klass = parent_of(klass)
+        end 
+        return nil 
     end
 
     #########
 
-    def self.lc_is_a(obj : Value, lcType : Value)
-        if lcType.is_a? Structure
-            lcType = lcType.as(Structure)
+    @[AlwaysInline]
+    def self.lc_class_compare(klass1 : Value, klass2 : Value)
+        path1 = path_of(klass1)
+        path2 = path_of(klass2)
+        if !path1.empty? && !path2.empty?
+            return lcfalse unless path_of(klass1) == path_of(klass2)
         else
+            return lcfalse unless class_name(klass1) == class_name(klass2)
+        end
+        return lctrue
+    end
+
+    def self.lc_is_a(obj : Value, lcType : Value)
+        if !(lcType.is_a? Structure)
             lc_raise(LcArgumentError,"Argument must be a class or a module")
             return lcfalse
         end
-        if obj.is_a? Structure
-            return (obj.as(Structure).path == lcType.path) ? lctrue : lcfalse
-        else
-            objClass = obj.as(ValueR).klass
-            if objClass.path == lcType.path
-                return lctrue
-            else
-                parent = parent_of(objClass)
-                while parent
-                    return lctrue if parent.as(ClassEntry).path == lcType.path 
-                    parent = parent_of(parent)
-                end
-            end
+        objClass = class_of(obj)
+        while objClass
+            return lctrue if lc_class_compare(objClass,lcType) == lctrue
+            objClass = parent_of(objClass)
         end
         return lcfalse
     end
@@ -227,21 +219,20 @@ module LinCAS::Internal
         next internal.lc_is_a(*args.as(T2))
     end
 
+    @[AlwaysInline]
     def self.lc_class_class(obj : Value)
-        return LcClass  if obj.is_a? ClassEntry
-        return LcModule if obj.is_a? ModuleEntry
-        return obj.as(ValueR).klass
+        return class_of(obj)
     end
 
     class_class = LcProc.new do |args|
-        next internal.lc_class_class(*args.as(T1))
+        next class_of(args.as(T1)[0])
     end
 
 
     def self.lc_class_eq(klass : Value, other : Value)
-        return lcfalse unless klass.class == other.class
-        return lcfalse unless klass.as(Structure).path  == other.as(Structure).path 
-        return lctrue
+        return lcfalse unless klass.class == other.class 
+        return lcfalse unless type_of(klass) == type_of(other)
+        return lc_class_compare(klass,other)
     end
 
     class_eq = LcProc.new do |args|
@@ -249,9 +240,7 @@ module LinCAS::Internal
     end
 
     def self.lc_class_ne(klass : Value, other)
-        return internal.lc_bool_invert(
-            internal.lc_class_eq(klass,other)
-        )
+        return lc_bool_invert(lc_class_eq(klass,other))
     end
 
     class_ne = LcProc.new do |args|
@@ -269,18 +258,35 @@ module LinCAS::Internal
         next klass
     end
 
-    class_to_s = LcProc.new do |args|
+    class_inspect = LcProc.new do |args|
         tmp = String.build do |io|
             io << '"'
-            io << args.as(T1)[0].as(Structure).path.to_s
+            klass = args.as(T1)[0].as(Structure)
+            path  = path_of(klass)
+            if !path.empty?
+                io << path.to_s
+            else
+                io << klass.name 
+            end
             io << '"'
         end
         next internal.build_string(tmp)
     end
 
+    class_to_s = LcProc.new do |args|
+        klass = args.as(T1)[0].as(Structure)
+        path  = path_of(klass)
+        if path.empty?
+            name = klass.name 
+        else
+            name = path.to_s
+        end
+        next build_string(name)
+    end
+
     def self.lc_class_rm_static_method(klass : Value, name : Value)
-        ensure_string(name)
-        sname = lc_str2str(name)
+        sname = string2cr(name)
+        return Null unless sname
         unless lc_obj_responds_to? klass,sname
             lc_raise(LcNoMethodError, "Can't find static method '%s' for %s" % {sname,lc_typeof(klass)})
             return Null 
@@ -295,8 +301,8 @@ module LinCAS::Internal
     end
 
     def self.lc_class_rm_instance_method(klass : Value,name : Value)
-        ensure_string(name)
-        sname = lc_str2str(name)
+        sname = string2cr(name)
+        return Null unless sname
         unless lc_obj_responds_to? klass,sname,false
             lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
             return Null 
@@ -322,8 +328,6 @@ module LinCAS::Internal
         next internal.lc_class_rm_method(*args.as(T2))
     end
 
-<<<<<<< HEAD
-=======
     def self.lc_class_delete_instance_method(klass : Value,name : Value)
         sname = string2cr(name)
         return Null unless sname
@@ -395,25 +399,9 @@ module LinCAS::Internal
     MainClass      = lc_build_class("BaseClass")
     Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
     Lc_Class.klass = Lc_Class
->>>>>>> lc-vm
 
-    LcClass = internal.lc_build_class_only("Class")
+    internal.lc_remove_static(Lc_Class,"new")
 
-<<<<<<< HEAD
-    internal.lc_add_internal(LcClass,"is_a?", is_a,     1)
-    internal.lc_add_static(LcClass,"==",   class_eq,   1)
-    internal.lc_add_static(LcClass,"<>",   class_ne,   1)
-    internal.lc_add_static(LcClass,"!=",   class_ne,   1)
-    internal.lc_add_static(LcClass,"to_s", class_to_s, 0)
-    internal.lc_add_static(LcClass,"inspect",class_to_s,     0)
-    internal.lc_add_static(LcClass,"defrost",class_defrost,  0)
-    internal.lc_add_internal(LcClass,"its_class",class_class,0)
-    internal.lc_add_static(LcClass,"its_class",class_class,  0)
-    internal.lc_add_static(LcClass,"undef_instance_method",class_rm_instance_method,  1)
-    internal.lc_add_static(LcClass,"undef_static_method",class_rm_static_method,      1)
-
-    internal.lc_add_class_method(LcClass,"undef_method",class_rm_method,              1)
-=======
     internal.lc_add_static(Lc_Class,"==",   class_eq,         1)
     internal.lc_add_static(Lc_Class,"<>",   class_ne,         1)
     internal.lc_add_static(Lc_Class,"!=",   class_ne,         1)
@@ -431,6 +419,5 @@ module LinCAS::Internal
     internal.lc_class_add_method(Lc_Class,"class",class_class,                          0)
     internal.lc_class_add_method(Lc_Class,"remove_method",class_rm_method,              1)
     internal.lc_class_add_method(Lc_Class,"delete_method",class_delete_method,          1)
->>>>>>> lc-vm
 
 end

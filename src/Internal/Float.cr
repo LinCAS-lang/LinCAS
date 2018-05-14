@@ -1,33 +1,25 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
-
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 module LinCAS::Internal
 
     def self.lc_num_to_cr_f(num : Value)
-        if num.is_a? LcNum 
-            return num2num(num).to_f
+        if num.is_a? LcInt
+            return int2num(num).to_f
+        elsif num.is_a? LcFloat
+            return float2num(num).as(Floatnum)
         else
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(num)} into Float")
         end 
@@ -43,6 +35,14 @@ module LinCAS::Internal
         def to_s 
             return @val.to_s 
         end
+    end
+
+    macro num2bigfloat(num)
+        BigFloat.new({{num}})
+    end
+
+    macro bigf2flo64(num)
+        ({{num}}.round(20)).to_f64
     end
     
     @[AlwaysInline]
@@ -66,7 +66,7 @@ module LinCAS::Internal
     def self.lc_float_sum(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val + n2.as(LcFloat).val)
+            return num2float(float2num(n1) + float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"+")
         end
@@ -79,7 +79,7 @@ module LinCAS::Internal
     def self.lc_float_sub(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val - n2.as(LcFloat).val)
+            return num2float(float2num(n1) - float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"-")
         end
@@ -94,7 +94,7 @@ module LinCAS::Internal
     def self.lc_float_mult(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val * n2.as(LcFloat).val)
+            return num2float(float2num(n1) * float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"*")
         end
@@ -143,7 +143,7 @@ module LinCAS::Internal
     def self.lc_float_power(n1 : Value, n2 : Value)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
-            return num2float(n1.val ** n2.as(LcFloat).val)
+            return num2float(float2num(n1) ** float2num(n2))
         else
             return internal.lc_num_coerce(n1,n2,"^")
         end
@@ -197,15 +197,22 @@ module LinCAS::Internal
         unless num.is_a? Intnum 
             num = internal.lc_num_to_cr_i(num).as(Intnum)
         end
-        next num2float(float.round(num))
+        next num2float(float.round(num.to_i64))
     end
 
     float_ceil = LcProc.new do |args|
         float = internal.lc_num_to_cr_f(*args.as(T1))
         if float.is_a? Float32
             next num2float(LibM.ceil_f32(float.as(Float32)))
-        else
+        {% if flag?(:fast_math) %}
+        else 
             next num2float(LibM.ceil_f64(float.as(Float64)))
+        {% else %}
+        elsif float.is_a? Float64
+            next num2float(LibM.ceil_f64(float.as(Float64)))
+        else
+            next num2float(float.as(BigFloat).ceil)
+        {% end %}
         end
     end
 
@@ -227,10 +234,6 @@ module LinCAS::Internal
         end
     end
 
-<<<<<<< HEAD
-    FloatClass = internal.lc_build_class_only("Float")
-    internal.lc_set_parent_class(FloatClass,NumClass)
-=======
     def self.lc_float_eq(n : Value, obj : Value)
         if obj.is_a? LcFloat
             return val2bool(float2num(n) == float2num(obj))
@@ -245,7 +248,6 @@ module LinCAS::Internal
 
     FloatClass = internal.lc_build_internal_class("Float",NumClass)
     internal.lc_undef_allocator(FloatClass)
->>>>>>> lc-vm
 
     internal.lc_add_internal(FloatClass,"+",float_sum,  1)
     internal.lc_add_internal(FloatClass,"-",float_sub,  1)
@@ -253,7 +255,7 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"\\",float_idiv,1)
     internal.lc_add_internal(FloatClass,"/",float_fdiv, 1)
     internal.lc_add_internal(FloatClass,"^",float_power,1)
-    internal.lc_add_internal(FloatClass,"invert",float_invert, 0)
+    internal.lc_add_internal(FloatClass,"-@",float_invert, 0)
     internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
     internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)

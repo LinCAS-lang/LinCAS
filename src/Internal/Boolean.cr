@@ -1,26 +1,17 @@
 
 # Copyright (c) 2017-2018 Massimiliano Dal Mas
 #
-# Permission is hereby granted, free of charge, to any person
-# obtaining a copy of this software and associated documentation
-# files (the "Software"), to deal in the Software without
-# restriction, including without limitation the rights to use,
-# copy, modify, merge, publish, distribute, sublicense, and/or sell
-# copies of the Software, and to permit persons to whom the
-# Software is furnished to do so, subject to the following
-# conditions:
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# The above copyright notice and this permission notice shall be
-# included in all copies or substantial portions of the Software.
+#      http://www.apache.org/licenses/LICENSE-2.0
 #
-# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-# OTHER DEALINGS IN THE SOFTWARE.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 module LinCAS::Internal
 
@@ -38,20 +29,31 @@ module LinCAS::Internal
 
     alias LcBool = LcBTrue | LcBFalse
 
+    @[AlwaysInline]
+    def self.val2bool(value : Bool)
+        return lctrue if value 
+        return lcfalse 
+    end
+
+    @[AlwaysInline]
+    def self.bool2val(value : Value)
+        return value == lctrue ? true : false
+    end
+
     def self.build_true
         lcTrue       = LcBTrue.new
-        klass         = Id_Tab.lookUp("Boolean")
-        lcTrue.klass  = klass.as(ClassEntry)
-        lcTrue.data   = klass.as(ClassEntry).data.clone
+        klass         = BoolClass
+        lcTrue.klass  = klass.as(LcClass)
+        lcTrue.data   = klass.as(LcClass).data.clone
         lcTrue.frozen = true
         return lcTrue.as(Value)
     end
 
     def self.build_false
         lcFalse        = LcBFalse.new
-        klass          = Id_Tab.lookUp("Boolean")
-        lcFalse.klass  = klass.as(ClassEntry)
-        lcFalse.data   = klass.as(ClassEntry).data.clone
+        klass          = BoolClass
+        lcFalse.klass  = klass.as(LcClass)
+        lcFalse.data   = klass.as(LcClass).data.clone
         lcFalse.frozen = true
         return lcFalse.as(Value)
     end
@@ -130,15 +132,9 @@ module LinCAS::Internal
         next internal.lc_bool_or(args[0],args[1])
     end
 
-<<<<<<< HEAD
-    BoolClass = internal.lc_build_class_only("Boolean")
-    internal.lc_set_parent_class(BoolClass, Obj)
-=======
     BoolClass = internal.lc_build_internal_class("Boolean")
     internal.lc_undef_allocator(BoolClass)
->>>>>>> lc-vm
 
-    internal.lc_remove_static(BoolClass,"new")
     internal.lc_remove_internal(BoolClass,"defrost")
 
     internal.lc_add_internal(BoolClass,"!", bool_invert,0)
