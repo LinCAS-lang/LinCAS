@@ -19,6 +19,8 @@ module LinCAS::Internal
     DirLib   = build_string(ENV["libDir"])
     Ext      = build_string(".lc")
 
+    ParserAbort = Parser::ParserAbort
+
     def self.check_required(path : String)
         return REQUIRED.includes? path 
     end
@@ -36,13 +38,18 @@ module LinCAS::Internal
             end
             parser = FFactory.makeParser(path)
             parser.singleErrOutput
+            parser.handleMsg
             parser.noSummary
-            ast    = parser.parse
+            begin 
+                ast    = parser.parse
+            rescue e : ParserAbort
+            end
+            
             if !(parser.errCount > 0) && ast
                 iseq = Compile.compile(ast,Code::LEAVE)
                 return iseq 
             else 
-                Exec.print_end_backtrace
+                lc_raise(LcSintaxError,parser.getErrMsg)
             end
         end
         return nil
@@ -130,14 +137,19 @@ module LinCAS::Internal
         if string
             parser = FFactory.makeParser(string,current_file,current_call_line)
             parser.singleErrOutput
+            parser.handleMsg
             parser.noSummary
-            ast    = parser.parse
+            begin 
+                ast    = parser.parse
+            rescue e : ParserAbort
+            end
+
             if !(parser.errCount > 0) && ast
                 iseq = Compile.compile(ast,Code::NOOP)
                 iseq = normalize_iseq(iseq)
                 Exec.vm_replace_iseq(iseq)
             else 
-                Exec.print_end_backtrace
+                lc_raise(LcSintaxError,parser.getErrMsg)
                 return lcfalse
             end
             return lctrue

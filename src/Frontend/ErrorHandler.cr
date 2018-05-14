@@ -15,11 +15,14 @@
 
 class LinCAS::ErrorHandler
 
-    MAX_ERR = 10
+    MAX_ERR           = 10
+    SINTAX_ERR_FORMAT = "%s\nLine: %s:%s on: %s\nIn: %s\n"
 
     def initialize
         @errorCount   = 0
         @singleOutput = false
+        @handleMsg    = true
+        @msg          = ""
     end
 
     def errors
@@ -29,6 +32,18 @@ class LinCAS::ErrorHandler
     def singleOutput
         @singleOutput = true
     end
+
+    def handleMsg
+        @handleMsg = true 
+    end
+
+    def handlingMsg?
+        @handleMsg
+    end
+
+    def getErrMsg
+        @msg 
+    end
     
     def flag(token : Token, errCode , parser : Parser)
         return if @singleOutput && @errorCount > 0
@@ -37,8 +52,12 @@ class LinCAS::ErrorHandler
                 token.pos.to_s,
                 token.text.to_s.chomp,
                 parser.filename]
-        msg  = Msg.new(MsgType::SINTAX_ERROR,body)
-        parser.sendMsg(msg)
+        if @handleMsg
+            @msg = SINTAX_ERR_FORMAT % body
+        else
+            msg  = Msg.new(MsgType::SINTAX_ERROR,body)
+            parser.sendMsg(msg)
+        end
         @errorCount += 1
         if @errorCount > MAX_ERR
             abortProcess(parser)

@@ -36,6 +36,9 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     
     NOOP = Node.new(NodeType::NOOP)
 
+    class ParserAbort < Exception
+    end
+
     macro checkIDforReceiver
         if @currentTk.ttype == TkType::LOCAL_ID
             node = parseLocalID
@@ -154,6 +157,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     macro abort
+        raise ParserAbort.new("") if @errHandler.handlingMsg?
         printReport
         @errHandler.abortProcess
     end
@@ -205,6 +209,14 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         @errHandler.errors 
     end
 
+    def handleMsg
+        @errHandler.handleMsg
+    end
+
+    def getErrMsg
+        @errHandler.getErrMsg
+    end
+
     protected def sync(syncSet)
         if !(syncSet.includes? @currentTk.ttype)
             @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_TOKEN,self)
@@ -215,7 +227,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                     shift
                 end
             end  
-            abort if @currentTk.is_a? EofTk 
+            abort if @currentTk.is_a? EofTk
         end
     end
 
