@@ -189,7 +189,7 @@ module LinCAS::Internal
         end
 
         protected def append(io,elem)
-            unless {Sum,Sub,Power}.includes? elem.class
+            unless ({Sum,Sub,Power}.includes? elem.class) || !(elem.is_a? BinaryOp)
                 io << '('
                 elem.to_s(io)
                 io << ')'

@@ -212,12 +212,12 @@ module LinCAS::Internal
         end
 
         protected def append(io,elem)
-            unless {Product,Division,Power}.includes? elem.class
+            if ({Product,Division,Power}.includes? elem.class) || !(elem.is_a? BinaryOp)
+                elem.to_s(io)
+            else
                 io << '('
                 elem.to_s(io)
                 io << ')'
-            else
-                elem.to_s(io)
             end 
         end
 

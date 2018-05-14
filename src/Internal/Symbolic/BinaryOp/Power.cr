@@ -241,7 +241,7 @@ module LinCAS::Internal
         end
 
         protected def append(io,elem)
-            unless elem.is_a? Power
+            unless !(elem.is_a? BinaryOp) || elem.is_a? Power
                 io << '('
                 elem.to_s(io)
                 io << ')'
