@@ -1,0 +1,55 @@
+/** 
+* This is a sample implementation of a function
+* which takes as input a number n >= 0 and returns the
+* n-component of the fibonacci serie
+* 0 -> 1
+* 1 -> 1
+* 2 -> 2
+* 3 -> 3
+* ...
+*/
+void fibonacci(n)
+{
+    a := 1
+    b := 1
+    if n <= 0 {
+        return 1
+    } 
+    elsif n <= 1 {
+        return 1
+    } 
+    else {
+        for i : 2 to n {
+            t := a 
+            a := b
+            b += t
+        }
+    }
+    return b
+}
+
+printl fibonacci(0)
+printl fibonacci(1)
+printl fibonacci(4)
+
+printl
+
+/**
+* Making a recoursive one
+*/
+void fibonacci_r(n,a := 0, b := 1)
+{
+    if n <= 0 {
+        return 1
+    }
+    elsif n <= 1 {
+        return a + b
+    } 
+    else {
+        return fibonacci_r(n - 1, b, a + b)
+    }
+}
+
+printl fibonacci_r(0)
+printl fibonacci_r(1)
+printl fibonacci_r(4)
