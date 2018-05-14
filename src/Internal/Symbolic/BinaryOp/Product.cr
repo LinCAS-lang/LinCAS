@@ -211,6 +211,16 @@ module LinCAS::Internal
             return @left.eval(dict) * @right.eval(dict)
         end
 
+        protected def append(io,elem)
+            unless {Product,Division,Power}.includes? elem.class
+                io << '('
+                elem.to_s(io)
+                io << ')'
+            else
+                elem.to_s(io)
+            end 
+        end
+
     end
 
 end

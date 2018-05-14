@@ -23,6 +23,7 @@ will be made.
   * [ ] String API optimization
   * [ ] String interpolation
   * [ ] BigInt conversion from string
+  * [ ] adding a 'break' statement for loops
   * [ ] adding other useful scientific API
   
 ## Contributing

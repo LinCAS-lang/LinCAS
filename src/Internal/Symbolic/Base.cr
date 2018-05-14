@@ -62,16 +62,6 @@ module LinCAS::Internal
 
             end
 
-            protected def append(io,elem)
-                if elem.is_a? BinaryOp
-                    io << '('
-                    elem.to_s(io)
-                    io << ')'
-                else
-                    elem.to_s(io)
-                end 
-            end
-
             def get_params(ary)
             end
 

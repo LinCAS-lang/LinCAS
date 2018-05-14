@@ -240,6 +240,16 @@ module LinCAS::Internal
             false 
         end
 
+        protected def append(io,elem)
+            unless elem.is_a? Power
+                io << '('
+                elem.to_s(io)
+                io << ')'
+            else
+                elem.to_s(io)
+            end 
+        end
+
     end
     
 end

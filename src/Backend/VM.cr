@@ -643,7 +643,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
 # Call methods
-begin
 
     @[AlwaysInline]
     protected def vm_arity_check(argc1 : Intnum, argc2 : Intnum)
@@ -810,7 +809,6 @@ begin
         current_frame.scp.lcblock = nil
     end
 
-end
     
     private def get_arg(n)
         argc = current_frame.argc
@@ -851,7 +849,6 @@ end
     end
 
 # Store 
-begin
 
     protected def vm_store_local_0(name : String)
         value = pop
@@ -903,10 +900,8 @@ begin
         end
         push(wrap_object(obj))
     end
-end
 
-# load
-begin 
+# load 
 
     protected def vm_load_v(name : String)
         scp   = current_scope
@@ -999,7 +994,6 @@ begin
         end
     end
 
-end
 
     protected def vm_get_c(name : String)
         prev = unwrap_object(pop)

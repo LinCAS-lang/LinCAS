@@ -180,6 +180,16 @@ module LinCAS::Internal
             end
         end
 
+        protected def append(io,elem)
+            unless {Sum,Sub,Power}.includes? elem.class
+                io << '('
+                elem.to_s(io)
+                io << ')'
+            else
+                elem.to_s(io)
+            end 
+        end
+
     end
 
 end
