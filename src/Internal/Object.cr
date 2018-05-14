@@ -179,17 +179,40 @@ module LinCAS::Internal
     end
 
 
+<<<<<<< HEAD
     Obj       = internal.lc_build_class_only("Object")
     MainClass = Id_Tab.getRoot.as(ClassEntry)
     internal.lc_set_parent_class(Obj,LcClass)
     internal.lc_set_parent_class(MainClass,Obj)
+=======
+    obj_responds_to = LcProc.new do |args|
+        next internal.lc_obj_responds_to(*args.as(T2))
+    end
+    
+    @[AlwaysInline]
+    def self.lc_obj_to_a(obj : Value)
+        return tuple2array(obj)
+    end
+
+    obj_to_a = LcProc.new do |args|
+        next internal.lc_obj_to_a(*args.as(T1))
+    end
+
+
+    Obj       = internal.lc_build_internal_class("Object",Lc_Class)
+    internal.lc_set_allocator(Obj,obj_allocator)
+>>>>>>> lc-vm
 
     internal.lc_add_static(Obj,"new",obj_new,         0)
     internal.lc_add_internal(Obj,"init",obj_init,     0)
     internal.lc_add_internal(Obj,"==",obj_eq,         1)
     internal.lc_add_internal(Obj,"!=",obj_eq,         1)
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
+<<<<<<< HEAD
     internal.lc_add_internal(Obj,"frozen",obj_frozen, 0)
+=======
+    internal.lc_add_internal(Obj,"frozen?",obj_frozen,0)
+>>>>>>> lc-vm
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
     internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
     internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
@@ -198,11 +221,26 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"||",obj_or,         1)
     internal.lc_add_internal(Obj,"&&",obj_and,        1)
     internal.lc_add_internal(Obj,"!",obj_not,         0)
+<<<<<<< HEAD
 
     internal.lc_add_static(LcClass,"freeze",obj_freeze,   0)
     internal.lc_add_static(LcClass,"defrost",obj_defrost, 0)
     internal.lc_add_static(LcClass,"frozen?",obj_frozen,  0)
     internal.lc_add_static(LcClass,"is_null",obj_null,    0)
+=======
+    internal.lc_add_internal(Obj,"to_a",obj_to_a,     0)
+
+    internal.lc_add_static(Lc_Class,"freeze",obj_freeze,   0)
+    internal.lc_add_static(Lc_Class,"defrost",obj_defrost, 0)
+    internal.lc_add_static(Lc_Class,"frozen?",obj_frozen,  0)
+    internal.lc_add_static(Lc_Class,"null?",obj_null,      0)
+    internal.lc_add_static(Lc_Class,"to_a",obj_to_a,       0)
+    internal.lc_add_static(Lc_Class,"||",obj_or,           1)
+    internal.lc_add_static(Lc_Class,"&&",obj_and,          1)
+    internal.lc_add_static(Lc_Class,"!",obj_not,           0)
+
+    internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
+>>>>>>> lc-vm
 
 
 end

@@ -36,7 +36,7 @@ module LinCAS
             if msg.type == MsgType::IO_ERROR
                 body = msg.body
                 puts  IO_MSG_FORMAT % body[0]
-                exit 0
+                exit 1
             end
         end
     end
@@ -53,7 +53,7 @@ module LinCAS
                                     body[1],
                                     body[2],
                                     body[3]]
-                exit 0
+                exit 1
             end
         end
 
@@ -76,7 +76,7 @@ module LinCAS
                    puts PARSER_SUM_FORMAT % msg.body
                 when MsgType::FATAL
                   puts FATAL_MSG % msg.body
-                  exit 0
+                  exit 1
             end
         end
 
@@ -86,7 +86,10 @@ module LinCAS
         def receiveMsg(msg : Msg)
             if msg.type == MsgType::RUNTIME_ERROR
                 puts msg.body[0]
-                exit 0 
+                exit 1
+            elsif msg.type == MsgType::BACKTRACE
+                puts msg.body[0]
+                exit 1
             end
         end
     end

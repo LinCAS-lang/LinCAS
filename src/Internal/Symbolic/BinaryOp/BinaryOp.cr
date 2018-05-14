@@ -24,6 +24,7 @@
 
 module LinCAS::Internal
 
+<<<<<<< HEAD
     abstract struct BinaryOp < BaseS
 
         macro reduce_loop(val,tmp)
@@ -46,20 +47,33 @@ module LinCAS::Internal
             tmp    = @right 
             @right = @right.reduce 
             reduce_loop(@right,tmp)
+=======
+    abstract class BinaryOp < SBaseC
+
+        property left : Symbolic,right : Symbolic 
+
+        def initialize(@left : Symbolic, @right : Symbolic)
+>>>>>>> lc-vm
         end
 
         def ==(obj : BinaryOp)
-            return false unless self.class = obj.class
-            return (self.left == obj.left) && (self.right == obj.right)
+            return false unless self.class == obj.class
+            return ((self.left == obj.left) && (self.right == obj.right)) ||
+                   ((self.right == obj.left) && (self.left == obj.right)) ||
+                   ((self.left == obj.right) && (self.right == obj.left))
         end 
 
-        @[AlwaysInline]
         def ==(obj)
             return false 
         end
 
         def depend?(obj)
             return (@left.depend? obj) || (@right.depend? obj)
+        end
+
+        def get_params(ary)
+            @left.get_params(ary)
+            @right.get_params(ary)
         end
 
     end

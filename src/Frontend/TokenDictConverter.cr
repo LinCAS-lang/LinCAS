@@ -25,22 +25,6 @@
 module LinCAS
     private TokenDictConverter = 
             {
-                # Math functions
-                # "log"   => TkType::LOG,
-                # "exp"   => TkType::EXP,
-                # "tan"   => TkType::TAN,
-                # "atan"  => TkType::ATAN,
-                # "cos"   => TkType::COS,
-                # "acos"  => TkType::ACOS,
-                # "sin"   => TkType::SIN,
-                # "asin"  => TkType::ASIN,
-                # "sqrt"  => TkType::SQRT,
-
-                # Math constants
-                # "inf"  => TkType::INF,
-                # "ninf" => TkType::NINF,
-                # "e"    => TkType::E,
-                # "pi"   => TkType::PI,
 
                 # Keywords
                 "if"         => TkType::IF,
@@ -66,8 +50,10 @@ module LinCAS
                 "const"      => TkType::CONST,
                 "new"        => TkType::NEW,
                 "require"    => TkType::REQUIRE,
+                "require_relative" => TkType::REQUIRE_RELATIVE,
                 "include"    => TkType::INCLUDE,
                 "use"        => TkType::USE,
+                "import"     => TkType::IMPORT,
                 "self"       => TkType::SELF,
                 "yield"      => TkType::YIELD,
                 "raise"      => TkType::RAISE,
@@ -96,7 +82,8 @@ module LinCAS
                 "*"   => TkType::STAR,
                 "/"   => TkType::SLASH,
                 "\\"  => TkType::BSLASH,
-                "^"   => TkType::POWER,
+                "**"  => TkType::POWER,
+                "^"   => TkType::B_XOR,
                 ">"   => TkType::GREATER,
                 "<"   => TkType::SMALLER,
                 ">="  => TkType::GREATER_EQ,
@@ -112,6 +99,7 @@ module LinCAS
                 "|"   => TkType::PIPE,
                 "||"  => TkType::OR,
                 ":"   => TkType::COLON,
+                "::"  => TkType::COLON2,
                 ";"   => TkType::SEMICOLON,
                 ","   => TkType::COMMA,
                 ":="  => TkType::COLON_EQ,
@@ -128,11 +116,19 @@ module LinCAS
                 "/="  => TkType::SLASH_EQ,
                 "\\=" => TkType::BSLASH_EQ,
                 "%="  => TkType::MOD_EQ,
-                "^="  => TkType::POWER_EQ,
+                "**=" => TkType::POWER_EQ,
+                "^="  => TkType::B_XOR_EQ,
                 "\""  => TkType::QUOTES,
                 "'"   => TkType::S_QUOTE,
                 "$"   => TkType::DOLLAR,
+<<<<<<< HEAD
                 "[]=" => TkType::ASSIGN_INDEX
+=======
+                "[]=" => TkType::ASSIGN_INDEX,
+                "$!"  => TkType::ANS,
+                "-@"  => TkType::UMINUS,
+                "=>"  => TkType::ARROW
+>>>>>>> lc-vm
             }
 
     protected def toTkType(tkName : String)

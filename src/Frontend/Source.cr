@@ -24,14 +24,15 @@
 
 class LinCAS::Source
 
-    def initialize(@reader : Reader)
+    def initialize(@reader : Reader | VirtualFile)
         @line       = uninitialized String?
         @lineNum    = 0
         @currentPos = -2  
     end
   
     def getLine
-        @lineNum
+        #@lineNum
+        @reader.getLine
     end
   
     def getPos : (Int32 | Int64)
@@ -67,7 +68,7 @@ class LinCAS::Source
   
     protected def readLine
         @line = @reader.readLine
-        @lineNum += 1
+        #@lineNum += 1
         @currentPos = -1
     end
   

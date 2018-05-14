@@ -1,0 +1,38 @@
+/**
+* 
+* This function takes an integer I and returns all the subsets 
+* from the set {1..I}.
+* For instance: power(2) should return
+* [[],[1],[2],[1,2]]
+* The order may not be respected
+*
+**/
+
+void power(n)
+{
+    if !(n.is_a?(Integer))
+    { raise "Expecting an integer" }
+    
+    if n <= 0
+    { return [[]] }
+
+    vect := [[]]
+    for i : 1 to n {
+        vect2 := vect.clone()
+        vect2.map!() { (el)
+            next el + [i]
+        }
+        vect += vect2 
+    }
+    vect.sort_by!() { (el) next el.size()}
+    return vect
+}
+
+printl power(2)
+
+/* should return [[],[1],[2],[3],[1,2],[1,3],[2,3]] */
+printl power(3)
+
+/* should raise an error */
+#power("string")
+

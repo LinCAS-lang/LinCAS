@@ -1,8 +1,8 @@
 /**
-* This file tests the thefinition of a void
+* This file tests the definition of a void
 * in runtime
 *
-* To see the sumbol table the SymTabPrinter must be run
+* No output will be generated
 *
 */
 

@@ -32,8 +32,41 @@ module LinCAS::Internal
         return Id_Tab.addModule(name)
     end
 
+<<<<<<< HEAD
     def self.lc_include_module(receiver : Structure, mod : ModuleEntry)
         if receiver.included.includes? mod.path
+=======
+    def self.lc_build_module(name : String, path : Path)
+        mod = LcModule.new(name,path)
+        module_init(mod)
+        return mod
+    end
+
+    def self.lc_build_internal_module(name : String)
+        mod               = lc_build_module(name)
+        mod.symTab.parent = MainClass.symTab
+        MainClass.symTab.addEntry(name,mod)
+        return mod
+    end
+
+    def self.lc_build_internal_module_in(name : String,nest : Structure)
+        mod = lc_build_module(name)
+        mod.symTab.parent = nest.symTab
+        nest.symTab.addEntry(name,mod)
+        return mod
+    end
+
+    @[AlwaysInline]
+    def self.lc_make_shared_module(mod : LcModule)
+        symTab = lc_make_shared_sym_tab(mod.symTab)
+        tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
+        module_init(tmp)
+        return tmp
+    end
+
+    def self.lc_include_module(receiver : Structure, mod : LcModule)
+        if mod.included.includes? receiver.id
+>>>>>>> lc-vm
             # lc_warn()
         else
             internal.lc_copy_methods_as_instance_in(mod,receiver)
@@ -46,6 +79,10 @@ module LinCAS::Internal
         internal.lc_add_static(mod,name,method,arity)
     end
 
+<<<<<<< HEAD
     LcModule = internal.lc_build_module_only("Module")
+=======
+    Lc_Module = internal.lc_build_internal_class("cModule")
+>>>>>>> lc-vm
 
 end

@@ -1,0 +1,103 @@
+/**
+*
+*  ~~ QUEENS ~~
+*
+* This implementation solves the problem of
+* placing eight queens (chess piece) on a 8x8 chessboard
+* so that none of them can capure another one, using 
+* the standard rules for those pieces:
+* - two queens can't be on the same row or column or
+* diagonal
+*
+* Taken and adapted from https://www.ragni.me/ncalc/solutions/regine
+**/
+
+class Queens
+{   
+    void get_solution() { return @sol  }
+    void get_size()     { return @size }
+
+    void init(size := 8, queens := 8)
+    { 
+        if !(size.is_a? (Integer))
+        { raise new ArgumentError("Size must be an integer")   }
+        
+        if size < 0
+        { raise new ArgumentError("Size must be positive")     }
+
+        if !(queens.is_a? (Integer))
+        { raise new ArgumentError("Queens must be an integer") }
+
+        if queens < 0
+        { raise new ArgumentError("Queens must be positive")   }
+        
+
+        @size   := size 
+        @queens := queens 
+        @sol    := new Matrix(@size,@size) { next 0 }
+    }
+
+    void solve()
+    {
+        if self.place(0) {
+            return @sol
+        } else {
+            raise "There is no solution"
+        }
+    }
+
+    void place(queen)
+    {
+    
+        if (@size <= 3) && (@size <= @queens) { return false }
+        if queen == @queens                   { return true  }
+
+        for row : 0 to (@size - 1)
+        {
+            if self.place? (row,queen)
+            {
+                @sol[row,queen] := 1
+                if self.place(queen + 1) { return  true }
+                @sol[row,queen] := 0
+            }
+        }
+        return false
+    }
+
+    void place?(row,col)
+    {
+        for i : 0 to (@size - 1)
+        {
+            if @sol[row,i] == 1 { return false }
+        }
+
+        q1 := row - col 
+        q2 := row + col 
+        for i : 0 to (@size - 1)
+        {
+            if (0...@size).include? (i + q1) 
+            { 
+                if @sol[i + q1,i] == 1 { return false } 
+            }
+            if (0...@size).include? (i - q2)
+            {
+                if @sol[i - q2,i] == 1 { return false }
+            }
+        }
+        return true
+    }
+
+} /* end Queens */
+
+const queens := 9
+
+r := new Queens(queens,queens).solve()
+
+printl r.map!() { (el) if (el == 1) { next "Q" } else { next "*" } }
+
+
+
+
+
+
+

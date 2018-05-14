@@ -77,6 +77,9 @@ class LinCAS::Scanner < LinCAS::MsgGenerator
             when "\""
                 return StringTk.new(@source)
             else
+                if currentChar == "&" && peekChar =~ /[a-zA-Z0]/
+                    return IdentTk.new(@source) 
+                end
                 return SpecialCharTk.new(@source) if isSpecialChar? currentChar
                 return ErrorTk.new(@source)
         end

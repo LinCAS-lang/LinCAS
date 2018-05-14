@@ -1,5 +1,6 @@
 /**
-* This code tests the Matrix class API
+* This code tests the Matrix class API.
+* This is a partial and temporary test.
 */
 
 const RWS := 3

@@ -72,7 +72,39 @@ module LinCAS::Internal
     end
 
     macro convert(name)
+<<<<<<< HEAD
         Eval.convert({{name}})
+=======
+        VM.convert({{name}})
+    end
+
+    macro lc_cast(obj,type)
+        {{obj}}.as({{type}})
+    end
+
+    macro current_filedir
+        Exec.get_current_filedir 
+    end
+
+    macro current_file 
+        Exec.get_current_filename 
+    end
+
+    macro current_call_line
+        Exec.get_current_call_line
+    end
+
+    def self.test(object : Value)
+        if object == Null || object == LcFalse
+            return false 
+        end 
+        return true 
+    end
+
+    @[AlwaysInline]
+    def self.struct_type(klass : Structure,type : SType)
+        klass.type == type
+>>>>>>> lc-vm
     end
 
     def self.coerce(v1 : Value, v2 : Value)

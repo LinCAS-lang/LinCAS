@@ -1,7 +1,7 @@
 /**
 * This file tests the execution of a module in runtime
 *
-* To see the symbol table the SymTabPrinter must be run
+* No output will be generated
 *
 */
 

@@ -77,7 +77,46 @@ module LinCAS::Internal
                 STDOUT.print(ptr[i])
             end
         end
+<<<<<<< HEAD
+=======
+        return lctrue
+    end
+>>>>>>> lc-vm
 
     end
+<<<<<<< HEAD
+=======
+
+    private def self.define_argv
+        ary = build_ary_new
+        (1...ARGV.size).each do |i|
+            lc_ary_push(ary,build_string(ARGV[i]))
+        end
+        return ary
+    end
+
+    private def self.define_env
+        return build_hash
+    end
+    
+
+    
+
+
+
+    LKernel = internal.lc_build_internal_module("Kernel")
+
+    lc_module_add_internal(LKernel,"printl",lc_printl, 1)
+    lc_module_add_internal(LKernel,"print",lc_print,   1)
+    lc_module_add_internal(LKernel,"reads",reads,      0)
+    lc_module_add_internal(LKernel,"include",include_m,1)
+
+    lc_define_const(LKernel,"ARGV",define_argv)
+    lc_define_const(LKernel,"ENV", define_env)
+
+    lc_include_module(Lc_Class,LKernel)
+
+    
+>>>>>>> lc-vm
 
 end

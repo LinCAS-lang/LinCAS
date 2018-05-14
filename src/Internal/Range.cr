@@ -181,8 +181,13 @@ module LinCAS::Internal
     end
 
 
+<<<<<<< HEAD
     RangeClass = internal.lc_build_class_only("Range")
     internal.lc_set_parent_class(RangeClass,Obj)
+=======
+    RangeClass = internal.lc_build_internal_class("Range")
+    internal.lc_set_allocator(RangeClass,range_allocator)
+>>>>>>> lc-vm
     
     internal.lc_add_internal(RangeClass,"include?",range_include,  1)
     internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)

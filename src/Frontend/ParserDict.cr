@@ -27,16 +27,14 @@ module LinCAS
     private OpOpDictTranslate = {
         TkType::PLUS    => NodeType::SUM,
         TkType::MINUS   => NodeType::SUB,
-        TkType::STAR    => NodeType::MUL,
-        TkType::SLASH   => NodeType::FDIV,
-        TkType::BSLASH  => NodeType::IDIV,
-        TkType::MOD     => NodeType::MOD,
+        
         TkType::GREATER => NodeType::GR,
         TkType::SMALLER => NodeType::SM,
         TkType::EQ_EQ   => NodeType::EQ,
         TkType::NOT_EQ  => NodeType::NE,
         TkType::GREATER_EQ => NodeType::GE,
         TkType::SMALLER_EQ => NodeType::SE,
+
         TkType::AND     => NodeType::AND,
         TkType::OR      => NodeType::OR
     }
@@ -46,14 +44,25 @@ module LinCAS
         TkType::OR  => NodeType::OR
     }
 
+    private ProdOpDictTr = {
+        TkType::STAR    => NodeType::MUL,
+        TkType::SLASH   => NodeType::FDIV,
+        TkType::BSLASH  => NodeType::IDIV,
+        TkType::MOD     => NodeType::MOD,
+    }
+
     @[AlwaysInline]
     protected def convertOp(tkType : TkType) : NodeType?
-        OpOpDictTranslate[tkType]?
+        return OpOpDictTranslate[tkType]? || ProdOpDictTr[tkType]?
     end
 
     @[AlwaysInline]
     protected def opInclude?(tkType : TkType)
         OpOpDictTranslate.has_key? tkType
+    end
+
+    protected def prodOpInclude?(tkType : TkType)
+        ProdOpDictTr.has_key? tkType
     end
 
     @[AlwaysInline]

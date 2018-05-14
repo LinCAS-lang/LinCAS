@@ -1,0 +1,62 @@
+/**
+* This example implements the Newton's method to find zeros 
+* of a function using a metaprogramming approach.
+* The function is provided with two mandatory parameters: 
+*   * A symbolic function
+*   * An initial value from which starting to find the zero
+* The algorithm bases on the function
+*
+*                     f(n)
+*  f(n+1) =  f(n) - --------
+*                    f'(n)
+**/
+
+
+include Smath
+
+void newton(f,beg, tol := 10^(-8), kmax := 100)
+{
+    var_list := f.params()
+    if var_list.size() > 1 { 
+        raise new ArgumentError("Function must contain only a variable") 
+    }
+
+    var      := var_list[0]
+    var_name := var.to_s()
+    dict     := { var_name => beg }
+
+    df       := f.diff(var)
+    func     := f / df
+    
+    f0       := f.eval(dict)
+    k        := 0
+
+    while k <= kmax
+    {
+        dict[var_name] := dict[var_name] - func.eval(dict)
+        f1             := f.eval(dict)
+        if (f1 - f0).abs() < tol {
+            k := kmax
+        } 
+        else {
+            f0 := f1 
+        }
+        k += 1
+    }
+    return dict[var_name]
+}
+
+func := ${ (x - 7) ^ 2 - 6 }
+x    := newton(func,4).round(2)
+printl "Function '".concat(func.to_s(),"' has a zero in x = ",x.to_s())
+
+
+
+
+
+
+
+
+
+
+

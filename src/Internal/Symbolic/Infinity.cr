@@ -23,66 +23,119 @@
 # OTHER DEALINGS IN THE SOFTWARE.
 
 module LinCAS::Internal
-    
 
-    struct Infinity < Constatnt
+    abstract struct Infinity < SBaseS
 
-        def +(obj : Infinity)
-            return self 
-        end
+        abstract def value
 
-        def +(obj : Ninfinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self 
-        end
+        nan_ops
 
-        def +(obj : Constant)
-            return self
-        end 
-
-        def +(obj : BinaryOp)
-            return obj + self 
-        end
-
-        def +(obj : Snumber)
-            return self 
+        def +(obj : Variable)
+            return Sum.new(self,obj)
         end
 
         def +(obj : Negative)
             return self - obj.value 
         end
 
-        def -(obj : Ninfinity)
+        def +(obj : Infinity)
+            return self 
+        end
+
+        def +(obj : NInfinity)
+            return NanC
+        end
+
+        def +(obj : Function)
+            return Sum.new(self,obj)
+        end
+
+        def +(obj : BinaryOp)
+            return obj + self 
+        end
+
+        def +(obj)
+            return self 
+        end
+
+        def opt_sum(obj : PInfinity)
+            return self
+        end
+
+        def opt_sum(obj : Snumber)
+            return self 
+        end
+
+        def -(obj : Snumber)
+            return self 
+        end
+
+        def -(obj : Variable)
+            return Sub.new(self,obj)
+        end
+
+        def -(obj : Negative)
+            return self + obj.value
+        end
+
+        def -(obj : NInfinity)
             return self 
         end
 
         def -(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
+            return NanC
+        end
+
+        def -(obj : Constant)
             return self 
+        end
+
+        def -(obj : Function)
+            return Sub.new(self,obj)
+        end
+
+        def -(obj : Sum)
+            return self - obj.left - obj.right
+        end
+
+        def -(obj : Sub)
+            return self - obj.left + obj.right
+        end
+
+        def -(obj)
+            return Sub.new(self,obj)
         end
 
         def -
             return NinfinityC
         end
 
-        def *(obj : Ninfinity)
-            return obj 
+        def opt_sub(obj : Snumber)
+            return self 
+        end
+
+        def opt_sub(obj : NInfinity)
+            return self 
+        end
+
+        def *(obj : Snumber)
+            return NanC
+        end
+
+        def *(obj : Variable)
+            return Product.new(self,obj)
         end
 
         def *(obj : Negative)
             return -(self * obj.value)
         end
 
-        def *(obj : Constant)
-            return self 
+        def *(obj : Infinity)
+            return obj 
         end
 
-        def *(obj : Snumber)
-            if obj == 0
-                Exec.lc_raise(LcMathError,"(∞*0)")
-                return num2sym(0)
-            end
-            return self 
+        def *(obj : Function)
+            return Product.new(self,obj)
         end
 
         def *(obj : BinaryOp)
@@ -90,53 +143,66 @@ module LinCAS::Internal
         end
 
         def *(obj)
-            return nil unless self.top 
-            return Product.new(self,obj)
+            return self
         end
 
-        def /(obj : Infinity | Ninfinity)
-            Exec.lc_raise(LcMathError,"(∞/∞)")
-            return num2sym(0)
+        def opt_prod(obj : Infinity)
+            return obj 
+        end
+
+        def /(obj : Snumber)
+            return self 
+        end
+
+        def /(obj : Infinity)
+            return NanC
         end
 
         def /(obj : Constant)
             return self 
         end
+        
+        def /(obj : Product)
+            return self / obj.left / obj.right 
+        end
 
-        def /(obj : Snumber)
-            if obj == 0
-                Exec.lc_raise(LcMathError,"(∞/0)")
-            end
-            return self
+        def /(obj : Division)
+            return self / obj.left * obj.right 
+        end
+
+        def /(obj)
+            return Division.new(self,obj)
         end
 
         def **(obj : Snumber)
             if obj == 0
-                Exec.lc_raise(LcMathError,"(∞^0)")
-                return num2sym(0)
+                return SONE
             end
             return self 
         end
 
-        def **(obj : Infinity | Ninfinity)
-            Exec.lc_raise(LcMathError,"(∞^∞)")
+        def **(obj : PInfinity)
             return self 
+        end
+
+        def **(obj : NInfinity)
+            return SZERO
         end
 
         def **(obj : Constant)
             return self
         end
 
+        def **(obj)
+            return Power.new(self,obj)
+        end
+
         def eval(dict)
             return Float64::INFINITY 
         end
 
-        def reduce
-            return self 
-        end
-
         def diff(obj)
-            return num2sym(0)
+            return SZERO
         end
 
         def to_s(io)
@@ -144,25 +210,41 @@ module LinCAS::Internal
         end
 
         def to_s 
-            return '∞'
+            return "∞"
+        end
+
+        def depend?(obj)
+            false 
         end
 
     end
 
-    struct Ninfinity < Infinity
+    struct PInfinity < Infinity
+        def value 
+            return Float64::INFINITY
+        end
+    end
 
-        def +(obj : Infinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
-            return self  
+    struct NInfinity < Infinity
+
+        def value 
+            return -Float64::INFINITY
         end
 
-        def +(obj : Ninfinity)
+        def +(obj : PInfinity)
+            return  NanC
+        end
+
+        def +(obj : NInfinity)
             return self 
         end
 
-        def -(obj : Ninfinity)
-            Exec.lc_raise(LcMathError,"(∞-∞)")
+        def opt_sum(obj : NInfinity)
             return self 
+        end
+
+        def -(obj : NInfinity)
+            return NanC
         end
 
         def -(obj : Infinity)
@@ -170,11 +252,19 @@ module LinCAS::Internal
         end
 
         def - 
-            return InfinityC
+            return NinfinityC
         end
 
-        def *(obj : Ninfinity)
-            return InfinityC
+        def opt_sub(obj : NInfinity)
+            nil 
+        end
+
+        def opt_sub(obj : PInfinity)
+            return self 
+        end
+
+        def *(obj : NInfinity)
+            return PinfinityC
         end
 
         def *(obj : Infinity)
@@ -195,7 +285,7 @@ module LinCAS::Internal
 
     end
 
-    InfinityC  = Infinity.new 
-    NinfinityC = Ninfinity.new
+    PinfinityC  = PInfinity.new 
+    NinfinityC  = NInfinity.new
 
 end

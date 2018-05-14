@@ -22,7 +22,12 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
+<<<<<<< HEAD
 require "./Kernel"
+=======
+require "./LibC"
+require "./Overload.cr"
+>>>>>>> lc-vm
 require "./Sort"
 require "./Internal"
 require "./Method"
@@ -39,3 +44,18 @@ require "./Number"
 require "./Integer"
 require "./Float"
 require "./String"
+<<<<<<< HEAD
+=======
+require "./String_buffer"
+require "./Regexp"
+require "./MatchData"
+require "./Hash"
+require "./Dir"
+require "./File"
+require "./Load"
+require "./Math"
+require "./Symbolic/Symbolic"
+require "./Symbolic"
+require "./Smath"
+require "./Integrals"
+>>>>>>> lc-vm

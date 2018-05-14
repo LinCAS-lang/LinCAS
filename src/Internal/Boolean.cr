@@ -130,8 +130,13 @@ module LinCAS::Internal
         next internal.lc_bool_or(args[0],args[1])
     end
 
+<<<<<<< HEAD
     BoolClass = internal.lc_build_class_only("Boolean")
     internal.lc_set_parent_class(BoolClass, Obj)
+=======
+    BoolClass = internal.lc_build_internal_class("Boolean")
+    internal.lc_undef_allocator(BoolClass)
+>>>>>>> lc-vm
 
     internal.lc_remove_static(BoolClass,"new")
     internal.lc_remove_internal(BoolClass,"defrost")

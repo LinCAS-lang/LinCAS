@@ -47,6 +47,7 @@ enum LinCAS::ErrCode
     MISSING_DIR
     MISSING_FILENAME
     MISSING_LIBNAME
+    MISSING_ARROW
     CLASS_IN_VOID
     MODULE_IN_VOID
     UNALLOWED_PROTECTED
@@ -61,6 +62,12 @@ enum LinCAS::ErrCode
     UNLOCATED_LIB
     UNEXPECTED_RETURN
     UNEXPECTED_YIELD
+<<<<<<< HEAD
+=======
+    UNEXPECTED_NEXT
+    RETURN_IN_BLOCK
+    DYNAMIC_CONST
+>>>>>>> lc-vm
 end
 
 module LinCAS
@@ -88,6 +95,7 @@ module LinCAS
         ErrCode::MISSING_DIR         => "Missing keyword 'to' or 'downto'",
         ErrCode::MISSING_FILENAME    => "Missing fileneme string token",
         ErrCode::MISSING_LIBNAME     => "Missing library name string token",
+        ErrCode::MISSING_ARROW       => "Missing '=>'",
         ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
         ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
@@ -100,8 +108,16 @@ module LinCAS
         ErrCode::EXPECTING_CASE      => "Unexpected token, expecting keyword 'case'",
         ErrCode::INVALID_FILENAME    => "Invalid filename",
         ErrCode::UNLOCATED_LIB       => "Library not found",
+<<<<<<< HEAD
         ErrCode::UNEXPECTED_RETURN   => "'return' statement out of void or block",
         ErrCode::UNEXPECTED_YIELD     => "'yield' statement out of void"
+=======
+        ErrCode::UNEXPECTED_RETURN   => "'return' statement out of void",
+        ErrCode::UNEXPECTED_YIELD    => "'yield' statement out of void",
+        ErrCode::UNEXPECTED_NEXT     => "'next' statement out of block",
+        ErrCode::RETURN_IN_BLOCK     => "Cant't return in block",
+        ErrCode::DYNAMIC_CONST       => "Dynamic const assignment"
+>>>>>>> lc-vm
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]

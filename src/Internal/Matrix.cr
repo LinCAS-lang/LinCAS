@@ -34,11 +34,6 @@ module LinCAS::Internal
         @cols = 0.as(Intnum)
         @rw_magnitude = true 
         property ptr, rows, cols, rw_magnitude
-
-        @[AlwaysInline]
-        def to_s 
-            return Internal.matrix_to_string(self)
-        end
     end
 
     macro matrix_ptr(mx)
@@ -98,6 +93,13 @@ module LinCAS::Internal
         ((matrix_rws({{mx}})) == (matrix_cls({{mx}})))
     end
 
+    macro matrix_check(matrix)
+        unless {{matrix}}.is_a? Matrix 
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
+            return Null 
+        end
+    end
+
     @[AlwaysInline]
     def self.lc_set_matrix_index(matrix : Value, i : Intnum, j : Intnum, value : Value)
         set_matrix_index(matrix,i,j,value)
@@ -145,29 +147,31 @@ module LinCAS::Internal
     end
 
     def self.matrix_to_string(matrix : Value)
-        rws = matrix_rws(matrix)
-        cls = matrix_cls(matrix)
-        str = String.build do |io|
-            io << '|'
-            (0...rws).each do |i|
-                io << ' ' if i > 0
-                (0...cls).each do |j|
-                    io << (matrix_at_index(matrix,i,j)).to_s
-                    io << ',' if (j < cls - 1)
-                end
-                io << ';' << '\n' if (i < rws - 1)
+        rws    = matrix_rws(matrix)
+        cls    = matrix_cls(matrix)
+        buffer = string_buffer_new
+        buffer_append(buffer,'|')
+        (0...rws).each do |i|
+            buffer_append(buffer,' ') if i > 0
+            (0...cls).each do |j|
+                string_buffer_appender(buffer,(matrix_at_index(matrix,i,j)))
+                buffer_append(buffer,',') if (j < cls - 1)
             end
-            io << '|'
-        end
-        return str 
+            buffer_append_n(buffer,';','\n') if (i < rws - 1)
+         end
+        buffer_append(buffer,'|')
+        buffer_trunc(buffer)
+        return buffer
     end
 
     def self.lc_matrix_to_s(matrix : Value)
-        str = matrix_to_string(matrix)
-        return lc_obj_to_s(matrix) if str.size > STR_MAX_CAPA
-        return build_string(str)
-    ensure 
-        GC.free(Box.box(str))
+        buffer = matrix_to_string(matrix)
+        size   = buff_size(buffer)
+        if size > STR_MAX_CAPA
+            buffer_dispose(buffer)
+            return lc_obj_to_s(matrix) 
+        end
+        return build_string_with_ptr(buff_ptr(buffer),size)
     end
 
     matrix_to_s = LcProc.new do |args|
@@ -307,10 +311,7 @@ module LinCAS::Internal
     end
 
     def self.lc_matrix_sub(m1 : Value, m2 : Value)
-        unless m2.is_a? Matrix 
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
-            return Null 
-        end
+        matrix_check(m2)
         if !same_matrix_size(m1,m2)
             lc_raise(LcMathError,"Incompatible matrices for difference")
             return Null
@@ -779,14 +780,37 @@ module LinCAS::Internal
         next internal.lc_matrix_min(*args.as(T1))
     end
 
+    def self.lc_matrix_eq(mx : Value, mx2 : Value)
+        return lcfalse unless mx2.is_a? Matrix
+        return lcfalse unless same_matrix_size(mx,mx2)
+        rws = matrix_rws(mx)
+        cls = matrix_cls(mx)
+        rws.times do |i|
+            cls.times do |j|
+                return lcfalse unless fast_compare(matrix_at_index(mx,i,j),matrix_at_index(mx2,i,j))
+            end
+        end
+        return lctrue
+    end
 
+    matrix_eq = LcProc.new do |args|
+        next lc_matrix_eq(*lc_cast(args,T2))
+    end
+
+
+<<<<<<< HEAD
     MatrixClass = internal.lc_build_class_only("Matrix")
     internal.lc_set_parent_class(MatrixClass,Obj)
+=======
+    MatrixClass = internal.lc_build_internal_class("Matrix")
+    internal.lc_set_allocator(MatrixClass,matrix_allocate)
+>>>>>>> lc-vm
 
     internal.lc_add_static_singleton(MatrixClass,"new",matrix_new,0)
     internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)
     internal.lc_add_internal(MatrixClass,"init",matrix_init,      2)
     internal.lc_add_internal(MatrixClass,"to_s",matrix_to_s,      0)
+    internal.lc_add_internal(MatrixClass,"==",matrix_eq,          1)
     internal.lc_add_internal(MatrixClass,"[]",matrix_index,       2)
     internal.lc_add_internal(MatrixClass,"[]=",matrix_set_index,  3)
     internal.lc_add_internal(MatrixClass,"+",matrix_sum,          1)

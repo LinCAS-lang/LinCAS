@@ -31,6 +31,7 @@ module LinCAS::Internal
     macro num2num(v)
         {{v}}.as(LcNum).val 
     end
+<<<<<<< HEAD
     
     def self.lc_num_to_cr_i(value)
         if value.is_a? LcInt
@@ -41,6 +42,44 @@ module LinCAS::Internal
             lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
             return nil 
         end
+=======
+
+    macro check_num(v)
+        if !({{v}}.is_a? LcNum)
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Number")
+            return Null 
+        end
+    end
+
+    abstract struct LcNum < BaseS
+    end
+
+    struct Num_ < LcNum
+        @val = 0.as(Num)
+        property val 
+    end
+
+    @[AlwaysInline]
+    protected def self.num_append(buffer : String_buffer,value : Value)
+        buffer_append(buffer,num2num(value).to_s)
+    end
+
+    @[AlwaysInline]
+    protected def self.num_auto(value : Num)
+        if value.is_a? Float 
+            return num2float(value)
+        end
+        return num2int(value)
+    end
+
+    def self.new_number(klass : Value)
+        klass      = klass.as(LcClass)
+        num        = Num_.new
+        num.klass  = klass
+        num.data   = klass.data.clone 
+        num.frozen = true 
+        return num.as(Value)
+>>>>>>> lc-vm
     end
 
     abstract struct LcNum < BaseS
@@ -149,8 +188,13 @@ module LinCAS::Internal
     
 
 
+<<<<<<< HEAD
     NumClass = internal.lc_build_class_only("Number")
     internal.lc_set_parent_class(NumClass,Obj)
+=======
+    NumClass = internal.lc_build_internal_class("Number")
+    internal.lc_set_allocator(NumClass,number_allocator)
+>>>>>>> lc-vm
 
     internal.lc_remove_static(NumClass,"new")
     internal.lc_remove_internal(NumClass,"defrost")

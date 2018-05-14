@@ -24,189 +24,173 @@
 
 module LinCAS::Internal
 
-    abstract struct Constant < BaseS
-    
-        def initialize
-            super()
-        end
+    abstract struct Constant < SBaseS
 
-        def +(obj : Constant)
-            return Product.new(num2sym(2),obj) if self == obj
-            return nil unless self.top 
+        nan_ops
+
+        abstract def value
+
+        def +(obj : Snumber) : Symbolic
+            return SZERO if obj == 0
+            return self if obj == 1
+            return Sum.new(self,obj)
+        end 
+
+        def +(obj : Constant) : Symbolic
+            return Product.new(STWO,obj) if self == obj
             return Sum.new(self,obj)
         end
 
-        def +(obj : Negative)
-            val = obj.value
-            return self - val 
+        def +(obj : Negative) : Symbolic
+            return self - obj.value 
         end
 
-        @[AlwaysInline]
-        def +(obj)
-            return nil unless self.top
+        def +(obj : Infinity) : Symbolic
+            return obj 
+        end
+
+        def +(obj : BinaryOp) : Symbolic
+            return obj + self 
+        end
+
+        def +(obj : Symbolic) : Symbolic
             return Sum.new(self,obj)
         end
 
-        @[AlwaysInline]
-        def -(obj : Constant)
-            return num2sym(0) if self == obj 
-            return nil unless self.top 
+        def opt_sum(obj : Constant) : Symbolic?
+            return Product.new(STWO,obj) if self == obj
+            nil 
+        end
+
+        def -(obj : Constant) : Symbolic
+            return SZERO if self == obj 
             return Sub.new(self,obj)
         end
 
-        def -(obj : Negative)
+        def -(obj : Negative) : Symbolic
             val = obj.value 
             return self - obj 
         end
 
-        def -(obj)
-            return nil unless self.top
-            return Sub.new(self,obj).reduce
+        def -(obj : Sum) : Symbolic
+             return self - obj.left - obj.right
         end
 
-        @[AlwaysInline]
-        def - 
+        def -(obj : Sub) : Symbolic
+            return self - obj.left + obj.right
+        end
+
+        def -(obj : Symbolic) : Symbolic
+            return Sub.new(self,obj)
+        end
+
+        def - : Symbolic
             return Negative.new(self)
         end
 
-        def *(obj : Constant)
-            return Power.new(self,num2sym(2)) if self == obj
-            return nil unless self.top 
-            return Product.new(self,obj)
-        end
-
-        def *(obj : Snumber)
-            return nil unless self.top 
+        def *(obj : Snumber) : Symbolic
+            return obj if obj == 0
+            return self if obj == 1
             return Product.new(obj,self)
         end
 
-        def *(obj : Negative)
-            val = obj.value 
-            return nil unless self.top && self == val 
-            return Negative.new(self * val)
+        def *(obj : Constant) : Symbolic
+            return Power.new(self,STWO) if self == obj
+            return Product.new(self,obj)
         end
 
-        @[AlwaysInline]
-        def *(obj : BinaryOp)
+        def *(obj : Negative) : Symbolic
+            return -(self * obj.value)
+        end
+
+        def *(obj : BinaryOp) : Symbolic
             return obj * self 
         end
 
-        def *(obj)
-            return nil unless self.top 
-            return Prod.new(self,obj)
+        def *(obj : Infinity) : Symbolic
+            return obj 
         end
 
-        def /(obj : Constant)
-            return num2sym(1) if obj == self
-            return nil unless self == obj 
+        def *(obj : Symbolic) : Symbolic
+            return Product.new(self,obj)
+        end
+
+        def opt_prod(obj : Constant) : Symbolic?
+            return self * obj if self == obj 
+            nil
+        end
+
+        def /(obj : Snumber) : Symbolic
+            return PinfinityC if obj == 0
+            return self if obj == 1
             return Division.new(self,obj)
         end
 
-        def /(obj)
-            return nil unless self.top 
-            return Division.new(self,obj).reduce 
+        def /(obj : Negative) : Symbolic
+            return -(self / obj.value)
         end
 
-        def **(obj)
-            return nil unless self.top 
+        def /(obj : Infinity) : Symbolic
+            return SZERO
+        end
+
+        def /(obj : Constant) : Symbolic
+            return SONE if obj == self
+            return Division.new(self,obj)
+        end
+
+        def /(obj : Symbolic) : Symbolic
+            return Division.new(self,obj)
+        end
+
+        def opt_div(obj : Constant) : Symbolic?
+            return SONE if self == obj 
+            nil 
+        end
+
+        def **(obj : Snumber) : Symbolic
+            return SONE if obj == 0
+            return self if obj == 1
+            return  Power.new(self,obj)
+        end
+
+        def **(obj : Negative) : Symbolic
+            return SONE / (self ** obj.value).as(Symbolic)
+        end
+
+        def **(obj : PInfinity) : Symbolic
+            return obj 
+        end
+
+        def **(obj : NInfinity) : Symbolic
+            return SZERO
+        end
+
+        def **(obj : Symbolic) : Symbolic
             return Power.new(self,obj)
         end
 
-        @[AlwaysInline]
-        def reduce 
-            return self 
-        end
-
-        @[AlwaysInline]
         def ==(obj)
             self.class == obj.class 
         end
 
-        @[AlwaysInline]
         def diff(obj)
-            return num2sym(0)
+            return SZERO
+        end
+
+        def depend?(obj)
+            false 
         end
 
     end
 
-    abstract struct Mconst < Constant
-       
-        getter value
 
-        @[AlwaysInline]
-        def +(obj : Infinity)
-            return obj 
-        end
+    struct E < Constant
+        
+        def value 
+            return Math::E 
+        end 
 
-        @[AlwaysInline]
-        def +(obj : Ninfinity)
-            return obj 
-        end
-
-        def +(obj)
-            return super(obj)
-        end
-
-        @[AlwaysInline]
-        def -(obj : Infinity)
-            return NinfinityC
-        end
-
-        @[AlwaysInline]
-        def -(obj : Ninfinity)
-            return InfinityC
-        end
-
-        @[AlwaysInline]
-        def -(obj)
-            return super(obj)
-        end
-
-        @[AlwaysInline]
-        def *(obj : Infinity)
-            return obj 
-        end
-
-        @[AlwaysInline]
-        def *(obj : Ninfinity)
-            return obj 
-        end
-
-        def *(obj)
-            return super(obj)
-        end
-
-        @[AlwaysInline]
-        def /(obj : Infinity)
-            return num2sym(0)
-        end
-
-        @[AlwaysInline]
-        def /(obj : Ninfinity)
-            return num2sym(0)
-        end
-
-        def /(obj)
-            super(obj)
-        end
-
-        @[AlwaysInline]
-        def **(obj : Infinity)
-            return obj 
-        end
-
-        @[AlwaysInline]
-        def **(obj : Ninfinity)
-            return num2sym(0)
-        end
-
-        def **(obj)
-            return super(obj)
-        end
-
-    end
-
-    struct E < Mconst
         def eval(dict)
             return Math::E 
         end
@@ -216,11 +200,18 @@ module LinCAS::Internal
         end 
 
         def to_s 
-            return 'e'
+            return "e"
         end
     end
 
-    struct PI < Mconst
+    EC = E.new
+
+    struct PI < Constant
+
+        def value 
+            return Math::E 
+        end
+
         def eval(dict)
             return Math::PI
         end
@@ -233,5 +224,7 @@ module LinCAS::Internal
             return 'π'
         end
     end
+
+    PiC = PI.new
     
 end

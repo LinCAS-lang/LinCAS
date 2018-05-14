@@ -129,9 +129,46 @@ module LinCAS::Internal
         next internal.lc_int_fdiv(*args.as(T2))
     end
 
+<<<<<<< HEAD
     def self.lc_int_power(n1 : Value, n2 : Value)
         if n2.is_a? LcInt 
             return internal.num2int(int2num(n1) ** int2num(n2))
+=======
+    private def self.int_power_int(n1 : Value, n2 : Value)
+        v1 = int2num(n1)
+        v2 = int2num(n2)
+        if v1.is_a? BigInt && v2.is_a? BigInt
+            big_int_power(v1,v2)
+        end 
+        if !(v1.is_a? BigInt || v2.is_a? BigInt)
+            if v2 < 0
+                return v1.to_f64 ** v2.as(IntnumR)
+            else
+                return v1.as(IntnumR) ** v2.as(IntnumR) 
+            end
+        end
+        v1 = v1.to_big_i
+        v2 = v2.to_big_i
+        big_int_power(v1,v2)
+    end
+
+    def self.lc_int_power(n1 : Value, n2 : Value)
+        if n2.is_a? LcInt 
+            {% if flag?(:fast_math) %}
+                exp = int2num(n2)
+                if exp < 0
+                    return num2int(int2num(n1).to_f ** int2num(n2))
+                else
+                    return num2int(int2num(n1) ** int2num(n2))
+                end
+            {% else %}
+                val = int_power_int(n1,n2)
+                if val.is_a? Floatnum
+                    return num2float(val)
+                end
+                return num2int(val)
+            {% end %}
+>>>>>>> lc-vm
         else
             return internal.lc_num_coerce(n1,n2,"^")
         end
@@ -211,8 +248,13 @@ module LinCAS::Internal
 
     
 
+<<<<<<< HEAD
     IntClass = internal.lc_build_class_only("Integer")
     internal.lc_set_parent_class(IntClass,NumClass)
+=======
+    IntClass = internal.lc_build_internal_class("Integer",NumClass)
+    internal.lc_undef_allocator(IntClass)
+>>>>>>> lc-vm
 
     internal.lc_add_internal(IntClass,"+",int_sum,  1)
     internal.lc_add_internal(IntClass,"-",int_sub,  1)
