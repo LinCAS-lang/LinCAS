@@ -1,3 +1,6 @@
+[![Build Status](https://travis-ci.org/max-codeware/crLinCAS.svg?branch=master)](https://travis-ci.org/max-codeware/crLinCAS)
+
+
 # LinCAS-lang
 ## The Linmeric programming language
 LinCAS is a dinamically typed and interpreted programming language for quick object-oriented operations and
