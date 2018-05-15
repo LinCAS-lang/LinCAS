@@ -101,6 +101,20 @@ module LinCAS::Internal
     private def self.define_env
         return build_hash
     end
+
+    def self.lc_exit(status : Value? = nil)
+        if status
+            status = lc_num_to_cr_i(status)
+        else
+            status = 0
+        end
+        exit status.to_i32 if status
+        return Null
+    end
+
+    exit_ = LcProc.new do |args|
+        next lc_exit(lc_cast(args,An)[1]?)
+    end
     
 
     
@@ -113,6 +127,7 @@ module LinCAS::Internal
     lc_module_add_internal(LKernel,"print",lc_print,   1)
     lc_module_add_internal(LKernel,"reads",reads,      0)
     lc_module_add_internal(LKernel,"include",include_m,1)
+    lc_module_add_internal(LKernel,"exit",exit_,      -1)
 
     lc_define_const(LKernel,"ARGV",define_argv)
     lc_define_const(LKernel,"ENV", define_env)
