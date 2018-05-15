@@ -114,6 +114,7 @@ dir = ARGV[0]?
 if dir 
     begin
         parser = FFactory.makeParser(File.expand_path(dir))
+        parser.noSummary # TODO: improving parsing time computation
         if tk_display
             parser.displayTokens
         end

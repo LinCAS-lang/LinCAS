@@ -53,6 +53,7 @@ class LinCAS::ErrorHandler
                 token.text.to_s.chomp,
                 parser.filename]
         if @handleMsg
+            lc_warn("(Message handling with no single output option may cause invalid messages)") unless @singleOutput
             @msg = SINTAX_ERR_FORMAT % body
         else
             msg  = Msg.new(MsgType::SINTAX_ERROR,body)
