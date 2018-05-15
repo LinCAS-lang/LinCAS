@@ -31,6 +31,9 @@ The project is in pre-alpha stage, it is usable, even though the documentation i
 Some sintax or some other element might change to best fit the usability, until the language will reach the alpha stage. Then only improvements or API development
 will be made.
 
+## Examples
+See [sample tests](https://github.com/max-codeware/crLinCAS/tree/master/test/SampleTests) for now.
+
 ## To do:
   * [ ] Code cleanup
   * [ ] Unit Test library
@@ -49,6 +52,7 @@ will be made.
   * [ ] Plot module
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
+  * [ ] Interactive LinCAS
   
 ## Contributing
 Any help or idea is welcome. The project is ambitious and reuires a lot of work. Whoever wants to contribure can open a branch, make some changes and then pull a request. 
