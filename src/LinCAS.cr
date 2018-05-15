@@ -23,6 +23,9 @@ require "colorize"
 {% else %}
     ENV["libDir"] = "/usr/lib/LinCAS"
 {% end %}
+
+ENV["version"] = "0.0.1"
+
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
 

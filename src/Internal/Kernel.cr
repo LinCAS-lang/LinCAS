@@ -117,10 +117,7 @@ module LinCAS::Internal
     end
 
     private def self.define_version
-        File.open("../Version","r") do |file|
-            str = file.gets || ""
-            return build_string(str.chomp)
-        end
+        return build_string(ENV["version"])
     end
     
 
