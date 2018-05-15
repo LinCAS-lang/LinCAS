@@ -17,6 +17,10 @@ and other sort of problems.
   * Blocks
   * Garbage collection (inherited from Crystal)
 
+## Requiremets
+  * gcc compiler
+  * Crystal compiler version >= 0.24.0
+
 ## Portability
 This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yiet, 
 but for suggestions or contributing, see the 'Contributing' point.
@@ -42,6 +46,7 @@ will be made.
   * [ ] Adding a 'break' statement for loops
   * [ ] File IO (The classes are in a primitive status)
   * [ ] Symbols
+  * [ ] Plot module
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
   
