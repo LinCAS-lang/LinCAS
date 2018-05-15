@@ -1,6 +1,6 @@
-language:
-  - c
-  - Crystal
+language: Crystal
+
+sudo: required
 
 compiler:
   - gcc
