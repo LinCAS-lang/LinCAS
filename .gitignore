@@ -2,7 +2,6 @@
 src/LinCAS
 src/Test.lc
 src/Internal/LibC/linc.a
-install.sh
 src/Internal/LibC/libc.a
 src/Internal/LibC/libc.o 
 bin/lincas 
