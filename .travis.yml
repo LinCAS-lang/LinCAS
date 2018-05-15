@@ -1,0 +1,19 @@
+language:
+  - c
+  - Crystal
+
+compiler:
+  - gcc
+  - crystal
+
+os:
+  - linux
+
+script:
+ - "./install.sh"
+
+branches:
+  only:
+    - master
+    - /^feature\//
+    - /^bug\//
