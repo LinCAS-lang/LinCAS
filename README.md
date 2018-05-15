@@ -32,7 +32,7 @@ Some sintax or some other element might change to best fit the usability, until 
 will be made.
 
 ## Examples
-See [sample tests](https://github.com/max-codeware/crLinCAS/tree/master/test/SampleTests) for now.
+See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/SampleTests) for now.
 
 ## To do:
   * [ ] Code cleanup
@@ -53,6 +53,14 @@ See [sample tests](https://github.com/max-codeware/crLinCAS/tree/master/test/Sam
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
   * [ ] Interactive LinCAS
+
+## Installation
+  1. Install gcc
+  2. Install Crystal
+  3. Clone the repository with `git clone https://github.com/max-codeware/crLinCAS`
+  4. Enter the cloned folder and run `install.sh`
+
+You'll be asked to insert your password. Tis is to create the `/usr/lib/LinCAS` folder and copy the binaries into `/usr/bin`
   
 ## Contributing
 Any help or idea is welcome. The project is ambitious and reuires a lot of work. Whoever wants to contribure can open a branch, make some changes and then pull a request. 
