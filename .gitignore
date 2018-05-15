@@ -3,5 +3,7 @@ src/LinCAS
 src/Test.lc
 src/Internal/LibC/linc.a
 install.sh
-src/Internal/Symbolic/Functions/Cos.cr
-src/Internal/Symbolic/Functions/Sin.cr
+src/Internal/LibC/libc.a
+src/Internal/LibC/libc.o 
+bin/lincas 
+
