@@ -115,6 +115,13 @@ module LinCAS::Internal
     exit_ = LcProc.new do |args|
         next lc_exit(lc_cast(args,An)[1]?)
     end
+
+    private def self.define_version
+        File.open("../Version","r") do |file|
+            str = file.gets || ""
+            return build_string(str.chomp)
+        end
+    end
     
 
     
@@ -131,6 +138,7 @@ module LinCAS::Internal
 
     lc_define_const(LKernel,"ARGV",define_argv)
     lc_define_const(LKernel,"ENV", define_env)
+    lc_define_const(LKernel,"VERSION", define_version)
 
     lc_include_module(Lc_Class,LKernel)
 
