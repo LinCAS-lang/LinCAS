@@ -2,6 +2,8 @@ language: Crystal
 
 sudo: required
 
+os: linux
+
 matrix:
   include:
 
