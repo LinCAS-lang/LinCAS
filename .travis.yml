@@ -16,8 +16,14 @@ compiler:
   - gcc
 
 before_install:
-  - sudo apt-get install gcc-5
-  - gcc=gcc-6
+  - sudo apt-get install gcc-6
+
+  - rm /usr/bin/gcc
+  - rm /usr/bin/g++
+
+  - ln -s /usr/bin/gcc-6 /usr/bin/gcc
+  - ln -s /usr/bin/g++-6 /usr/bin/g++
+  
   - gcc -v
 
 script:
