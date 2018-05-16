@@ -16,6 +16,7 @@ compiler:
   - gcc
 
 before_install:
+  - gcc=gcc-6
   - gcc -v
 
 script:
