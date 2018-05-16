@@ -1,8 +1,10 @@
 #! /bin/bash
 
 echo Configuring libraries
+set -x
 gcc -c -o ./src/Internal/LibC/libc.o ./src/Internal/LibC/libc.c
 ar rcs ./src/Internal/LibC/libc.a ./src/Internal/LibC/libc.o
+set +x
 if [ ! -d "./bin" ]; then
     echo Creating bin folder
     mkdir ./bin 
