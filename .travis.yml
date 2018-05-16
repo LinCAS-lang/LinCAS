@@ -3,8 +3,10 @@ language: Crystal
 sudo: required
 
 compiler:
-  - gcc
   - crystal
+
+before_install:
+  - sudo apt-get install gcc
 
 os:
   - linux
