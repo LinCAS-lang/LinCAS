@@ -16,6 +16,7 @@ compiler:
   - gcc
 
 before_install:
+  - sudo apt-get install gcc-5
   - gcc=gcc-6
   - gcc -v
 
