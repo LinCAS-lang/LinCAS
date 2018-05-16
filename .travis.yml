@@ -10,13 +10,13 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - g++-5
+      - g++-6
 
 compiler:
   - gcc
 
 before_install:
-  - eval "${MATRIX_EVAL}"
+  - gcc -v
 
 script:
  - "./install.sh"
