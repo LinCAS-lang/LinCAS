@@ -13,7 +13,7 @@ and other sort of problems.
 ## Features of LinCAS
   * Easy syntax
   * Ordinary object-oriented features (e.g. classes, method calls...)
-  * Some advanced feature (e.g static methods)
+  * Some advanced features (e.g static methods)
   * Operator overloading
   * Exception handling
   * Dynamic require of files
@@ -40,7 +40,7 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
 ## To do:
   * [ ] Code cleanup
   * [ ] Unit Test library
-  * [ ] Core api documentation
+  * [ ] Core API documentation
   * [ ] Improving parsing time. Maybe using a Bison-generated parser
   * [ ] Compile time optimizations
   * [ ] Speeding up the VM
