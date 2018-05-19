@@ -395,6 +395,36 @@ module LinCAS::Internal
         next lc_class_parent(*lc_cast(args,T1))
     end
 
+    def self.alias_method_str(klass : Structure, m_name : String, new_name : String)
+        method = seek_method(klass,m_name,true)
+        if method.is_a? LcMethod
+            lc_add_method(klass,new_name,method)
+        elsif method == 2
+            lc_raise(LcNoMethodError,"Cannot alias protected methods")
+            return false
+        else
+            lc_raise(LcNoMethodError,convert(:no_method) % klass.name)
+            return false
+        end
+        return true
+    end
+
+    def self.lc_alias_method(klass : Value, name : Value, new_name : Value)
+        name = string2cr(name)
+        return lcfalse unless name 
+        new_name = string2cr(new_name)
+        return lcfalse unless new_name
+        if klass.is_a? Structure
+            return val2bool(alias_method_str(klass,name,new_name))
+        else
+            return val2bool(alias_method_str(class_of(klass),name,new_name))
+        end
+    end
+
+    alias_m = LcProc.new do |args|
+        next lc_alias_method(*lc_cast(args,T3))
+    end
+
 
     MainClass      = lc_build_class("BaseClass")
     Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
@@ -419,5 +449,6 @@ module LinCAS::Internal
     internal.lc_class_add_method(Lc_Class,"class",class_class,                          0)
     internal.lc_class_add_method(Lc_Class,"remove_method",class_rm_method,              1)
     internal.lc_class_add_method(Lc_Class,"delete_method",class_delete_method,          1)
+    internal.lc_class_add_method(Lc_Class,"alias",alias_m,                              2)
 
 end
