@@ -51,7 +51,7 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
   * [ ] BigInt conversion from string
   * [ ] Adding a 'break' statement for loops
   * [ ] File IO (The classes are in a primitive status)
-  * [ ] Symbols
+  * [x] Symbols
   * [ ] Plot module
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
