@@ -44,9 +44,12 @@ module LinCAS
         L_PAR R_PAR L_BRACE R_BRACE L_BRACKET R_BRACKET PLUS_EQ
         MINUS_EQ STAR_EQ SLASH_EQ BSLASH_EQ MOD_EQ POWER_EQ QUOTES
         S_QUOTE DOLLAR ASSIGN_INDEX ANS CONST_ID UMINUS ARROW B_XOR B_XOR_EQ
+        SYMBOL
     end
     
     abstract struct Token
+
+        NUMBER = /[0-9]/
         
         @ttype = uninitialized TkType
         @text  = ""
@@ -113,8 +116,6 @@ module LinCAS
     end
 
     struct NumberTk < Token
-        
-        NUMBER = /[0-9]/
 
         protected def extract
             extractNumbers
@@ -190,6 +191,49 @@ module LinCAS
                     @ttype = ttype ? ttype : TkType::LOCAL_ID
                 end
             end
+        end
+    end
+
+    struct SymbolTk < Token
+        protected def extract
+            chars    = /[a-zA-Z0-9_]/
+            symbols  = /[\+\-\*\/\\\=\!\<\>\|\&]/
+            follow   = /[\|\&]/
+            quote = "\""
+            @text += currentChar
+            nextChar
+            if currentChar == quote
+                @text += currentChar
+                nextChar
+                while currentChar != quote && currentChar != EOF
+                    @text += currentChar
+                    nextChar
+                end
+                if currentChar == quote
+                    @text += currentChar
+                    nextChar
+                else
+                    @ttype == TkType::ERROR
+                    @value == ErrCode::STRING_MEETS_EOF
+                end
+            elsif currentChar != " " && currentChar !~ NUMBER
+                if currentChar =~ symbols
+                    @text += currentChar
+                    if currentChar =~ follow && peekChar =~ follow
+                        nextChar
+                        @text += currentChar
+                    end
+                    nextChar
+                else
+                    while currentChar =~ chars
+                        @text += currentChar
+                        nextChar
+                    end
+                end
+            else 
+                @ttype = toTkType(@text).as(TkType)
+            end
+            @ttype = TkType::SYMBOL unless @ttype == TkType::ERROR
         end
     end
 

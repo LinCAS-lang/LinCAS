@@ -577,6 +577,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     push(wrap_object(ans))
                 when Code::HASH_NEW
                     vm_hash_new(is.argc)
+                when Code::SYMBOL_NEW 
+                    obj = wrap_object(internal.build_symbol(is.text))
+                    push(obj)
                 when Code::NEW_SVAR
                     push(Internal::Variable.new(is.text))
                 when Code::NEW_SNUM

@@ -669,6 +669,9 @@ class LinCAS::Compiler
                 is = compile_hash(node)
             when NodeType::SYMBOLIC
                 is = compile_symbolic(node)
+            when NodeType::SYMBOL 
+                is = @ifactory.makeBCode(Code::SYMBOL_NEW)
+                is.text = unpack_name(node)
             else 
                 is = compile_op(node)
         end

@@ -916,6 +916,31 @@ module LinCAS::Internal
         next lc_str_starts_with(*lc_cast(args,T2))
     end
 
+    @[AlwaysInline]
+    private def self.prepare_string_for_sym(string : String)
+        return ":\"#{string}\"" if Symbol.needs_quotes? string
+        return ":#{string}"
+    end
+
+
+    def self.string_to_symbol(string : String)
+        hash   = string.hash 
+        sym    = symbol_new(string)
+        set_sym_hash(sym,hash)
+        register_sym(string,sym)
+        return sym
+    end
+
+    def self.lc_str_to_symbol(string : Value)
+        string = string2cr(string)
+        lc_bug("(String type should always be converted into symbol)") unless string 
+        string = prepare_string_for_sym(string)
+        return build_symbol(string)
+    end
+
+    str_to_sym = LcProc.new do |args|
+        next lc_str_to_symbol(*lc_cast(args,T1))
+    end
 
         
 
@@ -945,6 +970,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"split",  str_split,  -1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
+    internal.lc_add_internal(StringClass,"to_sym", str_to_sym,  0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
     internal.lc_add_internal(StringClass,"compact",str_compact,     0)

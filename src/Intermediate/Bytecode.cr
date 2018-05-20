@@ -44,7 +44,8 @@ module LinCAS
     HASH_NEW            #   
     IRANGE_NEW          #
     ERANGE_NEW          #
-    STRING_NEW          #            
+    STRING_NEW          # 
+    SYMBOL_NEW           
     MX_NEW              #        
     LOADV               #
     LOADL_0             #
