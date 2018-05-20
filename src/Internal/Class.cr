@@ -410,9 +410,9 @@ module LinCAS::Internal
     end
 
     def self.lc_alias_method(klass : Value, name : Value, new_name : Value)
-        name = string2cr(name)
+        name = id2string(name)
         return lcfalse unless name 
-        new_name = string2cr(new_name)
+        new_name = id2string(new_name)
         return lcfalse unless new_name
         if klass.is_a? Structure
             return val2bool(alias_method_str(klass,name,new_name))
