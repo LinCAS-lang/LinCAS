@@ -77,7 +77,7 @@ class LinCAS::Disassembler
                 print_scope(iseq.jump.as(Bytecode))
             when Code::JUMP, Code::JUMPT, Code::JUMPF
                 print code, ' ', iseq.jump.to_s, '\n'
-            when Code::PUSHSTR
+            when Code::PUSHSTR, Code::SYMBOL_NEW
                 print code, ' ', '"',iseq.text,'"', '\n'
             when Code::SET_C_T
                 print code, ' ', "<catch table>", '\n'
