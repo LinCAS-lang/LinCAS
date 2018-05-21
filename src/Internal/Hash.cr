@@ -157,6 +157,8 @@ module LinCAS::Internal
                 return HASHER.float(float2num(item)).result
             elsif item.is_a? LcString
                 return HASHER.bytes(string2slice(item)).result
+            elsif item.is_a? LcSymbol
+                return HASHER.int(get_sym_hash(item)).result
             end 
             return HASHER.int(item.id).result
         end
