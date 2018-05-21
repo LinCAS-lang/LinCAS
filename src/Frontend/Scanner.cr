@@ -72,7 +72,7 @@ class LinCAS::Scanner < LinCAS::MsgGenerator
                     return IdentTk.new(@source) 
                 end
                 if currentChar =~ /\:/ && (peekChar =~ /[a-zA-Z]/ || peekChar =~ /\"/ || 
-                                                            peekChar =~ /[\+\-\*\/\\\=\!\<\>\|\&]/)
+                                                            peekChar =~ /[\+\-\*\/\\\!\<\>\|\&]/)
                     return SymbolTk.new(@source)
                 end
                 return SpecialCharTk.new(@source) if isSpecialChar? currentChar

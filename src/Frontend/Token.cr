@@ -197,7 +197,7 @@ module LinCAS
     struct SymbolTk < Token
         protected def extract
             chars    = /[a-zA-Z0-9_]/
-            symbols  = /[\+\-\*\/\\\=\!\<\>\|\&]/
+            symbols  = /[\+\-\*\/\\\!\<\>\|\&]/
             follow   = /[\|\&]/
             quote = "\""
             @text += currentChar
