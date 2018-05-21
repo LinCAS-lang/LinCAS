@@ -195,7 +195,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_responds_to(obj : Value,name : Value)
-        sname = string2cr(name)
+        sname = id2string(name)
         return Null unless sname
         return val2bool(lc_obj_responds_to?(obj,sname))
     end

@@ -285,14 +285,14 @@ module LinCAS::Internal
     end
 
     def self.lc_class_rm_static_method(klass : Value, name : Value)
-        sname = string2cr(name)
-        return Null unless sname
+        sname = id2string(name)
+        return lcfalse unless sname
         unless lc_obj_responds_to? klass,sname
             lc_raise(LcNoMethodError, "Can't find static method '%s' for %s" % {sname,lc_typeof(klass)})
-            return Null 
+            return lcfalse 
         else 
             lc_remove_static(klass.as(Structure),sname)
-            return Null 
+            return lctrue 
         end 
     end
 
@@ -301,14 +301,14 @@ module LinCAS::Internal
     end
 
     def self.lc_class_rm_instance_method(klass : Value,name : Value)
-        sname = string2cr(name)
-        return Null unless sname
+        sname = id2string(name)
+        return lcfalse unless sname
         unless lc_obj_responds_to? klass,sname,false
             lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
-            return Null 
+            return lcfalse 
         else 
             lc_remove_internal(klass.as(Structure),sname)
-            return Null  
+            return lctrue  
         end
     end
 
@@ -329,15 +329,16 @@ module LinCAS::Internal
     end
 
     def self.lc_class_delete_instance_method(klass : Value,name : Value)
-        sname = string2cr(name)
-        return Null unless sname
+        sname = id2string(name)
+        return lcfalse unless sname
         klass = klass.as(Structure)
         if klass.methods.lookUp(sname)
             klass.methods.removeEntry(sname)
+            return lctrue
         else 
             lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
         end 
-        return Null 
+        return lcfalse 
     end
 
     class_delete_ins_method = LcProc.new do |args|
@@ -345,15 +346,16 @@ module LinCAS::Internal
     end
 
     def self.lc_class_delete_static_method(klass : Value, name : Value)
-        sname = string2cr(name)
-        return Null unless sname
+        sname = id2string(name)
+        return lcfalse unless sname
         klass = klass.as(Structure)
         if klass.statics.lookUp(sname)
             klass.statics.removeEntry(sname)
+            return lctrue
         else
             lc_raise(LcNoMethodError,"Static method '%s' not defined in %s" % {sname,lc_typeof(klass)})
         end 
-        return Null 
+        return lcfalse 
     end 
 
     class_delete_st_method = LcProc.new do |args|

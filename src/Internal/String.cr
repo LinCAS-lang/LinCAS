@@ -210,17 +210,24 @@ module LinCAS::Internal
             buffer_append(buffer,value == lctrue ? "true" : "false")
         elsif value.is_a? LcArray
             ary_append(buffer,value)
+        elsif value.is_a? LcSymbol 
+            buffer_append(buffer,get_sym_origin(value))
         elsif lc_obj_responds_to? value,"inspect"
             string = Exec.lc_call_fun(value,"inspect")
-            string_append(buffer,string)
+            string_append2(buffer,string)
         else 
-            string_append(buffer,lc_obj_to_s(value))
+            string_append2(buffer,lc_obj_to_s(value))
         end
     end
 
     @[AlwaysInline]
     private def self.string_append(buffer : String_buffer,value : Value)
         buffer_append_n(buffer,'"',pointer_of(value),'"')
+    end
+
+    @[AlwaysInline]
+    private def self.string_append2(buffer : String_buffer, value : Value)
+        buffer_append(buffer,lc_cast(value,LcString))
     end
 
     def self.lc_string_allocate(klass : Value)
