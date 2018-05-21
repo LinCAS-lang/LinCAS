@@ -1320,12 +1320,12 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             return node
         end
         node.addBranch(parseExp)
-        sync(opt_sync_set)
+        sync(opt_sync_set) unless @currentTk.ttype == TkType::EOL
         while @currentTk.ttype == TkType::COMMA
             shift
             skipEol
             node.addBranch(parseExp)
-            sync(opt_sync_set)
+            sync(opt_sync_set) unless @currentTk.ttype == TkType::EOL
         end 
         return node
     end
