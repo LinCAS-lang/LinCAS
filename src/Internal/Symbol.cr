@@ -55,8 +55,8 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.string2sym(string : String)
-        string = prepare_string_for_symbol(string)
-        return build_string(string)
+        string = prepare_string_for_sym(string)
+        return build_symbol(string)
     end
 
     @[AlwaysInline]
@@ -120,6 +120,53 @@ module LinCAS::Internal
         next lc_sym_hash(*lc_cast(args,T1))
     end
 
+    def self.lc_sym_eq(sym : Value, other : Value)
+        return lcfalse unless other.is_a? LcSymbol 
+        return val2bool(sym.id == other.id)
+    end
+
+    sym_eq = LcProc.new do |args|
+        next lc_sym_eq(*lc_cast(args,T2))
+    end
+
+    def self.lc_sym_capitalize(sym : Value)
+        origin = get_sym_origin(sym)
+        origin = extract_sym_name(origin).capitalize
+        return string2sym(origin)
+    end
+
+    sym_capitalize = LcProc.new do |args|
+        next lc_sym_capitalize(*lc_cast(args,T1))
+    end
+
+    def self.lc_sym_downcase(sym : Value)
+        origin = get_sym_origin(sym).downcase 
+        return build_symbol(origin)
+    end
+
+    sym_downcase = LcProc.new do |args|
+        next lc_sym_downcase(*lc_cast(args,T1))
+    end
+
+    def self.lc_sym_size(sym : Value)
+        origin = get_sym_origin(sym)
+        len    = extract_sym_name(origin).size 
+        return num2int(len )
+    end
+
+    sym_size = LcProc.new do |args|
+        next lc_sym_size(*lc_cast(args,T1))
+    end
+
+    def self.lc_sym_swapcase(sym : Value)
+        origin = get_sym_origin(sym).swapcase # Unexisting method
+        return build_symbol(origin)
+    end
+
+    #ym_swapcase = LcProc.new do |args|
+    #    next lc_sym_swapcase(*lc_cast(args,T1))
+    #end
+
     SymClass = lc_build_internal_class("Symbol")
     lc_undef_allocator(SymClass)
 
@@ -127,7 +174,13 @@ module LinCAS::Internal
     lc_add_internal(SymClass,"inspect",sym_inspect,          0)
     lc_add_internal(SymClass,"to_s",sym_to_s,                0)
     lc_add_internal(SymClass,"hash",sym_hash_,               0)
-
+    lc_add_internal(SymClass,"==",sym_eq,                    1)
+    lc_add_internal(SymClass,"capitalize",sym_capitalize,    0)
+    lc_add_internal(SymClass,"lowcase",sym_downcase,         0)
+    lc_add_internal(SymClass,"size",sym_size,                0)
+    alias_method_str(SymClass,"size","length")
+    #lc_add_internal(SymClass,"swapcase",sym_swapcase,        0)
+ 
 
 
 end
