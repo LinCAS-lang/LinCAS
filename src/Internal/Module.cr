@@ -53,12 +53,13 @@ module LinCAS::Internal
         symTab = lc_make_shared_sym_tab(mod.symTab)
         tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
         module_init(tmp)
+        tmp.allocator = nil
         return tmp
     end
 
     def self.lc_include_module(receiver : Structure, mod : LcModule)
         if mod.included.includes? receiver.id
-            # lc_warn()
+            lc_warn("Module already included")
         else
             mod.included << receiver.id
             s_mod                  = lc_make_shared_module(mod)
