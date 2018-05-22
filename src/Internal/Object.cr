@@ -120,7 +120,7 @@ module LinCAS::Internal
             end
         end
         io << ":@0x"
-        pointerof(obj).address.to_s(16,io)
+        obj.id.to_s(16,io)
         io << '>'
     end
 
