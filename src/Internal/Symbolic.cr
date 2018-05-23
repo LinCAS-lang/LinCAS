@@ -415,7 +415,7 @@ module LinCAS::Internal
     internal.lc_add_internal(SymbolicClass,"-@",func_uminus,     0)
     internal.lc_add_internal(SymbolicClass,"diff",func_diff,     1)
     internal.lc_add_internal(SymbolicClass,"eval",func_eval,     1)
-    internal.lc_add_internal(SymbolicClass,"params",func_params, 0)
+    internal.lc_add_internal(SymbolicClass,"vars",func_params, 0)
     internal.lc_add_internal(SymbolicClass,"integrate",func_integrate, 2)
 
     VarClass = internal.lc_build_internal_class("Variable",SymbolicClass)
