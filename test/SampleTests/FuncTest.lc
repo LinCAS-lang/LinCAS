@@ -1,28 +1,28 @@
 /**
-* This file tests the definition of a void
+* This file tests the definition of a let
 * in runtime
 *
 * No output will be generated
 *
 */
 
-/* Defining a simple void */
-void myVoid(){
+/* Defining a simple let */
+let myFunc(){
 }
 
-/* Defining a void with arguments (nothing should change) */
-void voidWithArgs(a1,a2){
+/* Defining a let with arguments (nothing should change) */
+let voidWithArgs(a1,a2){
 }
 
 /* Trying to define a method in a class */
 class MyClass{
   
   /* Defining a simple instance method */
-  void foo(){
+  let foo(){
   }
   
   /* Defining a class (= static) method */
-  void Main.bar(){
+  let MyClass.bar(){
   }
   
 }

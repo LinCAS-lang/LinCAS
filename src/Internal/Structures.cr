@@ -126,7 +126,7 @@ module LinCAS
 
     alias LcModule = LcClass
 
-    struct VoidArgument
+    struct FuncArgument
         @optcode : Bytecode? = nil
         def initialize(@name : String, @opt : Bool)
         end
@@ -135,14 +135,14 @@ module LinCAS
     end
 
     class LcMethod
-        @args      : Array(VoidArgument) | ::Nil = nil 
+        @args      : Array(FuncArgument) | ::Nil = nil 
         @code      : Bytecode | LcProc   | ::Nil
         @owner     : LcClass  | LcModule | ::Nil = nil
         @arity     : Intnum                      = 0
         @static    = false
         @internal  = false
 
-        def initialize(@name : String,@visib : VoidVisib)
+        def initialize(@name : String,@visib : FuncVisib)
             @args = nil
             @code = nil
         end
@@ -157,7 +157,7 @@ module LinCAS
     end
 
     struct LcBlock
-        @args = [] of VoidArgument
+        @args = [] of FuncArgument
         @scp  : VM::Scope? = nil
         def initialize(@body : Bytecode)
             @me = Internal::Null.as(Internal::Value)

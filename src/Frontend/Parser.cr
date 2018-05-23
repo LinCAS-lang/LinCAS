@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-enum LinCAS::VoidVisib
+enum LinCAS::FuncVisib
     PUBLIC PROTECTED PRIVATE UNDEFINED
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
@@ -29,7 +29,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     START_SYNC_SET = { 
         TkType::IF, TkType::SELECT, TkType::DO, TkType::WHILE,TkType::FOR,
         TkType::PUBLIC, TkType::PROTECTED, TkType::PRIVATE,
-        TkType::VOID, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
+        TkType::FUNC, TkType::CLASS, TkType::MODULE, TkType::REQUIRE,
         TkType::INCLUDE, TkType::USE, TkType::CONST, TkType::RETURN,
         TkType::PRINT, TkType::PRINTL, TkType::RAISE, TkType::TRY, TkType::NEXT,
         TkType::IMPORT, TkType::REQUIRE_RELATIVE
@@ -73,7 +73,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     macro setArity
-        node.setAttr(NKey::VOID_ARITY,arity)
+        node.setAttr(NKey::FUNC_ARITY,arity)
     end
 
     macro makeOpNode(nodeType,prevNode,expr)
@@ -139,11 +139,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     private macro expandBlockInstructs
-        @nestedVoids += 1
+        @nestedFuncs += 1
         @block += 1 
         node.setAttr(NKey::BLOCK,parseCallBlock)
         @block -= 1
-        @nestedVoids -= 1
+        @nestedFuncs -= 1
     end
 
     macro printReport
@@ -164,7 +164,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     def initialize(@scanner : Scanner)
-        @nestedVoids = 0
+        @nestedFuncs = 0
         @cm          = 0
         @dummyCount  = 0
         @block       = 0
@@ -293,8 +293,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 return parseClass
             when TkType::MODULE
                 return parseModule
-            when TkType::VOID
-                return parseVoid
+            when TkType::FUNC
+                return parseFunc
             when TkType::PRIVATE, TkType::PROTECTED,  TkType::PUBLIC
                 return parseVisibility
             when TkType::SELECT
@@ -347,7 +347,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
     
     protected def parseClass : Node
-        @errHandler.flag(@currentTk,ErrCode::CLASS_IN_VOID,self) if @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::CLASS_IN_FUNC,self) if @nestedFuncs > 0
         class_sync_set = { 
             TkType::LOCAL_ID, TkType::INHERITS, TkType::L_BRACE, TkType::EOL
         }
@@ -379,7 +379,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseModule : Node
-        @errHandler.flag(@currentTk,ErrCode::MODULE_IN_VOID,self) if @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::MODULE_IN_FUNC,self) if @nestedFuncs > 0
         module_sync_set = {
             TkType::LOCAL_ID, TkType::L_BRACE, TkType::EOL
         }
@@ -404,50 +404,50 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         return name
     end
 
-    protected def parseVoid : Node
-        void_sync_set = {
+    protected def parseFunc : Node
+        func_sync_set = {
             TkType::SELF, TkType::LOCAL_ID, TkType::L_PAR, 
             TkType::L_BRACE, TkType::EOL
-        } + ALLOWED_VOID_NAMES
-        @nestedVoids += 1
-        node = @nodeFactory.makeNode(NodeType::VOID)
+        } + ALLOWED_FUNC_NAMES
+        @nestedFuncs += 1
+        node = @nodeFactory.makeNode(NodeType::Func)
         setLine(node) 
         shift
-        sync(void_sync_set)
-        name = parseVoidName
+        sync(func_sync_set)
+        name = parseFuncName
         node.setAttr(NKey::NAME,name)
-        sync(void_sync_set)
-        node.addBranch(parseVoidArgList)
+        sync(func_sync_set)
+        node.addBranch(parseFuncArgList)
         node.addBranch(parseBody)
-        @nestedVoids -= 1
+        @nestedFuncs -= 1
         return node
     end
 
     protected def parseVisibility : Node
         visibility = @currentTk
         shift
-        if !(@currentTk.ttype == TkType::VOID)
+        if !(@currentTk.ttype == TkType::FUNC)
             @errHandler.flag(@currentTk,ErrCode::INVALID_VISIB_ARG,self)
             return parseStmts
         else
-            void = parseVoid
+            func = parseFunc
         end
         case visibility.ttype
             when TkType::PUBLIC
-                void.setAttr(NKey::VOID_VISIB,VoidVisib::PUBLIC)
+                func.setAttr(NKey::FUNC_VISIB,FuncVisib::PUBLIC)
             when TkType::PROTECTED
                 @errHandler.flag(visibility,ErrCode::UNALLOWED_PROTECTED,self) unless @cm > 0
-                void.setAttr(NKey::VOID_VISIB,VoidVisib::PROTECTED)
+                func.setAttr(NKey::FUNC_VISIB,FuncVisib::PROTECTED)
             when TkType::PRIVATE
-                void.setAttr(NKey::VOID_VISIB,VoidVisib::PRIVATE)
+                func.setAttr(NKey::FUNC_VISIB,FuncVisib::PRIVATE)
         end
-        return void 
+        return func 
     end
 
-    protected def parseVoidName : Node
+    protected def parseFuncName : Node
         name_sync_set = {
             TkType::LOCAL_ID, TkType::DOT, TkType::L_PAR, TkType::SEMICOLON, TkType::EOL
-        } + ALLOWED_VOID_NAMES
+        } + ALLOWED_FUNC_NAMES
         if @currentTk.ttype == TkType::SELF
             node = @nodeFactory.makeNode(NodeType::SELF)
             shift
@@ -487,7 +487,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             end
         elsif @currentTk.ttype == TkType::LOCAL_ID
             return parseLocalID
-        elsif ALLOWED_VOID_NAMES.includes? @currentTk.ttype
+        elsif ALLOWED_FUNC_NAMES.includes? @currentTk.ttype
             if @currentTk.ttype == TkType::L_BRACKET
                 shift 
                 if @currentTk.ttype != TkType::R_BRACKET
@@ -510,7 +510,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         end
     end
 
-    protected def parseVoidArgList
+    protected def parseFuncArgList
         arg_sync_set = {
             TkType::L_PAR, TkType::LOCAL_ID, TkType::COMMA, TkType::R_PAR, TkType::L_BRACE,
             TkType::EOL
@@ -615,11 +615,11 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             node.addBranch(makeDummyName)
         end
         if var 
-            if var.type == NodeType::CONST_ID && @nestedVoids > 0
+            if var.type == NodeType::CONST_ID && @nestedFuncs > 0
                 @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
             end
         else
-            if @currentTk.ttype == TkType::CONST_ID && @nestedVoids > 0
+            if @currentTk.ttype == TkType::CONST_ID && @nestedFuncs > 0
                 @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
             end
         end
@@ -958,7 +958,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         shift if @currentTk.ttype == TkType::DOT
         if @currentTk.ttype == TkType::LOCAL_ID
             node.addBranch(parseLocalID)
-        elsif (ALLOWED_VOID_NAMES.includes? @currentTk.ttype) && (@currentTk.ttype != TkType::L_BRACKET)
+        elsif (ALLOWED_FUNC_NAMES.includes? @currentTk.ttype) && (@currentTk.ttype != TkType::L_BRACKET)
             id = @nodeFactory.makeNode(NodeType::LOCAL_ID)
             id.setAttr(NKey::ID,@currentTk.text)
             shift 
@@ -1112,7 +1112,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         skipEol
         node = @nodeFactory.makeNode(NodeType::BLOCK)
         if @currentTk.ttype == TkType::L_PAR
-            node.setAttr(NKey::BLOCK_ARG,parseVoidArgList)
+            node.setAttr(NKey::BLOCK_ARG,parseFuncArgList)
             skipEol
         end
         while (@currentTk.ttype != TkType::R_BRACE) && !(@currentTk.is_a? EofTk)
@@ -1509,7 +1509,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         const_sync_set = {
             TkType::COLON_EQ, TkType::SEMICOLON, TkType::EOL
         }
-        if @nestedVoids > 0
+        if @nestedFuncs > 0
             @errHandler.flag(@currentTk,ErrCode::DYNAMIC_CONST,self)
         end 
         node = @nodeFactory.makeNode(NodeType::CONST)
@@ -1560,7 +1560,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseReturn : Node
-        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_RETURN,self) unless @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_RETURN,self) unless @nestedFuncs > 0
         @errHandler.flag(@currentTk,ErrCode::RETURN_IN_BLOCK,self) if @block > 0
         node = @nodeFactory.makeNode(NodeType::RETURN)
         setLine(node)
@@ -1591,7 +1591,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     protected def parseYield : Node
-        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_YIELD,self) unless @nestedVoids > 0
+        @errHandler.flag(@currentTk,ErrCode::UNEXPECTED_YIELD,self) unless @nestedFuncs > 0
         node = @nodeFactory.makeNode(NodeType::YIELD)
         setLine(node)
         shift

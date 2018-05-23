@@ -8,7 +8,7 @@
 *
 **/
 
-void power(n)
+let power(n)
 {
     if !(n.is_a?(Integer))
     { raise "Expecting an integer" }

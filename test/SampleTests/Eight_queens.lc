@@ -14,10 +14,10 @@
 
 class Queens
 {   
-    void get_solution() { return @sol  }
-    void get_size()     { return @size }
+    let get_solution() { return @sol  }
+    let get_size()     { return @size }
 
-    void init(size := 8, queens := 8)
+    let init(size := 8, queens := 8)
     { 
         if !(size.is_a? (Integer))
         { raise new ArgumentError("Size must be an integer")   }
@@ -37,7 +37,7 @@ class Queens
         @sol    := new Matrix(@size,@size) { next 0 }
     }
 
-    void solve()
+    let solve()
     {
         if self.place(0) {
             return @sol
@@ -46,7 +46,7 @@ class Queens
         }
     }
 
-    void place(queen)
+    let place(queen)
     {
     
         if (@size <= 3) && (@size <= @queens) { return false }
@@ -64,7 +64,7 @@ class Queens
         return false
     }
 
-    void place?(row,col)
+    let place?(row,col)
     {
         for i : 0 to (@size - 1)
         {

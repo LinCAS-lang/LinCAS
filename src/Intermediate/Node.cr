@@ -19,7 +19,7 @@ class LinCAS::Node
     def initialize(@type : NodeType)
         @branches = [] of Node
         @parent   = nil
-        @attrs    = {} of NKey => (String | Node | Int32 | Int64 | Float32 | Float64 | VoidVisib)
+        @attrs    = {} of NKey => (String | Node | Int32 | Int64 | Float32 | Float64 | FuncVisib)
     end
 
     protected def parent(node : Node)
