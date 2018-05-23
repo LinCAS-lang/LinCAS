@@ -1333,7 +1333,7 @@ class LinCAS::Compiler
     end
 
     private def make_null_return
-        null = pushn
+        null = @ifactory.makeBCode(Code::PUSHANS)
         ret  = @ifactory.makeBCode(Code::RETURN)
         link(null,ret)
         set_last(null,ret)
@@ -1341,7 +1341,7 @@ class LinCAS::Compiler
     end
 
     private def make_null_next
-        null = pushn
+        null = @ifactory.makeBCode(Code::PUSHANS)
         ret  = @ifactory.makeBCode(Code::NEXT)
         link(null,ret)
         set_last(null,ret)
