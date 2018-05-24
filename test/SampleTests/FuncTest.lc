@@ -1,16 +1,16 @@
 /**
-* This file tests the definition of a let
+* This file tests the definition of a function
 * in runtime
 *
 * No output will be generated
 *
 */
 
-/* Defining a simple let */
+/* Defining a simple function */
 let myFunc(){
 }
 
-/* Defining a let with arguments (nothing should change) */
+/* Defining a function with arguments (nothing should change) */
 let voidWithArgs(a1,a2){
 }
 
