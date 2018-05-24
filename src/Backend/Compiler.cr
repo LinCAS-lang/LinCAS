@@ -669,6 +669,9 @@ class LinCAS::Compiler
                 is = compile_hash(node)
             when NodeType::SYMBOLIC
                 is = compile_symbolic(node)
+            when NodeType::SYMBOL 
+                is = @ifactory.makeBCode(Code::SYMBOL_NEW)
+                is.text = unpack_name(node)
             else 
                 is = compile_op(node)
         end
@@ -1330,7 +1333,7 @@ class LinCAS::Compiler
     end
 
     private def make_null_return
-        null = pushn
+        null = @ifactory.makeBCode(Code::PUSHANS)
         ret  = @ifactory.makeBCode(Code::RETURN)
         link(null,ret)
         set_last(null,ret)
@@ -1338,7 +1341,7 @@ class LinCAS::Compiler
     end
 
     private def make_null_next
-        null = pushn
+        null = @ifactory.makeBCode(Code::PUSHANS)
         ret  = @ifactory.makeBCode(Code::NEXT)
         link(null,ret)
         set_last(null,ret)

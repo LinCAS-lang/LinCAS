@@ -21,7 +21,7 @@ and other sort of problems.
   * Garbage collection (inherited from Crystal)
 
 ## Requiremets
-  * gcc compiler
+  * gcc compiler >= 5.0
   * Crystal compiler version >= 0.24.0
 
 ## Portability
@@ -47,18 +47,18 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
   * [ ] Inline caches
   * [ ] Integer optimization (avoiding object allocation for ints)
   * [ ] String API optimization
-  * [ ] String interpolation
+  * [ ] String interpolation & encoding
   * [ ] BigInt conversion from string
   * [ ] Adding a 'break' statement for loops
   * [ ] File IO (The classes are in a primitive status)
-  * [ ] Symbols
+  * [x] Symbols
   * [ ] Plot module
   * [ ] Procs and block catching
   * [ ] Adding other useful scientific API
   * [ ] Interactive LinCAS
 
 ## Installation
-  1. Install gcc
+  1. Install gcc-5 or later versions
   2. Install Crystal
   3. Clone the repository with `git clone https://github.com/max-codeware/crLinCAS`
   4. Enter the cloned folder and run `install.sh`

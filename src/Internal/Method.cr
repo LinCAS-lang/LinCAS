@@ -139,6 +139,7 @@ module LinCAS::Internal
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
         method = receiver.methods.lookUp(name)
         if method.is_a? LcMethod
+            return 3 if method.visib == VoidVisib::UNDEFINED
             return method unless check
             method = method.as(LcMethod)
             case method.visib 

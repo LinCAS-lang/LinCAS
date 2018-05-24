@@ -210,17 +210,24 @@ module LinCAS::Internal
             buffer_append(buffer,value == lctrue ? "true" : "false")
         elsif value.is_a? LcArray
             ary_append(buffer,value)
+        elsif value.is_a? LcSymbol 
+            buffer_append(buffer,get_sym_origin(value))
         elsif lc_obj_responds_to? value,"inspect"
             string = Exec.lc_call_fun(value,"inspect")
-            string_append(buffer,string)
+            string_append2(buffer,string)
         else 
-            string_append(buffer,lc_obj_to_s(value))
+            string_append2(buffer,lc_obj_to_s(value))
         end
     end
 
     @[AlwaysInline]
     private def self.string_append(buffer : String_buffer,value : Value)
         buffer_append_n(buffer,'"',pointer_of(value),'"')
+    end
+
+    @[AlwaysInline]
+    private def self.string_append2(buffer : String_buffer, value : Value)
+        buffer_append(buffer,lc_cast(value,LcString))
     end
 
     def self.lc_string_allocate(klass : Value)
@@ -916,6 +923,31 @@ module LinCAS::Internal
         next lc_str_starts_with(*lc_cast(args,T2))
     end
 
+    @[AlwaysInline]
+    private def self.prepare_string_for_sym(string : String)
+        return ":\"#{string}\"" if Symbol.needs_quotes? string
+        return ":#{string}"
+    end
+
+
+    def self.string_to_symbol(string : String)
+        hash   = string.hash 
+        sym    = symbol_new(string)
+        set_sym_hash(sym,hash)
+        register_sym(string,sym)
+        return sym
+    end
+
+    def self.lc_str_to_symbol(string : Value)
+        string = string2cr(string)
+        lc_bug("(String type should always be converted into symbol)") unless string 
+        string = prepare_string_for_sym(string)
+        return build_symbol(string)
+    end
+
+    str_to_sym = LcProc.new do |args|
+        next lc_str_to_symbol(*lc_cast(args,T1))
+    end
 
         
 
@@ -945,6 +977,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"split",  str_split,  -1)
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
+    internal.lc_add_internal(StringClass,"to_sym", str_to_sym,  0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
     internal.lc_add_internal(StringClass,"compact",str_compact,     0)

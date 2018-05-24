@@ -21,7 +21,7 @@ class LinCAS::ErrorHandler
     def initialize
         @errorCount   = 0
         @singleOutput = false
-        @handleMsg    = true
+        @handleMsg    = false
         @msg          = ""
     end
 

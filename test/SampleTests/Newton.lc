@@ -46,7 +46,7 @@ void newton(f,beg, tol := 10^(-8), kmax := 100)
     return dict[var_name]
 }
 
-func := ${ (x - 7) ^ 2 - 6 }
+func := ${ (x - 7) ** 2 - 6 }
 x    := newton(func,4).round(2)
 printl "Function '".concat(func.to_s(),"' has a zero in x = ",x.to_s())
 

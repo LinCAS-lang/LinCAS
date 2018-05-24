@@ -120,7 +120,7 @@ module LinCAS::Internal
             end
         end
         io << ":@0x"
-        pointerof(obj).address.to_s(16,io)
+        obj.id.to_s(16,io)
         io << '>'
     end
 
@@ -195,7 +195,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_responds_to(obj : Value,name : Value)
-        sname = string2cr(name)
+        sname = id2string(name)
         return Null unless sname
         return val2bool(lc_obj_responds_to?(obj,sname))
     end
@@ -223,9 +223,9 @@ module LinCAS::Internal
     internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
     internal.lc_add_internal(Obj,"frozen?",obj_frozen,0)
     internal.lc_add_internal(Obj,"is_null",obj_null,  0)
-    internal.lc_add_internal(Obj,"to_s",obj_to_s,     0)
-    internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
+            alias_method_str(Obj,"inspect","to_s"      )
+    internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
     internal.lc_add_internal(Obj,"||",obj_or,         1)
     internal.lc_add_internal(Obj,"&&",obj_and,        1)
     internal.lc_add_internal(Obj,"!",obj_not,         0)

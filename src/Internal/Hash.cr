@@ -157,6 +157,8 @@ module LinCAS::Internal
                 return HASHER.float(float2num(item)).result
             elsif item.is_a? LcString
                 return HASHER.bytes(string2slice(item)).result
+            elsif item.is_a? LcSymbol
+                return HASHER.int(get_sym_hash(item)).result
             end 
             return HASHER.int(item.id).result
         end
@@ -593,8 +595,8 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"to_s",hash_inspect,   0)
     internal.lc_add_internal(HashClass,"each_key",hash_e_key, 0)
     internal.lc_add_internal(HashClass,"each_value",hash_e_value,    0)
-    internal.lc_add_internal(HashClass,"has_key",hash_h_key,  1)
-    internal.lc_add_internal(HashClass,"has_value",hash_has_v,1)
+    internal.lc_add_internal(HashClass,"has_key?",hash_h_key,  1)
+    internal.lc_add_internal(HashClass,"has_value?",hash_has_v,1)
     internal.lc_add_internal(HashClass,"key_of",hash_key_of,  1)
     internal.lc_add_internal(HashClass,"keys",hash_keys,      0)
     internal.lc_add_internal(HashClass,"delete",hash_delete,  1)
@@ -602,7 +604,7 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"merge",hash_merge,    1)
     internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
     internal.lc_add_internal(HashClass,"size",hash_size,      0)
-    internal.lc_add_internal(HashClass,"length",hash_size,    0)
+            alias_method_str(HashClass,"size","lenght"         )
     internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
 
 

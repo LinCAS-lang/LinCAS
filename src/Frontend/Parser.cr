@@ -22,7 +22,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         TkType::GLOBAL_ID, TkType::LOCAL_ID, TkType::CONST_ID,TkType::SELF, TkType::INT, TkType::FLOAT,
         TkType::STRING, TkType::L_BRACKET, TkType::L_PAR, TkType::PIPE, TkType::DOLLAR,
         TkType::NEW, TkType::YIELD, TkType::TRUE, TkType::FALSE, TkType::FILEMC, TkType::DIRMC,
-        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS, TkType::L_BRACE
+        TkType::READS, TkType::NOT, TkType::PLUS, TkType::MINUS,TkType::NULL, TkType::ANS, TkType::L_BRACE,
+        TkType::SYMBOL
     }
         
     START_SYNC_SET = { 
@@ -880,6 +881,10 @@ class LinCAS::Parser < LinCAS::MsgGenerator
                 shift
             when TkType::L_BRACE
                 root = parseHash
+            when TkType::SYMBOL
+                root = @nodeFactory.makeNode(NodeType::SYMBOL)
+                root.setAttr(NKey::ID,@currentTk.text)
+                shift
             else
                 if @currentTk.ttype == TkType::ERROR
                     @errHandler.flag(@currentTk,@currentTk.value,self)
@@ -1315,12 +1320,12 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             return node
         end
         node.addBranch(parseExp)
-        sync(opt_sync_set)
+        sync(opt_sync_set) unless @currentTk.ttype == TkType::EOL
         while @currentTk.ttype == TkType::COMMA
             shift
             skipEol
             node.addBranch(parseExp)
-            sync(opt_sync_set)
+            sync(opt_sync_set) unless @currentTk.ttype == TkType::EOL
         end 
         return node
     end
