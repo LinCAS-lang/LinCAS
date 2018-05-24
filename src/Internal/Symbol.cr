@@ -163,9 +163,9 @@ module LinCAS::Internal
         return build_symbol(origin)
     end
 
-    #ym_swapcase = LcProc.new do |args|
-    #    next lc_sym_swapcase(*lc_cast(args,T1))
-    #end
+    # sym_swapcase = LcProc.new do |args|
+    #     next lc_sym_swapcase(*lc_cast(args,T1))
+    # end
 
     SymClass = lc_build_internal_class("Symbol")
     lc_undef_allocator(SymClass)
