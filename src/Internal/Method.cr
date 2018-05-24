@@ -17,7 +17,7 @@ module LinCAS::Internal
 
 
     private def self.lc_undef_method(name,owner : Structure)
-        m       = LinCAS::LcMethod.new(name.as(String),VoidVisib::UNDEFINED)
+        m       = LinCAS::LcMethod.new(name.as(String),FuncVisib::UNDEFINED)
         m.args  = nil
         m.code  = nil
         m.arity = 0
@@ -36,8 +36,8 @@ module LinCAS::Internal
         {{m}}.arity    = {{arity}}
     end 
 
-    def self.lc_def_method(name : String, args : Array(VoidArgument),
-                           arity : Intnum, code : Bytecode, visib : VoidVisib = VoidVisib::PUBLIC)
+    def self.lc_def_method(name : String, args : Array(FuncArgument),
+                           arity : Intnum, code : Bytecode, visib : FuncVisib = FuncVisib::PUBLIC)
         m         = new_lc_method(name,visib)
         m.args    = args 
         m.code    = code 
@@ -45,21 +45,21 @@ module LinCAS::Internal
         return m
     end
 
-    def self.lc_def_static_method(name : String, args : Array(VoidArgument), 
-                                  arity : Intnum,code : Bytecode,visib : VoidVisib = VoidVisib::PUBLIC)
+    def self.lc_def_static_method(name : String, args : Array(FuncArgument), 
+                                  arity : Intnum,code : Bytecode,visib : FuncVisib = FuncVisib::PUBLIC)
         m        = lc_def_method(name,args,arity,code,visib)
         m.static = true
         return m 
     end
 
     def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity : Intnum)
-        m          = new_lc_method(name, VoidVisib::PUBLIC)
+        m          = new_lc_method(name, FuncVisib::PUBLIC)
         set_default(m,owner,code,arity)
         return m
     end
 
     def self.lc_define_protected_internal_method(name : String, owner : Structure, code, arity)
-        m = new_lc_method(name,VoidVisib::PROTECTED)
+        m = new_lc_method(name,FuncVisib::PROTECTED)
         set_default(m,owner,code,arity)
         return m
     end
@@ -139,18 +139,18 @@ module LinCAS::Internal
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
         method = receiver.methods.lookUp(name)
         if method.is_a? LcMethod
-            return 3 if method.visib == VoidVisib::UNDEFINED
+            return 3 if method.visib == FuncVisib::UNDEFINED
             return method unless check
             method = method.as(LcMethod)
             case method.visib 
-                when VoidVisib::PUBLIC
+                when FuncVisib::PUBLIC
                     return method
-                when VoidVisib::PROTECTED
+                when FuncVisib::PROTECTED
                     return method if protctd
                     return 1
-                when VoidVisib::PRIVATE 
+                when FuncVisib::PRIVATE 
                     return 2
-                when VoidVisib::UNDEFINED 
+                when FuncVisib::UNDEFINED 
                     return 3
             end
         else
@@ -179,7 +179,7 @@ module LinCAS::Internal
         method = receiver.statics.lookUp(name)
         if !method.nil?
             method = method.as(LcMethod)
-            return 1 if method.visib == VoidVisib::UNDEFINED
+            return 1 if method.visib == FuncVisib::UNDEFINED
             return method
         else
             return 0

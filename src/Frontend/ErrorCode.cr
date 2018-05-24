@@ -39,8 +39,8 @@ enum LinCAS::ErrCode
     MISSING_FILENAME
     MISSING_LIBNAME
     MISSING_ARROW
-    CLASS_IN_VOID
-    MODULE_IN_VOID
+    CLASS_IN_FUNC
+    MODULE_IN_FUNC
     UNALLOWED_PROTECTED
     INVALID_VISIB_ARG
     INVALID_ASSIGN
@@ -84,8 +84,8 @@ module LinCAS
         ErrCode::MISSING_FILENAME    => "Missing fileneme string token",
         ErrCode::MISSING_LIBNAME     => "Missing library name string token",
         ErrCode::MISSING_ARROW       => "Missing '=>'",
-        ErrCode::CLASS_IN_VOID       => "Class declaration inside a void",
-        ErrCode::MODULE_IN_VOID      => "Module declaration inside a void",
+        ErrCode::CLASS_IN_FUNC       => "Class declaration inside a function",
+        ErrCode::MODULE_IN_FUNC      => "Module declaration inside a function",
         ErrCode::UNALLOWED_PROTECTED => "'Protected' keyword is not allowed outside classes/modules",
         ErrCode::INVALID_VISIB_ARG   => "Invalid argument for visibility keyword",
         ErrCode::INVALID_ASSIGN      => "Invalid assignment",
@@ -96,8 +96,8 @@ module LinCAS
         ErrCode::EXPECTING_CASE      => "Unexpected token, expecting keyword 'case'",
         ErrCode::INVALID_FILENAME    => "Invalid filename",
         ErrCode::UNLOCATED_LIB       => "Library not found",
-        ErrCode::UNEXPECTED_RETURN   => "'return' statement out of void",
-        ErrCode::UNEXPECTED_YIELD    => "'yield' statement out of void",
+        ErrCode::UNEXPECTED_RETURN   => "'return' statement out of a function",
+        ErrCode::UNEXPECTED_YIELD    => "'yield' statement out of a function",
         ErrCode::UNEXPECTED_NEXT     => "'next' statement out of block",
         ErrCode::RETURN_IN_BLOCK     => "Cant't return in block",
         ErrCode::DYNAMIC_CONST       => "Dynamic const assignment"

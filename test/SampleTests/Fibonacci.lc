@@ -8,7 +8,7 @@
 * 3 -> 3
 * ...
 */
-void fibonacci(n)
+let fibonacci(n)
 {
     a := 1
     b := 1
@@ -37,7 +37,7 @@ printl
 /**
 * Making a recoursive one
 */
-void fibonacci_r(n,a := 0, b := 1)
+let fibonacci_r(n,a := 0, b := 1)
 {
     if n <= 0 {
         return 1

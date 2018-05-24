@@ -10,11 +10,11 @@
 **/
 class Z
 {
-    private void z_private()
+    private let z_private()
     {
       printl "private method from z"
     }
-    protected void z_protected()
+    protected let z_protected()
     {
       z_private()
     }
@@ -22,19 +22,19 @@ class Z
 
 class A inherits Z
 {
-  protected void a_protected() {
+  protected let a_protected() {
     a_private()
     printl "I'm protected"
   }
   
-  private void a_private() {
+  private let a_private() {
     printl "I'm private"
   }
 }
 
 class B inherits A
 {
-    void test(){
+    let test(){
         z_protected()
         a_protected()
         

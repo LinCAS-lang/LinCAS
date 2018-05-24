@@ -32,8 +32,8 @@ struct LinCAS::IntermediateFactory
         return Bytecode.new(code)
     end
 
-    def makeVoidArg(name : String, opt = false)
-        return VoidArgument.new(name,opt)
+    def makeFuncArg(name : String, opt = false)
+        return FuncArgument.new(name,opt)
     end
     
 end

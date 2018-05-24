@@ -31,7 +31,7 @@ Compile       = Compiler.new
 
 module LinCAS
     EOF = "\u0003"
-    ALLOWED_VOID_NAMES = 
+    ALLOWED_FUNC_NAMES = 
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
         TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 

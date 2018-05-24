@@ -22,7 +22,7 @@ module LinCAS
                 "elsif"      => TkType::ELSIF,
                 "then"       => TkType::THEN,
                 "else"       => TkType::ELSE,
-                "void"       => TkType::VOID,
+                "let"        => TkType::FUNC,
                 "ahead"      => TkType::AHEAD,
                 "select"     => TkType::SELECT,
                 "case"       => TkType::CASE,

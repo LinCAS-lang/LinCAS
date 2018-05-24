@@ -229,8 +229,8 @@ class LinCAS::Compiler
                 return compile_class(node)
             when NodeType::MODULE 
                 return compile_module(node)
-            when NodeType::VOID
-                return compile_void(node)
+            when NodeType::FUNC
+                return compile_func(node)
             when NodeType::IF 
                 return compile_if(node)
             when NodeType::WHILE
@@ -379,21 +379,21 @@ class LinCAS::Compiler
         return line
     end
 
-    protected def compile_void(node : Node)
+    protected def compile_func(node : Node)
         STstack.push_table
         name     = node.getAttr(NKey::NAME).as(Node)
-        visib    = node.getAttr(NKey::VOID_VISIB)
+        visib    = node.getAttr(NKey::FUNC_VISIB)
         branches = node.getBranches
         args     = branches[0]
-        arity    = args.getAttr(NKey::VOID_ARITY).as(Intnum)
+        arity    = args.getAttr(NKey::FUNC_ARITY).as(Intnum)
         body     = branches[1]
         static   = false
         if name.type == NodeType::SELF
-            voidName   = unpack_name(name.getBranches[0]).as(String)
+            funcName   = unpack_name(name.getBranches[0]).as(String)
             c_receiver = pushself
             static     = true
         else
-            voidName = unpack_name(name).as(String)
+            funcName = unpack_name(name).as(String)
             receiver = name.getAttr(NKey::RECEIVER)
             if receiver
                 if receiver.as(Node).type == NodeType::NAMESPACE
@@ -413,21 +413,21 @@ class LinCAS::Compiler
         line   = new_line(node)
         pop_is = popobj
         b_noop = noop
-        c_args = compile_void_args(args)
+        c_args = compile_func_args(args)
         c_body = compile_body(body)
         link(b_noop,file,c_body,ret_is)
         set_last(b_noop,ret_is)
-        if {VoidVisib::PUBLIC,nil}.includes? visib
+        if {FuncVisib::PUBLIC,nil}.includes? visib
             if static 
-                method = internal.lc_def_static_method(voidName,c_args,arity,b_noop)
+                method = internal.lc_def_static_method(funcName,c_args,arity,b_noop)
             else
-                method = internal.lc_def_method(voidName,c_args,arity,b_noop)
+                method = internal.lc_def_method(funcName,c_args,arity,b_noop)
             end
         else 
             if static 
-                method = internal.lc_def_static_method(voidName,c_args,arity,b_noop,visib.as(VoidVisib))
+                method = internal.lc_def_static_method(funcName,c_args,arity,b_noop,visib.as(FuncVisib))
             else
-                method = internal.lc_def_method(voidName,c_args,arity,b_noop,visib.as(VoidVisib))
+                method = internal.lc_def_method(funcName,c_args,arity,b_noop,visib.as(FuncVisib))
             end
         end
         if static
@@ -435,7 +435,7 @@ class LinCAS::Compiler
         else
             bind_is = @ifactory.makeBCode(Code::PUT_INSTANCE_METHOD)
         end 
-        bind_is.text   = voidName
+        bind_is.text   = funcName
         bind_is.method = method 
         link(line,c_receiver,bind_is,pop_is)
         set_last(line,pop_is)
@@ -443,9 +443,9 @@ class LinCAS::Compiler
         return line
     end
 
-    protected def compile_void_args(node : Node)
+    protected def compile_func_args(node : Node)
         branches = node.getBranches
-        args     = [] of VoidArgument
+        args     = [] of FuncArgument
         return args if branches.size == 0
         branches.each do |branch|
             if branch.type == NodeType::ASSIGN
@@ -453,12 +453,12 @@ class LinCAS::Compiler
                 opt  = compile_exp(branch)
                 nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
-                arg         = @ifactory.makeVoidArg(name,true) 
+                arg         = @ifactory.makeFuncArg(name,true) 
                 arg.optcode = opt
                 args << arg
             else
                 name = unpack_name(branch)
-                args << @ifactory.makeVoidArg(name) 
+                args << @ifactory.makeFuncArg(name) 
             end
             STstack.set(name)
         end
@@ -540,14 +540,14 @@ class LinCAS::Compiler
     protected def compile_block_args(node : Node)
         arg_list = node.getBranches
         previous = nil
-        follow_v = [] of VoidArgument
+        follow_v = [] of FuncArgument
         arg_list.each do |arg|
             if arg.type == NodeType::ASSIGN
                 name = unpack_name(arg.getBranches[0])
                 opt  = compile_exp(arg)
                 nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
-                arg         = @ifactory.makeVoidArg(name,true)
+                arg         = @ifactory.makeFuncArg(name,true)
                 arg.optcode = opt 
                 follow_v << arg
             else 
@@ -557,7 +557,7 @@ class LinCAS::Compiler
                 pop_is      = popobj
                 nxt         = @ifactory.makeBCode(Code::NEXT)
                 link(p_null,storel,pop_is,nxt)
-                arg         = @ifactory.makeVoidArg(name,true)
+                arg         = @ifactory.makeFuncArg(name,true)
                 arg.optcode = p_null 
                 follow_v << arg
             end
