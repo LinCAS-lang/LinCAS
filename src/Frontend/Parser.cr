@@ -410,7 +410,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             TkType::L_BRACE, TkType::EOL
         } + ALLOWED_FUNC_NAMES
         @nestedFuncs += 1
-        node = @nodeFactory.makeNode(NodeType::Func)
+        node = @nodeFactory.makeNode(NodeType::FUNC)
         setLine(node) 
         shift
         sync(func_sync_set)
