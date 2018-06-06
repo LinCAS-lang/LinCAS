@@ -30,6 +30,7 @@ before_install:
   - cd gsl-2.4
   - ./configure
   - make && sudo make install
+  - cd ..
 
 script:
  - "./install.sh"
