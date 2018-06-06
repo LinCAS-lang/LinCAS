@@ -315,11 +315,16 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_sqrt_num(n : Value)
-        n   = num_to_cr_f(n)
-        return Null unless n
+    @[AlwaysInline]
+    private def self.complex_sqrt_num(n : Floatnum)
         tmp = LibComplex.gsl_complex_sqrt_real(n)
         return build_complex(tmp)
+    end
+
+    private def self.complex_sqrt_num(n : Value)
+        n   = lc_num_to_cr_f(n)
+        return Null unless n
+        return complex_sqrt_num(n)
     end
 
     {% for name in %w|exp sin cos tan log arcsin arccos arctan sinh cosh tanh arcsinh arccosh arctanh| %}
