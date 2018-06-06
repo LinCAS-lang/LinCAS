@@ -21,24 +21,49 @@ lib LibComplex
     alias Double = LibC::Double
 
     
-    struct Gls_cpx
+    struct Gsl_cpx
         dat : Double[2]
     end
   
-    fun gsl_complex_rect(x : Double, y : Double)   : Gls_cpx
-    fun gsl_complex_polar(r : Double, th : Double) : Gls_cpx
-    fun gsl_complex_arg(z : Gls_cpx)               : Double
-    fun gsl_complex_abs(z : Gls_cpx)               : Double
-    fun gsl_complex_abs2(z : Gls_cpx)              : Double
-    fun gsl_complex_logabs(z : Gls_cpx)            : Double
+    fun gsl_complex_rect(x : Double, y : Double)   : Gsl_cpx
+    fun gsl_complex_polar(r : Double, th : Double) : Gsl_cpx
+    fun gsl_complex_arg(z : Gsl_cpx)               : Double
+    fun gsl_complex_abs(z : Gsl_cpx)               : Double
+    fun gsl_complex_abs2(z : Gsl_cpx)              : Double
+    fun gsl_complex_logabs(z : Gsl_cpx)            : Double
     
-    fun gsl_complex_add(a : Gls_cpx, b : Gls_cpx)     : Gls_cpx
-    fun gsl_complex_sub(a : Gls_cpx, b : Gls_cpx)     : Gls_cpx
-    fun gsl_complex_mul(a : Gls_cpx, b : Gls_cpx)     : Gls_cpx
-    fun gsl_complex_div(a : Gls_cpx, b : Gls_cpx)     : Gls_cpx
-    fun gsl_complex_add_real(a : Gls_cpx, b : Double) : Gls_cpx
-    fun gsl_complex_sub_real(a : Gls_cpx, b : Double) : Gls_cpx
-    fun gsl_complex_mul_real(a : Gls_cpx, b : Double) : Gls_cpx
-    fun gsl_complex_div_real(a : Gls_cpx, b : Double) : Gls_cpx
+    fun gsl_complex_add(a : Gsl_cpx, b : Gsl_cpx)     : Gsl_cpx
+    fun gsl_complex_sub(a : Gsl_cpx, b : Gsl_cpx)     : Gsl_cpx
+    fun gsl_complex_mul(a : Gsl_cpx, b : Gsl_cpx)     : Gsl_cpx
+    fun gsl_complex_div(a : Gsl_cpx, b : Gsl_cpx)     : Gsl_cpx
+    fun gsl_complex_add_real(a : Gsl_cpx, b : Double) : Gsl_cpx
+    fun gsl_complex_sub_real(a : Gsl_cpx, b : Double) : Gsl_cpx
+    fun gsl_complex_mul_real(a : Gsl_cpx, b : Double) : Gsl_cpx
+    fun gsl_complex_div_real(a : Gsl_cpx, b : Double) : Gsl_cpx
+    fun gsl_complex_pow(a : Gsl_cpx, b : Gsl_cpx)     : Gsl_cpx
+    fun gsl_complex_pow_real(a : Gsl_cpx, b : Double) : Gsl_cpx
+
+    fun gsl_complex_conjugate(z : Gsl_cpx) : Gsl_cpx
+    fun gsl_complex_inverse(z : Gsl_cpx)   : Gsl_cpx
+    fun gsl_complex_negative(z : Gsl_cpx)  : Gsl_cpx
+
+    fun gsl_complex_sqrt(z : Gsl_cpx)      : Gsl_cpx
+    fun gsl_complex_sqrt_real(n : Double)  : Gsl_cpx
+
+    fun gsl_complex_exp(z : Gsl_cpx)                   : Gsl_cpx
+    fun gsl_complex_log(z : Gsl_cpx)                   : Gsl_cpx
+    fun gsl_complex_sin(z : Gsl_cpx)                   : Gsl_cpx
+    fun gsl_complex_cos(z : Gsl_cpx)                   : Gsl_cpx
+    fun gsl_complex_tan(z : Gsl_cpx)                   : Gsl_cpx
+    fun gsl_complex_arcsin(z : Gsl_cpx)                : Gsl_cpx
+    fun gsl_complex_arccos(z : Gsl_cpx)                : Gsl_cpx
+    fun gsl_complex_arctan(z : Gsl_cpx)                : Gsl_cpx
+    fun gsl_complex_sinh(z : Gsl_cpx)                  : Gsl_cpx
+    fun gsl_complex_cosh(z : Gsl_cpx)                  : Gsl_cpx
+    fun gsl_complex_tanh(z : Gsl_cpx)                  : Gsl_cpx
+    fun gsl_complex_arcsinh(z : Gsl_cpx)               : Gsl_cpx
+    fun gsl_complex_arccosh(z : Gsl_cpx)               : Gsl_cpx
+    fun gsl_complex_arctanh(z : Gsl_cpx)               : Gsl_cpx
+
 
 end
