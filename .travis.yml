@@ -32,8 +32,6 @@ before_install:
   - make && sudo make install
   - cd ..
 
-script:
- - "./install.sh"
 
 branches:
   only:
