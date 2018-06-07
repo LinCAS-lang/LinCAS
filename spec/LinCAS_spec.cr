@@ -52,15 +52,15 @@ describe LinCAS do
         |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
     end
 
-    it "Copies the binaries into /usr/bin folder" do
-        Process.run("sudo",%w|
-            cp
-            ./bin/lincas /usr/bin/lincas
-        |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
-    end
+#    it "Copies the binaries into /usr/bin folder" do
+#        Process.run("sudo",%w|
+#            cp
+#            ./bin/lincas /usr/bin/lincas
+#        |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
+#    end
 
     it "Runs the specs" do 
-        Process.run("lincas",%w|
+        Process.run("bin/lincas",%w|
             test/LinCAS_test.lc
         |).exit_status.should eq(0)
     end
