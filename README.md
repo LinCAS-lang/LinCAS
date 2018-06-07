@@ -7,8 +7,7 @@ LinCAS is a dinamically typed and interpreted programming language for quick obj
 solving numeric problems in an easy way.
 
 ## Why?
-The idea is to unify a general purpose language with a computer algebra system, in order to obtain a powerful tool to solve mathematic, engeneering, physical
-and other sort of problems.
+The idea is to unify a general purpose language with a computer algebra system, in order to obtain a powerful tool to solve mathematic, engeneering, physical problems.
 
 ## Features of LinCAS
   * Easy syntax
@@ -23,6 +22,7 @@ and other sort of problems.
 ## Requiremets
   * gcc compiler >= 5.0
   * Crystal compiler version >= 0.24.0
+  * gsl library to be installed
 
 ## Portability
 This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yiet, 
