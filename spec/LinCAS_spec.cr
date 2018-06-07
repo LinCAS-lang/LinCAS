@@ -1,22 +1,25 @@
 require "./spec_helper"
 
 describe LinCAS do 
-    it "Installs LinCAS" do 
 
-        # Creating needed folders
+    it "Creates needed folders" do 
+        [
         Process.run("mkdir",%w|
             bin
-        |)
+        |),
 
         Process.run("sudo",%w|
             mkdir
             /usr/lib/LinCAS
         |)
+        ].each do |res|
+            res.exit_status.should eq(0)
+        end
+    end
 
-        res = 0
+    it "Compiles libraries" do
 
         [
-        # Compiling libraries
         Process.run("gcc",%w|
             -c
             -o
@@ -28,8 +31,14 @@ describe LinCAS do
             rcs
             src/Internal/LibC/libc.a
             src/Internal/LibC/libc.o
-        |,output: STDOUT, input: STDIN, error: STDERR),
+        |,output: STDOUT, input: STDIN, error: STDERR)
+        
+        ].each do |res|
+            res.exit_status.should eq(0)
+        end
+    end
 
+    it "Builds LinCAS" do
         # Building the interpreter
         Process.run("crystal",%w|
             build
@@ -40,16 +49,14 @@ describe LinCAS do
             --cross-compile
             -o
             bin/lincas
-        |,output: STDOUT, input: STDIN, error: STDERR),
+        |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
+    end
 
+    it "Copies the binaries into /usr/bin folder" do
         Process.run("sudo",%w|
             cp
-            bin/lincas /usr/bin/lincas
-        |,output: STDOUT, input: STDIN, error: STDERR)
-    ].each do |res|
-        res.exit_status.should eq(0)
-    end
-    
+            ./bin/lincas /usr/bin/lincas
+        |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
     end
 
     it "Runs the specs" do 
