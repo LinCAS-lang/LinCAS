@@ -5,4 +5,5 @@ src/Internal/LibC/linc.a
 src/Internal/LibC/libc.a
 src/Internal/LibC/libc.o 
 bin/lincas 
+bin/lincas.o
 
