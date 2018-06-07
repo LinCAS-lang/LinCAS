@@ -37,6 +37,7 @@ describe LinCAS do
             --no-debug
             --release
             --stats
+            --cross-compile
             -o
             bin/lincas
         |,output: STDOUT, input: STDIN, error: STDERR),
