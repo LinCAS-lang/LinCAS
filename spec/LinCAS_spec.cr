@@ -42,13 +42,13 @@ describe LinCAS do
         # Building the interpreter
         Process.run("crystal",%w|
             build
-            src/LinCAS.cr
+            ./src/LinCAS.cr
+            -o
+            ./bin/lincas
             --no-debug
             --release
             --stats
             --cross-compile
-            -o
-            bin/lincas
         |,output: STDOUT, input: STDIN, error: STDERR).exit_status.should eq(0)
     end
 
