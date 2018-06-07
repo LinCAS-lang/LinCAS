@@ -1,3 +1,4 @@
+
 /** 
 * This is a sample implementation of a function
 * which takes as input a number n >= 0 and returns the
@@ -7,7 +8,8 @@
 * 2 -> 2
 * 3 -> 3
 * ...
-*/
+**/
+
 let fibonacci(n)
 {
     a := 1
