@@ -36,10 +36,10 @@ before_install:
   - export LDFLAGS="-L/usr/local/lib"
 
   - if [ ! -d "./bin" ]; then
-      mkdir ./bin 
+      mkdir ./bin; 
     fi
   - if [ ! -d "/usr/lib/LinCAS" ]; then
-      sudo mkdir /usr/lib/LinCAS
+      sudo mkdir /usr/lib/LinCAS;
     fi
 
 script: 
