@@ -908,10 +908,17 @@ class LinCAS::Compiler
         then_b    = branches[1]
         else_b    = branches[2]?
         line      = new_line(condition)
-
         c_condition = compile_exp(condition,false)
         c_then_b    = compile_body(then_b)
-        c_else_b    = else_b ? compile_body(else_b) : nil 
+        if else_b 
+            if else_b.type == NodeType::IF 
+                c_else_b = compile_if(else_b)
+            else
+                c_else_b = compile_body(else_b)
+            end
+        else 
+            c_else_b = nil 
+        end
         jump        = @ifactory.makeBCode(Code::JUMPF)
         noop_is     = noop
         if c_else_b
