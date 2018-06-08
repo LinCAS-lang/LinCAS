@@ -34,7 +34,7 @@ printl fibonacci(0)
 printl fibonacci(1)
 printl fibonacci(4)
 
-printl
+printl ""
 
 /**
 * Making a recoursive one
