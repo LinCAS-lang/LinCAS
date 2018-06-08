@@ -15,7 +15,7 @@ if [ ! -d "/usr/lib/LinCAS" ]; then
 fi
 
 echo Compiling LinCAS...
-crystal build ./src/LinCAS.cr -o ./bin/lincas --no-debug
+crystal build ./src/LinCAS.cr -o ./bin/lincas --no-debug --release
 echo Installing LinCAS...
 sudo cp ./bin/lincas /usr/bin/lincas
 echo Finished
