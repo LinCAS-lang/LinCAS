@@ -25,9 +25,31 @@ before_install:
   - sudo ln -s /usr/bin/g++-6 /usr/bin/g++
 
   - gcc -v
+  - wget ftp://ftp.gnu.org/gnu/gsl/gsl-2.4.tar.gz
+  - tar xzf gsl-2.4.tar.gz
+  - cd gsl-2.4
+  - ./configure
+  - make && sudo make install
+  - cd ..
+  - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+  - export CFLAGS="-I/usr/local/include"
+  - export LDFLAGS="-L/usr/local/lib"
 
-script:
- - "./install.sh"
+  - if [ ! -d "./bin" ]; then
+      mkdir ./bin; 
+    fi
+  - if [ ! -d "/usr/lib/LinCAS" ]; then
+      sudo mkdir /usr/lib/LinCAS;
+    fi
+
+script: 
+  - gcc -c -o ./src/Internal/LibC/libc.o ./src/Internal/LibC/libc.c
+  - ar rcs ./src/Internal/LibC/libc.a ./src/Internal/LibC/libc.o
+  - crystal build ./src/LinCAS.cr -o ./bin/lincas --no-debug --release --stats
+  - ls ./bin
+  - sudo cp ./bin/lincas /usr/bin/lincas
+  - crystal spec
+
 
 branches:
   only:

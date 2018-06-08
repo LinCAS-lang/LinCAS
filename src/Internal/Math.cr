@@ -17,6 +17,7 @@ module LinCAS::Internal
 
     m_cos = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_cos(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.cos(val).to_f)
@@ -24,6 +25,7 @@ module LinCAS::Internal
 
     m_sin = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_sin(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.sin(val).to_f)
@@ -31,6 +33,7 @@ module LinCAS::Internal
 
     m_tan = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_tan(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.tan(val).to_f)
@@ -38,6 +41,7 @@ module LinCAS::Internal
 
     m_acos = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arccos(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         if val > 1
@@ -49,6 +53,7 @@ module LinCAS::Internal
 
     m_asin = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arcsin(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         if val > 1
@@ -60,6 +65,7 @@ module LinCAS::Internal
 
     m_atan = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arctan(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.atan(val).to_f) 
@@ -67,6 +73,7 @@ module LinCAS::Internal
 
     m_sinh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_sinh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.sinh(val).to_f)
@@ -74,6 +81,7 @@ module LinCAS::Internal
 
     m_cosh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_cosh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.cosh(val).to_f)
@@ -81,6 +89,7 @@ module LinCAS::Internal
 
     m_acosh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arccosh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.acosh(val).to_f)
@@ -88,6 +97,7 @@ module LinCAS::Internal
 
     m_asinh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arcsinh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.asinh(val).to_f)
@@ -106,6 +116,7 @@ module LinCAS::Internal
 
     m_exp = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_exp(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.exp(val).to_f)
@@ -113,6 +124,7 @@ module LinCAS::Internal
 
     m_log = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_log(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         if val < 0
@@ -124,6 +136,7 @@ module LinCAS::Internal
 
     m_tanh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_tanh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         next num2float(Math.tanh(val).to_f)
@@ -131,6 +144,7 @@ module LinCAS::Internal
 
     m_atanh = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_arctanh(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         if val.abs > 1
@@ -152,11 +166,11 @@ module LinCAS::Internal
 
     m_sqrt = LcProc.new do |args|
         arg = args.as(T2)[1]
+        next complex_sqrt(arg) if arg.is_a? LcCmx
         val = internal.lc_num_to_cr_f(arg)
         next Null unless val
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
-            next Null
+            next complex_sqrt_num(val)
         end
         next num2float(Math.sqrt(val).to_f)
     end

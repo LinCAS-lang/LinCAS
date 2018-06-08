@@ -14,9 +14,9 @@
 
 include Smath
 
-let newton(f,beg, tol := 10^(-8), kmax := 100)
+let newton(f,beg, tol := 10**(-8), kmax := 100)
 {
-    var_list := f.params()
+    var_list := f.vars()
     if var_list.size() > 1 { 
         raise new ArgumentError("Function must contain only a variable") 
     }
@@ -48,7 +48,7 @@ let newton(f,beg, tol := 10^(-8), kmax := 100)
 
 func := ${ (x - 7) ** 2 - 6 }
 x    := newton(func,4).round(2)
-printl "Function '".concat(let.to_s(),"' has a zero in x = ",x.to_s())
+printl "Function '".concat(func.to_s(),"' has a zero in x = ",x.to_s())
 
 
 

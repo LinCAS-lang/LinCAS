@@ -25,8 +25,18 @@ module LinCAS::Internal
         end 
         return nil 
     end
-    
 
+    def self.float2cr(*values)
+        tmp = [] of Float64 
+        values.each do |v|
+            val = lc_num_to_cr_i(v)
+            return nil unless val 
+            tmp << val.to_f64
+        end
+        return tmp 
+    end
+
+    
     struct LcFloat < LcNum
         @val : Floatnum
         def initialize(@val)
@@ -59,7 +69,7 @@ module LinCAS::Internal
         flo       = LcFloat.new(num)
         flo.klass = FloatClass
         flo.data  = FloatClass.data.clone
-        flo.frozen = true
+        lc_obj_freeze(flo)
         return flo
     end
 
