@@ -1,5 +1,5 @@
 
-#require "./SampleTests/Fibonacci.lc"
+require_relative "./SampleTests/Fibonacci.lc"
 require_relative "./SampleTests/Newton.lc"
 require_relative "./SampleTests/Power.lc"
 require_relative "./SampleTests/Eight_queens.lc"
