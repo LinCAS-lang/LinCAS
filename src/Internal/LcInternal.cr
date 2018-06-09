@@ -15,6 +15,8 @@
 # limitations under the License.
 
 require "./LibC"
+require "./Pythonlib"
+require "./PyHelper"
 require "./Overload.cr"
 require "./Sort"
 require "./Internal"
@@ -49,3 +51,4 @@ require "./Smath"
 require "./Integrals"
 require "./GSL"
 require "./Complex"
+require "./Python"
