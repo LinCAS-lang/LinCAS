@@ -60,6 +60,20 @@ module LinCAS::Internal
         return klass
     end
 
+    def self.lc_build_pyclass(name : String,obj : PyObject)
+        name = "_#{name}" unless name.starts_with? '_'
+        stab  = HybridSymT.new(obj)
+        smtab = HybridSymT.new(obj)
+        mtab  = HybridSymT.new(obj)
+        klass = LcClass.new(name,stab,Data.new,mtab,smtab)
+        klass.type  = SType::PyCLASS
+        klass.klass = Lc_Class
+        klass.symTab.parent = MainClass.symTab
+        MainClass.symTab.addEntry(name,klass)
+        lc_set_parent_class(klass,Obj)
+        return klass
+    end
+
     def self.lc_build_internal_class_in(name : String,nest : Structure,parent : LcClass? = nil)
         klass               = lc_build_class(name)
         klass.symTab.parent = nest.symTab
@@ -140,7 +154,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.seek_const_in_scope(scp : SymTab,name : String) : Value?
+    def self.seek_const_in_scope(scp : SymTab_t,name : String) : Value?
         const = scp.lookUp(name)
         return unpack_const(const).as(Value) if const
         scp = scp.parent 
@@ -186,6 +200,17 @@ module LinCAS::Internal
             klass = parent_of(klass)
         end 
         return nil 
+    end
+
+    @[AlwaysInline]
+    private def self.fetch_pystruct(name : String)
+        name = "_#{name}"
+        tmp = MainClass.symTab.lookUp(name)
+        if !tmp || !(tmp.is_a? Structure)
+            lc_bug("Previously declared Python Class/Module not found") 
+            return Null
+        end
+        return tmp.as(Structure)
     end
 
     #########

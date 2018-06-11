@@ -15,11 +15,19 @@
 
 module LinCAS::Internal
 
+    macro module_initializer(mod,type)
+        {{mod}}.type      = {{type}}
+        {{mod}}.klass     = Lc_Module
+        {{mod}}.parent    = Obj
+        {{mod}}.allocator = Allocator::UNDEF
+    end
+
     def self.module_init(mod : LcModule)
-        mod.type      = SType::MODULE
-        mod.klass     = Lc_Module
-        mod.parent    = Obj
-        mod.allocator = Allocator::UNDEF
+       module_initializer(mod,SType::MODULE)
+    end
+
+    def self.pymodule_init(mod : LcModule)
+        module_initializer(mod,SType::PyMODULE)
     end
     
     def self.lc_build_module(name : String)
@@ -39,6 +47,18 @@ module LinCAS::Internal
         mod.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,mod)
         return mod
+    end
+
+    def self.lc_build_pymodule(name : String,obj : PyObject)
+        name = "_#{name}" unless name.starts_with? '_'
+        stab  = HybridSymT.new(obj)
+        smtab = HybridSymT.new(obj)
+        mtab  = HybridSymT.new(obj)
+        tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
+        pymodule_init(tmp)
+        stab.parent = MainClass.symTab
+        MainClass.symTab.addEntry(name,tmp)
+        return tmp
     end
 
     def self.lc_build_internal_module_in(name : String,nest : Structure)

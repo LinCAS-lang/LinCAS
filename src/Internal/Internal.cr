@@ -15,6 +15,8 @@
 
 module LinCAS::Internal
 
+    include PyHelper
+
     alias Value  = BaseS | BaseC | Structure
     alias ValueR = BaseS | BaseC
 
@@ -113,7 +115,10 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_make_shared_sym_tab(symTab : SymTab)
+    def self.lc_make_shared_sym_tab(symTab : SymTab_t)
+        if symTab.is_a? HybridSymT
+            return HybridSymT.new(symTab.sym_tab,symTab.pyObj)
+        end
         return SymTab.new(symTab.sym_tab)
     end
 

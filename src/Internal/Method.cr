@@ -137,7 +137,7 @@ module LinCAS::Internal
     end
 
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
-        method = receiver.methods.lookUp(name)
+        method = receiver.methods.as(SymTab).lookUp(name)
         if method.is_a? LcMethod
             return 3 if method.visib == FuncVisib::UNDEFINED
             return method unless check
@@ -176,7 +176,7 @@ module LinCAS::Internal
     end
     
     def self.seek_static_method2(receiver : Structure, name : String)
-        method = receiver.statics.lookUp(name)
+        method = receiver.statics.as(SymTab).lookUp(name)
         if !method.nil?
             method = method.as(LcMethod)
             return 1 if method.visib == FuncVisib::UNDEFINED

@@ -15,6 +15,7 @@
 
 module LinCAS
 
+    alias SymTab_t = SymTab | HybridSymT
 
     struct Path
 
@@ -63,6 +64,8 @@ module LinCAS
     enum SType
         CLASS 
         MODULE 
+        PyMODULE
+        PyCLASS
     end
 
     class Top
@@ -72,6 +75,9 @@ module LinCAS
     abstract class LcBaseStruct < Top
         @path   : Path
         @id     : UInt64 = 0.to_u64
+        @symTab : SymTab_t
+        @methods : SymTab_t
+        @statics : SymTab_t
         @type     = uninitialized SType
         @frozen   = false
 
@@ -81,12 +87,11 @@ module LinCAS
             else 
                 @path = Path.new
             end
-            @symTab   = SymTab.new
+            @symTab   = SymTab.new.as(SymTab_t)
             @data     = Data.new
             @methods  = SymTab.new 
             @statics  = SymTab.new
             @id       = self.object_id
-            #@included = [] of UInt64
         end 
 
         property name, path, symTab, data, id, frozen, type
@@ -107,8 +112,8 @@ module LinCAS
             super(name,path)
         end
 
-        def initialize(@name : String, symTab : SymTab,data : Data,
-                       methods : SymTab, statics : SymTab,path : Path? = nil)
+        def initialize(@name : String, symTab : SymTab_t,data : Data,
+                       methods : SymTab_t, statics : SymTab_t,path : Path? = nil)
             if path
                 @path = path 
             else 
@@ -176,7 +181,7 @@ module LinCAS
     alias Structure = LcClass
 
     class SymTab
-        @parent : SymTab? = nil 
+        @parent : SymTab_t? = nil 
         property parent, sym_tab
 
         def initialize
@@ -192,6 +197,37 @@ module LinCAS
 
         def lookUp(name)
             return @sym_tab[name]?
+        end
+
+        def removeEntry(name)
+            @sym_tab.delete(name)
+        end
+
+    end
+
+    class HybridSymT 
+        @parent : SymTab_t? = nil 
+        property parent, sym_tab
+        getter   pyObj
+
+        def initialize(@pyObj : Python::PyObject)
+            @sym_tab = Hash(String,LcEntry).new
+        end
+
+        def initialize(@sym_tab : Hash(String,LcEntry),@pyObj : Python::PyObject)
+        end
+        
+        def addEntry(name,entry : LcEntry)
+            @sym_tab[name] = entry
+        end
+
+        def lookUp(name)
+            if tmp = @sym_tab[name]?
+                return tmp 
+            elsif !(tmp = Python.PyObject_GetAttrString(@pyObj,name)).null?
+                return tmp 
+            end 
+            nil
         end
 
         def removeEntry(name)
