@@ -15,6 +15,12 @@
 
 @[Link("python3.5m")]
 lib Python
+    {% if flag?(:x86_64) %}
+        alias PyLong = Int64 
+    {% else %}
+        alias PyLong = Int32 
+    {% end %}
+
     alias PyObject = Void*
     alias Chr = LibC::Char
     struct PyComplex 
@@ -25,6 +31,7 @@ lib Python
     # Python builders
     fun Py_Initialize
     fun Py_Finalize
+    fun Py_IsInitialized
 
     # GC 
     fun Py_IncRef(obj : PyObject)
@@ -33,6 +40,7 @@ lib Python
     # Errors
     fun PyErr_Fetch(pType : PyObject*, value : PyObject*, traceback : PyObject*)
     fun PyErr_Restore(pType : PyObject, value : PyObject, traceback : PyObject)
+    fun PyErr_Occurred : PyObject
 
     # Strings 
     fun PyUnicode_AsUTF8(obj : PyObject)                       : Chr*
@@ -61,7 +69,8 @@ lib Python
     # Modules
     fun PyImport_Import(name : PyObject) : PyObject
     fun PyImport_ImportModuleEx(name : Chr*, globals : PyObject, locals : PyObject, fromlist : PyObject) : PyObject
-    
+    fun PyModule_GetDict(obj : PyObject) : PyObject
+        
     
     # Tuple
     fun PyTuple_New(length : LibC::Int) : PyObject
@@ -71,6 +80,10 @@ lib Python
     fun PyInstanceMethod_Function(m : PyObject) : PyObject
     fun PyMethod_Function(m : PyObject)         : PyObject
     fun PyMethod_Self(m : PyObject)             : PyObject
+
+    # Dictionary
+    fun PyDict_GetItem(dict : PyObject, name : PyObject)   : PyObject
+    fun PyDict_GetItemString(dict : PyObject, name : Chr*) : PyObject
     
     # Checks
     fun PyFloat_Check(obj : PyObject)          : Int32 
@@ -82,11 +95,14 @@ lib Python
     fun PyFunction_Check(obj : PyObject)       : Int32
     fun PyMethod_Check(obj : PyObject)         : Int32
     fun PyInstanceMethod_Check(obj : PyObject) : Int32
+    fun PyDict_Check(obj : PyObject)           : Int32
+
     fun PyFloat_CheckExact(obj : PyObject)     : Int32
     fun PyLong_CheckExact(obj : PyObject)      : Int32
     fun PyType_CheckExact(obj : PyObject)      : Int32
     fun PyUnicode_CheckExact(obj : PyObject)   : Int32
     fun PyModule_CheckExact(obj : PyObject)    : Int32
+    fun PyDict_CheckExact(obj : PyObject)      : Int32
     
 end
 

@@ -32,6 +32,10 @@ module LinCAS::PyHelper
         Python.PyErr_Restore({{ptype}},{{value}},{{btrace}})
     end
 
+    macro py_err_occurred
+        Python.PyErr_Occurred 
+    end
+
     macro string2py(string)
         Python.PyUnicode_DecodeFSDefault({{string}})
     end
@@ -112,6 +116,10 @@ module LinCAS::PyHelper
         Python.PyImport_ImportModuleEx({{name}},{{globals}},{{locals}},{{fromlist}})
     end
 
+    macro get_pymodule_dict(mod)
+        Python.PyModule_GetDict({{mod}})
+    end
+
     macro new_pytuple(size)
         Python.PyTuple_new({{size}})
     end
@@ -130,6 +138,14 @@ module LinCAS::PyHelper
 
     macro pymethod_receiver(m)
         Python.PyMethod_Self({{m}})
+    end
+
+    macro pydict_get0(dict,name)
+        Python.PyDict_GetItem({{dict}},{{name}})
+    end
+
+    macro pydict_get1(dict,name)
+        Python.PyDict_GetItemString({{dict}},{{name}})
     end
 
     macro is_pyfloat(obj)
@@ -165,7 +181,7 @@ module LinCAS::PyHelper
     end
 
     macro is_pymodule(obj)
-        Python.PyModule_Check({obj}) == 1
+        Python.PyModule_Check({{obj}}) == 1
     end
 
     macro is_callable(obj)
@@ -173,15 +189,23 @@ module LinCAS::PyHelper
     end
 
     macro is_pyfunction(obj)
-        Python.PyFunction_Check({{obj}})
+        Python.PyFunction_Check({{obj}}) == 1
     end
 
     macro is_pymethod(obj)
-        Python.PyMethod_Check({{obj}})
+        Python.PyMethod_Check({{obj}}) == 1
     end
 
     macro is_pyimethod(obj)
-        Python.PyInstanceMethod_Check({{obj}})
+        Python.PyInstanceMethod_Check({{obj}}) == 1
+    end
+
+    macro is_pydict(obj)
+        Python.PyDict_Check({{obj}}) == 1
+    end
+
+    macro is_pydict_abs(obj)
+        Python.PyDict_CheckExact({{obj}}) == 1
     end
 
 end
