@@ -116,6 +116,12 @@ end
 dir = ARGV[0]?
 if dir 
     begin
+        at_exit do
+            if Python.Py_IsInitialized
+                Internal.py_dispose
+                Python.Py_Finalize 
+            end
+        end
         parser = FFactory.makeParser(File.expand_path(dir))
         parser.noSummary # TODO: improving parsing time computation
         if tk_display
@@ -134,6 +140,7 @@ if dir
                 iseq_p.disassemble(code)
                 puts
             end
+            Python.Py_Initialize
             Exec.run(code) if exec
         end
     rescue e
