@@ -50,6 +50,26 @@ module LinCAS::Internal
         return internal.lc_obj_allocate(Obj)
     end
 
+    def self.obj2py(obj : Value)
+        if obj.is_a? LcInt 
+            value = int2num(obj)
+            {%if !flag(:fast_m)%}
+                if value.is_a? BigInt 
+                    lc_raise(LcNotImplError,"No conversion of big ints to python yet")
+                    return nil 
+                end
+            {% end %}
+            return int2py(num2num(obj))
+        elsif obj.is_a? LcFloat 
+            return float2py(float2num(obj))
+        elsif obj.is_a? LcString
+            return str2py(obj)
+        else
+            lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+            return nil 
+        end
+    end
+
     def self.lc_new_object(klass : Value)
         klass = klass.as(LcClass)
         allocator = lc_find_allocator(klass)
