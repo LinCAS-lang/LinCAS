@@ -62,7 +62,6 @@ lib Python
     fun PyObject_GetAttr(obj : PyObject, attr : PyObject)         : PyObject
     fun PyObject_CallObject(func : PyObject, args : PyObject)     : PyObject
     fun PyObject_Type(obj : PyObject)                             : PyObject
-    fun PyObject_TypeCheck(obj : PyObject, ptype : PyObject)      : Int32
     fun PyObject_IsTrue(obj : PyObject)                           : Int32 
     fun PyObject_IsInstance(obj : PyObject, klass : PyObject)     : Int32
     
@@ -70,6 +69,7 @@ lib Python
     fun PyImport_Import(name : PyObject) : PyObject
     fun PyImport_ImportModuleEx(name : Chr*, globals : PyObject, locals : PyObject, fromlist : PyObject) : PyObject
     fun PyModule_GetDict(obj : PyObject) : PyObject
+    fun PyModule_New(name : Chr*) : PyObject
         
     
     # Tuple
@@ -85,24 +85,12 @@ lib Python
     fun PyDict_GetItem(dict : PyObject, name : PyObject)   : PyObject
     fun PyDict_GetItemString(dict : PyObject, name : Chr*) : PyObject
     
-    # Checks
-    fun PyFloat_Check(obj : PyObject)          : Int32 
-    fun PyLong_Check(obj : PyObject)           : Int32
-    fun PyType_Check(obj : PyObject)           : Int32
-    fun PyUnicode_Check(obj : PyObject)        : Int32
-    fun PyModule_Check(obj : PyObject)         : Int32
-    fun PyCallable_Check(obj : PyObject)       : Int32
-    fun PyFunction_Check(obj : PyObject)       : Int32
-    fun PyMethod_Check(obj : PyObject)         : Int32
-    fun PyInstanceMethod_Check(obj : PyObject) : Int32
-    fun PyDict_Check(obj : PyObject)           : Int32
+    # Type
+    fun PyType_IsSubtype(a : PyObject, b : PyObject) : Int32
+    fun PyType_GetFlags(t : PyObject) : PyLong
 
-    fun PyFloat_CheckExact(obj : PyObject)     : Int32
-    fun PyLong_CheckExact(obj : PyObject)      : Int32
-    fun PyType_CheckExact(obj : PyObject)      : Int32
-    fun PyUnicode_CheckExact(obj : PyObject)   : Int32
-    fun PyModule_CheckExact(obj : PyObject)    : Int32
-    fun PyDict_CheckExact(obj : PyObject)      : Int32
+    # Eval
+    fun PyEval_GetBuiltins : PyObject
     
 end
 
