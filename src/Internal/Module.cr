@@ -29,6 +29,10 @@ module LinCAS::Internal
     def self.pymodule_init(mod : LcModule)
         module_initializer(mod,SType::PyMODULE)
     end
+
+    def self.pymodule_init(mod : LcModule)
+        module_initializer(mod,SType::PyMODULE)
+    end
     
     def self.lc_build_module(name : String)
         mod = LcModule.new(name)
@@ -72,7 +76,11 @@ module LinCAS::Internal
     def self.lc_make_shared_module(mod : LcModule)
         symTab = lc_make_shared_sym_tab(mod.symTab)
         tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
-        module_init(tmp)
+        if mod.type == SType::PyMODULE
+            pymodule_init(tmp)
+        else
+            module_init(tmp)
+        end
         tmp.allocator = nil
         return tmp
     end

@@ -64,6 +64,10 @@ module LinCAS::Internal
             return float2py(float2num(obj))
         elsif obj.is_a? LcString
             return str2py(obj)
+        elsif obj.is_a? Structure
+            if is_pyembedded(obj)
+                return obj.symTab.as(HybridSymT).pyObj 
+            end
         else
             lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 

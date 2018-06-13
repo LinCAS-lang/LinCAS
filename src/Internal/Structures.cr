@@ -131,6 +131,13 @@ module LinCAS
 
     alias LcModule = LcClass
 
+    enum LcMethodT
+        INTERNAL
+        USER
+        PYTHON 
+        PROC
+    end
+
     struct FuncArgument
         @optcode : Bytecode? = nil
         def initialize(@name : String, @opt : Bool)
@@ -143,17 +150,19 @@ module LinCAS
         @args      : Array(FuncArgument) | ::Nil = nil 
         @code      : Bytecode | LcProc   | ::Nil
         @owner     : LcClass  | LcModule | ::Nil = nil
-        @arity     : Intnum                      = 0
+        @arity     : IntnumR                     = 0
+        @pyobj     : Python::PyObject = Python::PyObject.null
         @static    = false
-        @internal  = false
+        @type      = LcMethodT::INTERNAL
+        @needs_gc  = false
 
         def initialize(@name : String,@visib : FuncVisib)
             @args = nil
             @code = nil
         end
 
-        property name, args, code, owner, arity
-        property static, internal, visib 
+        property name, args, code, owner, arity, pyobj
+        property static, type, visib, needs_gc
     end 
 
     struct LcConst
