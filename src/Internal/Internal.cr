@@ -15,7 +15,9 @@
 
 module LinCAS::Internal
 
+
     include PyHelper
+    extend  PyHelper
 
     alias Value  = BaseS | BaseC | Structure
     alias ValueR = BaseS | BaseC
