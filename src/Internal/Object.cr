@@ -53,7 +53,7 @@ module LinCAS::Internal
     def self.obj2py(obj : Value)
         if obj.is_a? LcInt 
             value = int2num(obj)
-            {%if !flag(:fast_m)%}
+            {%if !flag?(:fast_m)%}
                 if value.is_a? BigInt 
                     lc_raise(LcNotImplError,"No conversion of big ints to python yet")
                     return nil 
