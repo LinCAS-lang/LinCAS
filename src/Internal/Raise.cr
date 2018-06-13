@@ -36,6 +36,7 @@ module LinCAS
             SintaxError
             PyException
             PyImportError
+            NotImplementedError
         end
 
         ERR_MESSAGE = {
@@ -202,6 +203,7 @@ module LinCAS
         PyException = internal.lc_build_internal_class("PyException",ErrClass)
 
         PyImportError = internal.lc_build_internal_class("PyImportError",ErrClass)
+        NotImplError  = internal.lc_build_internal_class("NotImplementedError",ErrClass)
 
         ErrDict = {
             ErrType::TypeError         => TypeErrClass,
@@ -220,7 +222,8 @@ module LinCAS
             ErrType::NotSupportedError => NotSupportedError,
             ErrType::SintaxError       => SintaxErr,
             ErrType::PyException       => PyException,
-            ErrType::PyImportError     => PyImportError
+            ErrType::PyImportError     => PyImportError,
+            ErrType::NotImplementedError => NotImplError
         }
 
 
@@ -248,6 +251,7 @@ module LinCAS
     LcSintaxError   = Internal::ErrType::SintaxError
     LcPyException   = Internal::ErrType::PyException
     LcPyImportError = Internal::ErrType::PyImportError
+    LcNotImplError  = Internal::ErrType::NotImplementedError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]
