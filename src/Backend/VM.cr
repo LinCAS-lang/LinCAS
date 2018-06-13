@@ -171,6 +171,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         current_frame.pc = {{method}}.code.as(Bytecode)
     end
 
+    macro call_python(method,argv)
+        internal.lc_call_python({{method}},{{argv}})
+    end
+
     macro discard_arguments(argc)
         @sp -= {{argc}}
     end
@@ -744,13 +748,21 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if method
             vm_push_new_frame(selfr,method.owner.as(Structure),argc)
             return nil unless vm_arity_check(argc,method.arity)
-            if method.internal
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(wrap_object(value.as(Value)))
-                vm_return_internal
-            else
-                call_usr(method,argc)
+            case method.type
+                when LcMethodT::INTERNAL
+                    argv  = vm_get_args(argc)
+                    value = internal_call(method.code.as(LcProc),argv,method.arity)
+                    push(wrap_object(value.as(Value)))
+                    vm_return_internal
+                when LcMethodT::USER
+                    call_usr(method,argc)
+                when LcMethodT::PYTHON
+                    argv  = vm_get_args(argc)
+                    value = call_python(method,argv)
+                    push(wrap_object(value.as(Value)))
+                    vm_return_internal
+                else
+                    lc_bug("Invalid method type received")
             end
         end
     end
@@ -762,15 +774,23 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if method
             vm_push_new_frame(receiver,method.owner.as(Structure),argc)
             return nil unless vm_arity_check(argc,method.arity)
-            if method.internal
-                @internal = true
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(wrap_object(value.as(Value)))
-                vm_return_internal
-            else
-                @internal = false
-                call_usr(method,argc)
+            case method.type
+                when  LcMethodT::INTERNAL
+                    @internal = true
+                    argv  = vm_get_args(argc)
+                    value = internal_call(method.code.as(LcProc),argv,method.arity)
+                    push(wrap_object(value.as(Value)))
+                    vm_return_internal
+                when LcMethodT::USER
+                    @internal = false
+                    call_usr(method,argc)
+                when LcMethodT::PYTHON
+                    argv  = vm_get_args(argc)
+                    value = call_python(method,argv)
+                    push(wrap_object(value.as(Value)))
+                    vm_return_internal
+                else
+                    lc_bug("Invalid method type received")
             end
         end
     end
