@@ -28,7 +28,7 @@ ENV["version"] = "0.1.0"
 
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
-
+Python.Py_Initialize
 module LinCAS
     EOF = "\u0003"
     ALLOWED_FUNC_NAMES = 
@@ -140,7 +140,6 @@ if dir
                 iseq_p.disassemble(code)
                 puts
             end
-            Python.Py_Initialize
             Exec.run(code) if exec
         end
     rescue e

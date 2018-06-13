@@ -30,15 +30,36 @@ module LinCAS::Internal
     end
 
     macro set_default(m,owner,code,arity)
-        {{m}}.internal = true
+        {{m}}.type     = LcMethodT::INTERNAL
         {{m}}.owner    = {{owner}}
         {{m}}.code     = {{code}}
         {{m}}.arity    = {{arity}}
     end 
 
+    macro is_pyembedded(strucure)
+        ({{strucure}}.type == SType::PyMODULE) || 
+             ({{strucure}}.type == SType::PyCLASS)
+    end
+
+    def self.pymethod_new(name : String,pyobj : PyObject,owner : Structure? = nil,temp = true)
+        m         = new_lc_method(name,FuncVisib::PUBLIC)
+        m.type    = LcMethodT::PYTHON
+        m.pyobj   = pyobj 
+        m.arity   = get_pymethod_argc(pyobj,name)
+        m.owner   = owner if owner
+        return m
+    end
+
+    def self.pystatic_method_new(name : String,pyobj : PyObject,owner : Structure? = nil,temp = false)
+        m        = pymethod_new(name,pyobj,owner,temp)
+        m.static = true
+        return m 
+    end
+
     def self.lc_def_method(name : String, args : Array(FuncArgument),
                            arity : Intnum, code : Bytecode, visib : FuncVisib = FuncVisib::PUBLIC)
         m         = new_lc_method(name,visib)
+        m.type    = LcMethodT::USER
         m.args    = args 
         m.code    = code 
         m.arity   = arity
@@ -82,7 +103,7 @@ module LinCAS::Internal
 
     def self.lc_undef_internal_method(name,owner : LinCAS::Structure)
         m = lc_undef_method(name,owner)
-        m.internal = true 
+        m.type = LcMethodT::INTERNAL 
         return m
     end 
 
@@ -137,6 +158,10 @@ module LinCAS::Internal
     end
 
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
+        #p receiver.type, receiver.name
+        if is_pyembedded(receiver)
+            return seek_instance_method_emb(receiver,name)
+        end
         method = receiver.methods.as(SymTab).lookUp(name)
         if method.is_a? LcMethod
             return 3 if method.visib == FuncVisib::UNDEFINED
@@ -176,12 +201,58 @@ module LinCAS::Internal
     end
     
     def self.seek_static_method2(receiver : Structure, name : String)
+        if is_pyembedded(receiver)
+            return seek_static_method_emb(receiver,name)
+        end
         method = receiver.statics.as(SymTab).lookUp(name)
         if !method.nil?
             method = method.as(LcMethod)
             return 1 if method.visib == FuncVisib::UNDEFINED
             return method
         else
+            return 0
+        end
+    end
+
+    def self.seek_instance_method_emb(receiver : Structure, name : String)
+        method = receiver.statics.as(HybridSymT).lookUp(name)
+        if method == nil
+            return 0
+        elsif method.is_a? LcMethod
+            return 1 if method.visib == FuncVisib::UNDEFINED
+            return method
+        elsif method.is_a? PyObject
+            return 0 if method.null?
+            p is_pycallable(method), is_pytype_abs(method)
+            if is_pycallable(method) && !is_pytype_abs(method)
+                return pymethod_new(name,method,receiver)
+            else
+                pyobj_decref(method)
+                return 0
+            end
+        else
+            lc_bug("Invalid method type received")
+            return 0
+        end
+    end
+
+    def self.seek_static_method_emb(receiver : Structure, name : String)
+        method = receiver.statics.as(HybridSymT).lookUp(name)
+        if method == nil
+            return 0
+        elsif method.is_a? LcMethod
+            return 1 if method.visib == FuncVisib::UNDEFINED
+            return method
+        elsif method.is_a? PyObject
+            return 0 if method.null?
+            if is_pystatic_method(method) && is_pycallable(method)
+                return pystatic_method_new(name,method,receiver,temp: true)
+            #elsif is_pycallable(method) 
+            else
+                return 0
+            end
+        else
+            lc_bug("Invalid method type received")
             return 0
         end
     end
@@ -207,7 +278,7 @@ module LinCAS::Internal
             method = seek_instance_method(class_of(obj),name)
         end 
         return -1 unless method.is_a? LcMethod
-        return 0 if method.internal 
+        return 0 if method.type == LcMethodT::INTERNAL 
         return 1
     end
 
