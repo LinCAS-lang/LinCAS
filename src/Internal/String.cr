@@ -111,6 +111,13 @@ module LinCAS::Internal
         end
     end
 
+    @[AlwaysInline]
+    def self.str2py(obj : Value)
+        lc_bug("(Expecting LcString)")
+        ptr = pointer_of(obj)
+        return string2py(ptr)
+    end
+
     private def self.compute_total_string_size(array : An)
         size = 0
         array.each do |val|
