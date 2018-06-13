@@ -15,6 +15,13 @@
 # limitations under the License.
 
 module LinCAS::PyHelper
+    {% if flag?(:x86_64) %}
+        Py_TPFLAGS_TYPE_SUBCLASS    = 1_u64 << 31
+        Py_TPFLAGS_UNICODE_SUBCLASS = 1_u64 << 28
+    {% else %}
+        Py_TPFLAGS_TYPE_SUBCLASS    = 1_u32 << 31
+        Py_TPFLAGS_UNICODE_SUBCLASS = 1_u32 << 28
+    {% end %}
 
     macro pyobj_incref(obj)
         Python.Py_IncRef({{obj}})
@@ -96,8 +103,12 @@ module LinCAS::PyHelper
         Python. PyObject_Type({{obj}})
     end
 
-    macro pytype_chech(obj,type)
-        Python.PyObject_TypeCheck({{obj}},{{type}})
+    @[AlwaysInline]
+    def pytype_check(obj,type)
+        t = pytypeof(obj)
+        res = (t == type) || (is_pysubtype(t,type) == 1)
+        pyobj_decref(t)
+        return res
     end
 
     macro pytest(obj)
@@ -121,7 +132,7 @@ module LinCAS::PyHelper
     end
 
     macro new_pytuple(size)
-        Python.PyTuple_new({{size}})
+        Python.PyTuple_New({{size}})
     end
 
     macro set_pytuple_item(tuple,index,item)
@@ -148,44 +159,85 @@ module LinCAS::PyHelper
         Python.PyDict_GetItemString({{dict}},{{name}})
     end
 
+    macro is_pysubtype(a,b)
+        Python.PyType_IsSubtype({{a}},{{b}})
+    end
+
+    macro pytype_flags(t)
+        Python.PyType_GetFlags({{t}})
+    end
+
+    DICT      = Python.PyEval_GetBuiltins # This is a bit unsafe
+    PyInt     = pydict_get1(DICT,"int")
+    PyFloat   = pydict_get1(DICT,"float")
+    PyType    = pydict_get1(DICT,"type")
+    PyString  = pydict_get1(DICT,"str")
+    PyStaticM = pydict_get1(DICT,"staticmethod")
+
+    @[AlwaysInline]
+    def pytype_fast_subclass(obj,f)
+        t = pytypeof(obj)
+        res = (pytype_flags(t) & f) != 0
+        pyobj_decref(t)
+        return res
+    end
+    
     macro is_pyfloat(obj)
-        Python.PyFloat_Check({{obj}}) == 1
+        pytype_check({{obj}},PyFloat)
     end
 
     macro is_pyfloat_abs(obj)
-        Python.PyFloat_CheckExact({{obj}}) == 1
+        {{obj}} == PyFloat
     end
 
     macro is_pyint(obj)
-        Python.PyLong_Check({{obj}}) == 1
+        pytype_check({{obj}},PyInt)
     end
 
     macro is_pyint_abs(obj)
-        Python.PyLong_CheckExact({{obj}}) == 1
+        {{obj}} == PyInt
     end
 
     macro is_pytype(obj)
-        Python.PyType_Check({{obj}}) == 1
+        pytype_fast_subclass({{obj}},Py_TPFLAGS_TYPE_SUBCLASS)
     end
 
-    macro is_pytype_abs(obj)
-        Python.PyType_CheckExact({{obj}}) == 1
+    @[AlwaysInline]
+    def is_pytype_abs(obj)
+        t = pytypeof(obj)
+        res = t == PyType
+        pyobj_decref(t)
+        res
     end
 
     macro is_pystring(obj)
-        Python.PyUnicode_Check({{obj}}) == 1
+        pytype_fast_subclass({{obj}},Py_TPFLAGS_UNICODE_SUBCLASS)
     end
 
-    macro is_pystring_abs(obj)
-        Python.PyUnicode_CheckExact({{obj}}) == 1
+    @[AlwaysInline]
+    def is_pystring_abs(obj)
+        t = pytypeof(obj)
+        res = t == PyString
+        pyobj_decref(t)
+        res
     end
 
-    macro is_pymodule(obj)
-        Python.PyModule_Check({{obj}}) == 1
+    @[AlwaysInline]
+    def is_pymodule(obj)
+        m = Python.PyModule_New("dummy")
+        t = pytypeof(m)
+        pyobj_decref(m)
+        res = pytype_check(obj,t)
+        pyobj_decref(t)
+        return res
     end
 
-    macro is_callable(obj)
-        Python.PyObject_Callable({{obj}}) == 1
+    macro is_pycallable(obj)
+        Python.PyCallable_Check({{obj}}) == 1
+    end
+
+    macro is_pystatic_method(obj)
+        pytype_check({{obj}},PyStaticM)
     end
 
     macro is_pyfunction(obj)

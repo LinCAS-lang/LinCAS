@@ -49,7 +49,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.pyobj2string(obj : PyObject)
+    private def self.pyobj2string(obj : PyObject)
         obj = pyobj2pystr(obj)
         str = pystring2cstring2(obj,out size)
         pyobj_decref(obj)
@@ -75,11 +75,20 @@ module LinCAS::Internal
         py_fetch_error(pointerof(type),pointerof(val),pointerof(tr))
         type_ = pyobj2string(type)
         val_  = pyobj2string(val)
-        return lc_raise(LcPyException,": #{exception_name(type_)}: #{val_}")
+        return lc_raise(LcPyException," #{exception_name(type_)}: #{val_}")
         pyobj_decref_n(type,val,tr)
     end
 
-    def self.pyimport(name : String)
+    def self.pyobj2lc(obj : PyObject)
+        if is_pyint(obj)
+            return num2int(pyint2int(obj))
+        elsif is_pyfloat(obj)
+            return num2float(pyfloat2float(obj))
+        end
+    end
+
+
+    private def self.pyimport(name : String)
         if PyREGISTER.has_key? name
             return fetch_pystruct(name)
         end
