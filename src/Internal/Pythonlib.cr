@@ -91,6 +91,9 @@ lib Python
 
     # Eval
     fun PyEval_GetBuiltins : PyObject
+
+    # Other
+    fun PyCallable_Check(obj : PyObject) : Int32
     
 end
 
