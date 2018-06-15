@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    private def self.get_pymethod_argc(method : PyObject,name : String)
+    private def self.get_pymethod_argc(method : PyObject,name : String? = nil)
         f_code = pyobj_attr(method,"__code__")
         if !f_code.null?
             argc = pyobj_attr(f_code,"co_argcount")
@@ -26,15 +26,17 @@ module LinCAS::Internal
                 return res 
             end
         end
-        lc_warn("Unable to get the number of arguments of python method #{name}. This may cause an exception")
-        return 1
+        pyerr_clear
+        # lc_warn("Unable to get the number of arguments of python method '#{name}'. This may cause an exception")
+        return -1
     end
 
     private def self.prepare_pycall_args(argv : Array(Value),argc : IntnumR,static = false)
         lc_bug("Unhandled argument missmatch") if argv.size < argc
-        pytuple = new_pytuple(argc)
         sub     = static ? 1 : 0
-        (argc + sub).times do |i|
+        argc    = argc < 0 ? argv.size - sub : argc
+        pytuple = new_pytuple(argc)
+        (sub..argc).each do |i|
             tmp = obj2py(argv[i])
             if !tmp 
                 pyobj_decref(pytuple)
@@ -50,9 +52,9 @@ module LinCAS::Internal
         lc_bug("Python method not set") if pym.null?
         argc   = method.arity
         if method.static
-            pyargs = prepare_pycall_args(argv,argc)
+            pyargs = prepare_pycall_args(argv,argc,true)
         else
-            pyargs = prepare_pycall_args(argv,argc) 
+            pyargs = prepare_pycall_args(argv,argc,true) 
         end
         return Null if pyargs.null?
         result = pycall(pym,pyargs)
