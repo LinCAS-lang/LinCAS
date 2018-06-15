@@ -17,10 +17,10 @@ module LinCAS::Internal
 
     alias PyObject = Python::PyObject
     PYPATTERN      = /'.+'/
-    PyREGISTER     = Hash(String,PyObject).new
+    #Types          = pyimport("types")
 
     macro check_pyerror(ptr)
-        if {{ptr}}.null? 
+        if {{ptr}}.null? || pyerr_occurred
             lc_raise_py_error
             return Null 
         end
@@ -37,23 +37,10 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.py_decref_n(*obj)
+    def self.pyobj_decref_n(*obj)
         obj.each do |item|
             pyobj_decref(item)
         end
-    end
-
-    def self.py_dispose
-        PyREGISTER.each_value do |v|
-            pyobj_decref(v)
-        end
-    end
-
-    private def self.pyobj2string(obj : PyObject)
-        obj = pyobj2pystr(obj)
-        str = pystring2cstring2(obj,out size)
-        pyobj_decref(obj)
-        return String.new(str.to_slice(size))
     end
 
     @[AlwaysInline]
@@ -80,32 +67,40 @@ module LinCAS::Internal
     end
 
     def self.pyobj2lc(obj : PyObject)
+        gc = false
         if is_pyint(obj)
-            return num2int(pyint2int(obj))
+            tmp = num2int(pyint2int(obj))
+            gc  = true
         elsif is_pyfloat(obj)
-            return num2float(pyfloat2float(obj))
+            gc  = true
+            tmp = num2float(pyfloat2float(obj))
+        elsif is_pystring(obj)
+            gc  = true 
+            tmp = pystring_to_s(obj)
+        else
+            tmp = build_pyobj(obj)
         end
+        pyobj_decref(obj) if gc 
+        return tmp
     end
 
 
-    private def self.pyimport(name : String)
-        if PyREGISTER.has_key? name
-            return fetch_pystruct(name)
-        end
+    private def self.pyimport(name : String,import_name : String)
         p_name = string2py(name)
         check_pyerror(p_name)
         p_module = pyimport0(p_name)
         pyobj_decref(p_name)
         if !p_module.null?
             if is_pymodule(p_module)
-                return lc_build_pymodule(name,p_module)
+                import = lc_build_pymodule(import_name,p_module)
             elsif is_pytype(p_module)
-                return lc_build_pyclass(name,p_module)
+                import = lc_build_pyclass(import_name,p_module)
             else
                 lc_raise(LcPyImportError,"Invalid import object")
                 pyobj_decref(p_module)
-                return Null
+                import = Null
             end
+            return import
         else
             pyobj_decref(p_module)
             lc_raise_py_error
@@ -113,19 +108,22 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_pyimport(name : Value)
+    def self.lc_pyimport(name : Value, import_name : Value)
         name = id2string(name)
-        return lcfalse unless name
-        return pyimport(name)
+        return Null unless name
+        import_name = id2string(import_name)
+        return Null unless import_name
+        return pyimport(name,import_name)
     end
 
     py_import = LcProc.new do |args|
-        next lc_pyimport(lc_cast(args,T2)[1])
+        args = lc_cast(args,T3)
+        next lc_pyimport(args[1],args[2])
     end
 
 
     PyModule = lc_build_internal_module("Python")
     
-    lc_module_add_internal(PyModule,"pyimport",py_import,   1)
+    lc_module_add_internal(PyModule,"pyimport",py_import,   2)
     
 end
