@@ -60,17 +60,23 @@ module LinCAS::Internal
         return klass
     end
 
+    def self.lc_build_unregistered_pyclass(name : String,obj : PyObject,parent : LcClass)
+        gc_ref = PyGC.track(obj)
+        stab   = HybridSymT.new(obj)
+        smtab  = HybridSymT.new(obj)
+        mtab   = HybridSymT.new(obj)
+        klass  = LcClass.new(name,stab,Data.new,mtab,smtab)
+        klass.gc_ref = gc_ref
+        klass.type   = SType::PyCLASS
+        klass.klass  = Lc_Class
+        lc_set_parent_class(klass,parent)
+        return klass
+    end
+
     def self.lc_build_pyclass(name : String,obj : PyObject)
-        name = "_#{name}" unless name.starts_with? '_'
-        stab  = HybridSymT.new(obj)
-        smtab = HybridSymT.new(obj)
-        mtab  = HybridSymT.new(obj)
-        klass = LcClass.new(name,stab,Data.new,mtab,smtab)
-        klass.type  = SType::PyCLASS
-        klass.klass = Lc_Class
+        klass               = lc_build_unregistered_pyclass(name,obj,PyObjClass)
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
-        lc_set_parent_class(klass,Obj)
         return klass
     end
 
@@ -156,11 +162,13 @@ module LinCAS::Internal
 
     def self.seek_const_in_scope(scp : SymTab_t,name : String) : Value?
         const = scp.lookUp(name)
-        return unpack_const(const).as(Value) if const
+        const = unpack_const(const)
+        return const if const
         scp = scp.parent 
         while scp 
             const = scp.lookUp(name)
-            return unpack_const(const).as(Value) if const
+            const = unpack_const(const)
+            return const if const
             scp = scp.parent
         end 
         return nil
@@ -171,12 +179,14 @@ module LinCAS::Internal
         if const
             return const.as(Value)
         end
-        const = str.as(LcClass).symTab.lookUp(name)
-        return unpack_const(const).as(Value) if const 
+        const  = str.as(LcClass).symTab.lookUp(name)
+        const  = unpack_const(const)
+        return if const 
         parent = parent_of(str)
          while parent
             const = parent.symTab.lookUp(name)
-            return unpack_const(const).as(Value) if const
+            const = unpack_const(const)
+            return const if const
             parent = parent_of(parent)
         end
         return nil
@@ -185,8 +195,14 @@ module LinCAS::Internal
     def self.unpack_const(const)
         if const.is_a? Structure
             return const 
-        else
+        elsif const.is_a? LcConst
             return const.as(LcConst).val
+        elsif const.is_a? PyObject
+            if is_pycallable(const) && !is_pytype(const)
+                pyobj_decref(const)
+                return nil 
+            end
+            return build_pyobj(const)
         end
     end
 

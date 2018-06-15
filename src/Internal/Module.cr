@@ -53,14 +53,20 @@ module LinCAS::Internal
         return mod
     end
 
-    def self.lc_build_pymodule(name : String,obj : PyObject)
-        name = "_#{name}" unless name.starts_with? '_'
+    def self.lc_build_unregistered_pymodule(name : String,obj : PyObject)
+        gc_ref = PyGC.track(obj)
         stab  = HybridSymT.new(obj)
         smtab = HybridSymT.new(obj)
         mtab  = HybridSymT.new(obj)
         tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
         pymodule_init(tmp)
-        stab.parent = MainClass.symTab
+        tmp.gc_ref = gc_ref
+        return tmp
+    end
+
+    def self.lc_build_pymodule(name : String,obj : PyObject)
+        tmp = lc_build_unregistered_pymodule(name,obj)
+        tmp.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,tmp)
         return tmp
     end
