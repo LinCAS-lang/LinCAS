@@ -76,6 +76,9 @@ module LinCAS::Internal
 
     def self.lc_new_object(klass : Value)
         klass = klass.as(LcClass)
+        if klass.type == SType::PyCLASS
+            return build_pyobj(klass)
+        end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
             lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.path.to_s)
