@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-module LinCAS::PyHelper
+module LinCAS::Internal
     {% if flag?(:x86_64) %}
         Py_TPFLAGS_TYPE_SUBCLASS    = 1_u64 << 31
         Py_TPFLAGS_UNICODE_SUBCLASS = 1_u64 << 28
@@ -39,8 +39,12 @@ module LinCAS::PyHelper
         Python.PyErr_Restore({{ptype}},{{value}},{{btrace}})
     end
 
-    macro py_err_occurred
+    macro pyerr_occurred
         Python.PyErr_Occurred 
+    end
+
+    macro pyerr_clear
+        Python.PyErr_Clear 
     end
 
     macro string2py(string)
@@ -100,11 +104,11 @@ module LinCAS::PyHelper
     end
 
     macro pytypeof(obj)
-        Python. PyObject_Type({{obj}})
+        Python.PyObject_Type({{obj}})
     end
 
     @[AlwaysInline]
-    def pytype_check(obj,type)
+    def self.pytype_check(obj,type)
         t = pytypeof(obj)
         res = (t == type) || (is_pysubtype(t,type) == 1)
         pyobj_decref(t)
@@ -173,9 +177,10 @@ module LinCAS::PyHelper
     PyType    = pydict_get1(DICT,"type")
     PyString  = pydict_get1(DICT,"str")
     PyStaticM = pydict_get1(DICT,"staticmethod")
+    Types     = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),Structure).gc_ref)
 
     @[AlwaysInline]
-    def pytype_fast_subclass(obj,f)
+    def self.pytype_fast_subclass(obj,f)
         t = pytypeof(obj)
         res = (pytype_flags(t) & f) != 0
         pyobj_decref(t)
@@ -203,7 +208,7 @@ module LinCAS::PyHelper
     end
 
     @[AlwaysInline]
-    def is_pytype_abs(obj)
+    def self.is_pytype_abs(obj)
         t = pytypeof(obj)
         res = t == PyType
         pyobj_decref(t)
@@ -215,7 +220,7 @@ module LinCAS::PyHelper
     end
 
     @[AlwaysInline]
-    def is_pystring_abs(obj)
+    def self.is_pystring_abs(obj)
         t = pytypeof(obj)
         res = t == PyString
         pyobj_decref(t)
@@ -223,7 +228,7 @@ module LinCAS::PyHelper
     end
 
     @[AlwaysInline]
-    def is_pymodule(obj)
+    def self.is_pymodule(obj)
         m = Python.PyModule_New("dummy")
         t = pytypeof(m)
         pyobj_decref(m)
@@ -240,17 +245,33 @@ module LinCAS::PyHelper
         pytype_check({{obj}},PyStaticM)
     end
 
-    macro is_pyfunction(obj)
-        Python.PyFunction_Check({{obj}}) == 1
+    def self.is_pyfunction(obj : PyObject)
+        funcType = pyobj_attr(Type,"BuiltinFunctionType")
+        if !funcType.null?
+            res = pytype_check(obj,funcType)
+            pyobj_decref(funcType)
+            return res
+        else 
+            lc_warn("Unable to determine python function type. This may cause an error")
+            return false 
+        end
     end
 
-    macro is_pymethod(obj)
-        Python.PyMethod_Check({{obj}}) == 1
+    def self.is_pyimethod(obj)
+        funcType = pyobj_attr(Types,"MethodType")
+        if !funcType.null?
+            res = pytype_check(obj,funcType)
+            pyobj_decref(funcType)
+            return res
+        else 
+            lc_warn("Unable to determine python function type. This may cause an error")
+            return false 
+        end
     end
 
-    macro is_pyimethod(obj)
-        Python.PyInstanceMethod_Check({{obj}}) == 1
-    end
+    #macro is_pyimethod(obj)
+    #    Python.PyInstanceMethod_Check({{obj}}) == 1
+    #end
 
     macro is_pydict(obj)
         Python.PyDict_Check({{obj}}) == 1
