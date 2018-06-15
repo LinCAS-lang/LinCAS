@@ -41,6 +41,7 @@ lib Python
     fun PyErr_Fetch(pType : PyObject*, value : PyObject*, traceback : PyObject*)
     fun PyErr_Restore(pType : PyObject, value : PyObject, traceback : PyObject)
     fun PyErr_Occurred : PyObject
+    fun PyErr_Clear
 
     # Strings 
     fun PyUnicode_AsUTF8(obj : PyObject)                       : Chr*
@@ -58,8 +59,8 @@ lib Python
 
     # Object
     fun PyObject_Str(obj : PyObject)                              : PyObject
-    fun PyObject_GetAttrString(module : PyObject, funname : Chr*) : PyObject
-    fun PyObject_GetAttr(obj : PyObject, attr : PyObject)         : PyObject
+    fun PyObject_GetAttrString(module : PyObject, funname : Chr*) : PyObject   # New reference
+    fun PyObject_GetAttr(obj : PyObject, attr : PyObject)         : PyObject   # New reference
     fun PyObject_CallObject(func : PyObject, args : PyObject)     : PyObject
     fun PyObject_Type(obj : PyObject)                             : PyObject
     fun PyObject_IsTrue(obj : PyObject)                           : Int32 
