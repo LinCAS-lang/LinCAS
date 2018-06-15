@@ -113,7 +113,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.str2py(obj : Value)
-        lc_bug("(Expecting LcString)")
+        lc_bug("(Expecting LcString)") unless obj.is_a? LcString
         ptr = pointer_of(obj)
         return string2py(ptr)
     end
@@ -954,6 +954,14 @@ module LinCAS::Internal
 
     str_to_sym = LcProc.new do |args|
         next lc_str_to_symbol(*lc_cast(args,T1))
+    end
+
+    @[AlwaysInline]
+    def self.pystring_to_s(pystr : PyObject)
+        if !is_pystring(pystr)
+            return build_string(pyobj2string(pystr))
+        end
+        return build_string(pystring2cstring(pystr))
     end
 
         
