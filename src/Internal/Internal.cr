@@ -15,10 +15,6 @@
 
 module LinCAS::Internal
 
-
-    include PyHelper
-    extend  PyHelper
-
     alias Value  = BaseS | BaseC | Structure
     alias ValueR = BaseS | BaseC
 
@@ -79,6 +75,10 @@ module LinCAS::Internal
             return false 
         end 
         return true 
+    end
+
+    def self.lc_finalize
+        PyGC.clear_all
     end
 
     @[AlwaysInline]

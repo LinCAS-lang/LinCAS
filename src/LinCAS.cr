@@ -28,7 +28,6 @@ ENV["version"] = "0.1.0"
 
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
-Python.Py_Initialize
 module LinCAS
     EOF = "\u0003"
     ALLOWED_FUNC_NAMES = 
@@ -48,6 +47,12 @@ module LinCAS
     {% end %}
     alias Num  = Intnum  | Floatnum
     alias NumR = IntnumR | Floatnum
+
+    def self.lc_initialize
+        Python.Py_Initialize
+    end
+
+    lc_initialize
 
 end
 
@@ -118,7 +123,7 @@ if dir
     begin
         at_exit do
             if Python.Py_IsInitialized
-                Internal.py_dispose
+                Internal.lc_finalize
                 Python.Py_Finalize 
             end
         end
