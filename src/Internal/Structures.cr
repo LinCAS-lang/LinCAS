@@ -107,6 +107,7 @@ module LinCAS
         @allocator : LcProc?  | Allocator = nil
         @parent   = nil
         @klass    = uninitialized LcClass
+        @gc_ref   : IntnumR = -1
 
         def initialize(name : String, path : Path? = nil)
             super(name,path)
@@ -126,7 +127,11 @@ module LinCAS
             @id      = self.object_id
         end
 
-        property parent,allocator,klass
+        def finalize
+            Internal::PyGC.dispose(@gc_ref)
+        end
+
+        property parent,allocator,klass, gc_ref
     end 
 
     alias LcModule = LcClass
@@ -155,10 +160,15 @@ module LinCAS
         @static    = false
         @type      = LcMethodT::INTERNAL
         @needs_gc  = false
+        @gc_ref    : IntnumR = -1
 
         def initialize(@name : String,@visib : FuncVisib)
             @args = nil
             @code = nil
+        end
+
+        def finalize 
+            Internal::PyGC.dispose(@gc_ref)
         end
 
         property name, args, code, owner, arity, pyobj
@@ -233,8 +243,11 @@ module LinCAS
         def lookUp(name)
             if tmp = @sym_tab[name]?
                 return tmp 
-            elsif !(tmp = Python.PyObject_GetAttrString(@pyObj,name)).null?
+            end
+            if !(tmp = Python.PyObject_GetAttrString(@pyObj,name)).null?
                 return tmp 
+            else
+                Python.PyErr_Clear
             end 
             nil
         end
