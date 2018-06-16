@@ -36,8 +36,29 @@ module LinCAS::Internal
         lc_cast({{obj}},LcPyObject).gc_ref = {{gcref}}
     end
 
+    macro pyobj_converted?(obj)
+        (is_pyint({{obj}})   || 
+         is_pyfloat({{obj}}) || 
+         is_pystring({{obj}}))
+    end
+
     pyobj_allocator = LcProc.new do |args|
         next lc_obj_allocate(PyObjClass)
+    end
+
+    private def pyobj_convert(obj : PyObject)
+        if is_pyint(obj)
+            tmp = num2int(pyint2int(obj))
+        elsif is_pyfloat(obj)
+            tmp = num2float(pyfloat2float(obj))
+        elsif is_pystring(obj)
+            tmp = pystring_to_s(obj)
+        else
+            lc_bug("Python object converter called on a wrong object")
+            tmp = PyObject.null
+        end
+        pyobj_decref(obj)
+        return tmp
     end
 
     private def self.pyobj2string(obj : PyObject)
@@ -53,6 +74,16 @@ module LinCAS::Internal
         strname = pystring2cstring2(name,out size)
         pyobj_decref(name)
         return String.new(strname.to_slice(size))
+    end
+
+    # This function converts a Python object into a LinCAS one,
+    # converting the type directly or wrapping in into other structures
+    def self.pyobj2lc(obj : PyObject)
+        if pyobj_converted? obj 
+            return pyobj_convert(obj)
+        else
+            return build_pyobj(obj)
+        end
     end
 
 
@@ -97,16 +128,23 @@ module LinCAS::Internal
     end
 
     def self.lc_pyobj_init(obj : Value,args : An)
-        p args.size;gets
         return obj unless obj.is_a? LcPyObject
         klass = pyobj_get_obj(obj)
         if !is_pytype(klass) && klass.is_a? PyObject
             return obj 
         end
-        args  = prepare_pycall_args(args,-1)
+        args  = prepare_pycall_args(args)
+        check_pyerror(args)
         value = pycall(klass,args)
         check_pyerror(value)
-        return pyobj2lc(value)
+        if pyobj_converted?
+            return pyobj_convert(value)
+        else
+            gcref = PyGC.track(value)
+            pyobj_set_gcref(obj,gc_ref)
+            pyobj_set_obj(obj,value)
+            return obj
+        end
     end
 
     pyobj_init = LcProc.new do |args|

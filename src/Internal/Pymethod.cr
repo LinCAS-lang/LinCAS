@@ -31,18 +31,17 @@ module LinCAS::Internal
         return -1
     end
 
-    private def self.prepare_pycall_args(argv : Array(Value),argc : IntnumR,static = false)
-        lc_bug("Unhandled argument missmatch") if argv.size < argc
+    private def self.prepare_pycall_args(argv : Array(Value),static = false)
         sub     = static ? 1 : 0
-        argc    = argc < 0 ? argv.size - sub : argc
-        pytuple = new_pytuple(argc)
-        (sub..argc).each do |i|
-            tmp = obj2py(argv[i])
+        argc    = argv.size 
+        pytuple = new_pytuple(argc-sub)
+        (argc - sub).times do |i|
+            tmp = obj2py(argv[i + sub])
             if !tmp 
                 pyobj_decref(pytuple)
                 return PyObject.null 
             end
-            set_pytuple_item(pytuple,i-sub,tmp)
+            set_pytuple_item(pytuple,i,tmp)
         end
         return pytuple
     end
@@ -50,11 +49,10 @@ module LinCAS::Internal
     def self.lc_call_python(method : LcMethod, argv : Array(Value))
         pym    = lc_cast(method.pyobj,PyObject) 
         lc_bug("Python method not set") if pym.null?
-        argc   = method.arity
         if method.static
-            pyargs = prepare_pycall_args(argv,argc,true)
+            pyargs = prepare_pycall_args(argv,true)
         else
-            pyargs = prepare_pycall_args(argv,argc,true) 
+            pyargs = prepare_pycall_args(argv) 
         end
         return Null if pyargs.null?
         result = pycall(pym,pyargs)

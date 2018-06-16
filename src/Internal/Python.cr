@@ -66,25 +66,6 @@ module LinCAS::Internal
         pyobj_decref_n(type,val,tr)
     end
 
-    def self.pyobj2lc(obj : PyObject)
-        gc = false
-        if is_pyint(obj)
-            tmp = num2int(pyint2int(obj))
-            gc  = true
-        elsif is_pyfloat(obj)
-            gc  = true
-            tmp = num2float(pyfloat2float(obj))
-        elsif is_pystring(obj)
-            gc  = true 
-            tmp = pystring_to_s(obj)
-        else
-            tmp = build_pyobj(obj)
-        end
-        pyobj_decref(obj) if gc 
-        return tmp
-    end
-
-
     private def self.pyimport(name : String,import_name : String)
         p_name = string2py(name)
         check_pyerror(p_name)

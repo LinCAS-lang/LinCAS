@@ -68,6 +68,8 @@ module LinCAS::Internal
             if is_pyembedded(obj)
                 return obj.symTab.as(HybridSymT).pyObj 
             end
+        elsif obj.is_a? LcPyObject
+            return pyobj_get_obj(obj)
         else
             lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 

@@ -158,7 +158,6 @@ module LinCAS::Internal
     end
 
     def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
-        #p receiver.type, receiver.name
         if is_pyembedded(receiver)
             return seek_instance_method_emb(receiver,name)
         end
@@ -222,9 +221,11 @@ module LinCAS::Internal
             return 1 if method.visib == FuncVisib::UNDEFINED
             return method
         elsif method.is_a? PyObject
-            return 0 if method.null?
-            p is_pycallable(method), is_pytype_abs(method)
-            if is_pycallable(method) && !is_pytype_abs(method)
+            if method.null?
+                pyerr_clear
+                return 0 
+            end
+            if is_pyimethod(method) && is_pycallable(method) && !is_pytype_abs(method)
                 return pymethod_new(name,method,receiver)
             else
                 pyobj_decref(method)
@@ -244,8 +245,11 @@ module LinCAS::Internal
             return 1 if method.visib == FuncVisib::UNDEFINED
             return method
         elsif method.is_a? PyObject
-            return 0 if method.null?
-            if is_pystatic_method(method) && is_pycallable(method)
+            if method.null?
+                pyerr_clear
+                return 0 
+            end
+            if !is_pyimethod(method) && is_pycallable(method) && !is_pytype(method)
                 return pystatic_method_new(name,method,receiver,temp: true)
             #elsif is_pycallable(method) 
             else
