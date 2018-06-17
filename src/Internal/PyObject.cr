@@ -46,7 +46,7 @@ module LinCAS::Internal
         next lc_obj_allocate(PyObjClass)
     end
 
-    private def pyobj_convert(obj : PyObject)
+    private def self.pyobj_convert(obj : PyObject)
         if is_pyint(obj)
             tmp = num2int(pyint2int(obj))
         elsif is_pyfloat(obj)
@@ -137,11 +137,11 @@ module LinCAS::Internal
         check_pyerror(args)
         value = pycall(klass,args)
         check_pyerror(value)
-        if pyobj_converted?
-            return pyobj_convert(value)
+        if pyobj_converted? value
+            return lc_cast(pyobj_convert(value),Value)
         else
             gcref = PyGC.track(value)
-            pyobj_set_gcref(obj,gc_ref)
+            pyobj_set_gcref(obj,gcref)
             pyobj_set_obj(obj,value)
             return obj
         end

@@ -33,7 +33,7 @@ module LinCAS::Internal
 
     private def self.prepare_pycall_args(argv : Array(Value),static = false)
         sub     = static ? 1 : 0
-        argc    = argv.size 
+        argc    = argv.size
         pytuple = new_pytuple(argc-sub)
         (argc - sub).times do |i|
             tmp = obj2py(argv[i + sub])
@@ -60,6 +60,22 @@ module LinCAS::Internal
         pyobj_decref(pym) if method.needs_gc
         check_pyerror(result)
         return pyobj2lc(result)
+    end
+
+    def self.lc_seek_instance_pymethod(obj : Value, name : String)
+        lc_bug("Expected LcPyObject (#{obj.class} received)") unless obj.is_a? LcPyObject
+        pyobj  = pyobj_get_obj(obj)
+        method = pyobj_attr(pyobj,name)
+        if method.null?
+            pyerr_clear
+            return nil 
+        end
+        if is_pyimethod(method) && is_pycallable(method) && !is_pytype_abs(method)
+            return pymethod_new(name,method,obj.klass)
+        else
+            pyobj_decref(method)
+            return nil
+        end 
     end
 
 end

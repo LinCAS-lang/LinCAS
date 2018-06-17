@@ -45,7 +45,7 @@ module LinCAS::Internal
         m         = new_lc_method(name,FuncVisib::PUBLIC)
         m.type    = LcMethodT::PYTHON
         m.pyobj   = pyobj 
-        m.arity   = get_pymethod_argc(pyobj,name)
+        m.arity   = -1 # get_pymethod_argc(pyobj,name)
         m.owner   = owner if owner
         return m
     end

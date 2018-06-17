@@ -220,6 +220,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
         current_frame.last_is = {{is}}
     end
 
+    macro pyobj_check(obj,name)
+        if {{obj}}.is_a? Internal::LcPyObject
+            method = internal.lc_seek_instance_pymethod({{obj}},{{name}})
+            return method if method 
+        end
+    end
+
     @[AlwaysInline]
     private def class_of(obj : Value)
         if obj.is_a? Structure 
@@ -720,6 +727,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_call_method(receiver : Value, name : String)
+        pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -729,6 +737,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_method(receiver : Value, name : String)
+        pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
