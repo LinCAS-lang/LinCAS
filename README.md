@@ -31,8 +31,7 @@ but for suggestions or contributing, see the 'Contributing' point.
 ## Status
 The project is in pre-alpha stage, it is usable, even though the documentation is being edited, but the core and the API are still under development as well.
 
-Some sintax or some other element might change to best fit the usability, until the language will reach the alpha stage. Then only improvements or API development
-will be made.
+Some sintax or some other element might change to best fit the usability, until the language will reach the alpha stage. Then only improvements or API development will be made.
 
 ## Examples
 See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/SampleTests) for now.
