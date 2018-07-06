@@ -77,7 +77,6 @@ require "./Backend/Compiler"
 require "./Internal/LcInternal"
 require "./Backend/VM"
 require "../util/AstPrinter"
-#require "../util/SymTabPrinter"
 require "../util/Disassembler"
 
 
