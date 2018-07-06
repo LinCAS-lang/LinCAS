@@ -44,7 +44,7 @@ module LinCAS
             :not_a_module   => "'%s' is not a module",
             :const_defined  => "constant '%s' already defined",
             :superclass_err => "Superclass missmatch for '%s'",
-            :undefined_const=> "Undefined constant '%s'",
+            :undefined_const => "Undefined constant '%s'",
             :undef_const_2  => "Undefined constant '%s' for '%s'",
             :no_s_method    => "Undefined method for %s : %s",
             :no_method      => "Undefined method for '%s' object",
