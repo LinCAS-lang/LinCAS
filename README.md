@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/max-codeware/crLinCAS.svg?branch=master)](https://travis-ci.org/max-codeware/crLinCAS)
+[![Build Status](https://travis-ci.org/LinCAS-lang/LinCAS.svg?branch=master)](https://travis-ci.org/max-codeware/crLinCAS)
 
 
 # LinCAS-lang
