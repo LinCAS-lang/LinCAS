@@ -56,3 +56,4 @@ branches:
     - master
     - /^feature\//
     - /^bug\//
+    - lincas_0_0_1
