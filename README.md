@@ -25,7 +25,7 @@ The idea is to unify a general purpose language with a computer algebra system, 
   * gsl library to be installed
 
 ## Portability
-This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yiet, 
+This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yet, 
 but for suggestions or contributing, see the 'Contributing' point.
 
 ## Status
