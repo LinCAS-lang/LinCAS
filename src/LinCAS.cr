@@ -33,7 +33,7 @@ module LinCAS
     ALLOWED_FUNC_NAMES = 
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
-        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
+        TkType::MOD, TkType::POWER, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
         TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
         TkType::NOT_EQ, TkType::SMALLER_EQ,
         TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
