@@ -42,6 +42,13 @@ module LinCAS::Internal
          is_pystring({{obj}}))
     end
 
+    macro pyobj_check(obj)
+       if !(obj.is_a? LcPyObject)
+          lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{obj}})} into PyObject")
+          return Null 
+       end
+    end
+
     pyobj_allocator = LcProc.new do |args|
         next lc_obj_allocate(PyObjClass)
     end
@@ -55,7 +62,7 @@ module LinCAS::Internal
             tmp = pystring_to_s(obj)
         else
             lc_bug("Python object converter called on a wrong object")
-            tmp = PyObject.null
+            tmp = Null
         end
         pyobj_decref(obj)
         return tmp
@@ -118,9 +125,12 @@ module LinCAS::Internal
         pyobj.klass = klass 
         pyobj.data  = klass.data.clone 
         pyobj.id    = pyobj.object_id
-        return pyobj
+        return pyobj.as(Value)
     end
 
+    # This function performs the first step of an instance of 
+    # a Python object given a class. No check is performed to verify if
+    # the klass is a Python class (wrapped in a LinCAS one)
     def self.build_pyobj(klass : Value)
         klass = lc_cast(klass,LcClass)
         objk  = klass.symTab.as(HybridSymT).pyObj
@@ -166,12 +176,41 @@ module LinCAS::Internal
         next lc_pyobj_to_s(*lc_cast(args,T1))
     end
 
+    def self.lc_pyobject_call(obj : Value,name : Value, argv : An)
+        pyobj_check(obj)
+        # if pyobj.null?
+        #    lc_warn("Python object is unset")
+        #    return Null 
+        # end
+        name   = id2string(name)
+        return Null unless name
+        method = lc_seek_instance_pymethod(obj,name)
+        if method 
+            return lc_call_python(method,argv)
+        else
+            lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{pyobj2string(pyobj_get_obj(obj))} : PyObject")
+            return Null 
+        end
+    end
+
+    pyobj_call = LcProc.new do |args|
+        args = lc_cast(args,An)
+        if args.size == 1
+            lc_raise(LcArgumentError,"Wrong number of arguments (0 instead of 1..n)") 
+            next Null 
+        end
+        obj  = args[0]
+        name = args.delete_at(1)
+        next lc_pyobject_call(obj,name,args)
+    end
+
 
     PyObjClass = lc_build_internal_class("PyObject",Obj)
     lc_set_allocator(PyObjClass,pyobj_allocator)
 
     lc_add_internal(PyObjClass,"init",pyobj_init,           -1)
     lc_add_internal(PyObjClass,"to_s",pyobj_to_s,            0)
+    lc_add_internal(PyObjClass,"pycall",pyobj_call,         -1)
 
 
 end

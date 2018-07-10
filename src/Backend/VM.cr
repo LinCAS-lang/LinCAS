@@ -223,7 +223,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     macro pyobj_check(obj,name)
         if {{obj}}.is_a? Internal::LcPyObject
             method = internal.lc_seek_instance_pymethod({{obj}},{{name}})
-            return method if method 
+            return method if method
         end
     end
 

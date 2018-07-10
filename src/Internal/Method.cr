@@ -214,7 +214,7 @@ module LinCAS::Internal
     end
 
     def self.seek_instance_method_emb(receiver : Structure, name : String)
-        method = receiver.statics.as(HybridSymT).lookUp(name)
+        method = receiver.methods.as(HybridSymT).lookUp(name)
         if method == nil
             return 0
         elsif method.is_a? LcMethod
