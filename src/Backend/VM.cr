@@ -637,7 +637,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 @to_replace = internal.inline_iseq(@to_replace.as(Bytecode),is)
             end
             is = fetch
-            if @to_replace
+            if !@to_replace.nil?
                 current_frame.pc = @to_replace.as(Bytecode)
                 @to_replace = nil 
             end
