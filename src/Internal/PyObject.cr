@@ -39,7 +39,8 @@ module LinCAS::Internal
     macro pyobj_converted?(obj)
         (is_pyint({{obj}})   || 
          is_pyfloat({{obj}}) || 
-         is_pystring({{obj}}))
+         is_pystring({{obj}})||
+         is_pyary({{obj}}))
     end
 
     macro pyobj_check(obj)
@@ -60,6 +61,8 @@ module LinCAS::Internal
             tmp = num2float(pyfloat2float(obj))
         elsif is_pystring(obj)
             tmp = pystring_to_s(obj)
+        elsif is_pyary(obj)
+            tmp = pyary2ary(obj)
         else
             lc_bug("Python object converter called on a wrong object")
             tmp = Null
@@ -84,11 +87,12 @@ module LinCAS::Internal
     end
 
     # This function converts a Python object into a LinCAS one,
-    # converting the type directly or wrapping in into other structures
-    def self.pyobj2lc(obj : PyObject)
+    # converting the type directly or wrapping it into other structures
+    def self.pyobj2lc(obj : PyObject, borrowed_ref = false)
         if pyobj_converted? obj 
             return pyobj_convert(obj)
         else
+            pyobj_incref(obj) if borrowed_ref
             return build_pyobj(obj)
         end
     end

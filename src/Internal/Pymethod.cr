@@ -36,7 +36,7 @@ module LinCAS::Internal
         argc    = argv.size
         pytuple = new_pytuple(argc-sub)
         (argc - sub).times do |i|
-            tmp = obj2py(argv[i + sub])
+            tmp = obj2py(argv[i + sub],ref: true)
             if !tmp 
                 pyobj_decref(pytuple)
                 return PyObject.null 

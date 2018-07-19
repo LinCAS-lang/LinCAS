@@ -50,7 +50,7 @@ module LinCAS::Internal
         return internal.lc_obj_allocate(Obj)
     end
 
-    def self.obj2py(obj : Value)
+    def self.obj2py(obj : Value, ref = false)
         if obj.is_a? LcInt 
             value = int2num(obj)
             {%if !flag?(:fast_m)%}
@@ -67,9 +67,16 @@ module LinCAS::Internal
         elsif obj.is_a? Structure
             if is_pyembedded(obj)
                 return obj.symTab.as(HybridSymT).pyObj 
+            else
+                lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+                return nil
             end
+        elsif obj.is_a? LcArray
+            ary2py(obj)
         elsif obj.is_a? LcPyObject
-            return pyobj_get_obj(obj)
+            tmp =  pyobj_get_obj(obj)
+            pyobj_incref(tmp) if ref 
+            return tmp
         else
             lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 

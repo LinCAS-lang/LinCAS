@@ -90,6 +90,12 @@ lib Python
     fun PyType_IsSubtype(a : PyObject, b : PyObject) : Int32
     fun PyType_GetFlags(t : PyObject) : PyLong
 
+    # List
+    fun PyList_New(size : PyLong)                                      : PyObject
+    fun PyList_Size(list : PyObject)                                   : PyLong
+    fun PyList_GetItem(list : PyObject, pos : PyLong)                  : PyObject
+    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int
+
     # Eval
     fun PyEval_GetBuiltins : PyObject
 
