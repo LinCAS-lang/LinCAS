@@ -15,6 +15,13 @@
 
 module LinCAS::Internal
 
+    METH_VARARGS  = 0x0001
+    METH_KEYWORDS = 0x0002
+    METH_NOARGS   = 0x0004
+    METH_O        = 0x0008
+    METH_CLASS    = 0x0010
+    METH_STATIC   = 0x0020
+
     private def self.get_pymethod_argc(method : PyObject,name : String? = nil)
         f_code = pyobj_attr(method,"__code__")
         if !f_code.null?
@@ -27,11 +34,11 @@ module LinCAS::Internal
             end
         end
         pyerr_clear
-        # lc_warn("Unable to get the number of arguments of python method '#{name}'. This may cause an exception")
+
         return -1
     end
 
-    private def self.prepare_pycall_args(argv : Array(Value),static = false)
+    private def self.prepare_pycall_args(argv : An,static = false)
         sub     = static ? 1 : 0
         argc    = argv.size
         pytuple = new_pytuple(argc-sub)
@@ -76,6 +83,21 @@ module LinCAS::Internal
             pyobj_decref(method)
             return nil
         end 
+    end
+
+    def self.new_pymethod_def(name : String, function : Void*, flags : LibC::Int)
+        m             = Pointer(Python::PyMethodDef).malloc
+        m.value.name  = name.to_unsafe
+        m.value.func  = function
+        m.value.flags = flags
+        m.value.doc   = nil
+        return m
+    end
+
+    @[AlwaysInline]
+    def self.define_pymethod(name : String,func : Proc, _self_ : PyObject, flags : LibC::Int)
+        pym_def = new_pymethod_def(name, func.pointer, flags)
+        return py_cfunc_new(pym_def,_self_)
     end
 
 end
