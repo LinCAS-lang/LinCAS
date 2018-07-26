@@ -23,9 +23,17 @@ lib Python
 
     alias PyObject = Void*
     alias Chr = LibC::Char
+
     struct PyComplex 
         real : Float64 
         imag : Float64
+    end
+
+    struct PyMethodDef
+        name  : Chr*
+        func  : Void*
+        flags : LibC::Int
+        doc   : Chr*
     end
 
     # Python builders
@@ -49,10 +57,14 @@ lib Python
     fun PyUnicode_DecodeFSDefault(str : Chr*)                  : PyObject
 
     # Numbers
-    fun PyLong_FromLong(n : Int64)      : PyObject
-    fun PyLong_AsLong(n : PyObject)     : Int64
-    fun PyFloat_FromDouble(d : Float64) : PyObject
-    fun PyFloat_AsDouble(f : PyObject)  : Float64
+    fun PyLong_FromLong(n : Int64)                            : PyObject
+    fun PyLong_AsLong(n : PyObject)                           : PyLong
+    fun PyLong_FromUnsignedLong(n : UInt32)                   : PyObject
+    fun PyLong_FromUnsignedLongLong(n : UInt64)               : PyObject 
+    fun PyLong_AsUnsignedLong(n : PyObject)                   : UInt32 
+    fun PyLong_AsUnsignedLongLong(n : PyObject)               : UInt64
+    fun PyFloat_FromDouble(d : Float64)                       : PyObject
+    fun PyFloat_AsDouble(f : PyObject)                        : Float64
     fun PyComplex_FromCComplex(z : PyComplex)                 : PyObject
     fun PyComplex_FromDoubles(real : Float64, imag : Float64) : PyObject
     fun PyComplex_AsCComplex(z : PyObject)                    : PyComplex
@@ -78,9 +90,12 @@ lib Python
     fun PyTuple_SetItem(tuple : PyObject, ref : LibC::Int, val : PyObject)
 
     # Functions 
-    fun PyInstanceMethod_Function(m : PyObject) : PyObject
-    fun PyMethod_Function(m : PyObject)         : PyObject
-    fun PyMethod_Self(m : PyObject)             : PyObject
+    fun PyInstanceMethod_Function(m : PyObject)                                         : PyObject
+    fun PyMethod_Function(m : PyObject)                                                 : PyObject
+    fun PyMethod_Self(m : PyObject)                                                     : PyObject
+    fun PyMethod_New(func : PyObject, _self_ : PyObject)                                : PyObject
+    fun PyCFunction_NewEx(method : PyMethodDef*, _self_ : PyObject, module : PyObject ) : PyObject
+    fun PyCFunction_New(method : PyMethodDef*,_self_ : PyObject)                        : PyObject
 
     # Dictionary
     fun PyDict_GetItem(dict : PyObject, name : PyObject)   : PyObject
@@ -94,7 +109,7 @@ lib Python
     fun PyList_New(size : PyLong)                                      : PyObject
     fun PyList_Size(list : PyObject)                                   : PyLong
     fun PyList_GetItem(list : PyObject, pos : PyLong)                  : PyObject
-    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int
+    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int                    
 
     # Eval
     fun PyEval_GetBuiltins : PyObject
