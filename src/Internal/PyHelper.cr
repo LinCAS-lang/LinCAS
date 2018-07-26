@@ -75,6 +75,22 @@ module LinCAS::Internal
         Python.PyLong_AsLong({{int}})
     end
 
+    macro uint32_to_py(int)
+        Python.PyLong_FromUnsignedLong({{int}})
+    end
+
+    macro uint64_to_py(int)
+        Python.PyLong_FromUnsignedLongLong({{int}})
+    end
+
+    macro pyuint32_to_uint32(int)
+        Python.PyLong_AsUnsignedLong({{int}})
+    end
+
+    macro uint64_to_uint64(int)
+        Python.PyLong_AsUnsignedLongLong({{int}})
+    end
+
     # Floats
 
     macro float2py(float)
@@ -163,6 +179,18 @@ module LinCAS::Internal
 
     macro pymethod_receiver(m)
         Python.PyMethod_Self({{m}})
+    end
+
+    macro py_cfunc_new(method,rec)
+        Python.PyCFunction_New({{method}},{{rec}})
+    end
+
+    macro py_cfunc_new_ex(method,rec,mod)
+        Python.PyCFunction_NewEx({{method}},{{rec}},{{mod}})
+    end
+
+    macro pymethod_new(func,rec)
+        Python.PyMethod_New({{func}},{{rec}})
     end
 
     # Dicts
@@ -286,7 +314,7 @@ module LinCAS::Internal
     end
 
     def self.is_pyfunction(obj : PyObject)
-        funcType = pyobj_attr(Type,"BuiltinFunctionType")
+        funcType = pyobj_attr(Types,"BuiltinFunctionType")
         if !funcType.null?
             res = pytype_check(obj,funcType)
             pyobj_decref(funcType)
@@ -307,6 +335,12 @@ module LinCAS::Internal
             lc_warn("Unable to determine python function type. This may cause an error")
             return false 
         end
+    end
+
+    def self.is_pyclass_method(obj)
+        res = !Python.PyMethod_Self(obj).null?
+        pyerr_clear
+        res
     end
 
     #macro is_pyimethod(obj)
