@@ -225,7 +225,8 @@ module LinCAS::Internal
                 pyerr_clear
                 return 0 
             end
-            if is_pyimethod(method) && is_pycallable(method) && !is_pytype_abs(method)
+            if is_pycallable(method) && !is_pytype_abs(method) && 
+                                     !is_pystatic_method(method) && !is_pyclass_method(method)
                 return pymethod_new(name,method,receiver)
             else
                 pyobj_decref(method)
@@ -249,10 +250,11 @@ module LinCAS::Internal
                 pyerr_clear
                 return 0 
             end
-            if !is_pyimethod(method) && is_pycallable(method) && !is_pytype(method)
-                return pystatic_method_new(name,method,receiver,temp: true)
-            #elsif is_pycallable(method) 
+            if is_pycallable(method) && !is_pytype(method) &&
+                    (is_pyclass_method(method) || !is_pyimethod(method))
+                return pystatic_method_new(name,method,receiver)
             else
+                pyobj_decref(method)
                 return 0
             end
         else
@@ -285,6 +287,97 @@ module LinCAS::Internal
         return 0 if method.type == LcMethodT::INTERNAL 
         return 1
     end
+
+
+    ##################
+
+    LC_METHOD_CALLER = ->(_self_ : PyObject,argv : PyObject) {
+        {% if flag?(:x86_64) %}
+            addr = pyuint64_to_py(_self_)
+        {% else %}
+            addr = pyuint32_to_py(_self_)
+        {% end %}
+        method = addr.as(Method)
+        args   = pytuple2ary(argv)
+        val    = Exec.call_method(method,args)
+        return obj2py(val)
+    }
+
+    class Method < BaseC
+        @method   = uninitialized LcMethod
+        @receiver = uninitialized Value
+        property method,receiver
+    end
+
+    class UnboundMethod
+        @method   = uninitialized LcMethod
+        property method
+    end
+
+    macro method_get_receiver(method)
+        lc_cast({{method}},Method).receiver 
+    end
+
+    private def self.method_new
+        m = Method.new
+        m.klass = MClass
+        m.data  = MClass.data.clone 
+        m.id    = m.object_id 
+        return m
+    end
+
+    private def self.unbound_method_new
+        m = UnboundMethod.new
+        m.klass = UnboundM
+        m.data  = UnboundM.data.clone 
+        m.id    = m.object_id 
+        return m
+    end
+
+    def self.build_method(receiver : Value,method : LcMethod)
+        method          = method_new
+        method.receiver = receiver
+        method.method   = method 
+        return method 
+    end
+
+    def self.build_unbound_method(method : LcMethod)
+        method          = unbound_method_new
+        method.method   = method 
+        return method 
+    end
+
+    def self.lc_method_call(method : Value, args : An)
+    
+    end
+
+    def self.lc_method_to_proc(method : Value)
+
+    end
+
+    def self.lc_method_receiver(method : Value)
+        return method_get_receiver(method)
+    end
+
+    def self.lc_method_to_py(method : Value)
+        addr = method.as(Void*).address
+        {% if flag?(:x86_64) %}
+            pyint = uint64_to_py(addr)
+        {% else %}
+            pyint = uint32_to_py(addr)
+        {% end %}
+        m = define_pymethod(method.name,LC_METHOD_CALLER,pyint,METH_VARARGS)
+        pyobj_decref(pyint)
+        return m
+    end
+
+    MClass = lc_build_internal_class("Method")
+    lc_undef_allocator(MClass)
+
+
+
+    UnboundM = lc_build_internal_class("UnboundMethod")
+    lc_undef_allocator(UnboundM)
 
 
 end
