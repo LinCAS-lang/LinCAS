@@ -90,7 +90,7 @@ module LinCAS::Internal
         end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
-            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.path.to_s)
+            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.name)
             return Null 
         end
         if allocator.is_a? LcProc
