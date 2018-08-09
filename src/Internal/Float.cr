@@ -155,7 +155,7 @@ module LinCAS::Internal
         if n2.is_a? LcFloat
             return num2float(float2num(n1) ** float2num(n2))
         else
-            return internal.lc_num_coerce(n1,n2,"^")
+            return internal.lc_num_coerce(n1,n2,"**")
         end
         # Should never get here
         return Null
@@ -259,13 +259,13 @@ module LinCAS::Internal
     FloatClass = internal.lc_build_internal_class("Float",NumClass)
     internal.lc_undef_allocator(FloatClass)
 
-    internal.lc_add_internal(FloatClass,"+",float_sum,  1)
-    internal.lc_add_internal(FloatClass,"-",float_sub,  1)
-    internal.lc_add_internal(FloatClass,"*",float_mult, 1)
-    internal.lc_add_internal(FloatClass,"\\",float_idiv,1)
-    internal.lc_add_internal(FloatClass,"/",float_fdiv, 1)
-    internal.lc_add_internal(FloatClass,"^",float_power,1)
-    internal.lc_add_internal(FloatClass,"-@",float_invert, 0)
+    internal.lc_add_internal(FloatClass,"+",float_sum,         1)
+    internal.lc_add_internal(FloatClass,"-",float_sub,         1)
+    internal.lc_add_internal(FloatClass,"*",float_mult,        1)
+    internal.lc_add_internal(FloatClass,"\\",float_idiv,       1)
+    internal.lc_add_internal(FloatClass,"/",float_fdiv,        1)
+    internal.lc_add_internal(FloatClass,"**",float_power,      1)
+    internal.lc_add_internal(FloatClass,"-@",float_invert,     0)
     internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
     internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)

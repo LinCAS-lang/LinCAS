@@ -299,7 +299,7 @@ module LinCAS::Internal
                 return num2int(val)
             {% end %}
         else
-            return internal.lc_num_coerce(n1,n2,"^")
+            return internal.lc_num_coerce(n1,n2,"**")
         end
         # Should never get here
         return Null
