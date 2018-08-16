@@ -26,6 +26,11 @@ module LinCAS::Internal
         end
     end
 
+    macro return_pynone
+        pyobj_incref(PyNone)
+        return PyNone 
+    end
+
     @[AlwaysInline]
     def self.pyinit
         Python.Py_Initialize
@@ -100,6 +105,21 @@ module LinCAS::Internal
     py_import = LcProc.new do |args|
         args = lc_cast(args,T3)
         next lc_pyimport(args[1],args[2])
+    end
+
+    def self.pytuple2ary(tuple : PyObject)
+        ary  = [] of Value
+        size = pytuple_size(tuple)
+        size.times do |i|
+            item = pytuple_at_index(tuple,i)
+            if item.null? && pyerr_occurred 
+                lc_raise_py_error
+                return nil 
+            end
+            pyobj_incref(item)
+            ary << pyobj2lc(item)
+        end
+        return ary
     end
 
 
