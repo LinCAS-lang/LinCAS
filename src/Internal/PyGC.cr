@@ -14,31 +14,42 @@
 # limitations under the License.
 
 module LinCAS::Internal::PyGC
+    
+    class Ref 
+        property prev,follow
+        getter object
 
-    @@free_location = [] of IntnumR
-    @@pyObjects     = [] of PyObject
-
-    private def self.get_location
-        if @@free_location.empty?
-            @@pyObjects << PyObject.null
-            return @@pyObjects.size - 1
+        def initialize(@object : PyObject, @prev : Ref? = nil, @follow : Ref? = nil)
         end
-        return @@free_location.shift
+
+        def dispose
+            Python.Py_DecRef(@object) if !@object.null?
+        end
     end
+
+    @@last : Ref? = nil
 
     def self.track(obj : PyObject)
-        return -1 if obj.null?
-        location = get_location
-        @@pyObjects[location] = obj 
-        return location
+        tmp = Ref.new(obj,@@last)
+        if !@@last.nil?
+            @@last.as(Ref).follow = tmp 
+        end
+        return @@last = tmp 
     end
 
-    def self.dispose(gcref : IntnumR)
-        return if gcref < 0
-        obj = @@pyObjects[gcref]
-        Python.Py_DecRef(obj)
-        @@pyObjects[gcref] = PyObject.null
-        @@free_location << gcref
+    def self.dispose(ref : Ref)
+        prev   = ref.prev 
+        follow = ref.follow
+        if prev && follow 
+            prev.follow = follow 
+            follow.prev = prev 
+        elsif !follow && @@last == ref
+            @@last = prev
+        end
+        ref.dispose
+    end
+
+    def self.dispose(ref)
     end
 
     def self.get_tracked(gcref : IntnumR)
@@ -48,9 +59,20 @@ module LinCAS::Internal::PyGC
         return tmp.as(PyObject)
     end
 
+    def self.get_tracked(ref : Ref)
+        return ref.object
+    end
+
+    def self.get_tracked(ref)
+        lc_bug("PyGC provided or received a bad reference")
+        return PyObject.null
+    end
+
     def self.clear_all
-        @@pyObjects.each do |obj|
-            Python.Py_DecRef(obj)
+        tmp = @@last
+        while tmp 
+            tmp.dispose
+            tmp = tmp.prev 
         end
     end
 

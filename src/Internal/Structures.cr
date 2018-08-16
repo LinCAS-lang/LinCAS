@@ -108,7 +108,7 @@ module LinCAS
         @allocator : LcProc?  | Allocator = nil
         @parent   = nil
         @klass    = uninitialized LcClass
-        @gc_ref   : IntnumR = -1
+        @gc_ref   : Internal::PyGC::Ref? = nil
 
         def initialize(name : String, path : Path? = nil)
             super(name,path)
@@ -161,7 +161,7 @@ module LinCAS
         @static    = false
         @type      = LcMethodT::INTERNAL
         @needs_gc  = false
-        @gc_ref    : IntnumR = -1
+        @gc_ref   : Internal::PyGC::Ref? = nil
 
         def initialize(@name : String,@visib : FuncVisib)
             @args = nil
