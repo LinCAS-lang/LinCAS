@@ -15,6 +15,8 @@
 
 module LinCAS::Internal
 
+    REG_CLASS = 0x0001
+
     macro parent_of(klass)
        {{klass}}.as(LcClass).parent
     end
@@ -33,6 +35,26 @@ module LinCAS::Internal
 
     macro class_name(klass)
         {{klass}}.as(LcClass).name 
+    end
+
+    macro check_pystructs(scp,str)
+        if {{str}}.is_a? Structure && 
+            ({{str}}.type == SType::PyCLASS || {{str}}.type == SType::PyMODULE) &&
+                                            !({{str}}.flags == REG_CLASS)
+            {{str}}.symTab.parent = {{scp}}.symTab
+            {{scp}}.symTab.addEntry({{str}}.name,{{str}})
+            {{str}}.flags = REG_CLASS
+        end
+    end
+
+    macro check_pystructs2(symTab,str)
+        if {{str}}.is_a? Structure && 
+            ({{str}}.type == SType::PyCLASS || {{str}}.type == SType::PyMODULE) &&
+                                            !({{str}}.flags == REG_CLASS)
+            {{str}}.symTab.parent = {{symTab}}
+            {{symTab}}.addEntry({{str}}.name,{{str}})
+            {{str}}.flags = REG_CLASS
+        end
     end
     
     @[AlwaysInline]
@@ -77,6 +99,7 @@ module LinCAS::Internal
         klass               = lc_build_unregistered_pyclass(name,obj,PyObjClass)
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
+        klass.flags = REG_CLASS
         return klass
     end
 
@@ -149,26 +172,21 @@ module LinCAS::Internal
         klass.allocator = Allocator::UNDEF 
     end
 
-    def self.lc_copy_consts_in(sender : Structure, receiver : Structure)
-        stab = sender.symTab
-        rtab = receiver.symTab
-        stab.each_key do |name|
-            entry = stab.lookUp(name)
-            if entry.is_a? LcConst
-                rtab.addEntry(name,entry)
-            end
-        end
-    end
-
     def self.seek_const_in_scope(scp : SymTab_t,name : String) : Value?
         const = scp.lookUp(name)
         const = unpack_const(const)
-        return const if const
+        if const
+            check_pystructs2(scp,const)
+            return const 
+        end
         scp = scp.parent 
         while scp 
             const = scp.lookUp(name)
             const = unpack_const(const)
-            return const if const
+            if const
+                check_pystructs2(scp,const)
+                return const 
+            end
             scp = scp.parent
         end 
         return nil
@@ -176,17 +194,21 @@ module LinCAS::Internal
 
     def self.lc_seek_const(str : Structure, name : String)
         const = seek_const_in_scope(str.symTab,name)
-        if const
-            return const.as(Value)
-        end
+        return const if const
         const  = str.as(LcClass).symTab.lookUp(name)
         const  = unpack_const(const)
-        return if const 
+        if const
+            check_pystructs(str,const)
+            return const
+        end
         parent = parent_of(str)
          while parent
             const = parent.symTab.lookUp(name)
             const = unpack_const(const)
-            return const if const
+            if const
+                check_pystructs(parent,const)
+                return const
+            end
             parent = parent_of(parent)
         end
         return nil
@@ -468,12 +490,65 @@ module LinCAS::Internal
         next lc_alias_method(*lc_cast(args,T3))
     end
 
+    def self.lc_get_static_method(str : Structure,name : String)
+        method = seek_static_method(str,name)
+        return nil unless method.is_a? LcMethod
+        if method.type == LcMethodT::PYTHON
+            method.needs_gc = false 
+        end
+        return method
+    end
+
+    def self.lc_get_instance_method(str : Structure,name : String)
+        method = seek_method(str,name)
+        return nil unless method.is_a? LcMethod 
+        if method.type == LcMethodT::PYTHON
+            p true;gets
+            method.needs_gc = false 
+        end
+        return method
+    end
+
+    def self.lc_get_method(obj : Value,name : Value)
+        name = id2string(name)
+        return Null unless name 
+        if obj.is_a? Structure
+            method = lc_get_static_method(obj,name)
+        else
+            method = lc_get_instance_method(class_of(obj),name)
+        end
+        unless method 
+            lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(obj)}")
+            return Null 
+        end
+        return build_method(obj,method)
+    end
+
+    get_method = LcProc.new do |args|
+        next lc_get_method(*lc_cast(args,T2))
+    end
+
+    def self.lc_instance_method(klass : Value, name : Value)
+        name   = id2string(name)
+        return Null unless name
+        method = lc_get_instance_method(lc_cast(klass,Structure),name)
+        unless method
+            lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(klass)}")
+            return Null 
+        end
+        return build_unbound_method(method)
+    end
+
+    get_imethod = LcProc.new do |args|
+        next lc_instance_method(*lc_cast(args,T2))
+    end
+
 
     MainClass      = lc_build_class("BaseClass")
     Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
     Lc_Class.klass = Lc_Class
 
-    internal.lc_remove_static(Lc_Class,"new")
+    # internal.lc_remove_static(Lc_Class,"new")
 
     internal.lc_add_static(Lc_Class,"==",   class_eq,         1)
     internal.lc_add_static(Lc_Class,"<>",   class_ne,         1)
@@ -486,6 +561,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"remove_static_method",class_rm_static_method,      1)
     internal.lc_add_static(Lc_Class,"delete_static_method",class_delete_st_method,      1)
     internal.lc_add_static(Lc_Class,"delete_instance_method",class_delete_ins_method,   1)
+    internal.lc_add_static(Lc_Class,"instance_method",get_imethod,                      1)
     internal.lc_add_static(Lc_Class,"ancestors", class_ancestors,                       0)
 
     internal.lc_class_add_method(Lc_Class,"is_a?", is_a,                                1)
@@ -493,5 +569,6 @@ module LinCAS::Internal
     internal.lc_class_add_method(Lc_Class,"remove_method",class_rm_method,              1)
     internal.lc_class_add_method(Lc_Class,"delete_method",class_delete_method,          1)
     internal.lc_class_add_method(Lc_Class,"alias",alias_m,                              2)
+    internal.lc_class_add_method(Lc_Class,"method",get_method,                          1)
 
 end
