@@ -86,8 +86,11 @@ lib Python
         
     
     # Tuple
-    fun PyTuple_New(length : LibC::Int) : PyObject
-    fun PyTuple_SetItem(tuple : PyObject, ref : LibC::Int, val : PyObject)
+    fun PyTuple_New(length : LibC::Int)                                    : PyObject
+    fun PyTuple_SetItem(tuple : PyObject, ref : LibC::Int, val : PyObject) : LibC::Int
+    fun PyTuple_Size(tuple : PyObject)                                     : PyLong
+    fun PyTuple_GetItem(tuple : PyObject,index : PyLong)                   : PyObject 
+    
 
     # Functions 
     fun PyInstanceMethod_Function(m : PyObject)                                         : PyObject
@@ -112,7 +115,8 @@ lib Python
     fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int                    
 
     # Eval
-    fun PyEval_GetBuiltins : PyObject
+    fun PyEval_GetBuiltins           : PyObject
+    fun Py_BuildValue(string : Chr*) : PyObject
 
     # Other
     fun PyCallable_Check(obj : PyObject) : Int32
