@@ -87,7 +87,7 @@ module LinCAS::Internal
         Python.PyLong_AsUnsignedLong({{int}})
     end
 
-    macro uint64_to_uint64(int)
+    macro pyuint64_to_uint64(int)
         Python.PyLong_AsUnsignedLongLong({{int}})
     end
 
@@ -167,6 +167,14 @@ module LinCAS::Internal
         Python.PyTuple_SetItem({{tuple}},{{index}},{{item}})
     end
 
+    macro pytuple_size(tuple)
+        Python.PyTuple_Size({{tuple}})
+    end
+
+    macro pytuple_at_index(tuple,index)
+        Python.PyTuple_GetItem({{tuple}},{{index}})
+    end
+
     # Methods
 
     macro pyimethod_f(m)
@@ -229,6 +237,7 @@ module LinCAS::Internal
         Python.PyList_Size({{ary}})
     end
 
+
     # Checks
 
     DICT      = Python.PyEval_GetBuiltins # This is a bit unsafe
@@ -237,6 +246,7 @@ module LinCAS::Internal
     PyType    = pydict_get1(DICT,"type")
     PyString  = pydict_get1(DICT,"str")
     PyStaticM = pydict_get1(DICT,"staticmethod")
+    PyNone    = Python.Py_BuildValue("")
     Types     = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),Structure).gc_ref)
 
     @[AlwaysInline]
