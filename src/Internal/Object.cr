@@ -59,7 +59,7 @@ module LinCAS::Internal
                     return nil 
                 end
             {% end %}
-            return int2py(num2num(obj))
+            return int2py(value)
         elsif obj.is_a? LcFloat 
             return float2py(float2num(obj))
         elsif obj.is_a? LcString
@@ -77,6 +77,10 @@ module LinCAS::Internal
             tmp =  pyobj_get_obj(obj)
             pyobj_incref(tmp) if ref 
             return tmp
+        elsif obj == Null 
+            return_pynone
+        elsif obj.is_a? Method 
+            return method_to_py(obj)
         else
             lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 
