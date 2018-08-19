@@ -95,8 +95,11 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.define_pymethod(name : String,func : Proc, _self_ : PyObject, flags : LibC::Int)
-        pym_def = new_pymethod_def(name, func.pointer, flags)
+    def self.define_pymethod(method : Value,func : Proc, _self_ : PyObject, flags : LibC::Int)
+        if (pym_def = method_pym_def(method)).null?
+            pym_def = new_pymethod_def(lc_cast(method,Method).method.name, func.pointer, flags)
+            set_method_pym_def(method,pym_def)
+        end
         return py_cfunc_new(pym_def,_self_)
     end
 
