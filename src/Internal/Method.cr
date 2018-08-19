@@ -312,10 +312,12 @@ module LinCAS::Internal
         {% end %}
     }
 
+
     class Method < BaseC
         @method   = uninitialized LcMethod
         @receiver = uninitialized Value
-        property method,receiver
+        @pym_def  = Pointer(Python::PyMethodDef).null
+        property method,receiver,pym_def
     end
 
     class UnboundMethod < BaseC
@@ -325,6 +327,14 @@ module LinCAS::Internal
 
     macro method_get_receiver(method)
         lc_cast({{method}},Method).receiver 
+    end
+
+    macro method_pym_def(m)
+        {{m}}.as(Method).pym_def
+    end
+
+    macro set_method_pym_def(m,d)
+        {{m}}.as(Method).pym_def = {{d}}
     end
 
     private def self.method_new
@@ -389,7 +399,7 @@ module LinCAS::Internal
         next m.owner
     end
 
-    def self.lc_method_to_py(method : Value)
+    def self.method_to_py(method : Value)
         {% begin %}
         addr = method.as(Void*).address
         {% if flag?(:x86_64) %}
@@ -397,7 +407,7 @@ module LinCAS::Internal
         {% else %}
             pyint = uint32_to_py(addr)
         {% end %}
-        m = define_pymethod(method.method.name,LC_METHOD_CALLER,pyint,METH_VARARGS)
+        m = define_pymethod(method,LC_METHOD_CALLER,pyint,METH_VARARGS)
         pyobj_decref(pyint)
         return m
         {% end %}
