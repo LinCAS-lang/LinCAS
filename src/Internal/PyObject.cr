@@ -194,14 +194,10 @@ module LinCAS::Internal
 
     def self.lc_pyobject_call(obj : Value,name : Value, argv : An)
         pyobj_check(obj)
-        # if pyobj.null?
-        #    lc_warn("Python object is unset")
-        #    return Null 
-        # end
         name   = id2string(name)
         return Null unless name
-        method = lc_seek_instance_pymethod(obj,name)
-        if method 
+        method = seek_method(obj.klass,name)
+        if method.is_a? LcMethod && method.type == LcMethodT::PYTHON
             return lc_call_python(method,argv)
         else
             lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{pyobj2string(pyobj_get_obj(obj))} : PyObject")
