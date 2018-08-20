@@ -81,6 +81,8 @@ module LinCAS::Internal
             return_pynone
         elsif obj.is_a? Method 
             return method_to_py(obj)
+        elsif obj.is_a? LcRange
+            return range2py(obj)
         else
             lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 
