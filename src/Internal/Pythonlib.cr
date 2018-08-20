@@ -112,7 +112,10 @@ lib Python
     fun PyList_New(size : PyLong)                                      : PyObject
     fun PyList_Size(list : PyObject)                                   : PyLong
     fun PyList_GetItem(list : PyObject, pos : PyLong)                  : PyObject
-    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int                    
+    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int    
+      
+    # Slices
+    fun PySlice_New(start : PyObject,stop : PyObject, step : PyObject) : PyObject
 
     # Eval
     fun PyEval_GetBuiltins           : PyObject
