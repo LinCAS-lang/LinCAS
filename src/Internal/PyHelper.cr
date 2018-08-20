@@ -237,6 +237,11 @@ module LinCAS::Internal
         Python.PyList_Size({{ary}})
     end
 
+    # Slices
+    macro pyslice_new(lft,rht)
+        Python.PySlice_New({{lft}},{{rht}},nil)
+    end
+
 
     # Checks
 
