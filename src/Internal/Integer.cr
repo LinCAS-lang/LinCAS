@@ -402,7 +402,7 @@ module LinCAS::Internal
     internal.lc_add_internal(IntClass,"*",int_mult, 1)
     internal.lc_add_internal(IntClass,"\\",int_idiv,1)
     internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
-    internal.lc_add_internal(IntClass,"^",int_power,1)
+    internal.lc_add_internal(IntClass,"**",int_power,1)
     internal.lc_add_internal(IntClass,"==",int_eq,  1)
     internal.lc_add_internal(NumClass,"odd?",int_odd,      0)
     internal.lc_add_internal(NumClass,"even?",int_even,    0)
