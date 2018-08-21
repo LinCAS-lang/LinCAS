@@ -964,6 +964,14 @@ module LinCAS::Internal
         return build_string(pystring2cstring(pystr))
     end
 
+    def self.lc_str_hash(str : Value)
+        return num2int(HASHER.bytes(string2slice(str)).result.to_i64)
+    end
+
+    str_hash = LcProc.new do |args|
+        next lc_str_hash(*lc_cast(args,T1))
+    end
+
         
 
 
@@ -993,6 +1001,7 @@ module LinCAS::Internal
     internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
     internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
     internal.lc_add_internal(StringClass,"to_sym", str_to_sym,  0)
+    internal.lc_add_internal(StringClass,"hash",   str_hash,    0)
     internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
     internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
     internal.lc_add_internal(StringClass,"compact",str_compact,     0)
