@@ -604,7 +604,7 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"merge",hash_merge,    1)
     internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
     internal.lc_add_internal(HashClass,"size",hash_size,      0)
-            alias_method_str(HashClass,"size","lenght"         )
+            alias_method_str(HashClass,"size","length"         )
     internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
 
 
