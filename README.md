@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/LinCAS-lang/LinCAS.svg?branch=feature%2FPython)](https://travis-ci.org/max-codeware/crLinCAS)
+[![Build Status](https://travis-ci.org/LinCAS-lang/LinCAS.svg?branch=master)](https://travis-ci.org/LinCAS-lang/LinCAS)
 
 
 # LinCAS-lang
@@ -21,18 +21,17 @@ The idea is to unify a general purpose language with a computer algebra system, 
 
 ## Requiremets
   * gcc compiler >= 5.0
-  * Crystal compiler version >= 0.24.0
+  * Crystal compiler version >= 0.24.0 ( 0.25.0 and 0.25.1 versions are not working for this project due to a recent type inference changement fixed in bug [#6349](https://github.com/crystal-lang/crystal/issues/6349))
   * gsl library to be installed
 
 ## Portability
-This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yiet, 
+This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yet, 
 but for suggestions or contributing, see the 'Contributing' point.
 
 ## Status
 The project is in pre-alpha stage, it is usable, even though the documentation is being edited, but the core and the API are still under development as well.
 
-Some sintax or some other element might change to best fit the usability, until the language will reach the alpha stage. Then only improvements or API development
-will be made.
+Some sintax or some other element might change to best fit the usability, until the language will reach the alpha stage. Then only improvements or API development will be made.
 
 ## Examples
 See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/SampleTests) for now.
