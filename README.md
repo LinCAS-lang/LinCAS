@@ -22,7 +22,7 @@ The idea is to unify a general purpose language with a computer algebra system, 
 ## Requiremets
   * gcc compiler >= 5.0
   * Crystal compiler version >= 0.24.0 ( 0.25.0 and 0.25.1 versions are not working for this project due to a recent type inference changement fixed in bug [#6349](https://github.com/crystal-lang/crystal/issues/6349))
-  * gsl library to be installed
+  * gsl library and python3.5-dev to be installed
 
 ## Portability
 This language has been developed on a 64 bit Linux Mint. It hasn't been tested on other architectures yet, 
