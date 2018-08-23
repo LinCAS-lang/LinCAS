@@ -255,8 +255,17 @@ module LinCAS::Internal
         next internal.lc_obj_to_a(*args.as(T1))
     end
 
+    @[AlwaysInline]
+    def self.lc_obj_hash(obj : Value)
+       return num2int(obj.id.hash.to_i64)
+    end
 
-    Obj       = internal.lc_build_internal_class("Object",Lc_Class)
+    obj_hash = LcProc.new do |args|
+        next lc_obj_hash(*lc_cast(args,T1))
+    end
+
+
+    Obj = internal.lc_build_internal_class("Object",Lc_Class)
     internal.lc_set_allocator(Obj,obj_allocator)
 
     internal.lc_add_internal(Obj,"init",obj_init,     0)
@@ -283,6 +292,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"!",obj_not,           0)
 
     internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
+    internal.lc_class_add_method(Lc_Class,"hash",obj_hash,               0)
 
 
 end

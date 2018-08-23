@@ -66,6 +66,12 @@ module LinCAS::Internal
         next internal.new_number(*args.as(T1))
     end
 
+    @[AlwaysInline]
+    def self.num_hash(n : Value)
+        return num2int(num2num(n).hash.to_i64)
+    end
+
+
 
     def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
         if v1.is_a? NumType && v2.is_a? NumType

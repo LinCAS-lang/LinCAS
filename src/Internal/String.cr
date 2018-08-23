@@ -965,7 +965,7 @@ module LinCAS::Internal
     end
 
     def self.lc_str_hash(str : Value)
-        return num2int(HASHER.bytes(string2slice(str)).result.to_i64)
+        return num2int(string2slice(str).hash.to_i64)
     end
 
     str_hash = LcProc.new do |args|

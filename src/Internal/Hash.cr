@@ -137,39 +137,57 @@ module LinCAS::Internal
         buffer_append(buffer,'}')
     end
 
-    private def self.fast_hash(item : Value | Slice)
+    private def self.fast_hash_0(item : Value | Slice, hasher : Crystal::Hasher*)
+        tmp = hasher.value
+        res = nil
         if item.is_a? Slice
-            return HASHER.bytes(item).result 
+            res = tmp.bytes(item).result
+            hasher.value = tmp
+            return res
         end
         if lc_obj_has_internal_m?(item,"hash") == 0
             if item.is_a? LcInt
                 value = int2num(item)
                 {% if flag? (:fast_math) %}
-                    return HASHER.int(value).result
+                    res = tmp.int(value).result
                 {% else %}
                     if value.is_a? BigInt
-                        return value.to_u64 # FIX THIS
+                        res = value.to_u64 # FIX THIS
                     else 
-                        return HASHER.int(value).result
+                        res = tmp.int(value).result
                     end 
                 {% end %}
             elsif item.is_a? LcFloat
-                return HASHER.float(float2num(item)).result
+                res = tmp.float(float2num(item)).result
             elsif item.is_a? LcString
-                return HASHER.bytes(string2slice(item)).result
+                res = tmp.bytes(string2slice(item)).result
             elsif item.is_a? LcSymbol
-                return HASHER.int(get_sym_hash(item)).result
+                res = tmp.int(get_sym_hash(item)).result
             end 
-            return HASHER.int(item.id).result
-        end
-        value = lc_num_to_cr_i(Exec.lc_call_fun(item,"hash"))
-        if value 
-            return value.to_u64
-        else
-            return HASHER.int(item.id).result
         end 
-    ensure
-        HASHER.reset
+        if !res
+            value = Exec.lc_call_fun(item,"hash")
+            if !Exec.error?
+                value = lc_num_to_cr_i(value)
+                if value
+                    res = value.to_u64
+                end
+            end
+            res = tmp.int(item.id).result if !res
+        end
+        hasher.value = tmp
+        return res
+    end
+
+    def self.fast_hash_0(item : Value | Slice, hasher : Crystal::Hasher)
+        return fast_hash_0(item,pointerof(hasher))
+    end
+
+    @[AlwaysInline]
+    private def self.fast_hash(item : Value | Slice)
+        res = fast_hash_0(item,HASHER)
+        # HASHER.reset
+        return res
     end
 
     private def self.fast_compare(v1 : Value | Slice,v2 : Value | Slice)
@@ -581,7 +599,22 @@ module LinCAS::Internal
         next lc_hash_to_a(*lc_cast(args,T1))
     end
 
+    def self.lc_hash_hash(hash : Value)
+        hasher   = Crystal::Hasher.new 
+        res      = hasher.result 
+        hash_iterate(hash) do |entry|
+            cpy      = hasher
+            hasher_p = pointerof(cpy)
+            fast_hash_0(entry.key,hasher_p)
+            fast_hash_0(entry.value,hasher_p)
+            res += cpy.result
+        end
+        return num2int(res.hash(hasher).result.to_i64)
+    end
 
+    hash_hash = LcProc.new do |args|
+        next lc_hash_hash(*lc_cast(args,T1))
+    end
 
     HashClass = internal.lc_build_internal_class("Hash")
 
@@ -606,6 +639,7 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"size",hash_size,      0)
             alias_method_str(HashClass,"size","length"         )
     internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
+    internal.lc_add_internal(HashClass,"hash",hash_hash,      0)
 
 
 end

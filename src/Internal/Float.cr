@@ -256,6 +256,10 @@ module LinCAS::Internal
         next internal.lc_float_eq(*args.as(T2))
     end
 
+    float_hash = LcProc.new do |args|
+        next num_hash(*lc_cast(args,T1))
+    end
+
     FloatClass = internal.lc_build_internal_class("Float",NumClass)
     internal.lc_undef_allocator(FloatClass)
 
@@ -274,6 +278,7 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"floor",float_floor,   0)
     internal.lc_add_internal(FloatClass,"ceil",float_ceil,     0)
     internal.lc_add_internal(FloatClass,"trunc",float_trunc,   0)
+    internal.lc_add_internal(FloatClass,"hash",float_hash,     0)
 
 
     LcInfinity  =  num2float(Float64::INFINITY)

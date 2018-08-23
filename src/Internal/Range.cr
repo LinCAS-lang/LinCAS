@@ -199,6 +199,18 @@ module LinCAS::Internal
         next range
     end
 
+    def self.lc_range_hash(range : Value)
+        inc = inclusive(range)
+        h   = inc.hash(HASHER)
+        h   = left(range).hash(h)
+        h   = right(range).hash(h)
+        return num2int(h.result.to_i64)
+    end
+
+    range_hash = LcProc.new do |args|
+        next lc_range_hash(*lc_cast(args,T1))
+    end
+
 
     RangeClass = internal.lc_build_internal_class("Range")
     internal.lc_set_allocator(RangeClass,range_allocator)
@@ -211,6 +223,7 @@ module LinCAS::Internal
     internal.lc_add_internal(RangeClass,"map",range_map,           0)
     internal.lc_add_internal(RangeClass,"==",range_eq,             1)
     internal.lc_add_internal(RangeClass,"defrost",range_defrost,   0)
+    internal.lc_add_internal(RangeClass,"hash",range_hash,         0)
 
 
 end

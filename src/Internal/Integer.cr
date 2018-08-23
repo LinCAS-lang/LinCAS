@@ -392,25 +392,30 @@ module LinCAS::Internal
         next internal.lc_int_eq(*args.as(T2))
     end
 
+    int_hash = LcProc.new do |args|
+        next num_hash(*lc_cast(args,T1))
+    end
+
     
 
     IntClass = internal.lc_build_internal_class("Integer",NumClass)
     internal.lc_undef_allocator(IntClass)
 
-    internal.lc_add_internal(IntClass,"+",int_sum,  1)
-    internal.lc_add_internal(IntClass,"-",int_sub,  1)
-    internal.lc_add_internal(IntClass,"*",int_mult, 1)
-    internal.lc_add_internal(IntClass,"\\",int_idiv,1)
-    internal.lc_add_internal(IntClass,"/",int_fdiv, 1)
-    internal.lc_add_internal(IntClass,"**",int_power,1)
-    internal.lc_add_internal(IntClass,"==",int_eq,  1)
+    internal.lc_add_internal(IntClass,"+",int_sum,         1)
+    internal.lc_add_internal(IntClass,"-",int_sub,         1)
+    internal.lc_add_internal(IntClass,"*",int_mult,        1)
+    internal.lc_add_internal(IntClass,"\\",int_idiv,       1)
+    internal.lc_add_internal(IntClass,"/",int_fdiv,        1)
+    internal.lc_add_internal(IntClass,"**",int_power,      1)
+    internal.lc_add_internal(IntClass,"==",int_eq,         1)
     internal.lc_add_internal(NumClass,"odd?",int_odd,      0)
     internal.lc_add_internal(NumClass,"even?",int_even,    0)
-    internal.lc_add_internal(IntClass,"-@",int_invert, 0)
+    internal.lc_add_internal(IntClass,"-@",int_invert,     0)
     internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
     internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)
     internal.lc_add_internal(IntClass,"to_i",int_to_i,     0)
     internal.lc_add_internal(IntClass,"times",int_times,   0)
     internal.lc_add_internal(IntClass,"abs",int_abs,       0)
+    internal.lc_add_internal(IntClass,"hash",int_hash,     0)
     
 end
