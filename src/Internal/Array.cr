@@ -118,12 +118,42 @@ module LinCAS::Internal
     end
 
     def self.tuple2array(*values : Value)
-        ary = build_ary(values.size)
+        ary = build_ary(values.size).as(LcArray)
         set_ary_size(ary,values.size)
         values.each_with_index do |v,i|
-            ary.as(LcArray).ptr[i] = v 
+            ary.ptr[i] = v 
         end
         return ary.as(Value)
+    end
+
+    # This function converts a LinCAS array to a Python list.
+    # It takes as argument a LinCAS Object (array) and returns a
+    # Python object reference (PyObject).
+    # No check is performed on the passed argument (ary).
+    def self.ary2py(ary : Value)
+        size  = ary_size(ary)
+        ptr   = ary_ptr(ary)
+        pyary = pyary_new(size)
+        size.times do |i|
+            item = ary_at_index(ary,i)
+            res  = pyary_set_item(pyary,i,obj2py(item, ref: true))
+            if res != 0 || pyerr_occurred
+                lc_raise_py_error
+                return PyObject.null 
+            end
+        end
+        return pyary
+    end
+
+    def self.pyary2ary(pyary : PyObject)
+        ary  = build_ary_new
+        size = pyary_size(pyary)
+        size.times do |i|
+            item = pyary_get_item(pyary,i)
+            lc_ary_push(ary,pyobj2lc(item, borrowed_ref: true))
+        end
+        pyobj_decref(pyary)
+        return ary
     end
 
     private def self.ary_from_int(i_ary : Int32*,size : Int32)

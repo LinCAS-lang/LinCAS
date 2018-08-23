@@ -50,11 +50,53 @@ module LinCAS::Internal
         return internal.lc_obj_allocate(Obj)
     end
 
+    def self.obj2py(obj : Value, ref = false)
+        if obj.is_a? LcInt 
+            value = int2num(obj)
+            {%if !flag?(:fast_m)%}
+                if value.is_a? BigInt 
+                    lc_raise(LcNotImplError,"No conversion of big ints to python yet")
+                    return nil 
+                end
+            {% end %}
+            return int2py(value)
+        elsif obj.is_a? LcFloat 
+            return float2py(float2num(obj))
+        elsif obj.is_a? LcString
+            return str2py(obj)
+        elsif obj.is_a? Structure
+            if is_pyembedded(obj)
+                return obj.symTab.as(HybridSymT).pyObj 
+            else
+                lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+                return nil
+            end
+        elsif obj.is_a? LcArray
+            ary2py(obj)
+        elsif obj.is_a? LcPyObject
+            tmp =  pyobj_get_obj(obj)
+            pyobj_incref(tmp) if ref 
+            return tmp
+        elsif obj == Null 
+            return_pynone
+        elsif obj.is_a? Method 
+            return method_to_py(obj)
+        elsif obj.is_a? LcRange
+            return range2py(obj)
+        else
+            lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+            return nil 
+        end
+    end
+
     def self.lc_new_object(klass : Value)
         klass = klass.as(LcClass)
+        if klass.type == SType::PyCLASS
+            return build_pyobj(klass)
+        end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
-            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.path.to_s)
+            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.name)
             return Null 
         end
         if allocator.is_a? LcProc

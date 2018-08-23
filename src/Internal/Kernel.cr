@@ -75,7 +75,8 @@ module LinCAS::Internal
     def self.lc_include(klass : Value, mod : Value)
         if !(mod.is_a? Structure)
             lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
-        elsif !(struct_type(mod.as(Structure),SType::MODULE))
+        elsif !((struct_type(mod.as(Structure),SType::MODULE)) || 
+                (struct_type(mod.as(Structure),SType::PyMODULE)))
             lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
         else
             if !klass.is_a? Structure

@@ -171,6 +171,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         current_frame.pc = {{method}}.code.as(Bytecode)
     end
 
+    macro call_python(method,argv)
+        internal.lc_call_python({{method}},{{argv}})
+    end
+
     macro discard_arguments(argc)
         @sp -= {{argc}}
     end
@@ -214,6 +218,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     macro set_last_is(is)
         current_frame.last_is = {{is}}
+    end
+
+    macro pyobj_check(obj,name)
+        if {{obj}}.is_a? Internal::LcPyObject
+            method = internal.lc_seek_instance_pymethod({{obj}},{{name}})
+            return method if method
+        end
     end
 
     @[AlwaysInline]
@@ -626,7 +637,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 @to_replace = internal.inline_iseq(@to_replace.as(Bytecode),is)
             end
             is = fetch
-            if @to_replace
+            if !@to_replace.nil?
                 current_frame.pc = @to_replace.as(Bytecode)
                 @to_replace = nil 
             end
@@ -716,6 +727,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_call_method(receiver : Value, name : String)
+        # pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -725,6 +737,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_method(receiver : Value, name : String)
+        # pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -737,21 +750,37 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return unwrap_object(@stack[@sp - argc - 1])
     end
 
+    @[AlwaysInline]
+    protected def vm_call_method(method : LcMethod,argc : Intnum)
+        return nil unless vm_arity_check(argc,method.arity)
+        case method.type
+            when  LcMethodT::INTERNAL
+                @internal = true
+                argv  = vm_get_args(argc)
+                value = internal_call(method.code.as(LcProc),argv,method.arity)
+                push(wrap_object(value.as(Value)))
+                vm_return_internal
+            when LcMethodT::USER
+                @internal = false
+                call_usr(method,argc)
+            when LcMethodT::PYTHON
+                @internal = true
+                argv  = vm_get_args(argc)
+                value = call_python(method,argv)
+                push(wrap_object(value.as(Value)))
+                vm_return_internal
+            else
+                lc_bug("Invalid method type received")
+        end
+    end
+
     protected def vm_call(name : String, argc : Intnum)
         CallTracker.push_track(filename,line,name)
         selfr  = vm_get_receiver(argc)
         method = fetch_call_method(selfr,name)
         if method
             vm_push_new_frame(selfr,method.owner.as(Structure),argc)
-            return nil unless vm_arity_check(argc,method.arity)
-            if method.internal
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(wrap_object(value.as(Value)))
-                vm_return_internal
-            else
-                call_usr(method,argc)
-            end
+            vm_call_method(method,argc)
         end
     end
 
@@ -761,17 +790,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         method    = fetch_method(receiver,name)
         if method
             vm_push_new_frame(receiver,method.owner.as(Structure),argc)
-            return nil unless vm_arity_check(argc,method.arity)
-            if method.internal
-                @internal = true
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(wrap_object(value.as(Value)))
-                vm_return_internal
-            else
-                @internal = false
-                call_usr(method,argc)
-            end
+            vm_call_method(method,argc)
         end
     end
 
@@ -1309,6 +1328,23 @@ class LinCAS::VM < LinCAS::MsgGenerator
         push(wrap_object(receiver))
         vm_push_args(args)
         vm_m_call(method,args.size)
+        if @internal
+            return unwrap_object(pop)
+        else
+            return vm_run_bytecode(true)
+        end
+    end
+
+    def call_method(method : Internal::Method, argv : An)
+        m    = method.method
+        rec  = method.receiver
+        push(wrap_object(rec))
+        argv.each do |el|
+            push(wrap_object(el))
+        end
+        CallTracker.push_track(filename,line,m.name)
+        vm_push_new_frame(rec,m.owner.as(Structure),argv.size)
+        vm_call_method(m,m.arity)
         if @internal
             return unwrap_object(pop)
         else

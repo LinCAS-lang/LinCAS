@@ -141,7 +141,7 @@ module LinCAS::Internal
         if item.is_a? Slice
             return HASHER.bytes(item).result 
         end
-        if lc_obj_has_internal_m? item,"hash"
+        if lc_obj_has_internal_m?(item,"hash") == 0
             if item.is_a? LcInt
                 value = int2num(item)
                 {% if flag? (:fast_math) %}
@@ -182,7 +182,7 @@ module LinCAS::Internal
         v1 = lc_cast(v1,Value)
         v2 = lc_cast(v2,Value)
         return true if v1.id == v2.id 
-        if lc_obj_has_internal_m? lc_cast(v1,Value),"=="
+        if lc_obj_has_internal_m?(lc_cast(v1,Value),"==") == 0
             if v1.is_a? LcInt 
                 return bool2val(lc_int_eq(v1,v2))
             elsif v1.is_a? LcFloat
@@ -604,7 +604,7 @@ module LinCAS::Internal
     internal.lc_add_internal(HashClass,"merge",hash_merge,    1)
     internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
     internal.lc_add_internal(HashClass,"size",hash_size,      0)
-            alias_method_str(HashClass,"size","lenght"         )
+            alias_method_str(HashClass,"size","length"         )
     internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
 
 

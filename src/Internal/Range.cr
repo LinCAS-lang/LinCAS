@@ -46,6 +46,23 @@ module LinCAS::Internal
         end
     end
 
+    @[AlwaysInline]
+    def self.range2py(range : Value)
+        lft = left(range)
+        rht = right(range)
+        if lft.is_a? BigInt || rht.is_a? BigInt 
+            lc_raise(LcNotImplError,"No conversion of BigInt to python yet")
+            return nil 
+        end
+        inc = inclusive(range) ? 0 : -1
+        rht = rht + inc
+        lft = int2py(lft)
+        rht = int2py(rht)
+        tmp = pyslice_new(lft,rht + inc)
+        pyobj_decref_n(lft,rht)
+        return tmp
+    end
+
     macro inclusive(range)
         {{range}}.as(LcRange).inclusive 
     end

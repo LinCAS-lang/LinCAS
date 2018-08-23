@@ -77,6 +77,10 @@ module LinCAS::Internal
         return true 
     end
 
+    def self.lc_finalize
+        PyGC.clear_all
+    end
+
     @[AlwaysInline]
     def self.struct_type(klass : Structure,type : SType)
         klass.type == type
@@ -113,7 +117,10 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_make_shared_sym_tab(symTab : SymTab)
+    def self.lc_make_shared_sym_tab(symTab : SymTab_t)
+        if symTab.is_a? HybridSymT
+            return HybridSymT.new(symTab.sym_tab,symTab.pyObj)
+        end
         return SymTab.new(symTab.sym_tab)
     end
 

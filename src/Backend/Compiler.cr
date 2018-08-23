@@ -30,7 +30,7 @@ class LinCAS::Compiler
     PROD_ID    = "*"
     IDIV_ID    = "\\"
     FDIV_ID    = "/"
-    POW_ID     = "^"
+    POW_ID     = "**"
     MOD_ID     = "%"
     EQ_ID      = "=="
     GR_ID      = ">"

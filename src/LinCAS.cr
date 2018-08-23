@@ -28,13 +28,12 @@ ENV["version"] = "0.1.0"
 
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
-
 module LinCAS
     EOF = "\u0003"
     ALLOWED_FUNC_NAMES = 
     {
         TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
-        TkType::MOD, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
+        TkType::MOD, TkType::POWER, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
         TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
         TkType::NOT_EQ, TkType::SMALLER_EQ,
         TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
@@ -48,6 +47,12 @@ module LinCAS
     {% end %}
     alias Num  = Intnum  | Floatnum
     alias NumR = IntnumR | Floatnum
+
+    def self.lc_initialize
+        Python.Py_Initialize
+    end
+
+    lc_initialize
 
 end
 
@@ -115,6 +120,12 @@ end
 dir = ARGV[0]?
 if dir 
     begin
+        at_exit do
+            if Python.Py_IsInitialized
+                Internal.lc_finalize
+                Python.Py_Finalize 
+            end
+        end
         parser = FFactory.makeParser(File.expand_path(dir))
         parser.noSummary # TODO: improving parsing time computation
         if tk_display

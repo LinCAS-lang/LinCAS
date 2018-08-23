@@ -15,11 +15,23 @@
 
 module LinCAS::Internal
 
+    macro module_initializer(mod,type)
+        {{mod}}.type      = {{type}}
+        {{mod}}.klass     = Lc_Module
+        {{mod}}.parent    = Obj
+        {{mod}}.allocator = Allocator::UNDEF
+    end
+
     def self.module_init(mod : LcModule)
-        mod.type      = SType::MODULE
-        mod.klass     = Lc_Module
-        mod.parent    = Obj
-        mod.allocator = Allocator::UNDEF
+       module_initializer(mod,SType::MODULE)
+    end
+
+    def self.pymodule_init(mod : LcModule)
+        module_initializer(mod,SType::PyMODULE)
+    end
+
+    def self.pymodule_init(mod : LcModule)
+        module_initializer(mod,SType::PyMODULE)
     end
     
     def self.lc_build_module(name : String)
@@ -41,6 +53,25 @@ module LinCAS::Internal
         return mod
     end
 
+    def self.lc_build_unregistered_pymodule(name : String,obj : PyObject)
+        gc_ref = PyGC.track(obj)
+        stab  = HybridSymT.new(obj)
+        smtab = HybridSymT.new(obj)
+        mtab  = HybridSymT.new(obj)
+        tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
+        pymodule_init(tmp)
+        tmp.gc_ref = gc_ref
+        return tmp
+    end
+
+    def self.lc_build_pymodule(name : String,obj : PyObject)
+        tmp = lc_build_unregistered_pymodule(name,obj)
+        tmp.symTab.parent = MainClass.symTab
+        MainClass.symTab.addEntry(name,tmp)
+        tmp.flags = REG_CLASS
+        return tmp
+    end
+
     def self.lc_build_internal_module_in(name : String,nest : Structure)
         mod = lc_build_module(name)
         mod.symTab.parent = nest.symTab
@@ -52,7 +83,11 @@ module LinCAS::Internal
     def self.lc_make_shared_module(mod : LcModule)
         symTab = lc_make_shared_sym_tab(mod.symTab)
         tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
-        module_init(tmp)
+        if mod.type == SType::PyMODULE
+            pymodule_init(tmp)
+        else
+            module_init(tmp)
+        end
         tmp.allocator = nil
         return tmp
     end
