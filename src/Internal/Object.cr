@@ -264,6 +264,23 @@ module LinCAS::Internal
         next lc_obj_hash(*lc_cast(args,T1))
     end
 
+    @[AlwaysInline]
+    def self.lc_obj_send(obj : Value, name : Value, args : An)
+        method = lc_get_method(obj,name)
+        if test(method)
+            return Exec.call_method(method.as(Method),args)
+        else
+            return method 
+        end
+    end
+
+    obj_send = LcProc.new do |args|
+        args = lc_cast(args,An)
+        obj  = args.shift
+        name = args.shift
+        next lc_obj_send(obj,name,args)
+    end
+
 
     Obj = internal.lc_build_internal_class("Object",Lc_Class)
     internal.lc_set_allocator(Obj,obj_allocator)
@@ -293,6 +310,7 @@ module LinCAS::Internal
 
     internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
     internal.lc_class_add_method(Lc_Class,"hash",obj_hash,               0)
+    internal.lc_class_add_method(Lc_Class,"send",obj_send,              -3)
 
 
 end
