@@ -35,7 +35,7 @@ module LinCAS::Internal
     end
 
     macro check_range(range)
-        if !({{v}}.is_a? LcRange)
+        if !({{range}}.is_a? LcRange)
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Range")
             return Null 
         end
@@ -43,8 +43,8 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.range_size(range)
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         inc = inclusive(range) ? 1 : 0
         if lft > rht
             return lft - rht + inc 
@@ -55,8 +55,8 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.range2py(range : Value)
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         if lft.is_a? BigInt || rht.is_a? BigInt 
             lc_raise(LcNotImplError,"No conversion of BigInt to python yet")
             return nil 
@@ -110,8 +110,8 @@ module LinCAS::Internal
 
     def self.lc_range_include(range : Value, item : Value)
         return lcfalse unless item.is_a? LcNum 
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         if lft > rht 
             lft,rht = rht,lft 
         end
@@ -127,11 +127,12 @@ module LinCAS::Internal
     end
 
     def self.lc_range_to_s(range : Value)
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         string = String.build do |io|
             io << lft 
             io << (inclusive(range) ? ".." : "...")
+            io << rht
         end
         return build_string(string)
     ensure 
@@ -152,8 +153,8 @@ module LinCAS::Internal
     end
 
     def self.lc_range_each(range)
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         if lft > rht 
             rht += 1 unless inclusive(range)
             lft.downto rht do |i|
@@ -174,8 +175,8 @@ module LinCAS::Internal
 
     def self.lc_range_map(range)
         ary = build_ary_new
-        lft = left(range)
-        rht = right(range)
+        lft = r_left(range)
+        rht = r_right(range)
         lft,rht = rht,lft unless lft < rht
         rht -= 1 unless inclusive(range)
         (lft..rht).each do |i|
@@ -190,8 +191,8 @@ module LinCAS::Internal
 
     def self.lc_range_eq(range1 : Value,range2 : Value)
         return lcfalse unless range2.is_a? LcRange
-        return lctrue if left(range1) == left(range2) &&
-                         right(range1) == right(range2) &&
+        return lctrue if r_left(range1) == r_left(range2) &&
+                         r_right(range1) == r_right(range2) &&
                          inclusive(range1) == inclusive(range2)
         return lcfalse 
     end
@@ -209,8 +210,8 @@ module LinCAS::Internal
     def self.lc_range_hash(range : Value)
         inc = inclusive(range)
         h   = inc.hash(HASHER)
-        h   = left(range).hash(h)
-        h   = right(range).hash(h)
+        h   = r_left(range).hash(h)
+        h   = r_right(range).hash(h)
         return num2int(h.result.to_i64)
     end
 

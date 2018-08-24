@@ -178,10 +178,10 @@ module LinCAS::Internal
     end
 
     def self.lc_matrix_index(matrix : Value,i : LcRange, j : LcRange)
-        r_lower = left(i)
-        r_upper = right(i)
-        c_lower = left(j)
-        c_upper = right(j)
+        r_lower = r_left(i)
+        r_upper = r_right(i)
+        c_lower = r_left(j)
+        c_upper = r_right(j)
         r_lower,r_upper = r_upper,r_lower if r_upper < r_lower
         c_lower,c_upper = c_upper,c_lower if c_upper < c_lower
         r_upper -= 1 if !inclusive(i) 
@@ -214,8 +214,8 @@ module LinCAS::Internal
                 lc_raise(LcIndexError,"(Index [#{i.to_s},#{c}] out of matrix)")
                 return Null 
             end
-            r_lower = left(i)
-            r_upper = right(i)
+            r_lower = r_left(i)
+            r_upper = r_right(i)
             r_lower,r_upper = r_upper,r_lower if r_upper < r_lower
             r_upper -= 1 if !inclusive(i)
             rws     = matrix_rws(matrix) - 1
@@ -237,8 +237,8 @@ module LinCAS::Internal
                 return Null 
             end
             cls = matrix_cls(matrix)
-            c_lower = left(j)
-            c_upper = right(j)
+            c_lower = r_left(j)
+            c_upper = r_right(j)
             c_lower,c_upper = c_upper,c_lower if c_upper < c_lower
             c_upper -= 1 if !inclusive(j)
             c_lower = 0 if c_lower < 0
