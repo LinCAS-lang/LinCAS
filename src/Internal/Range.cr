@@ -26,12 +26,19 @@ module LinCAS::Internal
         end
     end    
 
-    macro left(range)
+    macro r_left(range)
         {{range}}.as(LcRange).left
     end 
 
-    macro right(range)
+    macro r_right(range)
         {{range}}.as(LcRange).right
+    end
+
+    macro check_range(range)
+        if !({{v}}.is_a? LcRange)
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Range")
+            return Null 
+        end
     end
 
     @[AlwaysInline]
