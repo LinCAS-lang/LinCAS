@@ -871,10 +871,44 @@ module LinCAS::Internal
         end 
         next internal.lc_ary_join(arg1,Null)
     end
+
+    def self.lc_ary_from_range(unused,range : Value, step : Value)
+        check_range(range)
+        if test(step)
+            step = lc_num_to_cr_f(step)
+        else
+            step = 1.0 
+        end
+        return Null unless step 
+        r_beg = r_left(range)
+        r_end = r_right(range)
+        if r_beg.is_a? BigInt || r_end.is_a? BigInt
+            lc_raise(LcNotSupportedError,"BigInt range is not supported yiet")
+            return Null
+        end
+        ary   = build_ary_new 
+        if r_beg > r_end 
+            return ary
+        end 
+        tmp       = r_beg
+        while tmp <= r_end 
+            lc_ary_push(ary,num_auto(tmp))
+            tmp +=  step
+        end
+        return ary
+    end
+
+    ary_from_range = LcProc.new do |args|
+        args = lc_cast(args,An)
+        tmp  = args[2]? || Null
+        next lc_ary_from_range(args[0],args[1],tmp)
+    end
         
 
     AryClass = internal.lc_build_internal_class("Array")
     internal.lc_set_allocator(AryClass,ary_allocate)
+
+    internal.lc_add_static(AryClass,"from_range",ary_from_range, -2)
 
     internal.lc_add_internal(AryClass,"init",ary_init,       1)
     internal.lc_add_internal(AryClass,"+",ary_add,           1)
