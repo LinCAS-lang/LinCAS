@@ -36,7 +36,7 @@ module LinCAS::Internal
 
     macro check_range(range)
         if !({{range}}.is_a? LcRange)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Range")
+            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{range}})} into Range")
             return Null 
         end
     end
