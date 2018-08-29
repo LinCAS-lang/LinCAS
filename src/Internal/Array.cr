@@ -883,7 +883,7 @@ module LinCAS::Internal
         r_beg = r_left(range)
         r_end = r_right(range)
         if r_beg.is_a? BigInt || r_end.is_a? BigInt
-            lc_raise(LcNotSupportedError,"BigInt range is not supported yiet")
+            lc_raise(LcNotSupportedError,"BigInt range is not supported yet")
             return Null
         end
         ary   = build_ary_new 
