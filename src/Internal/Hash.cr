@@ -116,25 +116,27 @@ module LinCAS::Internal
         return size + 2
     end
 
-    private def self.hash_append(buffer : String_buffer,hash : Value, origin : Value? = nil)
+    private def self.hash_append(buffer : String_buffer,hash : Value, origin = [] of Value)
         size   = hash_size(hash) - 1
         buffer_append(buffer,'{')
+        origin << hash
         hash_iterate_with_index(hash) do |entry,i|
             string_buffer_appender(buffer,entry.key)
             buffer_append(buffer,"=>")
             value = entry.value
             if value.is_a? LcHash
-                if (value.id == hash.id) || (origin && (origin.id == value.id))
+                if (value.id == hash.id) || (origin.includes? value)
                     buffer_append(buffer,"{...}")
                 else 
-                    hash_append(buffer,entry.value, origin ? origin : hash)
+                    hash_append(buffer,value,origin)
                 end
             else
-                string_buffer_appender(buffer,entry.value)
+                string_buffer_appender(buffer,value)
             end
             buffer_append_n(buffer,',',' ') if i < size
         end
         buffer_append(buffer,'}')
+        origin.pop
     end
 
     private def self.fast_hash_0(item : Value | Slice, hasher : Crystal::Hasher*)
