@@ -126,7 +126,8 @@ module LinCAS::Internal
     # This function converts a LinCAS array to a Python list.
     # It takes as argument a LinCAS Object (array) and returns a
     # Python object reference (PyObject).
-    # No check is performed on the passed argument (ary).
+    # No check is performed on the passed argument (ary), so
+    # be sure of whar you're doing
     def self.ary2py(ary : Value)
         size  = ary_size(ary)
         ptr   = ary_ptr(ary)
@@ -142,6 +143,11 @@ module LinCAS::Internal
         return pyary
     end
 
+    # This functions converts a Python list to a LinCAS array.
+    # It takes as argument a reference to a Python object and
+    # it returns a LinCAS one.
+    # Python object count reference is decreased.
+    # No check is performed on the passed python object
     def self.pyary2ary(pyary : PyObject)
         ary  = build_ary_new
         size = pyary_size(pyary)
