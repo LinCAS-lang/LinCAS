@@ -170,26 +170,28 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    private def self.ary_append(buffer : String_buffer,ary : Value, origin : Value? = nil)
+    private def self.ary_append(buffer : String_buffer,ary : Value, origin = [] of Value)
         size = ary_size(ary)
         ptr  = ary_ptr(ary)
         i    = 0
+        origin << ary
         buffer_append(buffer,'[')
         while i < size
             item = ptr[i]
             if item.is_a? LcArray
-                if (ary.id == item.id) || (origin && (origin.id == item.id))
+                if (origin.includes? item)
                     buffer_append(buffer,"[...]")
                 else 
-                    ary_append(buffer,item,origin ? origin : ary)
+                    ary_append(buffer,item,origin)
                 end
             else
                 string_buffer_appender(buffer,item)
             end
-            buffer_append(buffer,',') if i < size - 1
+            buffer_append_n(buffer,',',' ') if i < size - 1
             i += 1
         end
         buffer_append(buffer,']')
+        origin.pop
     end
 
     def self.new_ary
