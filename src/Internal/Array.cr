@@ -25,9 +25,6 @@ module LinCAS::Internal
             @ptr        = Pointer(Value).null
         end
         property total_size, size, ptr
-        def to_s
-            return Internal.ary_to_string(self)
-        end 
     end
 
     macro ary_ptr(ary) 
