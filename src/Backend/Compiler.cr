@@ -1135,7 +1135,7 @@ class LinCAS::Compiler
             c_table = new_catch_t(c_catch)
         end 
         link(set_ct,c_body,clear_ct,noop_is)
-        link(c_catch[0],noop_is)
+        link(c_catch[0],clear_ct)
         set_last(set_ct,noop_is)
         set_ct.catch_t = c_table
         return set_ct
