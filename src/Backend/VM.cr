@@ -366,6 +366,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         fm      = current_frame
         tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
         tmp.pc  = fm.pc 
+        tmp.fp  = fm.fp
         tmp.scp = fm.scp
         push_frame(tmp)
     end
@@ -450,7 +451,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         is = current_frame.pc
         loop do
             {% if flag?(:vm_debug) %}
-                puts "Executing code #{is.code}";gets
+                puts "Executing code #{is.code}"
             {% end %}
             case is.code
                 when Code::LINE
@@ -571,7 +572,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     res = internal.lc_obj_match(obj2,obj1)
                     push(wrap_object(res))
                 when Code::SET_C_T
-                    current_frame.catch_t = is.catch_t.as(CatchTable)
+                    catch_t               = is.catch_t.as(CatchTable)
+                    current_frame.catch_t = catch_t
+                    LibC.setjmp(catch_t.buff)
                     push_shared_frame
                     ErrHandler.exception_handler = 1
                 when Code::CLEAR_C_T
@@ -1379,14 +1382,15 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_handle_error(error : Value)
         if ErrHandler.exception_handler?
             catch_t = get_catch_t
-            name = catch_t.var_name
-            iseq = catch_t.code 
+            name    = catch_t.var_name
+            iseq    = catch_t.code 
             if name 
                 store_local(name,ErrHandler.error.as(LcError))
             end 
             ErrHandler.handle_error(nil)
             ErrHandler.exception_handler = -1
-            current_frame.pc = iseq
+            current_frame.pc             = iseq
+            LibC.longjmp(catch_t.buff,1)
         else
             error = ErrHandler.error.as(LcError)
             msg   = String.build do |io|
