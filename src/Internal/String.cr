@@ -584,7 +584,7 @@ module LinCAS::Internal
 
     # Performs the upcase on the whole string overwriting the original one
     # ```
-    # "foo".o_upcase() #=> "FOO"
+    # "foo".upcase!() #=> "FOO"
     # ```
     #
     # * argument:: the string the method was called on
@@ -604,7 +604,7 @@ module LinCAS::Internal
     # Performs the upcase on the whole string 
     # without overwriting the original one
     # ```
-    # "foo".o_upcase() #=> "FOO"
+    # "foo".upcase() #=> "FOO"
     # ```
     #
     # * argument:: the string the method was called on
@@ -625,7 +625,7 @@ module LinCAS::Internal
 
     # Performs the downcase on the whole string overwriting the original one
     # ```
-    # "FOO.o_lowcase() #=> "foo"
+    # "FOO.lowcase!() #=> "foo"
     # ```
     #
     # * argument:: the string the method was called on
@@ -645,7 +645,7 @@ module LinCAS::Internal
     # Performs the downcase on the whole string 
     # without overwriting the original one
     # ```
-    # "FOO.o_lowcase() #=> "foo"
+    # "FOO.lowcase() #=> "foo"
     # ```
     #
     # * argument:: the string the method was called on
@@ -719,9 +719,9 @@ module LinCAS::Internal
 
     # Converts a string into an integer number
     # ```
-    # "12".to_i   #=> 12
-    # "12x".to_i  #=> 12
-    # "abcd".to_i #=> 0
+    # "12".to_i()   #=> 12
+    # "12x".to_i()  #=> 12
+    # "abcd".to_i() #=> 0
     #
     # * argument:: String to convert
     def self.lc_str_to_i(str : Value)
@@ -734,10 +734,10 @@ module LinCAS::Internal
 
     # Converts a string into an integer number
     # ```
-    # "12".to_f     #=> 12.0
-    # "12.24".to_f  #=> 12.24
-    # "12.ab".to_f  #=> 12.0
-    # "abcd".to_i   #=> 0.0
+    # "12".to_f()     #=> 12.0
+    # "12.24".to_f()  #=> 12.24
+    # "12.ab".to_f()  #=> 12.0
+    # "abcd".to_f()   #=> 0.0
     #
     # * argument:: String to convert
     def self.lc_str_to_f(str : Value)
@@ -798,6 +798,7 @@ module LinCAS::Internal
     # ```
     # "Compacting This String".compact() #=> "CompactingThisString"
     # ```
+    #
     # * argument:: String the method is called on
     def self.lc_str_compact(str : Value)
         strlen = str_size(str)
