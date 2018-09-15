@@ -15,6 +15,16 @@
 
 @[Link(ldflags: "#{__DIR__}/LibC/libc.a")]
 lib LibC
+    struct JmpBuf
+        __rbx : ULong
+        __rsp : ULong
+        __rbp : ULong
+        __r12 : ULong
+        __r13 : ULong
+        __r14 : ULong
+        __r15 : ULong
+        __rip : ULong    
+    end
     fun strstr(str1 : Char*, str2 : Char*) : Char*
     fun printf(format : Char*, ... ) : Int 
     fun toupper(str : Char*) : Char*
@@ -31,4 +41,7 @@ lib LibC
     fun sub_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
     fun mul_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
     fun mul_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
+
+    fun setjmp(buf : JmpBuf*) : Int
+    fun longjmp(buf : JmpBuf*, rval : Int)
 end

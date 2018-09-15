@@ -193,8 +193,12 @@ module LinCAS
 
     struct CatchTable
         def initialize(@code : Bytecode, @var_name : String?)
+            @buff = [LibC::JmpBuf.new]
         end
         getter code,var_name
+        def buff
+            @buff.to_unsafe
+        end
     end
 
     alias LcEntry   = LcBaseStruct | LcMethod | LcConst
