@@ -71,10 +71,17 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
+    private enum SCPType
+       CLASS_SCP
+       BLOCK_SCP
+       CALL_SCP
+       MAIN_SCP 
+    end
+
     class Scope < Hash(String,Value)
 
-        def initialize
-            super
+        def initialize(@type : SCPType)
+            super()
         end
 
         @previous : Scope?   = nil
@@ -82,6 +89,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @ans      : Value    = Null
 
         property previous, lcblock, ans
+        getter type
 
         def set_var(name : String, object : Value)
             self[name] = object 
@@ -106,11 +114,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @scp     = uninitialized Scope        # scope pointer
         @catch_t : CatchTable? = nil
         @last_is : Bytecode?   = nil
+        @handled_ret           = false
         
         def initialize(@me : Value,@context : Structure,@argc : IntnumR,@type : FrameType)  
         end
 
-        property fp,argc,pc,scp,me,context,catch_t,type,last_is
+        property fp,argc,pc,scp,me,context,catch_t,type,last_is, handled_ret
 
         @[AlwaysInline]
         def fetch 
@@ -188,6 +197,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     macro push_frame(frame)
+        {% if flag?(:vm_debug) %}
+            puts "pushing frame #{{{frame}}.type}"
+        {% end %}
         if @vm_fp == @framev.size 
             @framev.push({{frame}})
         else
@@ -225,6 +237,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
             method = internal.lc_seek_instance_pymethod({{obj}},{{name}})
             return method if method
         end
+    end
+
+    macro set_handle_ret_flag
+        current_frame.handled_ret = true
     end
 
     @[AlwaysInline]
@@ -268,6 +284,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @internal   = false
         @quit       = false
         @to_replace = nil
+        @handle_ret = false
 
         self.addListener(RuntimeListener.new)
     end
@@ -326,6 +343,11 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end 
 
     @[AlwaysInline]
+    protected def scope_type_for(type : FrameType)
+        SCPType.new(type.value)
+    end
+
+    @[AlwaysInline]
     protected def new_frame(self_ref : Value, context : Structure,argc : Int32,type : FrameType)
         if @vm_fp >= @framev.size
             return LcFrame.new(self_ref,context,argc,type)
@@ -344,7 +366,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_push_new_frame(self_ref : Value, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
-        scp          = Scope.new
+        scp          = Scope.new(scope_type_for(type))
         scp.previous = current_scope
         push(scp)
         fm.scp = scp
@@ -355,7 +377,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_push_new_frame(self_ref : Value, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
-        scp          = Scope.new
+        scp          = Scope.new(scope_type_for(type))
         scp.previous = scpr
         push(scp)
         fm.scp = scp
@@ -376,6 +398,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @vm_fp -= 1
         fm      = @framev[@vm_fp]
         @sp     = fm.fp
+        {% if flag?(:vm_debug) %}
+            puts "popping frame #{fm.type}"
+        {% end %}
         return fm.argc
     end
 
@@ -432,7 +457,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         obj    = internal.boot_main_object
         fm     = new_frame(obj,class_of(obj),0,FrameType::MAIN_FRAME)
         fm.pc  = bytecode
-        scp    = Scope.new 
+        scp    = Scope.new(SCPType::MAIN_SCP)
         fm.scp = scp
         push(scp)
         push_frame(fm)
@@ -447,7 +472,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    protected def vm_run_bytecode(handle_return = false)
+    protected def vm_run_bytecode
         is = current_frame.pc
         loop do
             {% if flag?(:vm_debug) %}
@@ -493,12 +518,20 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     vm_m_call_with_block(is.text,is.argc,is.block.as(LcBlock))
                 when Code::RETURN
                     vm_return
-                    if handle_return
+                    if @handle_ret
+                        {% if flag?(:vm_debug) %}
+                            puts "Handling return"
+                        {% end %}
+                        @handle_ret = false
                         return unwrap_object(pop)
                     end
                 when Code::NEXT
                     vm_next
-                    if handle_return
+                    if @handle_ret
+                        {% if flag?(:vm_debug) %}
+                            puts "Handling next"
+                        {% end %}
+                        @handle_ret = false
                         return unwrap_object(pop)
                     end
                 when Code::STOREL
@@ -730,7 +763,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_call_method(receiver : Value, name : String)
-        # pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -740,7 +772,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_method(receiver : Value, name : String)
-        # pyobj_check(receiver,name)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -825,8 +856,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_return
-        value = pop
-        argc  = vm_pop_frame
+        {% if flag?(:vm_debug) %}
+            puts "Returning from func"
+        {% end %}
+        value       = pop
+        @handle_ret = current_frame.handled_ret
+        argc        = vm_pop_frame
         discard_arguments(argc + 1)
         CallTracker.pop_track
         vm_pop_location
@@ -1120,6 +1155,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_leave
+        {% if flag?(:vm_debug) %}
+            puts "Leaving frame"
+        {% end %}
         fm = current_frame
         vm_pop_frame
         frame_t = fm.type
@@ -1137,8 +1175,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_next 
-        value = pop
-        argc  = vm_pop_frame
+        {% if flag?(:vm_debug) %}
+            puts "Returning from block"
+        {% end %}
+        value       = pop
+        @handle_ret = current_frame.handled_ret
+        argc        = vm_pop_frame
         discard_arguments(argc)
         CallTracker.pop_track
         vm_pop_location
@@ -1146,22 +1188,14 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_get_block
-        fm    = current_frame
-        if fm.type == FrameType::BLOCK_FRAME
-            scp = previous_scope_of(fm.scp)
-            if !scp 
-                return nil
-            end
+        scp = current_scope
+        while scp && scp.type == SCPType::BLOCK_SCP
             scp = previous_scope_of(scp)
-            if scp
-                return scp.lcblock
-            end
-        else
-            scp   = fm.scp
-            p_scp = scp.previous
-            if p_scp
-                return p_scp.lcblock
-            end 
+        end
+        return nil unless scp 
+        scp = previous_scope_of(scp)
+        if scp 
+            return scp.lcblock
         end
         return nil
     end
@@ -1172,7 +1206,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if block 
             CallTracker.push_track(filename,line,"<block>")
             vm_push_new_frame(fm.me,fm.context,argc,block.scp.as(Scope))
-            fm = current_frame
+            fm    = current_frame
             fm.pc = block.body
             vm_load_call_args(block.args,argc)
         else 
@@ -1321,7 +1355,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         vm_push_args(args)
         if block_given?
             vm_call_block(args.size)
-            return vm_run_bytecode(true).as(Value)
+            set_handle_ret_flag
+            return vm_run_bytecode.as(Value)
         else 
             lc_raise(LcArgumentError,convert(:no_block))
         end
@@ -1334,7 +1369,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if @internal
             return unwrap_object(pop)
         else
-            return vm_run_bytecode(true)
+            set_handle_ret_flag
+            return vm_run_bytecode
         end
     end
 
@@ -1351,7 +1387,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if @internal
             return unwrap_object(pop)
         else
-            return vm_run_bytecode(true)
+            set_handle_ret_flag
+            return vm_run_bytecode
         end
     end
 
