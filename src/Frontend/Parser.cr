@@ -83,13 +83,14 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     macro parseArg
-        if@currentTk.ttype == TkType::CONST_ID
+        if @currentTk.ttype == TkType::CONST_ID
             block_param = @nodeFactory.makeNode(NodeType::BLOCK_PARAM)
             name = @currentTk.text
             name = name[1...name.size]
             block_param.setAttr(NKey::ID,name)
             node.addBranch(block_param)
-        elsif @nextTk.ttype == TkType::COLON_EQ && ! 
+            shift
+        elsif @nextTk.ttype == TkType::COLON_EQ
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
             node.addBranch(parseAssign)
         elsif @currentTk.ttype == TkType::GLOBAL_ID
