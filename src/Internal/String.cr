@@ -16,6 +16,19 @@
 
 module LinCAS::Internal
 
+    #$C String
+    # A string is a sequence of UTF-8 characters enclosed 
+    # betweend double quotes.
+    # 
+    # Up to now no special characters have been introduced 
+    # (like '\n' or similar) nor particular string options
+    # like string interpolation, but they're planned to be implemented in future.
+    #  
+    # Users must be careful with method aliases: this type has methods
+    # which modify the content of a sring, and others which return a new one.
+    # The first ones usually end with `!`, but there are some exceptions
+    # like `String#[]=`
+
     STR_MAX_CAPA   = 30000
     END_CHR        = '\u{0}'.ord.to_u8
     alias CHAR_PTR = Pointer(LibC::Char)
@@ -249,12 +262,16 @@ module LinCAS::Internal
         next lc_string_allocate(*args.as(T1))
     end
     
-    # Initializes a new string trough the keyword 'new' or just
-    # assigning it. This is the 'init' method of the class
-    # ```
-    # # str = "Foo" #=> "Foo"
-    # ```
+    #$I init()
+    #$U init(string) -> new_string
     #
+    # Initializes a new string through the keyword 'new' or just
+    # assigning it. This is the 'init' method of the class
+    # ```CoffeeScript
+    # str := "Foo"             #=> Foo
+    # str := new String("Foo") #=> Foo
+    # ```
+    
     # * argument:: string to initialize
     # * argument:: initial value
     def self.lc_init_string(lcStr : Value, value : (Value | String | LibC::Char))
@@ -275,14 +292,17 @@ module LinCAS::Internal
         end 
     end
 
+    #$I +()
+    #$U str + other_str -> new_str
+    #
     # Adds two strings.
     # This method can be invoked in two ways:
-    # ```
+    # ```CoffeeScript
     # foo    := "Foo"
     # bar    := "Bar"
     # foobar := foo + bar #=> "FooBar"
     # ```
-    #
+    
     # * argument:: first string to sum
     # * argument:: second string to concatenate
     # * returns:: new string
@@ -303,13 +323,15 @@ module LinCAS::Internal
         next internal.lc_str_add(*args)
     end
 
+    #$I concat()
+    #$U concat(str1,str2,str3...) -> str
     # Concatenates other strings at the given one
     # ```
     # a := "1"
     # a.concat("2")     #=> "12"
     # a.concat("3","4") #=> "1234"
     # ```
-    #
+    
     # * argument:: first string to concatenate
     # * argument:: other strings to concatenate
     # * returns:: first string
