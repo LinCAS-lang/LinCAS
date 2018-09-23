@@ -827,6 +827,7 @@ module LinCAS::Internal
         strlen.times do |i|
             Exec.lc_yield(build_string(ptr[i]))
         end
+        return str
     end
 
     str_each_char = LcProc.new do |args|
