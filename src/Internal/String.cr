@@ -267,7 +267,7 @@ module LinCAS::Internal
     #
     # Initializes a new string through the keyword 'new' or just
     # assigning it. This is the 'init' method of the class
-    # ```CoffeeScript
+    # ```coffee
     # str := "Foo"             #=> Foo
     # str := new String("Foo") #=> Foo
     # ```
@@ -297,7 +297,7 @@ module LinCAS::Internal
     #
     # Adds two strings.
     # This method can be invoked in two ways:
-    # ```CoffeeScript
+    # ```coffee
     # foo    := "Foo"
     # bar    := "Bar"
     # foobar := foo + bar #=> "FooBar"
@@ -326,7 +326,7 @@ module LinCAS::Internal
     #$I concat
     #$U concat(str1,str2,str3...) -> str
     # Concatenates other strings at the given one
-    # ```CoffeeScript
+    # ```coffee
     # a := "1"
     # a.concat("2")     #=> "12"
     # a.concat("3","4") #=> "1234"
@@ -360,7 +360,7 @@ module LinCAS::Internal
     #$I *
     #$U str * integer -> new_string
     # Performs a multiplication between a string and a number
-    # ```CoffeeScript
+    # ```coffee
     # bark   := "Bark"
     # bark_3 := bark * 3 #=> "BarkBarkBark"
     # ```
@@ -387,7 +387,7 @@ module LinCAS::Internal
     #$U include?(string) -> boolean
     # Checks if a substring is contained in another one.
     # It works making a call like this:
-    # ```CoffeeScript
+    # ```coffee
     # str := "A cat on the roof"
     # cat := "Cat"
     # str.include(cat)   #=> true
@@ -414,7 +414,7 @@ module LinCAS::Internal
     #$I ==
     #$U str == other -> boolean
     # Compares two strings or a string with another object
-    # ```CoffeeScript
+    # ```coffee
     # bar := "Bar"
     # foo := "Foo"
     # bar == bar #=> true
@@ -457,7 +457,7 @@ module LinCAS::Internal
     #$I clone
     #$U clone() -> new_str
     # Clones a string
-    # ```CoffeeScript
+    # ```coffee
     # a := "Foo"
     # b := a         # b and a are pointing to the same object
     # # Now b and c are going to point to two different objects
@@ -498,7 +498,7 @@ module LinCAS::Internal
     #$U str[index] -> string or null
     #$U str[range] -> string 
     # Access the string characters at the given index
-    # ```CoffeeScript
+    # ```coffee
     # str := "A quite long string"
     # str[0]    #=> "A"
     # str[8]    #=> "l"
@@ -535,7 +535,7 @@ module LinCAS::Internal
     #$I insert
     #$U insert(index,string) -> str
     # Inserts a second string in the current one
-    # ```CoffeeScript
+    # ```coffee
     # a := "0234"
     # a.insert(1,"1") #=> "01234"
     # a.insert(5,"5") #=> "012345"
@@ -571,7 +571,7 @@ module LinCAS::Internal
     #$I []=
     #$U str[index] = string -> str
     # Sets a char or a set of chars in a specified index
-    # ```CoffeeScript
+    # ```coffee
     # a    := "Gun"
     # a[0] := "F"    #=> "Fun"
     # a[2] := "fair" #=> "Funfair"
@@ -608,8 +608,9 @@ module LinCAS::Internal
 
     #$I size
     #$U size() -> integer
+    #$U length() -> integer [alias]
     # Returns the string size
-    # ```CoffeeScript
+    # ```coffee
     # a := "Hello, world"
     # a.size() #=> 12
     # ```
@@ -626,7 +627,7 @@ module LinCAS::Internal
     #$I upcase!
     #$U upcase!() -> str
     # Performs the upcase on the whole string overwriting the original one
-    # ```CoffeeScript
+    # ```coffee
     # "foo".upcase!() #=> "FOO"
     # ```
     
@@ -648,7 +649,7 @@ module LinCAS::Internal
     #$U upcase() -> new_string
     # Performs the upcase on the whole string 
     # without overwriting the original one
-    # ```CoffeeScript
+    # ```coffee
     # "foo".upcase() #=> "FOO"
     # ```
     
@@ -671,7 +672,7 @@ module LinCAS::Internal
     #$I lowcase!
     #$U lowcase!() -> str
     # Performs the downcase on the whole string overwriting the original one
-    # ```CoffeeScript
+    # ```coffee
     # "FOO.lowcase!() #=> "foo"
     # ```
     
@@ -693,7 +694,7 @@ module LinCAS::Internal
     #$U lowcase() -> new_string
     # Performs the downcase on the whole string 
     # without overwriting the original one
-    # ```CoffeeScript
+    # ```coffee
     # "FOO.lowcase() #=> "foo"
     # ```
     
@@ -718,7 +719,7 @@ module LinCAS::Internal
     #$U split(delimiter := " ") -> array
     # Splits a string according to a specific delimiter, returning an array.
     # If `delimiter` is not specified, a white space will be used
-    # ```CoffeeScript
+    # ```coffee
     # a := "a,b,c,d"
     # a.split(",") #=> ["a","b","c","d"]
     # ```
@@ -773,7 +774,7 @@ module LinCAS::Internal
     #$U to_i() -> integer
     # Converts a string into an integer number.
     # Warning: no overflow is checked yet
-    # ```CoffeeScript
+    # ```coffee
     # "12".to_i()   #=> 12
     # "12x".to_i()  #=> 12
     # "abcd".to_i() #=> 0
@@ -790,7 +791,7 @@ module LinCAS::Internal
     #$I to_f
     #$U to_f() -> float
     # Converts a string into a float number
-    # ```CoffeeScript
+    # ```coffee
     # "12".to_f()     #=> 12.0
     # "12.24".to_f()  #=> 12.24
     # "12.ab".to_f()  #=> 12.0
@@ -808,7 +809,7 @@ module LinCAS::Internal
     #$I each 
     #$U each(&block) -> str
     # Iterates over each char of the string
-    # ```
+    # ```coffee
     # "abcd".each_char() { (chr)
     #     print "Char: ",chr
     #     printl
@@ -834,10 +835,13 @@ module LinCAS::Internal
         next internal.lc_str_each_char(*args.as(T1))
     end
 
+    #$I chars
+    #$U chars() -> array 
     # Returns an array containing each char of the string
-    # ```
+    # ```coffee
     # "abc".chars() #=> ["a","b","c"]
     # ```
+
     # * argument:: string on which the method is called
     # * returns:: array of chars
     def self.lc_str_chars(str : Value)
@@ -854,12 +858,14 @@ module LinCAS::Internal
         next internal.lc_str_chars(*args.as(T1))
     end
 
+    #$I compact
+    #$U compact() -> new_str
     # Clones the string and deletes the spaces on this last
     # one
-    # ```
+    # ```coffee
     # "Compacting This String".compact() #=> "CompactingThisString"
     # ```
-    #
+    
     # * argument:: String the method is called on
     def self.lc_str_compact(str : Value)
         strlen = str_size(str)
@@ -882,10 +888,13 @@ module LinCAS::Internal
         next internal.lc_str_compact(*args.as(T1))
     end
 
-    # Deletes the spaces of a string
-    # ```
+    #$I compact!
+    #$U compact!() -> str
+    # Deletes the spaces of str
+    # ```coffee
     # "Compacting This String".compact!() #=> "CompactingThisString"
     # ```
+
     # * argument:: String the method is called on
     # * returns:: self
     def self.lc_str_o_compact(str : Value)
@@ -946,6 +955,15 @@ module LinCAS::Internal
         return buffer
     end
 
+    #$I gsub
+    #$U gsub(pattern,replacement) -> new_str
+    # Returns a new string where every occurrence 
+    # of `pattern` replaced with the content in `replacement`
+    # ```coffee
+    # "comfort".gsub("o","*")    #=> c*mf*rt
+    # "comfort".gsub("com","ef") #=> effort
+    # ```
+
     def self.lc_str_gsub(str : Value,pattern : Value, sub : Value)
         str_check(pattern)
         str_check(sub)
@@ -973,6 +991,15 @@ module LinCAS::Internal
         ptr2   = pointer_of(string2)
         return libc.memcmp(ptr1,ptr2,strlen) == 0
     end
+
+    #$I starts_with?
+    #$U starts_with?(str_beg) -> boolean
+    # Returns true if the beginning of `str` matches `str_beg`, 
+    # false in all the other cases
+    # ```coffee
+    # "hola".starts_with? ("h")  #=> true
+    # "hola".statrs_with? ("ho") #=> true
+    # ```
 
     def self.lc_str_starts_with(string : Value, other : Value)
         str_check(other)
@@ -1007,6 +1034,14 @@ module LinCAS::Internal
         return sym
     end
 
+    #$I to_sym
+    #$U to_sym() -> symbol
+    # Converts `str` into a symbol
+    # ```coffee
+    # "foo".to_sym() #=> :foo
+    # "32".to_sym()  #=> :"32"
+    # ```
+
     def self.lc_str_to_symbol(string : Value)
         string = string2cr(string)
         lc_bug("(String type should always be converted into symbol)") unless string 
@@ -1026,6 +1061,10 @@ module LinCAS::Internal
         return build_string(pystring2cstring(pystr))
     end
 
+    #$I hash
+    #$U hash() -> integer
+    # Return string hash based on length and content
+    
     def self.lc_str_hash(str : Value)
         return num2int(string2slice(str).hash.to_i64)
     end
