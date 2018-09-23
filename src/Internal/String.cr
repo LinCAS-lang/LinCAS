@@ -324,7 +324,7 @@ module LinCAS::Internal
     end
 
     #$I concat
-    #$U str.concat(str1,str2,str3...) -> str
+    #$U concat(str1,str2,str3...) -> str
     # Concatenates other strings at the given one
     # ```CoffeeScript
     # a := "1"
@@ -384,7 +384,7 @@ module LinCAS::Internal
     end
 
     #$I include?
-    #$U str.include?(string) -> boolean
+    #$U include?(string) -> boolean
     # Checks if a substring is contained in another one.
     # It works making a call like this:
     # ```CoffeeScript
@@ -455,7 +455,7 @@ module LinCAS::Internal
     end
 
     #$I clone
-    #$U str.clone() -> new_str
+    #$U clone() -> new_str
     # Clones a string
     # ```CoffeeScript
     # a := "Foo"
@@ -533,7 +533,7 @@ module LinCAS::Internal
     end
 
     #$I insert
-    #$U str.insert(index,string) -> str
+    #$U insert(index,string) -> str
     # Inserts a second string in the current one
     # ```CoffeeScript
     # a := "0234"
@@ -606,12 +606,14 @@ module LinCAS::Internal
         next internal.lc_str_set_index(*args.as(T3))
     end
 
+    #$I size
+    #$U size() -> integer
     # Returns the string size
-    # ```
+    # ```CoffeeScript
     # a := "Hello, world"
     # a.size() #=> 12
     # ```
-    #
+    
     # * argument:: string the method was called on
     def self.lc_str_size(str : Value)
         return num2int(str_size(str))
@@ -621,11 +623,13 @@ module LinCAS::Internal
         next num2int(str_size(args.as(T1)[0]))
     end
 
+    #$I upcase!
+    #$U upcase!() -> str
     # Performs the upcase on the whole string overwriting the original one
-    # ```
+    # ```CoffeeScript
     # "foo".upcase!() #=> "FOO"
     # ```
-    #
+    
     # * argument:: the string the method was called on
     def self.lc_str_upr_o(str : Value)
         strlen = str_size(str)
@@ -640,12 +644,14 @@ module LinCAS::Internal
         next internal.lc_str_upr_o(*args.as(T1))
     end
 
+    #$I upcase
+    #$U upcase() -> new_string
     # Performs the upcase on the whole string 
     # without overwriting the original one
-    # ```
+    # ```CoffeeScript
     # "foo".upcase() #=> "FOO"
     # ```
-    #
+    
     # * argument:: the string the method was called on
     # * returns:: a new upcase string
     def self.lc_str_upr(str : Value)
@@ -662,11 +668,13 @@ module LinCAS::Internal
         next internal.lc_str_upr(*args.as(T1))
     end
 
+    #$I lowcase!
+    #$U lowcase!() -> str
     # Performs the downcase on the whole string overwriting the original one
-    # ```
+    # ```CoffeeScript
     # "FOO.lowcase!() #=> "foo"
     # ```
-    #
+    
     # * argument:: the string the method was called on
     def self.lc_str_lwr_o(str : Value)
         strlen = str_size(str)
@@ -681,12 +689,14 @@ module LinCAS::Internal
         next internal.lc_str_lwr_o(*args.as(T1))
     end
 
+    #$I lowcase
+    #$U lowcase() -> new_string
     # Performs the downcase on the whole string 
     # without overwriting the original one
-    # ```
+    # ```CoffeeScript
     # "FOO.lowcase() #=> "foo"
     # ```
-    #
+    
     # * argument:: the string the method was called on
     # * returns:: a new lowercase string
     def self.lc_str_lwr(str : Value)
@@ -704,12 +714,15 @@ module LinCAS::Internal
     end
 
 
-    # Splits a string according to a specific delimiter, returning an array
-    # ```
+    #$I split
+    #$U split(delimiter := " ") -> array
+    # Splits a string according to a specific delimiter, returning an array.
+    # If `delimiter` is not specified, a white space will be used
+    # ```CoffeeScript
     # a := "a,b,c,d"
     # a.split(",") #=> ["a","b","c","d"]
     # ```
-    #
+    
     # * argument:: string the method was called on
     # * argument:: delimiter
     # * returns:: array containing the splitted substrings
@@ -756,12 +769,15 @@ module LinCAS::Internal
         next internal.lc_str_split(args[0],args[1]?)
     end
 
-    # Converts a string into an integer number
-    # ```
+    #$I to_i
+    #$U to_i() -> integer
+    # Converts a string into an integer number.
+    # Warning: no overflow is checked yet
+    # ```CoffeeScript
     # "12".to_i()   #=> 12
     # "12x".to_i()  #=> 12
     # "abcd".to_i() #=> 0
-    #
+    
     # * argument:: String to convert
     def self.lc_str_to_i(str : Value)
         return num2int(libc.strtol(pointer_of(str),Pointer(LibC::Char).null,10))
@@ -771,13 +787,15 @@ module LinCAS::Internal
         next internal.lc_str_to_i(*args.as(T1))
     end
 
-    # Converts a string into an integer number
-    # ```
+    #$I to_f
+    #$U to_f() -> float
+    # Converts a string into a float number
+    # ```CoffeeScript
     # "12".to_f()     #=> 12.0
     # "12.24".to_f()  #=> 12.24
     # "12.ab".to_f()  #=> 12.0
     # "abcd".to_f()   #=> 0.0
-    #
+    
     # * argument:: String to convert
     def self.lc_str_to_f(str : Value)
         return num2float(libc.strtod(pointer_of(str),Pointer(LibC::Char*).null))
@@ -787,6 +805,8 @@ module LinCAS::Internal
         next internal.lc_str_to_f(*args.as(T1))
     end
 
+    #$I each 
+    #$U each(&block) -> str
     # Iterates over each char of the string
     # ```
     # "abcd".each_char() { (chr)
@@ -798,7 +818,8 @@ module LinCAS::Internal
     # #=> Char: b
     # #=> Char: c
     # #=> Char: d
-    #
+    # ```
+
     # * argument:: string on which the method is called
     def self.lc_str_each_char(str : Value)
         strlen = str_size(str)
