@@ -599,7 +599,7 @@ module LinCAS::Internal
                 str_add_char(pointer_of(str),x,str_char_at(value,0))
             end
         end 
-        return Null 
+        return str
     end
 
     str_set_index = LcProc.new do |args|
