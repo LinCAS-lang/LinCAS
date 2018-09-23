@@ -262,7 +262,7 @@ module LinCAS::Internal
         next lc_string_allocate(*args.as(T1))
     end
     
-    #$I init()
+    #$I init
     #$U init(string) -> new_string
     #
     # Initializes a new string through the keyword 'new' or just
@@ -292,7 +292,7 @@ module LinCAS::Internal
         end 
     end
 
-    #$I +()
+    #$I +
     #$U str + other_str -> new_str
     #
     # Adds two strings.
@@ -323,10 +323,10 @@ module LinCAS::Internal
         next internal.lc_str_add(*args)
     end
 
-    #$I concat()
-    #$U concat(str1,str2,str3...) -> str
+    #$I concat
+    #$U str.concat(str1,str2,str3...) -> str
     # Concatenates other strings at the given one
-    # ```
+    # ```CoffeeScript
     # a := "1"
     # a.concat("2")     #=> "12"
     # a.concat("3","4") #=> "1234"
@@ -357,11 +357,14 @@ module LinCAS::Internal
         next internal.lc_str_concat(arg1,args)
     end
 
+    #$I *
+    #$U str * integer -> new_string
     # Performs a multiplication between a string and a number
-    # ```
+    # ```CoffeeScript
     # bark   := "Bark"
     # bark_3 := bark * 3 #=> "BarkBarkBark"
     # ```
+
     def self.lc_str_multiply(lcStr : Value, times : Value)
         new_str = build_string("")
         strlen  = str_size(lcStr)
@@ -380,15 +383,17 @@ module LinCAS::Internal
         next internal.lc_str_multiply(*args)
     end
 
+    #$I include?
+    #$U str.include?(string) -> boolean
     # Checks if a substring is contained in another one.
     # It works making a call like this:
-    # ```
+    # ```CoffeeScript
     # str := "A cat on the roof"
     # cat := "Cat"
     # str.include(cat)   #=> true
     # str.include("bed") #=> false
     # ```
-    #
+    
     # * argument:: string on which the method is called
     # * argument:: string to be searched
     # * returns:: true if the two strings equal; false else;
@@ -406,15 +411,17 @@ module LinCAS::Internal
         next internal.lc_str_include(*args)
     end
 
+    #$I ==
+    #$U str == other -> boolean
     # Compares two strings or a string with another object
-    # ```
+    # ```CoffeeScript
     # bar := "Bar"
     # foo := "Foo"
     # bar == bar #=> true
     # bar == foo #=> false
     # bar == 2   #=> false
     # ```
-    #
+    
     # * argument:: string on which the method is called
     # * argument:: string to be compared
     # * returns:: true if the two strings equal; false else;
@@ -429,6 +436,7 @@ module LinCAS::Internal
         internal.lc_str_compare(*args)
     end
 
+    
     # Same as lc_str_compare, but it checks if two strings are different
     def self.lc_str_icompare(str1 : Value, str2 : Value)
         unless str2.is_a? LcString
@@ -446,15 +454,16 @@ module LinCAS::Internal
         next internal.lc_str_icompare(*args)
     end
 
+    #$I clone
+    #$U str.clone() -> new_str
     # Clones a string
-    #
-    # ```
+    # ```CoffeeScript
     # a := "Foo"
     # b := a         # b and a are pointing to the same object
     # # Now b and c are going to point to two different objects
     # c := a.clone() #=> "Foo"
     # ```
-    #
+    
     # * argument:: string to clone
     # * returns:: new LcString*
     def self.lc_str_clone(str : Value)
@@ -485,14 +494,17 @@ module LinCAS::Internal
         return ptr
     end
 
+    #$I []
+    #$U str[index] -> string or null
+    #$U str[range] -> string 
     # Access the string characters at the given index
-    # ```
+    # ```CoffeeScript
     # str := "A quite long string"
     # str[0]    #=> "A"
     # str[8]    #=> "l"
     # str[2..6] #=> "quite"
     # ```
-    #
+    
     # * argument:: string to access
     # * argument:: index
     def self.lc_str_index(str : Value, index : Value)
@@ -520,13 +532,16 @@ module LinCAS::Internal
         next internal.lc_str_index(*args)
     end
 
+    #$I insert
+    #$U str.insert(index,string) -> str
     # Inserts a second string in the current one
-    # ```
+    # ```CoffeeScript
     # a := "0234"
     # a.insert(1,"1") #=> "01234"
     # a.insert(5,"5") #=> "012345"
     # a.insert(7,"6") #=> Raises an error
     # ```
+
     # * argument:: string on which inserting the second one
     # * argument:: index the second string must be inserted at
     # * argument:: string to insert
@@ -553,14 +568,16 @@ module LinCAS::Internal
         next internal.lc_str_insert(*args)
     end
 
+    #$I []=
+    #$U str[index] = string -> str
     # Sets a char or a set of chars in a specified index
-    # ```
+    # ```CoffeeScript
     # a    := "Gun"
     # a[0] := "F"    #=> "Fun"
     # a[2] := "fair" #=> "Funfair"
     # a[8] := "!"    #=> Raises an error
     # ```
-    #
+    
     # * argument:: string on which the method was invoked
     # * argument:: index to insert the character at
     # * argument:: string to assign
