@@ -6,3 +6,5 @@ src/Internal/LibC/libc.o
 bin/lincas 
 bin/lincas.o
 bin/LinCAS
+Doc/*
+docgen
