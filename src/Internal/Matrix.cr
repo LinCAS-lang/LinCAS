@@ -235,6 +235,27 @@ module LinCAS::Internal
         return tmp
     end
 
+    #$I []
+    #$U m[rows,cols]             -> object
+    #$U m[rows,cols_range]       -> matrix
+    #$U m[rows_range,cols]       -> matrix
+    #$U m[rows_range,cols_range] -> matrix
+    # Returns a component of a matrix or a submatrix.
+    # Indexes starts from `0`.
+    # ```
+    # m := |1,2,3; 4,5,6; 7,8,9|
+    # m[1,1]       #=> 5
+    # m[0,1..2]    #=> |2,3|
+    #
+    # m[1..2,1]    
+    # #=> |5;
+    #      8| 
+    #
+    # m[1..2,1..2]
+    # #=> |5,6;
+    #      8,9|
+    # ```
+
     def self.lc_matrix_index(matrix : Value,i, j)
         if i.is_a? LcRange 
             cls     = matrix_cls(matrix)
