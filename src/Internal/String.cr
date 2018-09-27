@@ -778,6 +778,7 @@ module LinCAS::Internal
     # "12".to_i()   #=> 12
     # "12x".to_i()  #=> 12
     # "abcd".to_i() #=> 0
+    # ```
     
     # * argument:: String to convert
     def self.lc_str_to_i(str : Value)
@@ -796,6 +797,7 @@ module LinCAS::Internal
     # "12.24".to_f()  #=> 12.24
     # "12.ab".to_f()  #=> 12.0
     # "abcd".to_f()   #=> 0.0
+    # ```
     
     # * argument:: String to convert
     def self.lc_str_to_f(str : Value)
