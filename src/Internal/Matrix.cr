@@ -182,6 +182,17 @@ module LinCAS::Internal
         return buffer
     end
 
+    #$I to_s
+    #$U to_s() -> string
+    # Converts a matrix into a string. It is already formatted
+    # by rows.
+    # ```
+    # a := |1,2,3;4,5,6|
+    # a.to_s() 
+    # #=> |1,2,3;
+    #      4,5,6|
+    # ```
+
     def self.lc_matrix_to_s(matrix : Value)
         buffer = matrix_to_string(matrix)
         size   = buff_size(buffer)
