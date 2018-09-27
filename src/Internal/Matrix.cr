@@ -122,12 +122,31 @@ module LinCAS::Internal
         next lc_matrix_allocate(*args.as(T1))
     end
     
+    #$I init
+    #$U init(rows,cols)        -> matrix
+    #$U init(rows,cols,&block) -> matrix
+    # Initializes a matrix instance given the number of rows and columns.
+    # If a block is provided, each component will be set to block return
+    # value, else `null` will be used.
+    # ```coffee
+    # new Matrix(2,2)
+    # => |null,null;
+    #     null,null|
+    #
+    # new Matrix(2,2) { (i,j) i + j * 2}
+    # => |0,2;
+    #     1,3|
+    # ```
 
     def self.lc_matrix_init(matrix : Value, rows : Value, cols : Value)
         r = lc_num_to_cr_i(rows)
         return Null unless r 
         c = lc_num_to_cr_i(cols)
         return Null unless c
+        if r < 0 || c < 0
+            lc_raise(LcArgumentError,"Matrices must have a positive number of rows and columns")
+            return Null
+        end
         resize_matrix_capa(matrix,r,c)
         if Exec.block_given?
             (0...r).each do |i|
