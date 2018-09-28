@@ -15,6 +15,16 @@
 
 module LinCAS::Internal
 
+    #$C Matrix
+    # A matrix represents a mathematical matrix containing generic values.
+    # This allows to make linear operations with matrices containing specific
+    # objects representing maths or other scientific datas.
+    # 
+    # Users must be careful with method aliases: this type has methods
+    # which modify the content of a matrix, and others which return a new one.
+    # The first ones usually end with `!`, but there are some exceptions
+    # like `Matrix#[]=`
+
     MAX_MATRIX_CAPA = 200 ** 2 
 
 
