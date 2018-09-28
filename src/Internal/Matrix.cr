@@ -539,6 +539,20 @@ module LinCAS::Internal
         next internal.lc_matrix_t(*args.as(T1))
     end
 
+    #$I each
+    #$U m.each(&block) -> m
+    # Iterates over each component of a matrix
+    # passing it to the given block
+    # ```
+    # m := |1,2; 3,4|
+    # m.each() { (v) printl v }
+    # #=>
+    # 1
+    # 2
+    # 3
+    # 4
+    # ```
+
     def self.lc_matrix_each(mx : Value)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
