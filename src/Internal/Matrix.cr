@@ -317,6 +317,20 @@ module LinCAS::Internal
         next internal.lc_matrix_index(*args.as(T3))
     end
 
+    #$I []=
+    #$U m[row,col] := object
+    # It assigns to a component the given value (object).
+    #
+    # If `row` or `col` is out of bounds, an error will be raised
+    # ```
+    # m := |1,2; 3,4|
+    # m[1,1] := 9
+    # #=> |1,2;
+    #      3,9|
+    #
+    # m[2,3] := 9 #=> IndexError: (Index [2,3] out of matrix)
+    # ```
+
     def self.lc_matrix_set_index(matrix : Value, i : Value,j : Value, value : Value)
         r = lc_num_to_cr_i(i)
         return Null unless r 
@@ -333,6 +347,24 @@ module LinCAS::Internal
     matrix_set_index = LcProc.new do |args|
         next internal.lc_matrix_set_index(*args.as(T4))
     end
+
+    #$I +
+    #$U m + other_matrix -> new_matrix
+    # It performs the sum [A] + [B] of two matrices.
+    # 
+    # If `m` and `other_matrix` do not have the same shape
+    # an error will be raised.
+    # ```
+    # m1 := |1,2,3; 4,5,6|
+    # m2 := |1,0,1; 2,0,2|
+    # m3 := |6,7; 8,9|
+    #
+    # m1 + m2
+    # #=> |2,2,4;
+    #      6,5,8|
+    #
+    # m1 + m3 #=> MathError: Incompatible matrices for sum
+    # ```
 
     def self.lc_matrix_sum(m1 : Value, m2 : Value)
         unless m2.is_a? Matrix 
@@ -360,6 +392,24 @@ module LinCAS::Internal
         next internal.lc_matrix_sum(*args.as(T2))
     end
 
+    #$I -
+    #$U m - other_matrix -> new_matrix
+    # It performs the difference [A] - [B] of two matrices.
+    # 
+    # If `m` and `other_matrix` do not have the same shape
+    # an error will be raised.
+    # ```
+    # m1 := |1,2,3; 4,5,6|
+    # m2 := |1,0,1; 2,0,2|
+    # m3 := |6,7; 8,9|
+    #
+    # m1 - m2
+    # #=> |0,2,2;
+    #      2,5,4|
+    #
+    # m1 - m3 #=> MathError: Incompatible matrices for difference
+    # ```
+
     def self.lc_matrix_sub(m1 : Value, m2 : Value)
         matrix_check(m2)
         if !same_matrix_size(m1,m2)
@@ -382,6 +432,29 @@ module LinCAS::Internal
     matrix_sub = LcProc.new do |args|
         next internal.lc_matrix_sub(*args.as(T2))
     end
+
+    #$I *
+    #$U m * number       -> new_matrix
+    #$U m * other_matrix -> new_matrix
+    # If the argument is a number, a new matrix will be returned
+    # with each component set to `m[i,j] * number`.
+    #
+    # If the argument is a matrix, a matricial product is performed.
+    # If matrices are incompatible, an error is raised
+    # ```
+    # m1 := |1,2,3; 4,5,6|
+    # m2 := |1,5; 1,6; 0,2|
+    # m3 := |2,7; 9,8|
+    #
+    # m1 + 3
+    # #=> |3,6,9;
+    #      12,15,18|
+    # m1 * m2
+    # #=> |3,23;
+    #      9,62|
+    #
+    # m1 * m3 #=> MathError: Incompatible matrices for product
+    # ```
 
     def self.lc_matrix_prod(m1 : Value, num : LcNum)
         val = num2num(num)
