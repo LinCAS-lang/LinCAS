@@ -562,7 +562,7 @@ module LinCAS::Internal
             Exec.lc_yield(ptr[i])
             break if Exec.error?
         end
-        return Null 
+        return mx
     end
 
     matrix_each = LcProc.new do |args|
