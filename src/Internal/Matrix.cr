@@ -513,6 +513,16 @@ module LinCAS::Internal
         next internal.lc_matrix_prod(*args.as(T2))
     end
 
+    #$I tr
+    #$U m.tr() -> new_matrix
+    # It transposes a matrix
+    # ```
+    # m2 := |1,5; 1,6; 0,2|
+    # m2.tr()
+    # #=> |1,1,0;
+    #      5,6,2|
+    # ```
+
     def self.lc_matrix_t(mx : Value)
         cls = matrix_cls(mx)
         rws = matrix_rws(mx)
