@@ -386,7 +386,6 @@ module LinCAS::Internal
     #$I include?
     #$U include?(string) -> boolean
     # Checks if a substring is contained in another one.
-    # It works making a call like this:
     # ```coffee
     # str := "A cat on the roof"
     # cat := "Cat"
@@ -673,7 +672,7 @@ module LinCAS::Internal
     #$U lowcase!() -> str
     # Performs the downcase on the whole string overwriting the original one
     # ```coffee
-    # "FOO.lowcase!() #=> "foo"
+    # "FOO".lowcase!() #=> "foo"
     # ```
     
     # * argument:: the string the method was called on
@@ -960,7 +959,7 @@ module LinCAS::Internal
     #$I gsub
     #$U gsub(pattern,replacement) -> new_str
     # Returns a new string where every occurrence 
-    # of `pattern` replaced with the content in `replacement`
+    # of `pattern` is replaced with the content in `replacement`
     # ```coffee
     # "comfort".gsub("o","*")    #=> c*mf*rt
     # "comfort".gsub("com","ef") #=> effort
