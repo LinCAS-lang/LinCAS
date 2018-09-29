@@ -82,7 +82,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         expNode.addBranch({{expr}})
     end
 
-    macro parseArg
+    macro parseArg(breakable = false)
         if @currentTk.ttype == TkType::CONST_ID
             block_param = @nodeFactory.makeNode(NodeType::BLOCK_PARAM)
             name = @currentTk.text
@@ -90,13 +90,18 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             block_param.setAttr(NKey::ID,name)
             node.addBranch(block_param)
             shift
+            {% if breakable %}
+                break 
+            {% end %}
         elsif @nextTk.ttype == TkType::COLON_EQ
+            opt = true
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self) unless @currentTk.ttype == TkType::LOCAL_ID
             node.addBranch(parseAssign)
         elsif @currentTk.ttype == TkType::GLOBAL_ID
             @errHandler.flag(@currentTk,ErrCode::MISSING_IDENT,self)
             node.addBranch(parseGlobalID)
         elsif @currentTk.ttype == TkType::LOCAL_ID
+            @errHandler.flag(@currentTk,ErrCode::POST_ARG,self) if opt
             node.addBranch(parseLocalID)
             arity += 1
         else
@@ -522,6 +527,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             TkType::L_PAR, TkType::LOCAL_ID, TkType::CONST_ID, TkType::COMMA, TkType::R_PAR, 
             TkType::L_BRACE, TkType::EOL
         }
+        opt   = false
         node  = @nodeFactory.makeNode(NodeType::ARG_LIST)
         arity = 0
         sync(arg_sync_set)
@@ -538,7 +544,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
         parseArg
         while @currentTk.ttype == TkType::COMMA
             shift
-            parseArg
+            parseArg true
             sync(arg_sync_set)
         end
         if @currentTk.ttype == TkType::R_PAR

@@ -56,6 +56,7 @@ enum LinCAS::ErrCode
     UNEXPECTED_NEXT
     RETURN_IN_BLOCK
     DYNAMIC_CONST
+    POST_ARG
 end
 
 module LinCAS
@@ -100,7 +101,8 @@ module LinCAS
         ErrCode::UNEXPECTED_YIELD    => "'yield' statement out of a function",
         ErrCode::UNEXPECTED_NEXT     => "'next' statement out of block",
         ErrCode::RETURN_IN_BLOCK     => "Cant't return in block",
-        ErrCode::DYNAMIC_CONST       => "Dynamic const assignment"
+        ErrCode::DYNAMIC_CONST       => "Dynamic const assignment",
+        ErrCode::POST_ARG            => "Mandatory argument after optional ones"
     }
     protected def convertErrCode(errCode)
         return ErrDict[errCode]
