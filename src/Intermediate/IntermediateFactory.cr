@@ -32,8 +32,8 @@ struct LinCAS::IntermediateFactory
         return Bytecode.new(code)
     end
 
-    def makeFuncArg(name : String, opt = false)
-        return FuncArgument.new(name,opt)
+    def makeOptFuncArg(name : String, opt_code : Bytecode)
+        return OptArg.new(name,opt_code)
     end
     
 end
