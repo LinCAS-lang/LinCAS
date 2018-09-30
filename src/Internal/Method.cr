@@ -18,7 +18,6 @@ module LinCAS::Internal
 
     private def self.lc_undef_method(name,owner : Structure)
         m       = LinCAS::LcMethod.new(name.as(String),FuncVisib::UNDEFINED)
-        m.args  = nil
         m.code  = nil
         m.arity = 0
         m.owner = owner
@@ -56,7 +55,7 @@ module LinCAS::Internal
         return m 
     end
 
-    def self.lc_def_method(name : String, args : Array(FuncArgument),
+    def self.lc_def_method(name : String, args : FuncArgSet,
                            arity : Intnum, code : Bytecode, visib : FuncVisib = FuncVisib::PUBLIC)
         m         = new_lc_method(name,visib)
         m.type    = LcMethodT::USER
@@ -66,7 +65,7 @@ module LinCAS::Internal
         return m
     end
 
-    def self.lc_def_static_method(name : String, args : Array(FuncArgument), 
+    def self.lc_def_static_method(name : String, args : FuncArgSet, 
                                   arity : Intnum,code : Bytecode,visib : FuncVisib = FuncVisib::PUBLIC)
         m        = lc_def_method(name,args,arity,code,visib)
         m.static = true
