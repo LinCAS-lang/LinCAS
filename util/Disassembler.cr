@@ -91,15 +91,21 @@ class LinCAS::Disassembler
         print ":arity: ", ' ', method.arity
         print ' ', ":visib:", ' ', method.visib, '\n'
         puts "=== <ARGS> ==="
-        print_v_args(method.args.as(Array(FuncArgument)))
+        print_v_args(method.args)
         puts "=== <BODY> ==="
         print_iseq(method.code.as(Bytecode))
         puts "=" * 40
     end
 
-    protected def print_v_args(args : Array(FuncArgument))
-        args.each do |elem|
-            print elem.name, "<%s>  " % (elem.opt ? "Opt" : "Arg")
+    protected def print_v_args(args : FuncArgSet)
+        args.arg.each do |name|
+            print name, "<Arg>  "
+        end
+        args.opt.each do |arg|
+            print arg.name, "<Opt>  "
+        end
+        if !(name = args.block).empty?
+            print name, "<Block>"
         end
         puts 
     end
