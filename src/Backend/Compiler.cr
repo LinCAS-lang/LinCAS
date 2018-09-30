@@ -445,7 +445,7 @@ class LinCAS::Compiler
 
     protected def compile_func_args(node : Node)
         branches = node.getBranches
-        args     = [] of FuncArgument
+        args     = FuncArgSet.new
         return args if branches.size == 0
         branches.each do |branch|
             if branch.type == NodeType::ASSIGN
@@ -453,12 +453,14 @@ class LinCAS::Compiler
                 opt  = compile_exp(branch)
                 nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
-                arg         = @ifactory.makeFuncArg(name,true) 
-                arg.optcode = opt
-                args << arg
+                arg         = @ifactory.makeOptFuncArg(name,opt)
+                args.opt << arg
+            elsif branch.type == NodeType::BLOCK_PARAM
+                name       = unpack_name(branch)
+                args.block = name
             else
-                name = unpack_name(branch)
-                args << @ifactory.makeFuncArg(name) 
+                name       = unpack_name(branch)
+                args.arg << name
             end
             STstack.set(name)
         end
@@ -540,16 +542,17 @@ class LinCAS::Compiler
     protected def compile_block_args(node : Node)
         arg_list = node.getBranches
         previous = nil
-        follow_v = [] of FuncArgument
+        follow_v = FuncArgSet.new
         arg_list.each do |arg|
             if arg.type == NodeType::ASSIGN
                 name = unpack_name(arg.getBranches[0])
                 opt  = compile_exp(arg)
                 nxt  = @ifactory.makeBCode(Code::QUIT)
                 link(opt,nxt)
-                arg         = @ifactory.makeFuncArg(name,true)
-                arg.optcode = opt 
-                follow_v << arg
+                arg  = @ifactory.makeOptFuncArg(name,opt)
+                follow_v.opt << arg
+            elsif arg.type == NodeType::BLOCK_PARAM
+                follow_v.block = unpack_name(arg)
             else 
                 name        = unpack_name(arg)
                 p_null      = pushn
@@ -557,9 +560,8 @@ class LinCAS::Compiler
                 pop_is      = popobj
                 nxt         = @ifactory.makeBCode(Code::NEXT)
                 link(p_null,storel,pop_is,nxt)
-                arg         = @ifactory.makeFuncArg(name,true)
-                arg.optcode = p_null 
-                follow_v << arg
+                arg         = @ifactory.makeOptFuncArg(name,p_null)
+                follow_v.opt << arg
             end
         end 
         return follow_v
@@ -568,17 +570,18 @@ class LinCAS::Compiler
     protected def compile_block(node : Node)
         @block_depth += 1
         STstack.push_table
-        argv   = node.as(Node).getAttr(NKey::BLOCK_ARG)
-        c_args = compile_block_args(argv.as(Node)) if argv
+        argv   = node.getAttr(NKey::BLOCK_ARG)
+        if argv
+            c_args = compile_block_args(argv.as(Node)) 
+        else 
+            c_args = FuncArgSet.new
+        end
         c_noop = noop
         c_body = compile_body(node)
         ret_is = make_null_next
         file   = new_file(node)
         link(c_noop,file,c_body,ret_is)
-        block         = LcBlock.new(c_noop)
-        if c_args
-            block.args    = c_args
-        end 
+        block         = LcBlock.new(c_noop, c_args)
         STstack.pop_table
         @block_depth -= 1
         return block
