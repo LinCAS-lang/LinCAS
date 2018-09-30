@@ -144,16 +144,22 @@ module LinCAS
         PROC
     end
 
-    struct FuncArgument
-        @optcode : Bytecode? = nil
-        def initialize(@name : String, @opt : Bool)
+    struct OptArg
+        def initialize(@name : String, @optcode : Bytecode)
         end
-        getter name,opt
+        getter name
         property optcode
     end
 
+    class FuncArgSet
+        @arg = [] of String
+        @opt = [] of OptArg
+        @block = ""
+        getter arg, opt
+        property block
+    end
+
     class LcMethod
-        @args      : Array(FuncArgument) | ::Nil = nil 
         @code      : Bytecode | LcProc   | ::Nil
         @owner     : LcClass  | LcModule | ::Nil = nil
         @arity     : IntnumR                     = 0
@@ -161,10 +167,10 @@ module LinCAS
         @static    = false
         @type      = LcMethodT::INTERNAL
         @needs_gc  = false
-        @gc_ref   : Internal::PyGC::Ref? = nil
+        @gc_ref    : Internal::PyGC::Ref? = nil
+        @args      = uninitialized FuncArgSet
 
         def initialize(@name : String,@visib : FuncVisib)
-            @args = nil
             @code = nil
         end
 
@@ -182,9 +188,8 @@ module LinCAS
     end
 
     struct LcBlock
-        @args = [] of FuncArgument
         @scp  : VM::Scope? = nil
-        def initialize(@body : Bytecode)
+        def initialize(@body : Bytecode, @args : FuncArgSet)
             @me = Internal::Null.as(Internal::Value)
         end
         property args,scp,me
