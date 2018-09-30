@@ -176,7 +176,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     macro call_usr(method,argc)
-        return nil unless vm_load_call_args({{method}}.args.as(Array(FuncArgument)),{{argc}})
+        return nil unless vm_load_call_args({{method}}.args,{{argc}})
         current_frame.pc = {{method}}.code.as(Bytecode)
     end
 
@@ -879,17 +879,21 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    protected def vm_load_call_args(argv : Array(FuncArgument),argc : Intnum)
+    protected def vm_load_call_args(args : FuncArgSet,argc : Intnum)
         count = 0
-        argv.each do |arg|
+        args.arg.each do |name|
             value = get_arg(count)
-            name  = arg.name
-            if !arg.opt && value
+            if value
                 store_local(name,unwrap_object(value))
-            elsif !arg.opt
+            elsif
                 lc_raise(LcArgumentError,convert(:few_args) % {count,argc})
                 return nil
             end
+            count += 1
+        end 
+        args.opt.each do |arg|
+            value = get_arg(count)
+            name  = arg.name
             if value
                 store_local(name,unwrap_object(value))
             else
@@ -899,6 +903,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 current_frame.pc = pc 
             end
             count += 1
+        end
+        if !(name = args.block).empty? 
+            if (block = vm_get_block)
+            
+            else
+                store_local(name, Null)
+            end
         end
         return true
     end
