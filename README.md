@@ -52,15 +52,16 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
   * [ ] File IO (The classes are in a primitive status)
   * [x] Symbols
   * [ ] Plot module
-  * [ ] Procs and block catching
+  * [x] Procs and block catching
   * [ ] Adding other useful scientific API
   * [ ] Interactive LinCAS
 
 ## Installation
   1. Install gcc-5 or later versions
-  2. Install Crystal
-  3. Clone the repository with `git clone https://github.com/max-codeware/crLinCAS`
-  4. Enter the cloned folder and run `install.sh`
+  2. Install libgsl-dev and python3.5-dev
+  3. Install Crystal (0.25.0 and 0.25.1 versions won't work)
+  4. Clone the repository with `git clone https://github.com/max-codeware/crLinCAS`
+  5. Enter the cloned folder and run `install.sh`
 
 You'll be asked to insert your password. This is to create the `/usr/lib/LinCAS` folder and copy the binaries into `/usr/bin`
   
