@@ -74,6 +74,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     private enum SCPType
        CLASS_SCP
        BLOCK_SCP
+       PROC_SCP
        CALL_SCP
        MAIN_SCP 
     end
@@ -104,6 +105,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     enum FrameType
         CLASS_FRAME
         BLOCK_FRAME
+        PROC_FRAME
         CALL_FRAME
         MAIN_FRAME
     end
@@ -898,7 +900,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 store_local(name,unwrap_object(value))
             else
                 pc  = current_frame.pc 
-                current_frame.pc = arg.optcode.as(Bytecode)
+                current_frame.pc = arg.optcode
                 vm_run_bytecode
                 current_frame.pc = pc 
             end
@@ -906,7 +908,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
         if !(name = args.block).empty? 
             if (block = vm_get_block)
-            
+                proc = internal.lincas_block_to_proc(block)
+                store_local(name,proc)
             else
                 store_local(name, Null)
             end
@@ -1362,6 +1365,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         ErrHandler.handle_error(error)
     end 
 
+    def get_block 
+        return vm_get_block
+    end
+
     def lc_yield(*args : Value)
         vm_push_args(args)
         if block_given?
@@ -1389,9 +1396,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         m    = method.method
         rec  = method.receiver
         push(wrap_object(rec))
-        argv.each do |el|
-            push(wrap_object(el))
-        end
+        vm_push_args(argv)
         CallTracker.push_track(filename,line,m.name)
         vm_push_new_frame(rec,m.owner.as(Structure),argv.size)
         vm_call_method(m,m.arity)
@@ -1401,6 +1406,21 @@ class LinCAS::VM < LinCAS::MsgGenerator
             set_handle_ret_flag
             return vm_run_bytecode
         end
+    end
+
+    def call_proc(proc : Internal::LCProc, argv : An)
+        vm_push_args(argv)
+        _self = proc.me 
+        args  = proc.args
+        code  = proc.code
+        scp   = proc.scp 
+        argc  = argv.size
+        CallTracker.push_track(filename,line,internal.lincas_obj_to_s(proc))
+        vm_push_new_frame(_self,class_of(_self),argc,scp,FrameType::PROC_FRAME)
+        current_frame.pc = code
+        vm_load_call_args(args,argc)
+        set_handle_ret_flag
+        return vm_run_bytecode
     end
 
     protected def vm_push_args(args)
