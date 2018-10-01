@@ -558,7 +558,7 @@ class LinCAS::Compiler
                 p_null      = pushn
                 storel      = emit_store_l(name,true)
                 pop_is      = popobj
-                nxt         = @ifactory.makeBCode(Code::NEXT)
+                nxt         = @ifactory.makeBCode(Code::QUIT)
                 link(p_null,storel,pop_is,nxt)
                 arg         = @ifactory.makeOptFuncArg(name,p_null)
                 follow_v.opt << arg
