@@ -127,14 +127,15 @@ module LinCAS::Internal
         next internal.lc_obj_init(*args.as(T1))
     end
 
-    def self.lc_obj_to_s(obj : Value)
+    def self.lincas_obj_to_s(obj : Value)
         string = String.build do |io|
             lc_obj_to_s(obj,io)
-        end 
-        return build_string(string)
-    ensure
-        GC.free(Box.box(string))
-        GC.collect 
+        end
+        return string
+    end
+
+    def self.lc_obj_to_s(obj : Value)
+        return build_string(lincas_obj_to_s(obj))
     end
 
     obj_to_s = LcProc.new do |args|
