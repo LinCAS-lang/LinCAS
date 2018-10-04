@@ -1,0 +1,35 @@
+class Object {
+    let print_error(err,indent) {
+        print indent
+        printl err.message()
+        printl err.backtrace()
+    }
+}
+
+module Test {
+    class ClassList inherits Array {
+        let init() {}
+
+        let add(klass) {
+            if !include?(klass) { self << klass }
+        }
+    }
+
+    const Classes := new ClassList()
+
+    let self.print_result() {
+        &Classes.each() { (c)
+            c.auto_print()
+        }
+    }
+
+    at_exit() { print_result() }
+
+}
+
+[
+    "./test/testcase.lc",
+    "./test/Assert.lc"
+].each() { (file)
+    require_relative(file)
+}
