@@ -8,7 +8,8 @@ class Object {
 
 module Test {
     class ClassList inherits Array {
-        let init() {}
+        alias(:init,:p_init)
+        let init() { p_init(3) }
 
         let add(klass) {
             if !include?(klass) { self << klass }
