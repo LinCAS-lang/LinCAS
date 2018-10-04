@@ -67,7 +67,8 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             if {{node}}.getBranches[0].getAttr(NKey::ID) != "[]"
                 @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
             end
-        elsif !({NodeType::LOCAL_ID, NodeType::GLOBAL_ID, NodeType::CONST_ID}.includes? {{node}}.type)
+        elsif !({NodeType::LOCAL_ID, NodeType::GLOBAL_ID, 
+                 NodeType::CONST_ID, NodeType::SELF}.includes? {{node}}.type)
             @errHandler.flag(@currentTk,ErrCode::INVALID_ASSIGN,self)
         end
     end
@@ -1083,6 +1084,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
             node.addBranch(parseExp)
             sync(call_sync_set)
         end
+        skipEol
         if @currentTk.ttype == TkType::R_PAR
             shift 
         else
