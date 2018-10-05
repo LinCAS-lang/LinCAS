@@ -9,7 +9,7 @@ class Object {
 module Test {
     class ClassList inherits Array {
         alias(:init,:p_init)
-        let init() { p_init(3) }
+        let init() { p_init(0) }
 
         let add(klass) {
             if !include?(klass) { self << klass }
@@ -29,8 +29,8 @@ module Test {
 }
 
 [
-    "./test/testcase.lc",
-    "./test/Assert.lc"
+    "./test/Assert.lc",
+    "./test/testcase.lc"
 ].each() { (file)
     require_relative(file)
 }

@@ -1,4 +1,5 @@
 class Test::TestCase {
+    include Test::Assert
 
     const Descs := []
     @c_desc     := null
@@ -23,7 +24,7 @@ class Test::TestCase {
 
         let auto_print() {
             print Indent, @desc 
-            printl
+            printl ""
             if @error 
             {
                 if @error.is_a?(AssertionError) { 
@@ -36,7 +37,7 @@ class Test::TestCase {
                     a.auto_print()
                 }
             }
-            printl
+            printl ""
         }
     }
 
@@ -70,11 +71,12 @@ class Test::TestCase {
     }
 
     let self.describe(object,&block) {
-        if !object.is_a?(String) { object := object.to_s() }
+        if !object.is_a?(String) then { object := object.to_s() }
         @c_desc := new Description(object)
-        try     { block.call() } 
-        catch e { @c_desc.set_error(e) } 
-        Classes.add(self)
+        try     { block.call()} 
+        catch e { @c_desc.set_error(e)} 
+        Test::Classes.add(self)
+        Descs << @c_desc
         @c_desc := null
     }
 
