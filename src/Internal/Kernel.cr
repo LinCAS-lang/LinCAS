@@ -23,10 +23,26 @@ module LinCAS::Internal
     #
     # Here methods are documented as static, but they are
     # available as instance methods in instantiated objects
+    
 
     ExitProcs = [] of Value
     @@running = false
+    @@version = load_version.as(String)
     ExitArg   = [Null]
+
+    private def self.load_version : String
+        if File.exists?(file = "/usr/local/lib/LinCAS/LinCAS/VERSION")
+            version = File.read(file).chomp
+            if version.empty?
+                LinCAS.lc_bug("Missing LinCAS verion")
+            end
+            return version
+        else
+            LinCAS.lc_bug("Missing LinCAS verion")
+        end
+        # Unreachable
+        ""
+    end
 
     private def self.set_at_exit_proc(proc : Value)
         if @@running
@@ -165,7 +181,7 @@ module LinCAS::Internal
     end
 
     private def self.define_version
-        return build_string(ENV["version"])
+        return build_string(@@version)
     end
 
     #$S at_exit

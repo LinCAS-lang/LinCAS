@@ -21,10 +21,8 @@ require "colorize"
 {% if flag?(:use_lp) %}
     ENV["libDir"] = File.expand_path("../lib",Dir.current)
 {% else %}
-    ENV["libDir"] = "/usr/lib/LinCAS"
+    ENV["libDir"] = "/usr/local/lib/LinCAS/lib"
 {% end %}
-
-ENV["version"] = "0.1.0"
 
 FFactory      = FrontendFactory.new
 Compile       = Compiler.new
