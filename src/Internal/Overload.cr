@@ -61,4 +61,9 @@ class Object
         puts "Warning: #{msg}\n"
     end
 
+    def lincas_exit(status = 0)
+        Internal.invoke_at_exit_procs status
+        exit status
+    end
+
 end

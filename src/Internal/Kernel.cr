@@ -15,6 +15,53 @@
 
 module LinCAS::Internal
 
+    #$M Kernel
+    # This module is included in `Class` class.
+    #
+    # All its methods are available in every object,
+    # and they do not need a receiver.
+    #
+    # Here methods are documented as static, but they are
+    # available as instance methods in instantiated objects
+
+    ExitProcs = [] of Value
+    @@running = false
+    ExitArg   = [Null]
+
+    private def self.set_at_exit_proc(proc : Value)
+        if @@running
+            lc_raise(LcRuntimeError,"can't call at_exit() inside a finalization proc")
+        else
+            ExitProcs << proc 
+        end
+    end
+
+    def self.invoke_at_exit_procs(status = 0)
+        ExitArg[0] = num2int(status)
+        @@running = true 
+        while proc = ExitProcs.pop?
+            Exec.call_proc(proc.as(LCProc),ExitArg)
+        end
+        @@running = false
+    end
+
+    #$S printl
+    #$U printl(obj1,obj2,...) -> null
+    # Prints every object passed as parameter
+    # on a new line in the console.
+    # If no parameter is passed, a new line will be printed
+    #
+    # This method can be invoked without parenthesis
+    # ```
+    # printl "hello", "everyone ", 123
+    # ```
+    #
+    # Produces:
+    # ```
+    # hello
+    # everyone
+    # 123
+    # ```
 
     def self.lc_outl(arg)
         self.lc_out(arg)
@@ -109,7 +156,7 @@ module LinCAS::Internal
         else
             status = 0
         end
-        exit status.to_i32 if status
+        lincas_exit status.to_i32 if status
         return Null
     end
 
@@ -119,6 +166,38 @@ module LinCAS::Internal
 
     private def self.define_version
         return build_string(ENV["version"])
+    end
+
+    #$S at_exit
+    #$U at_exit(&block) -> proc or null
+    # Registers the given `block` as proc for execution
+    # when the program exits.
+    # If multiple Procs are registered, they're invoked in 
+    # reverse order.
+    # ```
+    # at_exit() { printl "people"}
+    # at_exit() { print "Goodbye "}
+    # ```
+    #
+    # Produces:
+    # ```
+    # Goodbye people
+    # ```
+
+    def self.lc_at_exit()
+        block = Exec.get_block
+        if block 
+            proc = lincas_block_to_proc(block)
+            set_at_exit_proc(proc)
+            return proc
+        else
+            lc_raise(LcArgumentError,"invoked without a block")
+            return Null 
+        end
+    end
+
+    at_exit_ = LcProc.new do |args|
+        next lc_at_exit
     end
     
 
@@ -133,6 +212,7 @@ module LinCAS::Internal
     lc_module_add_internal(LKernel,"reads",reads,      0)
     lc_module_add_internal(LKernel,"include",include_m,1)
     lc_module_add_internal(LKernel,"exit",exit_,      -1)
+    lc_module_add_internal(LKernel,"at_exit",at_exit_, 0)
 
     lc_define_const(LKernel,"ARGV",define_argv)
     lc_define_const(LKernel,"ENV", define_env)
