@@ -442,6 +442,14 @@ module LinCAS::Internal
         next num2int(ary_size(args.as(T1)[0]))
     end
 
+    def self.lc_ary_empty(ary : Value)
+        return (ary_size(ary) == 0) ? lctrue : lcfalse
+    end
+
+    ary_empty = LcProc.new do |args|
+        next lc_ary_empty(*lc_cast(args,T1))
+    end
+
     def self.ary_to_string(ary : Value)
         buffer = string_buffer_new
         ary_append(buffer,ary)
@@ -927,7 +935,8 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"first",ary_first,     0)
     internal.lc_add_internal(AryClass,"last", ary_last,      0)
     internal.lc_add_internal(AryClass,"size", ary_len,       0)
-    internal.lc_add_internal(AryClass,"length",ary_len,      0)
+            alias_method_str(AryClass,"size","length"         )
+    internal.lc_add_internal(AryClass,"empty?", ary_empty,   0)
     internal.lc_add_internal(AryClass,"to_s", ary_to_s,      0)
     internal.lc_add_internal(AryClass,"each",ary_each,       0)
     internal.lc_add_internal(AryClass,"map",ary_map,         0)
