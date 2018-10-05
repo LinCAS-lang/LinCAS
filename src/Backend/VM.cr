@@ -200,7 +200,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     macro push_frame(frame)
         {% if flag?(:vm_debug) %}
-            puts "pushing frame #{{{frame}}.type}"
+            puts "pushing frame #{{{frame}}.type}".colorize(:red)
         {% end %}
         if @vm_fp == @framev.size 
             @framev.push({{frame}})
@@ -353,12 +353,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def new_frame(self_ref : Value, context : Structure,argc : Int32,type : FrameType)
         if @vm_fp >= @framev.size
             return LcFrame.new(self_ref,context,argc,type)
-        else
-            fm         = @framev[@vm_fp]
-            fm.me      = self_ref
-            fm.context = context
-            fm.argc    = argc
-            fm.type    = type
+        else 
+            fm             = @framev[@vm_fp]
+            fm.me          = self_ref
+            fm.context     = context
+            fm.argc        = argc
+            fm.type        = type
+            fm.handled_ret = false
             return fm 
         end
     end
@@ -401,7 +402,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         fm      = @framev[@vm_fp]
         @sp     = fm.fp
         {% if flag?(:vm_debug) %}
-            puts "popping frame #{fm.type}"
+            puts "popping frame #{fm.type}".colorize(:red)
         {% end %}
         return fm.argc
     end
@@ -445,7 +446,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             fm.pc = tmp 
             return tmp
         else
-            raise VMerror.new("VM failed to fetch bytecode")
+            raise VMerror.new("VM failed to fetch bytecode (frame #{current_frame.type})")
         end 
     end
 
@@ -486,7 +487,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::FILENAME
                     vm_push_location(is.text)
                 when Code::HALT
-                    exit 0
+                    lincas_exit 0
                 when Code::QUIT
                     return Null 
                 when Code::PUSHN
@@ -811,6 +812,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_call(name : String, argc : Intnum)
+        {% if flag?(:vm_debug) %}
+            puts "calling: #{name}".colorize :yellow
+        {% end %}
         CallTracker.push_track(filename,line,name)
         selfr  = vm_get_receiver(argc)
         method = fetch_call_method(selfr,name)
@@ -821,6 +825,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_m_call(name : String, argc : Intnum)
+        {% if flag?(:vm_debug) %}
+            puts "calling method: #{name}".colorize :yellow
+        {% end %}
         CallTracker.push_track(filename,line,name)
         receiver  = vm_get_receiver(argc)
         method    = fetch_method(receiver,name)
@@ -850,6 +857,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def vm_return_internal
+        {% if flag?(:vm_debug) %}
+            puts "Internal function #{CallTracker.current_call_name} returned"
+        {% end %}
         value = pop 
         argc  = vm_pop_frame
         discard_arguments(argc + 1)
@@ -859,7 +869,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_return
         {% if flag?(:vm_debug) %}
-            puts "Returning from func"
+            puts "Returning from method: #{CallTracker.current_call_name};\
+            frame: #{current_frame.type}".colorize(:yellow)
         {% end %}
         value       = pop
         @handle_ret = current_frame.handled_ret
@@ -1170,7 +1181,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_leave
         {% if flag?(:vm_debug) %}
-            puts "Leaving frame"
+            puts "Leaving frame #{current_frame.type};\
+            call: #{CallTracker.current_call_name}".colorize(:green)
         {% end %}
         fm = current_frame
         vm_pop_frame
@@ -1190,7 +1202,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_next 
         {% if flag?(:vm_debug) %}
-            puts "Returning from block"
+            puts "Returning from block; frame: #{current_frame.type}".colorize(:yellow)
         {% end %}
         value       = pop
         @handle_ret = current_frame.handled_ret
