@@ -38,7 +38,7 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
 
 ## To do:
   * [ ] Code cleanup
-  * [ ] Unit Test library
+  * [x] Unit Test library
   * [ ] Core API documentation
   * [ ] Improving parsing time. Maybe using a Bison-generated parser
   * [ ] Compile time optimizations
