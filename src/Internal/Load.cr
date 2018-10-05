@@ -18,6 +18,7 @@ module LinCAS::Internal
     REQUIRED = [] of String
     DirLib   = build_string(ENV["libDir"])
     Ext      = build_string(".lc")
+    Sep      = build_string("/")
 
     ParserAbort = Parser::ParserAbort
 
@@ -71,7 +72,7 @@ module LinCAS::Internal
 
     def self.lc_import_file(path : Value)
         str_check(path)
-        lc_str_concat(path,[Ext])
+        lc_str_concat(path,[Sep,lc_str_clone(path),Ext])
         iseq = require_file(path,DirLib)
         if iseq 
             Exec.run(iseq)
