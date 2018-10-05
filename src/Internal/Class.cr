@@ -554,6 +554,7 @@ module LinCAS::Internal
     internal.lc_add_static(Lc_Class,"<>",   class_ne,         1)
     internal.lc_add_static(Lc_Class,"!=",   class_ne,         1)
     internal.lc_add_static(Lc_Class,"to_s", class_to_s,       0)
+    internal.lc_add_static(Lc_Class,"name", class_to_s,       0)
     internal.lc_add_static(Lc_Class,"inspect",class_inspect,  0)
     internal.lc_add_static(Lc_Class,"defrost",class_defrost,  0)
     internal.lc_add_static(Lc_Class,"parent",class_parent,    0)
