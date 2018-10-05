@@ -58,4 +58,10 @@ class LinCAS::VMcall_tracker
         return @stack.last.line 
     end
 
+    {% if flag?(:vm_debug) %}
+        def current_call_name
+            return @stack.last.callname
+        end
+    {% end %}
+
 end
