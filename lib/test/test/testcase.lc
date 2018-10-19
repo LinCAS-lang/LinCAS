@@ -1,107 +1,60 @@
 class Test::TestCase {
     include Test::Assert
 
-    const Descs := []
-    @c_desc     := null
-
-    class Description {
-
-        const Indent := "  "
-
-        let init(desc) {
+    class Case {
+        let init(desc,block) {
             @desc    := desc 
-            @assumpt := []
-            @error   := null
-        }
-
-        let add_assumption(assumpt) {
-            @assumpt << assumpt
-        }
-
-        let set_error(err) {
-            @error := err
-        }
-
-        let auto_print() {
-            print Indent, @desc 
-            printl ""
-            if @error 
-            {
-                if @error.is_a?(AssertionError) { 
-                    printl @error.message()
-                } else {
-                    print_error(@error,Indent)
-                }
-            } else {
-                @assumpt.each() { (a) 
-                    a.auto_print()
-                }
-            }
-            printl ""
+            @block   := block
         }
     }
 
-    class Assumption {
-
-        const Indent := "    "
-
-        let init(desc,result) {
-            @desc   := desc 
-            @result := result
+    class Description inherits Case{
+        let execute() {
+            try {
+                block.call()
+            } catch e {
+                Test::Runner.current_context().add_description_failure(@desc,e)
+            }
         }
+    }
 
-        let auto_print() {
-            if @result == true {
-                print Indent,"[passed] "
-                printl @desc 
-            } else {
-                if @result.is_a? (Error) {
-                    print Indent, "[failed] "
-                    printl @desc
-                    indent := Indent + "  "
-                    if @result.is_a? (AssertionError) {
-                        print indent
-                        printl @result.message() 
-                    } else {
-                        print_error(@error,indent)
-                    }
-                }
+    class Assumption inherits Case{
+        let execute() { 
+            try {
+                @block.call()
+            } catch e {
+                Test::Runner.current_context().add_assumption_failure(@desc,e)
+            }
+        }
+    }
+
+    class APITest inherits Case {
+        let execute() {
+            try {
+                @block.call()
+            } catch e {
+                Test::Runner.current_context().add_test_failure(@desc,e)
             }
         }
     }
 
     let self.describe(object,&block) {
         if !object.is_a?(String) then { object := object.to_s() }
-        @c_desc := new Description(object)
-        try     { block.call()} 
-        catch e { @c_desc.set_error(e)} 
-        Test::Classes.add(self)
-        Descs << @c_desc
-        @c_desc := null
+        Test::Classes[self].add(new Description(object,block))
     }
 
     let self.it(assumption,&block) {
         if !assumption.is_a?(String) { 
-            raise new ArgumentError("assumption description must be a string") 
+            raise new ArgumentError("Assumption description must be a string") 
         }
-        if !(@c_desc) {
-            raise new RuntimeError("Assumption without a description")
-        }
-        assumpt := null
-        try     { block.call() }
-        catch e { assumpt := new Assumption(assumption,e) }
-        if assumpt {
-            @c_desc.add_assumption(assumpt)
-        } else {
-            @c_desc.add_assumption(new Assumption(assumption,true))
-        }
+        Test::Classes[self].add(new Assumption(assumption,e)) 
     }
 
-    let self.auto_print() {
-        printl self.name()
-        Descs.each() { (d)
-            d.auto_print()
+    let self.test(test,&block) {
+        if !test.is_a?(String) { 
+            raise new ArgumentError("Test description must be a string") 
         }
+        Test::Classes[self].add(new APITest(test,block))
     }
 
 }

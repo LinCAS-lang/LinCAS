@@ -1,36 +1,36 @@
-class Object {
-    let print_error(err,indent) {
-        print indent
-        printl err.message()
-        printl err.backtrace()
-    }
-}
-
 module Test {
-    class ClassList inherits Array {
-        alias(:init,:p_init)
-        let init() { p_init(0) }
+    class Suite {
+        let init()    { @cases := []   }
+        let add(elem) { @cases << elem }
+        let cases()   { @cases         }
+    }
 
-        let add(klass) {
-            if !include?(klass) { self << klass }
+    class ClassSuite inherits Hash {
+        alias(:"[]",:access)
+
+        let [](klass) {
+            if !keys().include?(klass) { 
+                suite = new Suite()
+                self[klass] := suite 
+                return suite
+            }
+            return access(klass)
         }
     }
 
-    const Classes := new ClassList()
+    const Classes := new ClassSuite()
 
-    let self.print_result() {
-        &Classes.each() { (c)
-            c.auto_print()
-        }
+    [
+        "./test/Assert.lc",
+        "./test/testcase.lc"
+    ].each() { (file)
+        require_relative(file)
     }
 
-    at_exit() { print_result() }
+    at_exit() { 
+        exit(
+            Runner.run(Classes)
+        ) 
+    }
 
-}
-
-[
-    "./test/Assert.lc",
-    "./test/testcase.lc"
-].each() { (file)
-    require_relative(file)
 }
