@@ -48,8 +48,8 @@ module LinCAS
                 "self"       => TkType::SELF,
                 "yield"      => TkType::YIELD,
                 "raise"      => TkType::RAISE,
-                "__file__"   => TkType::FILEMC,
-                "__dir__"    => TkType::DIRMC,
+                "__FILE__"   => TkType::FILEMC,
+                "__DIR__"    => TkType::DIRMC,
                 "try"        => TkType::TRY,
                 "catch"      => TkType::CATCH,
 
@@ -120,7 +120,7 @@ module LinCAS
             }
 
     protected def toTkType(tkName : String)
-        return TokenDictConverter[tkName.downcase]?
+        return TokenDictConverter[tkName]?
     end
 
     protected def isSpecialChar?(charTk)
