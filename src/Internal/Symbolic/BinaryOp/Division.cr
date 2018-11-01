@@ -88,6 +88,10 @@ module LinCAS::Internal
         def *(obj) : Symbolic
             return SZERO if obj == 0
             return self if obj == 1
+            return @left if obj == @right
+            if tmp = obj.opt_div(@right)
+                return tmp * @left 
+            end
             return obj / @right if @left == 1
             return Product.new(self,obj)
         end
@@ -95,6 +99,12 @@ module LinCAS::Internal
         def opt_prod(obj : Snumber) : Symbolic?
             return self if obj == 1
             return SZERO if obj == 0
+            if tmp = @left.opt_prod(obj)
+                return tmp / @right
+            end
+            if tmp = obj.opt_div(@right)
+                return @left / tmp 
+            end
             nil
         end
 

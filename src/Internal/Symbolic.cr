@@ -110,8 +110,8 @@ module LinCAS::Internal
 
     {% for name in %w|sum sub prod div power|%}
         def self.lc_func_{{name.id}}(f1 : Value, f2 : Value)
-            check_fun(f2)
-            return build_function(s_{{name.id}}(get_function(f1),get_function(f2)))
+            check_fun(f2) unless f2.is_a? LcNum
+            return build_function(s_{{name.id}}(get_function(f1),(f2.is_a? LcNum) ? f2 : get_function(f2)))
         end
     {% end %}
 
