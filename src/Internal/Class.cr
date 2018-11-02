@@ -545,7 +545,7 @@ module LinCAS::Internal
 
 
     MainClass      = lc_build_class("BaseClass")
-    Lc_Class       = internal.lc_build_internal_class("cClass",MainClass)
+    Lc_Class       = internal.lc_build_internal_class("Class",MainClass)
     Lc_Class.klass = Lc_Class
 
     # internal.lc_remove_static(Lc_Class,"new")

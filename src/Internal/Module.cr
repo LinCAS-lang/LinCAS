@@ -113,6 +113,6 @@ module LinCAS::Internal
         internal.lc_add_static(mod,name,method,arity)
     end
 
-    Lc_Module = internal.lc_build_internal_class("cModule")
+    Lc_Module = internal.lc_build_internal_class("Module")
 
 end
