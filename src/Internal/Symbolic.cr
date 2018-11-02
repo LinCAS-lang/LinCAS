@@ -411,7 +411,7 @@ module LinCAS::Internal
     internal.lc_add_internal(SymbolicClass,"*",func_prod,        1)
     internal.lc_add_internal(SymbolicClass,"/",func_div,         1)
     internal.lc_add_internal(SymbolicClass,"\\",func_div,        1)
-    internal.lc_add_internal(SymbolicClass,"^",func_power,       1)
+    internal.lc_add_internal(SymbolicClass,"**",func_power,       1)
     internal.lc_add_internal(SymbolicClass,"-@",func_uminus,     0)
     internal.lc_add_internal(SymbolicClass,"diff",func_diff,     1)
     internal.lc_add_internal(SymbolicClass,"eval",func_eval,     1)
