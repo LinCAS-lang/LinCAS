@@ -1231,7 +1231,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         fm    = current_frame
         if block 
             CallTracker.push_track(filename,line,"<block>")
-            vm_push_new_frame(fm.me,fm.context,argc,block.scp.as(Scope))
+            _self = block.me
+            vm_push_new_frame(_self,class_of(_self),argc,block.scp.as(Scope))
             fm    = current_frame
             fm.pc = block.body
             vm_load_call_args(block.args,argc)
