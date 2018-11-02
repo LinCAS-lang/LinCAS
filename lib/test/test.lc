@@ -1,5 +1,5 @@
 module Test {
-    class Suite {
+    class Suite inherits Array{
         let init()    { @cases := []   }
         let add(elem) { @cases << elem }
         let cases()   { @cases         }
@@ -10,7 +10,7 @@ module Test {
 
         let [](klass) {
             if !keys().include?(klass) { 
-                suite = new Suite()
+                suite := new Suite()
                 self[klass] := suite 
                 return suite
             }
@@ -20,17 +20,22 @@ module Test {
 
     const Classes := new ClassSuite()
 
+    let self.describe(object,&block) {
+        Descs << new TestCase::Description(object,block)
+    }
+
     [
-        "./test/Assert.lc",
-        "./test/testcase.lc"
+        "./test/assert.lc",
+        "./test/testcase.lc",
+        "./test/context.lc",
+        "./test/runner.lc"
     ].each() { (file)
         require_relative(file)
     }
 
     at_exit() { 
-        exit(
-            Runner.run(Classes)
-        ) 
+        Runner.add_suite(Classes)
+        exit(Runner.run()) 
     }
 
 }

@@ -1,0 +1,48 @@
+module Test {
+    class Context {
+
+        class Failure {
+            let init(desc,error) {
+                @desc  := desc
+                @error := error
+            }
+
+            let desc() { @desc }
+            let error(){ @error}
+        }
+
+        class Err inherits Failure {}
+
+        let init(klass) 
+        {
+            @failures := []
+            @klass    := klass
+        }
+
+        let failures_n() { @failures.size() }
+
+        let klass(klass := null) { 
+            if klass then { @klass := klass } else { @klass }            
+        }
+
+        let add_test_failure(desc,error) {
+            @failures << new Failure(
+                desc,
+                error
+            )
+        }
+
+        let add_errored_test(desc,error) {
+
+        }
+
+        let print_failures() {
+            indent := " - "
+            printl @klass.to_s().concat(":")
+            @failures.each() { (f) 
+                print indent, f.desc(),": "
+                printl f.error().message()
+            }
+        }
+    }
+}

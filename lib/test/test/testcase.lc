@@ -6,26 +6,8 @@ class Test::TestCase {
             @desc    := desc 
             @block   := block
         }
-    }
 
-    class Description inherits Case{
-        let execute() {
-            try {
-                block.call()
-            } catch e {
-                Test::Runner.current_context().add_description_failure(@desc,e)
-            }
-        }
-    }
-
-    class Assumption inherits Case{
-        let execute() { 
-            try {
-                @block.call()
-            } catch e {
-                Test::Runner.current_context().add_assumption_failure(@desc,e)
-            }
-        }
+        let desc() { @desc }
     }
 
     class APITest inherits Case {
@@ -36,18 +18,6 @@ class Test::TestCase {
                 Test::Runner.current_context().add_test_failure(@desc,e)
             }
         }
-    }
-
-    let self.describe(object,&block) {
-        if !object.is_a?(String) then { object := object.to_s() }
-        Test::Classes[self].add(new Description(object,block))
-    }
-
-    let self.it(assumption,&block) {
-        if !assumption.is_a?(String) { 
-            raise new ArgumentError("Assumption description must be a string") 
-        }
-        Test::Classes[self].add(new Assumption(assumption,e)) 
     }
 
     let self.test(test,&block) {

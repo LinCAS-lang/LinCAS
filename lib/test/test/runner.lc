@@ -1,0 +1,88 @@
+module Test {
+    class TestRunner {
+        let init() 
+        { 
+            @context := []    
+            @recycle := []
+            @failed  := []
+            @tests_n := 0
+        }
+
+        let add_suite(suite) { @suites := suite  }
+        let current_context(){ @context.last()   }
+        let push_context(ctx){ @context.push(ctx)}
+        let pop_context()    { @context.pop()    }
+        
+        let run() {
+            run_suite()
+            return make_stat()
+        }
+
+        private let new_context(klass) {
+            if @recycle.empty?() {
+                return new Context(klass)
+            } else {
+                ctx := @context.pop()
+                ctx.type(type)
+                ctx.klass(klass)
+                return ctx
+            }
+        }
+
+        private let handle_context(ctx) {
+            if ctx.failures_n() > 0 {
+                @failed << ctx
+            } else {
+                @recycle << ctx
+            }
+        }
+
+        private let run_suite() {
+            @suites.each_key() { (k)
+                suite := @suites[k]
+                run_tests(k,suite.cases())
+            }
+        }
+
+        private let run_tests(klass,tests) {
+            push_context(new_context(klass))
+            tests.each() { (t) t.execute(); @tests_n += 1 }
+            handle_context(pop_context())
+        }
+
+        private let make_stat() {
+            failed     := failures_n()
+            successful := @tests_n - failed
+            printl "Executed tests: ".concat(
+                @tests_n,
+                ", successful: ",
+                successful,
+                ", failed: ",
+                failed
+            )
+            printl 
+            if !@failed.empty?() {
+                print_failures()
+                return 1 
+            }
+            return 0
+        }
+
+        private let failures_n() {
+            fails := 0
+            @failed.each() { (ctx)
+                fails += ctx.failures_n()
+            }
+            return fails
+        }
+
+        private let print_failures() {
+            @failed.each() { (ctx)
+                ctx.print_failures()
+            }
+        }
+
+    }
+
+    const Runner := new TestRunner()
+}
