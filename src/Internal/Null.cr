@@ -55,7 +55,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_null_to_s(arg = Null)
-        return build_string("null")
+        return build_string("")
     end
 
     null_to_s = LcProc.new do |args|
