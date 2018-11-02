@@ -144,6 +144,16 @@ module LinCAS::Internal
         return size 
     end
 
+    private def self.stringify(array : An)
+        array.map do |obj|
+            if !obj.is_a? LcString
+                Exec.lc_call_fun(obj,"to_s")
+            else
+                obj 
+            end
+        end
+    end
+
     def self.new_string
         str   = LcString.new
         str.klass = StringClass
@@ -336,7 +346,8 @@ module LinCAS::Internal
     # * argument:: other strings to concatenate
     # * returns:: first string
     def self.lc_str_concat(str1 : Value, str2 : An)
-        len = compute_total_string_size(str2)
+        str2 = stringify(str2)
+        len  = compute_total_string_size(str2)
         return Null unless len > 0
         strlen = str_size(str1)
         resize_str_capacity(str1,len)
@@ -389,8 +400,8 @@ module LinCAS::Internal
     # ```coffee
     # str := "A cat on the roof"
     # cat := "Cat"
-    # str.include(cat)   #=> true
-    # str.include("bed") #=> false
+    # str.include?(cat)   #=> true
+    # str.include?("bed") #=> false
     # ```
     
     # * argument:: string on which the method is called
