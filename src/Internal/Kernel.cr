@@ -89,6 +89,22 @@ module LinCAS::Internal
         next Null
     end
 
+    #$S print
+    #$U print(obj1,obj2,...) -> null
+    # Prints every object passed as parameter
+    # on a single line in the console.
+    # If no parameter is passed, `null` will e printed
+    #
+    # This method can be invoked without parenthesis
+    # ```
+    # print "hello", " everyone ", 123
+    # ```
+    #
+    # Produces:
+    # ```
+    # hello everyone 123
+    # ```
+
     def self.lc_out(arg)
         if arg.is_a? LcString
             LibC.printf("%s",arg.str_ptr)
@@ -97,7 +113,7 @@ module LinCAS::Internal
         elsif arg.is_a? LcFalse
             LibC.printf("false")
         elsif arg == Null
-            LibC.printf("null")
+            LibC.printf("")
         elsif arg.is_a? LcNum
             LibC.printf("#{arg.as(LcNum).val}")
         elsif arg.is_a? LcArray
@@ -125,6 +141,10 @@ module LinCAS::Internal
         next Null
     end
 
+    #$S reads
+    #$U reads() -> string
+    # Reads a line from the STDIN
+
     def self.lc_in
         value = STDIN.gets
         str   = internal.build_string(value || "")
@@ -134,6 +154,38 @@ module LinCAS::Internal
     reads = LcProc.new do |args|
         next internal.lc_in
     end
+
+    #$S include
+    #$U include(module) -> boolean
+    # Includes a module in a class or in a object class.
+    # This is useful to add methods defined in a module
+    # to a class or object, as a sort of multiple inheritance
+    #
+    # This method can be invoked without parenthesis
+    # ```coffee
+    # module Foo {
+    #   let foo 
+    #   {
+    #     printl "Foo"
+    #   }
+    # 
+    #   let self.bar
+    #   {
+    #     printl "Bar"
+    #   }  
+    # }
+    # 
+    # class Bar {
+    #   include Foo
+    # }
+    #
+    # Bar.bar()       #=> Bar
+    # new Bar().foo() #=> Foo
+    # Bar.foo         #=> NoMethodError
+    # ```
+    #
+    # Static methods are passed as static, while non-static
+    # as instance ones
 
     def self.lc_include(klass : Value, mod : Value)
         if !(mod.is_a? Structure)
@@ -146,8 +198,9 @@ module LinCAS::Internal
                 klass = class_of(klass)
             end
             internal.lc_include_module(klass.as(Lc_Class),mod.as(LcModule))
+            return lctrue
         end
-        return lctrue
+        return lcfalse
     end
 
     include_m = LcProc.new do |args|
@@ -165,6 +218,10 @@ module LinCAS::Internal
     private def self.define_env
         return build_hash
     end
+
+    #$S exit
+    #$U exit(status := 0)
+    # exits the program with the given status
 
     def self.lc_exit(status : Value? = nil)
         if status
