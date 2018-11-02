@@ -127,7 +127,7 @@ module LinCAS::Internal
     # It takes as argument a LinCAS Object (array) and returns a
     # Python object reference (PyObject).
     # No check is performed on the passed argument (ary), so
-    # be sure of whar you're doing
+    # be sure of what you're doing
     def self.ary2py(ary : Value)
         size  = ary_size(ary)
         ptr   = ary_ptr(ary)
@@ -580,6 +580,7 @@ module LinCAS::Internal
     end
 
     def self.lc_ary_eq(ary1 : Value, ary2 : Value)
+        return lcfalse unless ary2.is_a? LcArray
         return lcfalse if ary_size(ary1) != ary_size(ary2)
         arylen = ary_size(ary1)
         arylen.times do |i|
