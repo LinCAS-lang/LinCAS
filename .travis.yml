@@ -39,8 +39,12 @@ before_install:
   - if [ ! -d "./bin" ]; then
       mkdir ./bin; 
     fi
-  - if [ ! -d "/usr/lib/LinCAS" ]; then
-      sudo mkdir /usr/lib/LinCAS;
+  - if [ ! -d "/usr/local/lib/LinCAS/LinCAS" ]; then
+      sudo mkdir /usr/local/lib/LinCAS/LinCAS;
+    fi 
+  - if [ ! -d "/usr/local/lib/LinCAS/lib" ]; then
+      echo Creating lib folder
+      sudo mkdir /usr/local/lib/LinCAS/lib
     fi
 
 script: 
@@ -49,6 +53,9 @@ script:
   - crystal build ./src/LinCAS.cr -o ./bin/lincas --no-debug --release --stats
   - ls ./bin
   - sudo cp ./bin/lincas /usr/bin/lincas
+  - sudo touch /usr/local/lib/LinCAS/LinCAS/VERSION
+  - sudo cp ./VERSION /usr/local/lib/LinCAS/LinCAS/VERSION
+  - sudo cp -r ./lib/test /usr/local/lib/LinCAS/lib
   - crystal spec
 
 
