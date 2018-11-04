@@ -79,7 +79,6 @@ module LinCAS
         @methods : SymTab_t
         @statics : SymTab_t
         @type     = uninitialized SType
-        # @frozen   = false
         @flags   : ObjectFlags = ObjectFlags::NONE
 
         def initialize(@name : String,path : Path? = nil)
