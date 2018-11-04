@@ -24,8 +24,9 @@ module LinCAS::Internal
     global(
         enum ObjectFlags
             NONE   = 0
-            FAKE   = 1 << 0
-            SHARED = 1 << 1
+            FROZEN = 1 << 0
+            FAKE   = 1 << 1
+            SHARED = 1 << 2
         end
 
     )
@@ -33,19 +34,17 @@ module LinCAS::Internal
     abstract struct BaseS
         @klass  = uninitialized LcClass
         @data   = uninitialized Data
-        @frozen = false
         @id     = 0_u64
         @flags  : ObjectFlags = ObjectFlags::NONE
-        property klass, frozen, data, id
+        property klass, data, id, flags
     end
 
     abstract class BaseC
         @klass  = uninitialized LcClass
         @data   = uninitialized Data
-        @frozen = false
         @id     = 0_u64
         @flags  = uninitialized ObjectFlags
-        property klass, frozen, data, id
+        property klass, data, id, flags
     end
 
     global alias Value  = Internal::BaseS | Internal::BaseC | Structure
