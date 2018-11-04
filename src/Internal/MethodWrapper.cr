@@ -14,7 +14,6 @@
 
 
 module LinCAS
-    alias Value = Internal::Value
     alias T1 = Tuple(Value)
     alias T2 = Tuple(Value,Value)
     alias T3 = Tuple(Value,Value,Value)

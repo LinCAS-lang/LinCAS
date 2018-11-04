@@ -96,6 +96,6 @@ module LinCAS::Internal
     internal.lc_add_internal(NullClass,"inspect",null_to_s,0)
     internal.lc_add_internal(NullClass,"clone",null_clone, 0)
 
-    Null = lc_build_null
+    global Null = Internal.lc_build_null
     
 end

@@ -119,7 +119,7 @@ module LinCAS::Internal
         elsif arg.is_a? LcArray
             LibC.printf("%s",internal.lc_ary_to_s(arg).as(LcString).str_ptr)
         else
-            arg = arg.as(Internal::Value)
+            arg = arg.as(Value)
             if internal.lc_obj_responds_to? arg,"to_s"
                 self.lc_out(Exec.lc_call_fun(arg,"to_s"))
             else 

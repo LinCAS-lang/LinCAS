@@ -15,7 +15,12 @@
 
 module LinCAS::Internal
 
-    alias Value  = BaseS | BaseC | Structure
+    macro global(exp)
+        module ::LinCAS
+            {{exp}}
+        end
+    end
+
     alias ValueR = BaseS | BaseC
 
     abstract struct BaseS
@@ -33,6 +38,8 @@ module LinCAS::Internal
         @id     = 0_u64
         property klass, frozen, data, id
     end
+
+    global alias Value  = Internal::BaseS | Internal::BaseC | Structure
     
     macro internal 
         self 

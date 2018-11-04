@@ -18,12 +18,10 @@ require "./VMcall_tracker"
 class LinCAS::VM < LinCAS::MsgGenerator
 
     MAX_STACK_DEPTH = 2000
-
-    alias Value    = Internal::Value
+    
     alias ValueR   = Internal::ValueR
     alias LcError  = Internal::LcError
     alias Symbolic = Internal::Symbolic
-    Null           = Internal::Null
     LcTrue         = Internal::LcTrue
     LcFalse        = Internal::LcFalse
 
