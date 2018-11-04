@@ -1107,7 +1107,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
             if p_def.flags & ObjectFlags::FROZEN != 0
-                lc_raise(LcFrozenError,convert(:frozen_class))
+                lc_raise_1(LcFrozenError,convert(:frozen_class))
                 return nil 
             end 
             return p_def
@@ -1157,7 +1157,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcModule
             if p_def.flags & ObjectFlags::FROZEN != 0
-                lc_raise(LcFrozenError,convert(:frozen_module))
+                lc_raise_1(LcFrozenError,convert(:frozen_module))
                 return nil 
             end 
             return p_def
