@@ -21,13 +21,21 @@ module LinCAS::Internal
         end
     end
 
-    alias ValueR = BaseS | BaseC
+    global(
+        enum ObjectFlags
+            NONE   = 0
+            FAKE   = 1 << 0
+            SHARED = 1 << 1
+        end
+
+    )
 
     abstract struct BaseS
         @klass  = uninitialized LcClass
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
+        @flags  : ObjectFlags = ObjectFlags::NONE
         property klass, frozen, data, id
     end
 
@@ -36,21 +44,23 @@ module LinCAS::Internal
         @data   = uninitialized Data
         @frozen = false
         @id     = 0_u64
+        @flags  = uninitialized ObjectFlags
         property klass, frozen, data, id
     end
 
     global alias Value  = Internal::BaseS | Internal::BaseC | Structure
+    global alias ValueR = Internal::BaseS | Internal::BaseC
     
     macro internal 
         self 
     end
 
     macro lcfalse
-        Internal::LcFalse
+        LcFalse
     end
 
     macro lctrue
-        Internal::LcTrue
+        LcTrue
     end
 
     macro libc 
