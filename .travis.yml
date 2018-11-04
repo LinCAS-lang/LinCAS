@@ -43,8 +43,7 @@ before_install:
       sudo mkdir -p /usr/local/lib/LinCAS/LinCAS;
     fi 
   - if [ ! -d "/usr/local/lib/LinCAS/lib" ]; then
-      echo Creating lib folder
-      sudo mkdir -p /usr/local/lib/LinCAS/lib
+      sudo mkdir -p /usr/local/lib/LinCAS/lib;
     fi
 
 script: 
