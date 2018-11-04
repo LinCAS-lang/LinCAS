@@ -183,14 +183,14 @@ module LinCAS
     end 
 
     struct LcConst
-        def initialize(@name : String,@val : Internal::Value); end
+        def initialize(@name : String,@val : Value); end
         property name,val
     end
 
     struct LcBlock
         @scp  : VM::Scope? = nil
         def initialize(@body : Bytecode, @args : FuncArgSet)
-            @me = Internal::Null.as(Internal::Value)
+            @me = Null.as(Value)
         end
         property args,scp,me
         getter body
@@ -270,7 +270,7 @@ module LinCAS
 
     class Data
         def initialize
-            @data = Hash(String,LinCAS::Internal::Value).new
+            @data = Hash(String,Value).new
         end
 
         def addVar(var : String,value)

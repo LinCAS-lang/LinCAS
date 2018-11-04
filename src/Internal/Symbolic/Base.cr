@@ -72,6 +72,6 @@ module LinCAS::Internal
     base("class",SBaseC)
     base("struct",SBaseS)
 
-    alias Symbolic = SBaseS | SBaseC
+    global alias Symbolic = Internal::SBaseS | Internal::SBaseC
 
 end

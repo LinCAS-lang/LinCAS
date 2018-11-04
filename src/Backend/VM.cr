@@ -19,11 +19,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     MAX_STACK_DEPTH = 2000
     
-    alias ValueR   = Internal::ValueR
     alias LcError  = Internal::LcError
-    alias Symbolic = Internal::Symbolic
-    LcTrue         = Internal::LcTrue
-    LcFalse        = Internal::LcFalse
 
 
     private struct ObjectWrapper

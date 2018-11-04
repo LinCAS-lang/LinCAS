@@ -143,7 +143,7 @@ module LinCAS::Internal
     internal.lc_add_internal(BoolClass,"&&",bool_and,   1)
     internal.lc_add_internal(BoolClass,"||",bool_or,    1)
 
-    LcTrue  = internal.build_true
-    LcFalse = internal.build_false
+    global LcTrue  = Internal.build_true
+    global LcFalse = Internal.build_false
 
 end
