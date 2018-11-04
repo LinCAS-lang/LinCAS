@@ -5,14 +5,14 @@ module LinCAS
         # @size
         # @ptr
 
-        def self.[]()
+        def self.[]() : Ary
             _self_ = Internal.new_ary_wrapper
             Internal.lc_ary_init(_self_,Internal.build_fake_int(3))
             _self_.size = 0
             return _self_
         end
 
-        def self.new(size : IntnumR)
+        def self.new(size : IntnumR) : Ary
             _self_ = Internal.new_ary_wrapper
             Internal.lc_ary_init(_self_,Internal.build_fake_int(size))
             return _self_

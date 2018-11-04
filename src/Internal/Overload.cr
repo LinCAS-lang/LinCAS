@@ -66,4 +66,6 @@ class Object
         exit status
     end
 
+    class FrozenError < Exception; end
+
 end

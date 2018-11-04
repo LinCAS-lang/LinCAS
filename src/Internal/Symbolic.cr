@@ -15,9 +15,14 @@
 
 module LinCAS::Internal
 
-    alias Symbolic_t = Symbolic | Value
+    alias Symbolic_t = Value | Symbolic 
 
     class LcFunction < BaseC
+        @func : Symbolic = NanC
+        property func
+    end
+
+    struct FakeFun < BaseS
         @func : Symbolic = NanC
         property func
     end
@@ -41,17 +46,17 @@ module LinCAS::Internal
     end
 
     macro set_function(obj,func)
-        lc_cast({{obj}},LcFunction).func = {{func}}
+        lc_cast({{obj}},LcFunction | FakeFun).func = {{func}}
     end
 
     macro get_function(obj)
-        lc_cast({{obj}},LcFunction).func
+        lc_cast({{obj}},LcFunction | FakeFun).func
     end
 
     private def self.to_symbolic(*values) : Array(Symbolic)
         tmp = [] of Symbolic
         values.each do |el|
-            if el.is_a? LcFunction
+            if el.is_a? LcFunction || el.is_a? FakeFun
                 tmp << el.func
             elsif el.is_a? Symbolic
                 tmp << el
@@ -72,7 +77,7 @@ module LinCAS::Internal
         end
     {% end %}
 
-    def self.s_invert(obj : Symbolic_t)
+    def self.s_invert(obj : Value)
         v = to_symbolic(obj)[0]
         return -v
     end
@@ -96,6 +101,22 @@ module LinCAS::Internal
 
     def self.build_function(func : Symbolic)
         tmp = function_allocate(SymDict[func.class])
+        set_function(tmp,func)
+        return tmp
+    end
+
+    def self.build_function(func : FakeFun)
+        func = get_function(func)
+        tmp  = function_allocate(SymDict[func.class])
+        set_function(tmp,func)
+        return tmp
+    end
+
+    def self.build_fake_fun(func : Symbolic)
+        tmp = FakeFun.new
+        tmp.klass = SymbolicClass 
+        tmp.id    = pointerof(func).address
+        tmp.flags |= ObjectFlags::FAKE
         set_function(tmp,func)
         return tmp
     end
