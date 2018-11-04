@@ -194,6 +194,15 @@ module LinCAS::Internal
         origin.pop
     end
 
+    def self.new_ary_wrapper
+        ary = Ary.new
+        ary.klass = AryClass
+        # ary.data  = AryClass.data.clone
+        ary.id    = ary.object_id
+        ary.flags |= ObjectFlags::FAKE
+        return ary
+    end
+
     def self.new_ary
         ary = LcArray.new
         ary.klass = AryClass
@@ -212,7 +221,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.build_ary(size : Value)
         sz = internal.lc_num_to_cr_i(size)
-        if sz 
+        if sz && sz > 0
             return build_ary(sz)
         else 
             return build_ary_new
@@ -963,3 +972,6 @@ module LinCAS::Internal
     internal.lc_add_internal(AryClass,"compact",ary_compact,                  0)
     internal.lc_add_internal(AryClass,"compact!",ary_o_compact,               0)
 end
+
+
+require "./Wrappers/LcArray"
