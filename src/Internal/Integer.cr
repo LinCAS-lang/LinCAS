@@ -74,7 +74,7 @@ module LinCAS::Internal
     def self.build_fake_int(value : IntnumR)
         int       = LcInt.new(value)
         int.klass = IntClass
-        int.frozen = true
+        int.flags |= ObjectFlags::FROZEN
         int.id    = (value * 2 + 1).to_u64
         int.flags |= ObjectFlags::FAKE
         return int.as(Value)
