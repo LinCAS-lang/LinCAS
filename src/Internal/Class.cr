@@ -15,8 +15,6 @@
 
 module LinCAS::Internal
 
-    REG_CLASS = 0x0001
-
     macro parent_of(klass)
        {{klass}}.as(LcClass).parent
     end
@@ -40,20 +38,20 @@ module LinCAS::Internal
     macro check_pystructs(scp,str)
         if {{str}}.is_a? Structure && 
             ({{str}}.type == SType::PyCLASS || {{str}}.type == SType::PyMODULE) &&
-                                            !({{str}}.flags == REG_CLASS)
+                                            ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
             {{str}}.symTab.parent = {{scp}}.symTab
             {{scp}}.symTab.addEntry({{str}}.name,{{str}})
-            {{str}}.flags = REG_CLASS
+            {{str}}.flags |= ObjectFlags::REG_CLASS
         end
     end
 
     macro check_pystructs2(symTab,str)
         if {{str}}.is_a? Structure && 
             ({{str}}.type == SType::PyCLASS || {{str}}.type == SType::PyMODULE) &&
-                                            !({{str}}.flags == REG_CLASS)
+                                            ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
             {{str}}.symTab.parent = {{symTab}}
             {{symTab}}.addEntry({{str}}.name,{{str}})
-            {{str}}.flags = REG_CLASS
+            {{str}}.flags |= ObjectFlags::REG_CLASS
         end
     end
     
@@ -99,7 +97,7 @@ module LinCAS::Internal
         klass               = lc_build_unregistered_pyclass(name,obj,PyObjClass)
         klass.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,klass)
-        klass.flags = REG_CLASS
+        klass.flags |= ObjectFlags::REG_CLASS
         return klass
     end
 
@@ -311,14 +309,13 @@ module LinCAS::Internal
     end
 
     def self.lc_class_defrost(klass : Value)
-        klass.frozen = false 
+        klass.flags &= ~ObjectFlags::FROZEN 
         return klass 
     end 
 
     class_defrost = LcProc.new do |args|
         klass = args.as(T1)[0]
-        klass.frozen = false 
-        next klass
+        next lc_class_defrost(*lc_cast(args,T1))
     end
 
     class_inspect = LcProc.new do |args|

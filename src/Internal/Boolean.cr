@@ -45,7 +45,7 @@ module LinCAS::Internal
         klass         = BoolClass
         lcTrue.klass  = klass.as(LcClass)
         lcTrue.data   = klass.as(LcClass).data.clone
-        lcTrue.frozen = true
+        lcTrue.flags |= ObjectFlags::FROZEN
         return lcTrue.as(Value)
     end
 
@@ -54,7 +54,7 @@ module LinCAS::Internal
         klass          = BoolClass
         lcFalse.klass  = klass.as(LcClass)
         lcFalse.data   = klass.as(LcClass).data.clone
-        lcFalse.frozen = true
+        lcFalse.flags |= ObjectFlags::FROZEN
         return lcFalse.as(Value)
     end
 

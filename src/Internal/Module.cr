@@ -68,7 +68,7 @@ module LinCAS::Internal
         tmp = lc_build_unregistered_pymodule(name,obj)
         tmp.symTab.parent = MainClass.symTab
         MainClass.symTab.addEntry(name,tmp)
-        tmp.flags = REG_CLASS
+        tmp.flags |= ObjectFlags::REG_CLASS
         return tmp
     end
 

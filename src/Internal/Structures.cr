@@ -79,8 +79,8 @@ module LinCAS
         @methods : SymTab_t
         @statics : SymTab_t
         @type     = uninitialized SType
-        @frozen   = false
-        @flags   : IntnumR = 0
+        # @frozen   = false
+        @flags   : ObjectFlags = ObjectFlags::NONE
 
         def initialize(@name : String,path : Path? = nil)
             if path
@@ -95,7 +95,7 @@ module LinCAS
             @id       = self.object_id
         end 
 
-        property name, path, symTab, data, id, frozen, type, flags
+        property name, path, symTab, data, id, type, flags
         getter included
         getter methods, statics
         def to_s 

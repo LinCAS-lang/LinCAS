@@ -23,10 +23,11 @@ module LinCAS::Internal
 
     global(
         enum ObjectFlags
-            NONE   = 0
-            FROZEN = 1 << 0
-            FAKE   = 1 << 1
-            SHARED = 1 << 2
+            NONE      = 0
+            FROZEN    = 1 << 0
+            FAKE      = 1 << 1
+            SHARED    = 1 << 2
+            REG_CLASS = 1 << 3
         end
 
     )

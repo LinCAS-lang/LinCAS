@@ -191,7 +191,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_freeze(obj : Value)
-        obj.frozen = true 
+        obj.flags |= ObjectFlags::FROZEN 
         return obj 
     end
 
@@ -201,7 +201,7 @@ module LinCAS::Internal
 
     obj_frozen = LcProc.new do |args|
         obj = args.as(T1)[0]
-        if obj.frozen 
+        if obj.flags & ObjectFlags::FROZEN != 0
             next lctrue 
         end 
         next lcfalse
@@ -231,10 +231,14 @@ module LinCAS::Internal
         next lcfalse
     end
 
+    @[AlwaysInline]
+    def self.lc_obj_defrost(obj : Value)
+        obj.flags &= ~ObjectFlags::FROZEN 
+        return obj
+    end
+
     obj_defrost = LcProc.new do |args|
-        obj = args.as(T1)[0]
-        obj.frozen = false 
-        next obj
+        next lc_obj_defrost(*lc_cast(args,T1))
     end
 
     def self.lc_obj_responds_to(obj : Value,name : Value)

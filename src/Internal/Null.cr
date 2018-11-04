@@ -22,7 +22,7 @@ module LinCAS::Internal
         null  = LcNull.new
         null.klass = NullClass
         null.data  = NullClass.data.clone
-        null.frozen= true
+        null.flags |= ObjectFlags::FROZEN
         return null.as(Value)
     end
 

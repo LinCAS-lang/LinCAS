@@ -1106,7 +1106,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_create_class(name : String,parent : Value,scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
-            if p_def.frozen
+            if p_def.flags & ObjectFlags::FROZEN != 0
                 lc_raise(LcFrozenError,convert(:frozen_class))
                 return nil 
             end 
@@ -1156,7 +1156,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_create_module(name : String, scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcModule
-            if p_def.frozen
+            if p_def.flags & ObjectFlags::FROZEN != 0
                 lc_raise(LcFrozenError,convert(:frozen_module))
                 return nil 
             end 

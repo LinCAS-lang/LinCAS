@@ -135,7 +135,7 @@ module LinCAS
 
         err_defrost = LcProc.new do |args|
             err = args.as(T1)[0]
-            err.frozen = false 
+            err.flags &= ~ObjectFlags::FROZEN
             next err
         end
 

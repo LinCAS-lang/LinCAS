@@ -203,7 +203,7 @@ module LinCAS::Internal
 
     range_defrost = LcProc.new do |args|
         range = args.as(T1)[0]
-        range.frozen = false
+        range.flags &= ~ObjectFlags::FROZEN
         next range
     end
 

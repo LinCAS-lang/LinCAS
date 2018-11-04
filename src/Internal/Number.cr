@@ -58,7 +58,7 @@ module LinCAS::Internal
         num        = Num_.new
         num.klass  = klass
         num.data   = klass.data.clone 
-        num.frozen = true 
+        num.flags |= ObjectFlags::FROZEN 
         return num.as(Value)
     end
 

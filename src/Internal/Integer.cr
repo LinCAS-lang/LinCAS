@@ -66,7 +66,7 @@ module LinCAS::Internal
         int       = LcInt.new(value)
         int.klass = IntClass
         int.data  = IntClass.data.clone
-        int.frozen = true
+        int.flags |= ObjectFlags::FROZEN
         int.id    = (value * 2 + 1).to_u64
         return int.as(Value)
     end 
