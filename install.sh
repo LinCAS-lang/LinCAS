@@ -12,12 +12,12 @@ if [ ! -d "./bin" ]; then
 fi
 if [ ! -d "/usr/local/lib/LinCAS/LinCAS" ]; then
     echo Creating LinCAS folder
-    sudo mkdir /usr/local/lib/LinCAS/LinCAS
+    sudo mkdir -p /usr/local/lib/LinCAS/LinCAS
 fi
 
 if [ ! -d "/usr/local/lib/LinCAS/lib" ]; then
     echo Creating lib folder
-    sudo mkdir /usr/local/lib/LinCAS/lib
+    sudo mkdir -p /usr/local/lib/LinCAS/lib
 fi
 
 echo Compiling LinCAS...
