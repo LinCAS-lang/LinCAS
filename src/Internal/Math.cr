@@ -31,8 +31,11 @@ module LinCAS::Internal
         next lc_{{name.id}}(arg1,arg2)
     end
 
-    macro default_def(name)
+    macro default_def(name,sym = nil)
         private def self.lc_{{name.id}}(v : Value)
+            {% if sym %}
+                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
+            {% end %}
             return complex_{{name.id}}(v) if v.is_a? LcCmx
             val = internal.lc_num_to_cr_f(v)
             return Null unless val
@@ -40,8 +43,11 @@ module LinCAS::Internal
         end
     end
 
-    macro def_with_block(name)
+    macro def_with_block(name, sym = nil)
         private def self.lc_{{name.id}}(v : Value)
+            {% if sym %}
+                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
+            {% end %}
             return complex_{{name.id}}(v) if v.is_a? LcCmx
             val = internal.lc_num_to_cr_f(v)
             return Null unless val
@@ -50,8 +56,11 @@ module LinCAS::Internal
         end
     end
 
-    macro default_adef(name)
+    macro default_adef(name, sym = nil)
         private def self.lc_a{{name.id}}(v : Value)
+            {% if sym %}
+                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
+            {% end %}
             return complex_arc{{name.id}}(v) if v.is_a? LcCmx
             val = internal.lc_num_to_cr_f(v)
             return Null unless val
@@ -59,8 +68,11 @@ module LinCAS::Internal
         end
     end
 
-    macro adef_with_block(name)
+    macro adef_with_block(name, sym = nil)
         private def self.lc_a{{name.id}}(v : Value)
+            {% if sym %}
+                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
+            {% end %}
             return complex_arc{{name.id}}(v) if v.is_a? LcCmx
             val = internal.lc_num_to_cr_f(v)
             return Null unless val
@@ -105,22 +117,22 @@ module LinCAS::Internal
     {% end %}
 
 
-    default_def cos
+    default_def cos, Cos
     m_cos = LcProc.new do |args|
         mfun cos
     end
 
-    default_def sin
+    default_def sin, Sin
     m_sin = LcProc.new do |args|
         mfun sin
     end
 
-    default_def tan
+    default_def tan, Tan
     m_tan = LcProc.new do |args|
         mfun tan
     end
 
-    adef_with_block(cos) do 
+    adef_with_block(cos, Acos) do 
         if val > 1
             lc_raise(LcMathError,"(Value out of domain)")
             return Null 
@@ -130,7 +142,7 @@ module LinCAS::Internal
         mfun acos      
     end
 
-    adef_with_block(sin) do 
+    adef_with_block(sin, Asin) do 
         if val > 1
             lc_raise(LcMathError,"(Value out of domain)")
             return Null 
@@ -140,7 +152,7 @@ module LinCAS::Internal
         mfun asin
     end
 
-    default_adef tan
+    default_adef tan, Atan
     m_atan = LcProc.new do |args|
         mfun atan
     end
@@ -179,12 +191,12 @@ module LinCAS::Internal
         mfun gamma
     end
 
-    default_def exp
+    default_def exp, Exp
     m_exp = LcProc.new do |args|
         mfun exp
     end
     
-    def_with_block(log) do 
+    def_with_block(log, Log) do 
         if val < 0
             lc_raise(LcMathError,"(Value out of domain)")
             return Null
@@ -229,6 +241,7 @@ module LinCAS::Internal
     end
 
     def self.lc_sqrt(v : Value)
+        return build_function(Sqrt.new(get_function(v))) if v.is_a? LcFunction
         return complex_sqrt(v) if v.is_a? LcCmx
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
