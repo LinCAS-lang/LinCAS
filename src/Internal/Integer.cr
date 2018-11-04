@@ -71,6 +71,15 @@ module LinCAS::Internal
         return int.as(Value)
     end 
 
+    def self.build_fake_int(value : IntnumR)
+        int       = LcInt.new(value)
+        int.klass = IntClass
+        int.frozen = true
+        int.id    = (value * 2 + 1).to_u64
+        int.flags = ObjectFlags::FAKE
+        return int.as(Value)
+    end
+
     private def self.int_plus_int(n1 : Value,n2 : Value)
         v1 = int2num(n1)
         v2 = int2num(n2)
