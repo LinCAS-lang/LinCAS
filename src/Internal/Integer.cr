@@ -76,7 +76,7 @@ module LinCAS::Internal
         int.klass = IntClass
         int.frozen = true
         int.id    = (value * 2 + 1).to_u64
-        int.flags = ObjectFlags::FAKE
+        int.flags |= ObjectFlags::FAKE
         return int.as(Value)
     end
 
