@@ -23,7 +23,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     private struct ObjectWrapper
-        def initialize(@object : Value)
+        def initialize(@object :  LcVal)
         end
         getter object
     end
@@ -32,7 +32,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     private class ErrorHandler
-        @error : Value? = nil 
+        @error :  LcVal? = nil 
         @ex_h  = 0
         getter error 
 
@@ -52,7 +52,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
 
         @[AlwaysInline]
-        def handle_error(error : Value?)
+        def handle_error(error :  LcVal?)
             @error = error 
         end
     end
@@ -65,7 +65,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
        MAIN_SCP 
     end
 
-    class Scope < Hash(String,Value)
+    class Scope < Hash(String, LcVal)
 
         def initialize(@type : SCPType)
             super()
@@ -73,12 +73,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
         @previous : Scope?   = nil
         @lcblock  : LcBlock? = nil 
-        @ans      : Value    = Null
+        @ans      :  LcVal    = Null
 
         property previous, lcblock, ans
         getter type
 
-        def set_var(name : String, object : Value)
+        def set_var(name : String, object :  LcVal)
             self[name] = object 
         end 
 
@@ -104,7 +104,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @last_is : Bytecode?   = nil
         @handled_ret           = false
         
-        def initialize(@me : Value,@context : Structure,@argc : IntnumR,@type : FrameType)  
+        def initialize(@me :  LcVal,@context : Structure,@argc : IntnumR,@type : FrameType)  
         end
 
         property fp,argc,pc,scp,me,context,catch_t,type,last_is, handled_ret
@@ -151,10 +151,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     macro call_internal_3(method,args)
         {{method}}.call({{args}}[0],{{args}}[1],{{args}}[2],{{args}}[3])
-    end
-
-    macro call_internal_n(method,args)
-        {{method}}.call(args)
     end
 
     macro call_usr(method,argc)
@@ -226,7 +222,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    private def class_of(obj : Value)
+    private def class_of(obj :  LcVal)
         if obj.is_a? Structure 
             #if internal.struct_type(obj.as(Structure),SType::CLASS)
             #    return obj.klass 
@@ -249,7 +245,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             when 3
                 return call_internal_3(method,args)
             else
-                return call_internal_n(method,args)
+                return call_internal_1(method,args)
         end
     end
 
@@ -277,7 +273,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_print_stack
-        puts @stack
+        puts @stack.shared_copy(0,@sp)
     end
 
     @[AlwaysInline]
@@ -290,7 +286,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def push(object : Value)
+    protected def push(object :  LcVal)
         if ensured_stack_space? 1
             if @sp >= @stack.size
                 @stack.push(object)
@@ -299,6 +295,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             end  
             @sp += 1
         end
+        # vm_print_stack
     end
 
     @[AlwaysInline]
@@ -316,7 +313,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def new_frame(self_ref : Value, context : Structure,argc : Int32,type : FrameType)
+    protected def new_frame(self_ref :  LcVal, context : Structure,argc : IntnumR,type : FrameType)
         if @vm_fp >= @framev.size
             return LcFrame.new(self_ref,context,argc,type)
         else 
@@ -332,7 +329,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
+    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
@@ -342,7 +339,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
+    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
@@ -353,7 +350,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def push_shared_frame
         fm      = current_frame
-        tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
+        tmp     = new_frame(fm.me.as( LcVal),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
         tmp.pc  = fm.pc 
         tmp.fp  = fm.fp
         tmp.scp = fm.scp
@@ -415,7 +412,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    def vm_set_ans(obj : Value)
+    def vm_set_ans(obj :  LcVal)
         current_frame.scp.ans = obj 
     end
 
@@ -626,7 +623,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     push(tmp)
             end
             if ErrHandler.handled_error?
-                vm_handle_error(ErrHandler.error.as(Value))
+                vm_handle_error(ErrHandler.error.as( LcVal))
             end
             if @quit
                 @quit = false
@@ -660,20 +657,29 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def vm_arity_check(argc1 : Intnum, argc2 : Intnum)
-        if !(argc1 >= argc2)
-            lc_raise(LcArgumentError,convert(:few_args) % {argc1,argc2})
+        if !(argc1.abs >= argc2)
+            lc_raise(LcArgumentError,convert(:few_args) % {argc1.abs,argc2})
             return false 
         end 
         return true
     end
 
     @[AlwaysInline]
-    protected def vm_get_args(argc)
-        argv = [] of Value
+    protected def vm_get_args(argc, self_only = false)
+        argv = StaticArray( LcVal,4).new(Null)
+        j    = -1
         (argc + 1).downto 1 do |i|
-            argv << @stack[@sp - i]
+            {% if flag?(:vm_debug) %}
+                puts "getting arg at #{@sp - i} (stack level: #{@sp})"
+            {% end %}
+            argv[j += 1] = @stack[@sp - i]
+            break if self_only
         end
         return argv
+    end
+
+    protected def vm_get_py_args(argc)
+        return @stack.shared_copy(@sp - argc, argc)
     end
 
     @[AlwaysInline]
@@ -726,7 +732,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def fetch_call_method(receiver : Value, name : String)
+    protected def fetch_call_method(receiver :  LcVal, name : String)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -735,7 +741,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def fetch_method(receiver : Value, name : String)
+    protected def fetch_method(receiver :  LcVal, name : String)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -745,28 +751,34 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def vm_get_receiver(argc)
-        tmp =@stack[@sp - argc - 1]
+        tmp = @stack[@sp - argc - 1]
         return tmp
     end
 
     @[AlwaysInline]
     protected def vm_call_method(method : LcMethod,argc : Intnum)
-        return nil unless vm_arity_check(argc,method.arity)
+        m_arity = method.arity
+        return nil unless vm_arity_check(argc,m_arity)
         case method.type
             when  LcMethodT::INTERNAL
                 @internal = true
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(value.as(Value))
+                if m_arity < 0
+                    argv    = vm_get_args(argc,true)
+                    argv[1] = @stack.shared_copy(@sp - argc,argc).as( LcVal)
+                else
+                    argv  = vm_get_args(argc)
+                end
+                value = internal_call(method.code.as(LcProc),argv,m_arity)
+                push(value.as( LcVal))
                 vm_return_internal
             when LcMethodT::USER
                 @internal = false
                 call_usr(method,argc)
             when LcMethodT::PYTHON
                 @internal = true
-                argv  = vm_get_args(argc)
+                argv  = vm_get_py_args(argc)
                 value = call_python(method,argv)
-                push(value.as(Value))
+                push(value.as( LcVal))
                 vm_return_internal
             else
                 lc_bug("Invalid method type received")
@@ -824,7 +836,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         {% end %}
         value = pop 
         argc  = vm_pop_frame
-        discard_arguments(argc)
+        discard_arguments(argc + 1)
         CallTracker.pop_track
         push(value)
     end
@@ -890,7 +902,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return true
     end
 
-    protected def store_local(name : String,value : Value)
+    protected def store_local(name : String,value :  LcVal)
         scp = current_scope
         scp.set_var(name,value)
     end
@@ -959,7 +971,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             klass = class_of(current_frame.me)
             const = internal.lc_seek_const(klass,name)
             if const
-                push(const.as(Value))
+                push(const.as( LcVal))
             else
                 lc_raise_1(LcNameError,convert(:undefined_id) % {name,klass.path.to_s})
                 push(Null)
@@ -1052,7 +1064,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         prev = prev.as(Structure)
         const = internal.lc_seek_const(prev,name)
         if const 
-            push(const.as(Value))
+            push(const.as( LcVal))
         else
             lc_raise_1(LcNameError,convert(:undef_const_2) % {name,prev.path.to_s})
             push(Null)
@@ -1071,7 +1083,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
        end
     end
 
-    protected def vm_create_class(name : String,parent : Value,scope : Structure)
+    protected def vm_create_class(name : String,parent :  LcVal,scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
             if p_def.flags & ObjectFlags::FROZEN != 0
@@ -1092,7 +1104,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    protected def vm_set_parent(klass : LcClass,parent : Value)
+    protected def vm_set_parent(klass : LcClass,parent :  LcVal)
         if !(parent.is_a? Structure) && parent != Null
             lc_raise_1(LcTypeError,convert(:no_parent) % internal.lc_typeof(parent))
             push(klass)
@@ -1277,7 +1289,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_opt_call_init(argc : Intnum,block : LcBlock? = nil)
         init = "init"
-        obj  = @stack[@sp - argc]
+        obj  = vm_get_receiver(argc)
         if internal.lc_obj_responds_to?(obj,init)
             if block
                 vm_m_call_with_block(init,argc,block)
@@ -1333,7 +1345,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         ErrHandler.handle_error(error)
     end
 
-    def lc_raise(error : Value)
+    def lc_raise(error :  LcVal)
         error = error.as(LcError)
         error.backtrace = CallTracker.get_backtrace
         ErrHandler.handle_error(error)
@@ -1343,18 +1355,18 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return vm_get_block
     end
 
-    def lc_yield(*args : Value)
+    def lc_yield(*args :  LcVal)
         vm_push_args(args)
         if block_given?
             vm_call_block(args.size)
             set_handle_ret_flag
-            return vm_run_bytecode.as(Value)
+            return vm_run_bytecode.as( LcVal)
         else 
             lc_raise(LcArgumentError,convert(:no_block))
         end
     end
 
-    def lc_call_fun(receiver : Value, method : String, *args)
+    def lc_call_fun(receiver :  LcVal, method : String, *args)
         push(receiver)
         vm_push_args(args)
         vm_m_call(method,args.size)
@@ -1366,7 +1378,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    def call_method(method : Internal::Method, argv : An)
+    def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
         m    = method.method
         rec  = method.receiver
         push(rec)
@@ -1382,7 +1394,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    def call_proc(proc : Internal::LCProc, argv : An)
+    def call_proc(proc : Internal::LCProc, argv : Ary)
         vm_push_args(argv)
         _self = proc.me 
         args  = proc.args
@@ -1421,7 +1433,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return catch_t
     end
 
-    protected def vm_handle_error(error : Value)
+    protected def vm_handle_error(error :  LcVal)
         if ErrHandler.exception_handler?
             catch_t = get_catch_t
             name    = catch_t.var_name
