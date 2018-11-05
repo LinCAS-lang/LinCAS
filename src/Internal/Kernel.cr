@@ -25,10 +25,10 @@ module LinCAS::Internal
     # available as instance methods in instantiated objects
     
 
-    ExitProcs = [] of Value
+    ExitProcs = [] of  LcVal
     @@running = false
     @@version = load_version.as(String)
-    ExitArg   = [Null]
+    ExitArg   = Ary.new(1)
 
     private def self.load_version : String
         if File.exists?(file = "/usr/local/lib/LinCAS/LinCAS/VERSION")
@@ -44,7 +44,7 @@ module LinCAS::Internal
         ""
     end
 
-    private def self.set_at_exit_proc(proc : Value)
+    private def self.set_at_exit_proc(proc :  LcVal)
         if @@running
             lc_raise(LcRuntimeError,"can't call at_exit() inside a finalization proc")
         else
@@ -119,7 +119,7 @@ module LinCAS::Internal
         elsif arg.is_a? LcArray
             LibC.printf("%s",internal.lc_ary_to_s(arg).as(LcString).str_ptr)
         else
-            arg = arg.as(Value)
+            arg = arg.as( LcVal)
             if internal.lc_obj_responds_to? arg,"to_s"
                 self.lc_out(Exec.lc_call_fun(arg,"to_s"))
             else 
@@ -187,7 +187,7 @@ module LinCAS::Internal
     # Static methods are passed as static, while non-static
     # as instance ones
 
-    def self.lc_include(klass : Value, mod : Value)
+    def self.lc_include(klass :  LcVal, mod :  LcVal)
         if !(mod.is_a? Structure)
             lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
         elsif !((struct_type(mod.as(Structure),SType::MODULE)) || 
@@ -223,18 +223,15 @@ module LinCAS::Internal
     #$U exit(status := 0)
     # exits the program with the given status
 
-    def self.lc_exit(status : Value? = nil)
-        if status
-            status = lc_num_to_cr_i(status)
+    def self.lc_exit(unused,argv : LcVal)
+        argv = lc_cast(argv,Ary)
+        if !argv.empty?
+            status = lc_num_to_cr_i(argv[0])
         else
             status = 0
         end
         lincas_exit status.to_i32 if status
         return Null
-    end
-
-    exit_ = LcProc.new do |args|
-        next lc_exit(lc_cast(args,An)[1]?)
     end
 
     private def self.define_version
@@ -284,7 +281,7 @@ module LinCAS::Internal
     lc_module_add_internal(LKernel,"print",lc_print,   1)
     lc_module_add_internal(LKernel,"reads",reads,      0)
     lc_module_add_internal(LKernel,"include",include_m,1)
-    lc_module_add_internal(LKernel,"exit",exit_,      -1)
+    lc_module_add_internal(LKernel,"exit",wrap(:lc_exit,T2),   -1)
     lc_module_add_internal(LKernel,"at_exit",at_exit_, 0)
 
     lc_define_const(LKernel,"ARGV",define_argv)

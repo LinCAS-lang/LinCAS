@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    def self.lc_num_to_cr_f(num : Value)
+    def self.lc_num_to_cr_f(num :  LcVal)
         if num.is_a? LcInt
             return int2num(num).to_f
         elsif num.is_a? LcFloat
@@ -61,7 +61,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.float2num(float : Value)
+    def self.float2num(float :  LcVal)
         return float.as(LcFloat).val 
     end
 
@@ -73,7 +73,7 @@ module LinCAS::Internal
         return flo
     end
 
-    def self.lc_float_sum(n1 : Value, n2 : Value)
+    def self.lc_float_sum(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             return num2float(float2num(n1) + float2num(n2))
@@ -86,7 +86,7 @@ module LinCAS::Internal
         next internal.lc_float_sum(*args.as(T2))
     end
 
-    def self.lc_float_sub(n1 : Value, n2 : Value)
+    def self.lc_float_sub(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             return num2float(float2num(n1) - float2num(n2))
@@ -101,7 +101,7 @@ module LinCAS::Internal
         next internal.lc_float_sub(*args.as(T2))
     end
 
-    def self.lc_float_mult(n1 : Value, n2 : Value)
+    def self.lc_float_mult(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             return num2float(float2num(n1) * float2num(n2))
@@ -116,7 +116,7 @@ module LinCAS::Internal
         next internal.lc_float_mult(*args.as(T2))
     end
 
-    def self.lc_float_idiv(n1 : Value, n2 : Value)
+    def self.lc_float_idiv(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             if float2num(n2) == 0
@@ -135,7 +135,7 @@ module LinCAS::Internal
         next internal.lc_float_idiv(*args.as(T2))
     end
 
-    def self.lc_float_fdiv(n1 : Value, n2 : Value)
+    def self.lc_float_fdiv(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             return num2float(n1.val / float2num(n2))
@@ -150,7 +150,7 @@ module LinCAS::Internal
         next internal.lc_float_fdiv(*args.as(T2))
     end
 
-    def self.lc_float_power(n1 : Value, n2 : Value)
+    def self.lc_float_power(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             return num2float(float2num(n1) ** float2num(n2))
@@ -165,7 +165,7 @@ module LinCAS::Internal
         next internal.lc_float_power(*args.as(T2))
     end
 
-    def self.lc_float_invert(n : Value)
+    def self.lc_float_invert(n :  LcVal)
         return internal.build_float(- float2num(n))
     end
 
@@ -173,7 +173,7 @@ module LinCAS::Internal
         next internal.lc_float_invert(*args.as(T1))
     end
 
-    def self.lc_float_to_s(n : Value)
+    def self.lc_float_to_s(n :  LcVal)
         return internal.build_string(float2num(n).to_s)
     end
 
@@ -181,7 +181,7 @@ module LinCAS::Internal
         next internal.lc_float_to_s(*args.as(T1))
     end
 
-    def self.lc_float_to_i(n : Value)
+    def self.lc_float_to_i(n :  LcVal)
         return internal.num2int(float2num(n).to_i)
     end
 
@@ -200,30 +200,31 @@ module LinCAS::Internal
         next num2float(val.abs)
     end
 
-    float_round = LcProc.new do |args|
-        args = args.as(An)
-        float = internal.lc_num_to_cr_f(args[0]).as(Floatnum)
-        num   = args[1]? || 1
+    def self.lc_float_round(flo : LcVal, argv : LcVal)
+        argv  = argv.as(Ary)
+        float = float2num(flo)
+        num   = argv.empty? ? 1 : argv[0]
         unless num.is_a? Intnum 
             num = internal.lc_num_to_cr_i(num).as(Intnum)
         end
-        next num2float(float.round(num.to_i64))
+        return num2float(float.round(num.to_i64))
     end
 
-    float_ceil = LcProc.new do |args|
-        float = internal.lc_num_to_cr_f(*args.as(T1))
+    def self.lc_float_ceil(float : LcVal)
         if float.is_a? Float32
-            next num2float(LibM.ceil_f32(float.as(Float32)))
+            return num2float(LibM.ceil_f32(float.as(Float32)))
         {% if flag?(:fast_math) %}
         else 
-            next num2float(LibM.ceil_f64(float.as(Float64)))
+            return num2float(LibM.ceil_f64(float.as(Float64)))
         {% else %}
         elsif float.is_a? Float64
-            next num2float(LibM.ceil_f64(float.as(Float64)))
+            return num2float(LibM.ceil_f64(float.as(Float64)))
         else
-            next num2float(float.as(BigFloat).ceil)
+            return num2float(float.as(BigFloat).ceil)
         {% end %}
         end
+        # Unreachable. For inference only
+        Null
     end
 
     float_floor = LcProc.new do |args|
@@ -244,7 +245,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_float_eq(n : Value, obj : Value)
+    def self.lc_float_eq(n :  LcVal, obj :  LcVal)
         if obj.is_a? LcFloat
             return val2bool(float2num(n) == float2num(obj))
         else 
@@ -274,9 +275,9 @@ module LinCAS::Internal
     internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
     internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)
     internal.lc_add_internal(FloatClass,"abs",float_abs,       0)
-    internal.lc_add_internal(FloatClass,"round",float_round,  -1)
+    internal.lc_add_internal(FloatClass,"round",wrap(:lc_float_round,T2),  -1)
     internal.lc_add_internal(FloatClass,"floor",float_floor,   0)
-    internal.lc_add_internal(FloatClass,"ceil",float_ceil,     0)
+    internal.lc_add_internal(FloatClass,"ceil",wrap(:lc_float_ceil,T1),     0)
     internal.lc_add_internal(FloatClass,"trunc",float_trunc,   0)
     internal.lc_add_internal(FloatClass,"hash",float_hash,     0)
 

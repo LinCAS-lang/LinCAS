@@ -22,11 +22,11 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.compare_by_type?(obj1 : Value, obj2 : Value)
+    def self.compare_by_type?(obj1 :  LcVal, obj2 :  LcVal)
         return obj1.is_a? NumType && obj2.is_a? NumType
     end
 
-    def self.lc_compare(obj1 : Value, obj2 : Value)
+    def self.lc_compare(obj1 :  LcVal, obj2 :  LcVal)
         if compare_by_type?(obj1,obj2)
             return val2bool(num2num(obj1) == num2num(obj2))
         end
@@ -36,7 +36,7 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    def self.lc_obj_match(obj1 : Value,obj2 : Value)
+    def self.lc_obj_match(obj1 :  LcVal,obj2 :  LcVal)
         cmp_result = Exec.lc_call_fun(obj1,"==",obj2)
         if cmp_result == lctrue
             return cmp_result
@@ -50,7 +50,7 @@ module LinCAS::Internal
         return internal.lc_obj_allocate(Obj)
     end
 
-    def self.obj2py(obj : Value, ref = false)
+    def self.obj2py(obj :  LcVal, ref = false)
         if obj.is_a? LcInt 
             value = int2num(obj)
             {%if !flag?(:fast_m)%}
@@ -89,7 +89,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_new_object(klass : Value)
+    def self.lc_new_object(klass :  LcVal)
         klass = klass.as(LcClass)
         if klass.type == SType::PyCLASS
             return build_pyobj(klass)
@@ -100,26 +100,26 @@ module LinCAS::Internal
             return Null 
         end
         if allocator.is_a? LcProc
-            return allocator.call(klass).as(Value)
+            return allocator.call(klass).as( LcVal)
         end
         lc_raise(LcInstanceErr,"Undefined allocator for %s" % klass.path.to_s)
         return Null
     end
 
-    def self.lc_obj_allocate(klass : Value)
+    def self.lc_obj_allocate(klass :  LcVal)
         klass     = klass.as(LcClass)
         obj       = LcObject.new
         obj.klass = klass
         obj.data  = klass.data.clone
         obj.id    = pointerof(obj).address
-        return obj.as(Value) 
+        return obj.as( LcVal) 
     end
 
     obj_allocator = LcProc.new do |args|
         next internal.lc_obj_allocate(*args.as(T1))
     end
 
-    def self.lc_obj_init(obj : Value)
+    def self.lc_obj_init(obj :  LcVal)
         return obj 
     end
 
@@ -127,14 +127,14 @@ module LinCAS::Internal
         next internal.lc_obj_init(*args.as(T1))
     end
 
-    def self.lincas_obj_to_s(obj : Value)
+    def self.lincas_obj_to_s(obj :  LcVal)
         string = String.build do |io|
             lc_obj_to_s(obj,io)
         end
         return string
     end
 
-    def self.lc_obj_to_s(obj : Value)
+    def self.lc_obj_to_s(obj :  LcVal)
         return build_string(lincas_obj_to_s(obj))
     end
 
@@ -142,7 +142,7 @@ module LinCAS::Internal
         next internal.lc_obj_to_s(*args.as(T1))
     end
 
-    def self.lc_obj_to_s(obj : Value, io)
+    def self.lc_obj_to_s(obj :  LcVal, io)
         io << '<'
         if obj.is_a? Structure 
             klass = obj.as(Structure)
@@ -167,12 +167,12 @@ module LinCAS::Internal
         io << '>'
     end
 
-    def self.lc_obj_compare(obj1 : Value, obj2 : Value)
+    def self.lc_obj_compare(obj1 :  LcVal, obj2 :  LcVal)
         return lctrue if obj1.id == obj2.id
         return lc_compare(obj1,obj2)
     end
 
-    def self.lc_obj_eq(obj1 : Value, obj2 : Value)
+    def self.lc_obj_eq(obj1 :  LcVal, obj2 :  LcVal)
         return lcfalse unless obj1.class == obj2.class
         if obj1.is_a? Structure
             return lc_class_eq(obj1,obj2)
@@ -190,7 +190,7 @@ module LinCAS::Internal
         next lc_bool_invert(internal.lc_obj_eq(*args.as(T2)))
     end
 
-    def self.lc_obj_freeze(obj : Value)
+    def self.lc_obj_freeze(obj :  LcVal)
         obj.flags |= ObjectFlags::FROZEN 
         return obj 
     end
@@ -232,7 +232,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_obj_defrost(obj : Value)
+    def self.lc_obj_defrost(obj :  LcVal)
         obj.flags &= ~ObjectFlags::FROZEN 
         return obj
     end
@@ -241,7 +241,7 @@ module LinCAS::Internal
         next lc_obj_defrost(*lc_cast(args,T1))
     end
 
-    def self.lc_obj_responds_to(obj : Value,name : Value)
+    def self.lc_obj_responds_to(obj :  LcVal,name :  LcVal)
         sname = id2string(name)
         return Null unless sname
         return val2bool(lc_obj_responds_to?(obj,sname))
@@ -252,7 +252,7 @@ module LinCAS::Internal
     end
     
     @[AlwaysInline]
-    def self.lc_obj_to_a(obj : Value)
+    def self.lc_obj_to_a(obj :  LcVal)
         return tuple2array(obj)
     end
 
@@ -261,7 +261,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_obj_hash(obj : Value)
+    def self.lc_obj_hash(obj :  LcVal)
        return num2int(obj.id.hash.to_i64)
     end
 
@@ -270,20 +270,14 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_obj_send(obj : Value, name : Value, args : An)
-        method = lc_get_method(obj,name)
+    def self.lc_obj_send(obj :  LcVal, argv : LcVal)
+        argv = lc_cast(argv,Ary)
+        method = lc_get_method(obj,argv[0])
         if test(method)
-            return Exec.call_method(method.as(Method),args)
+            return Exec.call_method(method.as(Method),argv.shifted_copy)
         else
             return method 
         end
-    end
-
-    obj_send = LcProc.new do |args|
-        args = lc_cast(args,An)
-        obj  = args.shift
-        name = args.shift
-        next lc_obj_send(obj,name,args)
     end
 
 
@@ -315,7 +309,7 @@ module LinCAS::Internal
 
     internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
     internal.lc_class_add_method(Lc_Class,"hash",obj_hash,               0)
-    internal.lc_class_add_method(Lc_Class,"send",obj_send,              -3)
+    internal.lc_class_add_method(Lc_Class,"send",wrap(:lc_obj_send,T2),   -3)
 
 
 end

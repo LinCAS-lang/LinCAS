@@ -262,7 +262,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_obj_responds_to?(obj : Value,method : String,default = true)
+    def self.lc_obj_responds_to?(obj :  LcVal,method : String,default = true)
         if obj.is_a? Structure && default
             m = internal.seek_static_method(obj.as(Structure),method)
         else 
@@ -276,7 +276,7 @@ module LinCAS::Internal
         return m.is_a? LcMethod
     end
 
-    def self.lc_obj_has_internal_m?(obj : Value,name : String)
+    def self.lc_obj_has_internal_m?(obj :  LcVal,name : String)
         if obj.is_a? Structure
             method = seek_static_method(obj,name)
         else
@@ -314,7 +314,7 @@ module LinCAS::Internal
 
     class Method < BaseC
         @method   = uninitialized LcMethod
-        @receiver = uninitialized Value
+        @receiver = uninitialized  LcVal
         @pym_def  = Pointer(Python::PyMethodDef).null
         property method,receiver,pym_def
     end
@@ -352,7 +352,7 @@ module LinCAS::Internal
         return m
     end
 
-    def self.build_method(receiver : Value,method : LcMethod)
+    def self.build_method(receiver :  LcVal,method : LcMethod)
         m          = method_new
         m.receiver = receiver
         m.method   = method 
@@ -366,21 +366,17 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_method_call(method : Value, args : An)
-        return Exec.call_method(lc_cast(method,Method),args)
+    def self.lc_method_call(method :  LcVal, argv :  LcVal)
+        argv = argv.as Ary
+        return Exec.call_method(lc_cast(method,Method),argv)
     end
 
-    call_method = LcProc.new do |args|
-        args = lc_cast(args,An)
-        next lc_method_call(args.shift,args)
-    end
-
-    def self.lc_method_to_proc(method : Value)
+    def self.lc_method_to_proc(method :  LcVal)
 
     end
 
     @[AlwaysInline]
-    def self.lc_method_receiver(method : Value)
+    def self.lc_method_receiver(method :  LcVal)
         return method_get_receiver(method)
     end
 
@@ -395,10 +391,10 @@ module LinCAS::Internal
 
     method_owner = LcProc.new do |args|
         m = args.as(T1)[0].as(Method).method
-        next m.owner
+        next m.owner || Null
     end
 
-    def self.method_to_py(method : Value)
+    def self.method_to_py(method :  LcVal)
         {% begin %}
         addr = method.as(Void*).address
         {% if flag?(:x86_64) %}
@@ -415,7 +411,7 @@ module LinCAS::Internal
     MClass = lc_build_internal_class("Method")
     lc_undef_allocator(MClass)
 
-    lc_add_internal(MClass,"call",call_method,                              -1)
+    lc_add_internal(MClass,"call",wrap(:lc_method_call,T2),                 -1)
     lc_add_internal(MClass,"receiver",method_receiver,                       0)
     lc_add_internal(MClass,"name",method_name,                               0)
     lc_add_internal(MClass,"owner",method_owner,                             0)
