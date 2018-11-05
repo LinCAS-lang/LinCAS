@@ -21,6 +21,12 @@ module LinCAS::Internal
         end
     end
 
+    macro wrap(name,type)
+        LcProc.new do |args|
+            next {{name.id}}(*args.as({{type}}))
+        end
+    end
+
     global(
         enum ObjectFlags
             NONE      = 0
@@ -48,8 +54,8 @@ module LinCAS::Internal
         property klass, data, id, flags
     end
 
-    global alias Value  = Internal::BaseS | Internal::BaseC | Structure
-    global alias ValueR = Internal::BaseS | Internal::BaseC
+    global alias  LcVal  = Internal::BaseS | Internal::BaseC | Structure
+    global alias  LcValR = Internal::BaseS | Internal::BaseC
     
     macro internal 
         self 
@@ -87,7 +93,7 @@ module LinCAS::Internal
         Exec.get_current_call_line
     end
 
-    def self.test(object : Value)
+    def self.test(object :  LcVal)
         if object == Null || object == LcFalse
             return false 
         end 
@@ -103,7 +109,7 @@ module LinCAS::Internal
         klass.type == type
     end
 
-    def self.coerce(v1 : Value, v2 : Value)
+    def self.coerce(v1 :  LcVal, v2 :  LcVal)
         if internal.lc_obj_responds_to? v2,"coerce"
             return Exec.lc_call_fun(v2,"coerce",v1)
         else 
@@ -112,7 +118,7 @@ module LinCAS::Internal
         end 
     end 
 
-    def self.lc_typeof(v : Value)
+    def self.lc_typeof(v :  LcVal)
         if v.is_a? Structure 
             if struct_type(v,SType::MODULE)
                 return "#{v.as(LcModule).name} : Module"
@@ -120,7 +126,7 @@ module LinCAS::Internal
                 return "#{v.as(LcClass).name} : Class"
             end 
         else 
-            return v.as(ValueR).klass.name
+            return v.as( LcValR).klass.name
         end 
         # Should never get here
         ""
