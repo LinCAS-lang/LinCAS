@@ -943,7 +943,11 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_store_g(name : String)
         value    = pop
         receiver = pop
-        receiver.data.addVar(name,value)
+        if !has_flag receiver,FAKE
+            receiver.data.addVar(name,value)
+        else
+            lc_bug("Fake object for STORE_G instruction")
+        end
         push(value)
     end
 
@@ -1086,7 +1090,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_create_class(name : String,parent :  LcVal,scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
-            if p_def.flags & ObjectFlags::FROZEN != 0
+            if has_flag p_def, FROZEN
                 lc_raise_1(LcFrozenError,convert(:frozen_class))
                 return nil 
             end 
@@ -1136,7 +1140,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_create_module(name : String, scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcModule
-            if p_def.flags & ObjectFlags::FROZEN != 0
+            if has_flag p_def, FROZEN
                 lc_raise_1(LcFrozenError,convert(:frozen_module))
                 return nil 
             end 
