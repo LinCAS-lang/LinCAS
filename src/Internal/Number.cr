@@ -41,7 +41,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    protected def self.num_append(buffer : String_buffer,value : Value)
+    protected def self.num_append(buffer : String_buffer,value :  LcVal)
         buffer_append(buffer,num2num(value).to_s)
     end
 
@@ -53,13 +53,13 @@ module LinCAS::Internal
         return num2int(value)
     end
 
-    def self.new_number(klass : Value)
+    def self.new_number(klass :  LcVal)
         klass      = klass.as(LcClass)
         num        = Num_.new
         num.klass  = klass
         num.data   = klass.data.clone 
         num.flags |= ObjectFlags::FROZEN 
-        return num.as(Value)
+        return num.as( LcVal)
     end
 
     number_allocator = LcProc.new do |args|
@@ -67,19 +67,19 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.num_hash(n : Value)
+    def self.num_hash(n :  LcVal)
         return num2int(num2num(n).hash.to_i64)
     end
 
 
 
-    def self.lc_num_coerce(v1 : Value,v2 : Value,method : String)
+    def self.lc_num_coerce(v1 :  LcVal,v2 :  LcVal,method : String)
         if v1.is_a? NumType && v2.is_a? NumType
             v1 = num2float(num2num(v1).to_f)
             v2 = num2float(num2num(v2).to_f)
             Exec.lc_call_fun(v1,method,v2)
         else
-            c = internal.coerce(v1,v2).as(Value)
+            c = internal.coerce(v1,v2).as( LcVal)
             return Null if c == Null
             if !(c.is_a? LcArray)
                 lc_raise(LcTypeError,"Coerce must return [x,y]")
@@ -97,7 +97,7 @@ module LinCAS::Internal
         end 
     end
 
-    def self.lc_num_gr(n1 : Value, n2 : Value)
+    def self.lc_num_gr(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) > num2num(n2))
         else 
@@ -109,7 +109,7 @@ module LinCAS::Internal
         next internal.lc_num_gr(*args.as(T2))
     end
 
-    def self.lc_num_sm(n1 : Value, n2 : Value)
+    def self.lc_num_sm(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) < num2num(n2))
         else 
@@ -121,7 +121,7 @@ module LinCAS::Internal
         next internal.lc_num_sm(*args.as(T2))
     end
 
-    def self.lc_num_ge(n1 : Value, n2 : Value)
+    def self.lc_num_ge(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) >= num2num(n2))
         else 
@@ -133,7 +133,7 @@ module LinCAS::Internal
         next internal.lc_num_ge(*args.as(T2))
     end
 
-    def self.lc_num_se(n1 : Value, n2 : Value)
+    def self.lc_num_se(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) <= num2num(n2))
         else 
@@ -146,7 +146,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_num_is_zero(num : Value)
+    def self.lc_num_is_zero(num :  LcVal)
         return lcfalse unless num.is_a? NumType
         return val2bool(num2num(num) == 0)
     end
@@ -155,7 +155,7 @@ module LinCAS::Internal
         next val2bool(num2num(args.as(T1)[0]) == 0)
     end
 
-    def self.lc_num_coerce(n1 : Value, n2 : Value)
+    def self.lc_num_coerce(n1 :  LcVal, n2 :  LcVal)
         tmp = num2int(0)
         v1  = lc_num_to_cr_f(n1)
         return tuple2array(tmp,tmp) unless v1

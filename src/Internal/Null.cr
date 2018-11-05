@@ -23,10 +23,10 @@ module LinCAS::Internal
         null.klass = NullClass
         null.data  = NullClass.data.clone
         null.flags |= ObjectFlags::FROZEN
-        return null.as(Value)
+        return null.as( LcVal)
     end
 
-    def self.lc_null_and(v1 : Value, v2 : Value)
+    def self.lc_null_and(v1 :  LcVal, v2 :  LcVal)
         return v1
     end 
 
@@ -34,7 +34,7 @@ module LinCAS::Internal
         next Null
     end
 
-    def self.lc_null_or(v1 : Value, v2 : Value)
+    def self.lc_null_or(v1 :  LcVal, v2 :  LcVal)
         return v2 
     end 
 
@@ -42,7 +42,7 @@ module LinCAS::Internal
         next args.as(T2)[1]
     end
 
-    def self.lc_null_not(v1 : Value)
+    def self.lc_null_not(v1 :  LcVal)
         next lctrue 
     end
 

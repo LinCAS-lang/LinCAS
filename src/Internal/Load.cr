@@ -26,7 +26,7 @@ module LinCAS::Internal
         return REQUIRED.includes? path 
     end
 
-    def self.require_file(path : Value,opt : Value? = nil)
+    def self.require_file(path :  LcVal,opt :  LcVal? = nil)
         path   = String.new(file_expand_path(path,opt))
         if !file_exist(path)
             lc_raise(LcLoadError,"No such file '#{path}'")
@@ -56,7 +56,7 @@ module LinCAS::Internal
         return nil
     end
 
-    def self.lc_require_file(path : Value)
+    def self.lc_require_file(path :  LcVal)
         str_check(path)
         iseq = require_file(path)
         if iseq 
@@ -70,7 +70,7 @@ module LinCAS::Internal
         next lc_require_file(lc_cast(args,T2)[1])
     end
 
-    def self.lc_import_file(path : Value)
+    def self.lc_import_file(path :  LcVal)
         str_check(path)
         lc_str_concat(path,[Sep,lc_str_clone(path),Ext])
         iseq = require_file(path,DirLib)
@@ -85,7 +85,7 @@ module LinCAS::Internal
         next lc_import_file(lc_cast(args,T2)[1])
     end
 
-    def self.lc_require_relative(path : Value)
+    def self.lc_require_relative(path :  LcVal)
         str_check(path)
         dir  = current_filedir
         dir  = build_string(dir)
@@ -133,7 +133,7 @@ module LinCAS::Internal
         return tmp
     end
 
-    def self.lc_replace(string : Value)
+    def self.lc_replace(string :  LcVal)
         string = string2cr(string)
         if string
             parser = FFactory.makeParser(string,current_file,current_call_line)

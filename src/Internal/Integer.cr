@@ -47,7 +47,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.int2num(int : Value)
+    def self.int2num(int :  LcVal)
         return int.as(LcInt).val
     end 
 
@@ -68,7 +68,7 @@ module LinCAS::Internal
         int.data  = IntClass.data.clone
         int.flags |= ObjectFlags::FROZEN
         int.id    = (value * 2 + 1).to_u64
-        return int.as(Value)
+        return int.as( LcVal)
     end 
 
     def self.build_fake_int(value : IntnumR)
@@ -77,10 +77,10 @@ module LinCAS::Internal
         int.flags |= ObjectFlags::FROZEN
         int.id    = (value * 2 + 1).to_u64
         int.flags |= ObjectFlags::FAKE
-        return int.as(Value)
+        return int.as( LcVal)
     end
 
-    private def self.int_plus_int(n1 : Value,n2 : Value)
+    private def self.int_plus_int(n1 :  LcVal,n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
@@ -104,7 +104,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_int_sum(n1 : Value, n2 : Value)
+    def self.lc_int_sum(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             {% if flag?(:fast_math) %}
                 return num2int(int2num(n1) + int2num(n2))
@@ -122,7 +122,7 @@ module LinCAS::Internal
         next internal.lc_int_sum(*args.as(T2))
     end
 
-    private def self.int_sub_int(n1 : Value, n2 : Value)
+    private def self.int_sub_int(n1 :  LcVal, n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
@@ -143,7 +143,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_int_sub(n1 : Value, n2 : Value)
+    def self.lc_int_sub(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             {% if flag?(:fast_math) %}
                 return num2int(int2num(n1) - int2num(n2))
@@ -161,7 +161,7 @@ module LinCAS::Internal
         next internal.lc_int_sub(*args.as(T2))
     end
 
-    private def self.int_mult_int(n1 : Value, n2 : Value)
+    private def self.int_mult_int(n1 :  LcVal, n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
@@ -185,7 +185,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_int_mult(n1 : Value, n2 : Value)
+    def self.lc_int_mult(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             {% if flag?(:fast_math) %}
                 return num2int(int2num(n1) * int2num(n2))
@@ -203,7 +203,7 @@ module LinCAS::Internal
         next internal.lc_int_mult(*args.as(T2))
     end
 
-    private def self.int_idiv_int(n1 : Value,n2 : Value)
+    private def self.int_idiv_int(n1 :  LcVal,n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
@@ -215,7 +215,7 @@ module LinCAS::Internal
         return v1.to_big_i / v1.to_big_i
     end
 
-    def self.lc_int_idiv(n1 : Value, n2 : Value)
+    def self.lc_int_idiv(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             if int2num(n2) == 0
                 lc_raise(LcZeroDivisionError,"(Division by 0)")
@@ -237,7 +237,7 @@ module LinCAS::Internal
         next internal.lc_int_idiv(*args.as(T2))
     end
 
-    private def self.int_fdiv_int(n1 : Value, n2 : Value)
+    private def self.int_fdiv_int(n1 :  LcVal, n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if !(v1.is_a? BigInt || v2.is_a? BigInt)
@@ -252,7 +252,7 @@ module LinCAS::Internal
         return bigf2flo64(num2bigfloat(v1.as(IntnumR)) / v2.to_big_f)
     end
 
-    def self.lc_int_fdiv(n1 : Value, n2 : Value)
+    def self.lc_int_fdiv(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             if int2num(n1) == 0
                 return positive_num(n1) ? LcInfinity : LcNinfinity
@@ -273,7 +273,7 @@ module LinCAS::Internal
         next internal.lc_int_fdiv(*args.as(T2))
     end
 
-    private def self.int_power_int(n1 : Value, n2 : Value)
+    private def self.int_power_int(n1 :  LcVal, n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
@@ -291,7 +291,7 @@ module LinCAS::Internal
         big_int_power(v1,v2)
     end
 
-    def self.lc_int_power(n1 : Value, n2 : Value)
+    def self.lc_int_power(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             {% if flag?(:fast_math) %}
                 exp = int2num(n2)
@@ -318,7 +318,7 @@ module LinCAS::Internal
         next internal.lc_int_power(*args.as(T2))
     end
 
-    def self.lc_int_odd(n : Value)
+    def self.lc_int_odd(n :  LcVal)
         if int2num(n).odd? 
             return lctrue
         else 
@@ -330,7 +330,7 @@ module LinCAS::Internal
         next internal.lc_int_odd(*args.as(T1))
     end
 
-    def self.lc_int_even(n : Value)
+    def self.lc_int_even(n :  LcVal)
         return internal.lc_bool_invert(lc_int_odd(n))
     end
 
@@ -338,7 +338,7 @@ module LinCAS::Internal
         next internal.lc_int_even(*args.as(T1))
     end
 
-    def self.lc_int_to_s(n : Value)
+    def self.lc_int_to_s(n :  LcVal)
         return internal.build_string(int2num(n).to_s)
     end
 
@@ -346,7 +346,7 @@ module LinCAS::Internal
         next internal.lc_int_to_s(*args.as(T1))
     end
 
-    def self.lc_int_to_f(n : Value)
+    def self.lc_int_to_f(n :  LcVal)
         val = int2num(n)
         if val.is_a? BigInt
             return num2float(bigf2flo64(val.to_big_f))
@@ -362,7 +362,7 @@ module LinCAS::Internal
         next args.as(T1)[0]
     end
 
-    def self.lc_int_invert(n : Value)
+    def self.lc_int_invert(n :  LcVal)
         return internal.build_int(- int2num(n))
     end
 
@@ -370,7 +370,7 @@ module LinCAS::Internal
         next internal.lc_int_invert(*args.as(T1))
     end
 
-    def self.lc_int_times(n : Value)
+    def self.lc_int_times(n :  LcVal)
         val = int2num(n)
         val.times do |i|
             Exec.lc_yield(num2int(i))
@@ -389,7 +389,7 @@ module LinCAS::Internal
         next num2int(val.abs)
     end
 
-    def self.lc_int_eq(n : Value, obj : Value)
+    def self.lc_int_eq(n :  LcVal, obj :  LcVal)
         if obj.is_a? LcInt
             return val2bool(int2num(n) == int2num(obj))
         else 

@@ -54,7 +54,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.range2py(range : Value)
+    def self.range2py(range :  LcVal)
         lft = r_left(range)
         rht = r_right(range)
         if lft.is_a? BigInt || rht.is_a? BigInt 
@@ -74,12 +74,12 @@ module LinCAS::Internal
         {{range}}.as(LcRange).inclusive 
     end
 
-    def self.lc_range_allocate(klass : Value)
+    def self.lc_range_allocate(klass :  LcVal)
         klass = klass.as(LcClass)
         range       = LcRange.new 
         range.klass = klass 
         range.data  = klass.data.clone 
-        return range.as(Value)
+        return range.as( LcVal)
     end
     
     range_allocator = LcProc.new do |args|
@@ -98,17 +98,17 @@ module LinCAS::Internal
         range.left  = v1.to_i 
         range.right = v2.to_i
         range.inclusive = inclusive
-        return range.as(Value)
+        return range.as( LcVal)
     end
 
-    def self.build_range(v1 : Value, v2 : Value, inclusive : Bool)
+    def self.build_range(v1 :  LcVal, v2 :  LcVal, inclusive : Bool)
         n1 = lc_num_to_cr_i(v1)
         n2 = lc_num_to_cr_i(v2)
         return Null unless n1 && n2
         return build_range(n1,n2,inclusive)
     end
 
-    def self.lc_range_include(range : Value, item : Value)
+    def self.lc_range_include(range :  LcVal, item :  LcVal)
         return lcfalse unless item.is_a? LcNum 
         lft = r_left(range)
         rht = r_right(range)
@@ -126,7 +126,7 @@ module LinCAS::Internal
         next internal.lc_range_include(*args.as(T2))
     end
 
-    def self.lc_range_to_s(range : Value)
+    def self.lc_range_to_s(range :  LcVal)
         lft = r_left(range)
         rht = r_right(range)
         string = String.build do |io|
@@ -189,7 +189,7 @@ module LinCAS::Internal
         next internal.lc_range_map(*args.as(T1))
     end
 
-    def self.lc_range_eq(range1 : Value,range2 : Value)
+    def self.lc_range_eq(range1 :  LcVal,range2 :  LcVal)
         return lcfalse unless range2.is_a? LcRange
         return lctrue if r_left(range1) == r_left(range2) &&
                          r_right(range1) == r_right(range2) &&
@@ -207,7 +207,7 @@ module LinCAS::Internal
         next range
     end
 
-    def self.lc_range_hash(range : Value)
+    def self.lc_range_hash(range :  LcVal)
         inc = inclusive(range)
         h   = inc.hash(HASHER)
         h   = r_left(range).hash(h)

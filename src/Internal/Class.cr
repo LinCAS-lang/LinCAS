@@ -155,7 +155,7 @@ module LinCAS::Internal
         lc_add_static(receiver,name,proc,arity)
     end
 
-    def self.lc_define_const(str : Structure, name : String, const : Value)
+    def self.lc_define_const(str : Structure, name : String, const :  LcVal)
         centry = LcConst.new(name,const)
         str.symTab.addEntry(name,centry)
     end
@@ -170,7 +170,7 @@ module LinCAS::Internal
         klass.allocator = Allocator::UNDEF 
     end
 
-    def self.seek_const_in_scope(scp : SymTab_t,name : String) : Value?
+    def self.seek_const_in_scope(scp : SymTab_t,name : String) :  LcVal?
         const = scp.lookUp(name)
         const = unpack_const(const)
         if const
@@ -252,7 +252,7 @@ module LinCAS::Internal
     #########
 
     @[AlwaysInline]
-    def self.lc_class_compare(klass1 : Value, klass2 : Value)
+    def self.lc_class_compare(klass1 :  LcVal, klass2 :  LcVal)
         path1 = path_of(klass1)
         path2 = path_of(klass2)
         if !path1.empty? && !path2.empty?
@@ -263,7 +263,7 @@ module LinCAS::Internal
         return lctrue
     end
 
-    def self.lc_is_a(obj : Value, lcType : Value)
+    def self.lc_is_a(obj :  LcVal, lcType :  LcVal)
         if !(lcType.is_a? Structure)
             lc_raise(LcArgumentError,"Argument must be a class or a module")
             return lcfalse
@@ -281,7 +281,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_class_class(obj : Value)
+    def self.lc_class_class(obj :  LcVal)
         return class_of(obj)
     end
 
@@ -290,7 +290,7 @@ module LinCAS::Internal
     end
 
 
-    def self.lc_class_eq(klass : Value, other : Value)
+    def self.lc_class_eq(klass :  LcVal, other :  LcVal)
         return lcfalse unless klass.class == other.class 
         return lcfalse unless type_of(klass) == type_of(other)
         return lc_class_compare(klass,other)
@@ -300,7 +300,7 @@ module LinCAS::Internal
         next internal.lc_class_eq(*args.as(T2))
     end
 
-    def self.lc_class_ne(klass : Value, other)
+    def self.lc_class_ne(klass :  LcVal, other)
         return lc_bool_invert(lc_class_eq(klass,other))
     end
 
@@ -308,7 +308,7 @@ module LinCAS::Internal
         next internal.lc_class_ne(*args.as(T2))
     end
 
-    def self.lc_class_defrost(klass : Value)
+    def self.lc_class_defrost(klass :  LcVal)
         klass.flags &= ~ObjectFlags::FROZEN 
         return klass 
     end 
@@ -344,7 +344,7 @@ module LinCAS::Internal
         next build_string(name)
     end
 
-    def self.lc_class_rm_static_method(klass : Value, name : Value)
+    def self.lc_class_rm_static_method(klass :  LcVal, name :  LcVal)
         sname = id2string(name)
         return lcfalse unless sname
         unless lc_obj_responds_to? klass,sname
@@ -360,7 +360,7 @@ module LinCAS::Internal
         next internal.lc_class_rm_static_method(*args.as(T2))
     end
 
-    def self.lc_class_rm_instance_method(klass : Value,name : Value)
+    def self.lc_class_rm_instance_method(klass :  LcVal,name :  LcVal)
         sname = id2string(name)
         return lcfalse unless sname
         unless lc_obj_responds_to? klass,sname,false
@@ -376,7 +376,7 @@ module LinCAS::Internal
         next internal.lc_class_rm_instance_method(*args.as(T2))
     end
 
-    def self.lc_class_rm_method(obj : Value,name : Value)
+    def self.lc_class_rm_method(obj :  LcVal,name :  LcVal)
         if obj.is_a? Structure 
             return lc_class_rm_static_method(obj,name)
         else 
@@ -388,7 +388,7 @@ module LinCAS::Internal
         next internal.lc_class_rm_method(*args.as(T2))
     end
 
-    def self.lc_class_delete_instance_method(klass : Value,name : Value)
+    def self.lc_class_delete_instance_method(klass :  LcVal,name :  LcVal)
         sname = id2string(name)
         return lcfalse unless sname
         klass = klass.as(Structure)
@@ -405,7 +405,7 @@ module LinCAS::Internal
         next internal.lc_class_delete_instance_method(*args.as(T2))
     end
 
-    def self.lc_class_delete_static_method(klass : Value, name : Value)
+    def self.lc_class_delete_static_method(klass :  LcVal, name :  LcVal)
         sname = id2string(name)
         return lcfalse unless sname
         klass = klass.as(Structure)
@@ -422,7 +422,7 @@ module LinCAS::Internal
         next internal.lc_class_delete_static_method(*args.as(T2))
     end
 
-    def self.lc_class_delete_method(obj : Value,name : Value)
+    def self.lc_class_delete_method(obj :  LcVal,name :  LcVal)
         if obj.is_a? Structure
             return lc_class_delete_static_method(obj,name)
         else
@@ -434,7 +434,7 @@ module LinCAS::Internal
         next internal.lc_class_delete_method(*args.as(T2))
     end
 
-    def self.lc_class_ancestors(klass : Value)
+    def self.lc_class_ancestors(klass :  LcVal)
         ary = build_ary_new
         while klass 
             lc_ary_push(ary,klass)
@@ -447,7 +447,7 @@ module LinCAS::Internal
         next lc_class_ancestors(*args.as(T1))
     end
 
-    def self.lc_class_parent(klass : Value)
+    def self.lc_class_parent(klass :  LcVal)
         s_klass = parent_of(klass)
         return s_klass if s_klass
         return Null 
@@ -471,7 +471,7 @@ module LinCAS::Internal
         return true
     end
 
-    def self.lc_alias_method(klass : Value, name : Value, new_name : Value)
+    def self.lc_alias_method(klass :  LcVal, name :  LcVal, new_name :  LcVal)
         name = id2string(name)
         return lcfalse unless name 
         new_name = id2string(new_name)
@@ -506,7 +506,7 @@ module LinCAS::Internal
         return method
     end
 
-    def self.lc_get_method(obj : Value,name : Value)
+    def self.lc_get_method(obj :  LcVal,name :  LcVal)
         name = id2string(name)
         return Null unless name 
         if obj.is_a? Structure
@@ -525,7 +525,7 @@ module LinCAS::Internal
         next lc_get_method(*lc_cast(args,T2))
     end
 
-    def self.lc_instance_method(klass : Value, name : Value)
+    def self.lc_instance_method(klass :  LcVal, name :  LcVal)
         name   = id2string(name)
         return Null unless name
         method = lc_get_instance_method(lc_cast(klass,Structure),name)

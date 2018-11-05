@@ -36,7 +36,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.bool2val(value : Value)
+    def self.bool2val(value :  LcVal)
         return value == lctrue ? true : false
     end
 
@@ -46,7 +46,7 @@ module LinCAS::Internal
         lcTrue.klass  = klass.as(LcClass)
         lcTrue.data   = klass.as(LcClass).data.clone
         lcTrue.flags |= ObjectFlags::FROZEN
-        return lcTrue.as(Value)
+        return lcTrue.as( LcVal)
     end
 
     def self.build_false
@@ -55,7 +55,7 @@ module LinCAS::Internal
         lcFalse.klass  = klass.as(LcClass)
         lcFalse.data   = klass.as(LcClass).data.clone
         lcFalse.flags |= ObjectFlags::FROZEN
-        return lcFalse.as(Value)
+        return lcFalse.as( LcVal)
     end
 
     def self.lc_bool_invert(value)

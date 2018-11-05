@@ -94,7 +94,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_pyimport(name : Value, import_name : Value)
+    def self.lc_pyimport(name :  LcVal, import_name :  LcVal)
         name = id2string(name)
         return Null unless name
         import_name = id2string(import_name)
@@ -108,7 +108,7 @@ module LinCAS::Internal
     end
 
     def self.pytuple2ary(tuple : PyObject)
-        ary  = [] of Value
+        ary  = [] of  LcVal
         size = pytuple_size(tuple)
         size.times do |i|
             item = pytuple_at_index(tuple,i)

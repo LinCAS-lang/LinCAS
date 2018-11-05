@@ -32,7 +32,7 @@ module LinCAS::Internal
     end
 
     macro default_def(name,sym = nil)
-        private def self.lc_{{name.id}}(v : Value)
+        private def self.lc_{{name.id}}(v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -44,7 +44,7 @@ module LinCAS::Internal
     end
 
     macro def_with_block(name, sym = nil)
-        private def self.lc_{{name.id}}(v : Value)
+        private def self.lc_{{name.id}}(v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -57,7 +57,7 @@ module LinCAS::Internal
     end
 
     macro default_adef(name, sym = nil)
-        private def self.lc_a{{name.id}}(v : Value)
+        private def self.lc_a{{name.id}}(v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -69,7 +69,7 @@ module LinCAS::Internal
     end
 
     macro adef_with_block(name, sym = nil)
-        private def self.lc_a{{name.id}}(v : Value)
+        private def self.lc_a{{name.id}}(v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -83,7 +83,7 @@ module LinCAS::Internal
 
     {% for name in %w|cos sin acos asin tan atan cosh sinh asinh acosh gamma
                     exp log tanh atanh sqrt cbrt log10 |%}
-        private def self.lc_{{name.id}}_ary(v : Value)
+        private def self.lc_{{name.id}}_ary(v :  LcVal)
             new_ary = build_ary_new
             ary_iterate(v) do |obj|
                 res = lc_{{name.id}}(obj)
@@ -98,7 +98,7 @@ module LinCAS::Internal
     {% end %}
 
     {% for name in %w|atan2 nrt copysign hypot| %}
-        def self.lc_{{name.id}}_ary(a1 : Value, a2 : Value)
+        def self.lc_{{name.id}}_ary(a1 :  LcVal, a2 :  LcVal)
             if ary_size(a1) != ary_size(a2)
                 lc_raise(LcArgumentError,"(Array size missmatch)")
                 return Null 
@@ -134,7 +134,7 @@ module LinCAS::Internal
 
     adef_with_block(cos, Acos) do 
         if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null 
         end
     end
@@ -144,7 +144,7 @@ module LinCAS::Internal
 
     adef_with_block(sin, Asin) do 
         if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null 
         end
     end
@@ -177,11 +177,11 @@ module LinCAS::Internal
         mfun asinh
     end
     
-    def self.lc_gamma(v : Value)
+    def self.lc_gamma(v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null 
         end 
         return num2float(Math.gamma(val).to_f)
@@ -198,7 +198,7 @@ module LinCAS::Internal
     
     def_with_block(log, Log) do 
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null
         end
     end
@@ -213,7 +213,7 @@ module LinCAS::Internal
 
     adef_with_block(tanh) do
         if val.abs > 1
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null
         end
     end
@@ -221,7 +221,7 @@ module LinCAS::Internal
         mfun atanh
     end
 
-    def self.lc_atan2(v1 : Value, v2 : Value)
+    def self.lc_atan2(v1 :  LcVal, v2 :  LcVal)
         if v1.is_a? LcCmx && v2.is_a? LcCmx
              tmp = complex_div(v1,v2)
              return lc_atan(tmp)
@@ -240,7 +240,7 @@ module LinCAS::Internal
         mfun2 atan2
     end
 
-    def self.lc_sqrt(v : Value)
+    def self.lc_sqrt(v :  LcVal)
         return build_function(Sqrt.new(get_function(v))) if v.is_a? LcFunction
         return complex_sqrt(v) if v.is_a? LcCmx
         val = internal.lc_num_to_cr_f(v)
@@ -255,7 +255,7 @@ module LinCAS::Internal
         mfun sqrt
     end
 
-    def self.lc_cbrt(v : Value)
+    def self.lc_cbrt(v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         return num2float(Math.cbrt(val).to_f)
@@ -265,13 +265,13 @@ module LinCAS::Internal
         mfun cbrt
     end
 
-    def self.lc_nrt(v1 : Value,v2 : Value)
+    def self.lc_nrt(v1 :  LcVal,v2 :  LcVal)
         val1 = internal.lc_num_to_cr_i(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
         return Null unless val2
         if val1.even? && val2 < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null
         end
         if val1.is_a? BigInt
@@ -286,7 +286,7 @@ module LinCAS::Internal
         mfun2 nrt
     end
 
-    def self.lc_copysign(v1 : Value, v2 : Value)
+    def self.lc_copysign(v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -298,11 +298,11 @@ module LinCAS::Internal
         mfun2 copysign
     end
 
-    def self.lc_log10(v : Value)
+    def self.lc_log10(v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(LcMathError,"( LcVal out of domain)")
             return Null
         end
         return num2float(Math.log10(val).to_f)
@@ -312,7 +312,7 @@ module LinCAS::Internal
         mfun log10
     end
 
-    def self.lc_hypot(v1 : Value, v2 : Value)
+    def self.lc_hypot(v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)

@@ -77,22 +77,22 @@ module LinCAS
             err   = lc_err_new(klass).as(LcError)
             err.body      = body 
             err.backtrace = backtrace
-            return err.as(Value)
+            return err.as( LcVal)
         end
 
-        def self.lc_err_new(klass : Value)
+        def self.lc_err_new(klass :  LcVal)
             klass     = klass.as(LcClass)
             err       = LcError.new 
             err.klass = klass 
             err.data  = klass.data.clone
-            return err.as(Value)
+            return err.as( LcVal)
         end
 
         err_allocator = LcProc.new do |args|
             next internal.lc_err_new(*args.as(T1))
         end
 
-        def self.lc_err_init(err : Value, body : Value)
+        def self.lc_err_init(err :  LcVal, body :  LcVal)
             body = string2cr(body)
             return Null unless body
             err = err.as(LcError)
@@ -106,7 +106,7 @@ module LinCAS
             next internal.lc_err_init(*args.as(T2))
         end
 
-        def self.lc_err_msg(err : Value)
+        def self.lc_err_msg(err :  LcVal)
             return internal.build_string(err.as(LcError).body)
         end
 
@@ -114,7 +114,7 @@ module LinCAS
             next internal.lc_err_msg(*args.as(T1))
         end
 
-        def self.lc_err_backtrace(err : Value)
+        def self.lc_err_backtrace(err :  LcVal)
             return internal.build_string(err.as(LcError).backtrace)
         end
 
@@ -122,7 +122,7 @@ module LinCAS
             next internal.lc_err_backtrace(*args.as(T1))
         end
 
-        def self.lc_err_full_msg(err : Value)
+        def self.lc_err_full_msg(err :  LcVal)
             err = err.as(LcError)
             internal.build_string(String.build do |io|
                 io << err.body << err.backtrace
@@ -139,7 +139,7 @@ module LinCAS
             next err
         end
 
-        def self.lc_raise_err(error : Value)
+        def self.lc_raise_err(error :  LcVal)
             if error.is_a? LcString 
                 err = build_error(LcRuntimeError,String.new(error.as(LcString).str_ptr),"")
                 Exec.lc_raise(err)

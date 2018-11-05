@@ -20,9 +20,9 @@ module LinCAS::Internal
 
     class LcMatchData < BaseC
         def initialize(
-            @regexp   : Value,
+            @regexp   :  LcVal,
             @captured : LibPCRE::Pcre,
-            @string   : Value,
+            @string   :  LcVal,
             @position : Int32,
             @ary      : Slice(Int32),
             @g_size   : Int32)
@@ -66,14 +66,14 @@ module LinCAS::Internal
     end
 
     def self.build_match_data(
-        regexp   : Value,
+        regexp   :  LcVal,
         captured : LibPCRE::Pcre,
-        string   : Value,
+        string   :  LcVal,
         position : Int32,
         ary      : Slice(Int32),
         g_size   : Int32)
 
-        data = LcMatchData.new(regexp,captured,string,position,ary,g_size).as(Value)
+        data = LcMatchData.new(regexp,captured,string,position,ary,g_size).as( LcVal)
         data.klass = MatchDataClass
         data.data  = MatchDataClass.data.clone
         return data
@@ -95,14 +95,14 @@ module LinCAS::Internal
         return CHAR_PTR.null if start < 0
         string = lc_cast(mdata_string(mdata),LcString)
         result = str_index_range(string,start,finish,false)
-        if result.is_a? Value 
+        if result.is_a?  LcVal 
             return CHAR_PTR.null 
         else
             return result
         end
     end
 
-    def self.lc_mdata_inspect(mdata : Value)
+    def self.lc_mdata_inspect(mdata :  LcVal)
         mdata_check(mdata)
         buffer     = string_buffer_new
         size       = get_mdata_size(mdata)
@@ -135,7 +135,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_mdata_size(mdata : Value)
+    def self.lc_mdata_size(mdata :  LcVal)
         return num2int(get_mdata_size(mdata))
     end
 
@@ -144,7 +144,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_mdata_string(mdata : Value)
+    def self.lc_mdata_string(mdata :  LcVal)
         return mdata_string(mdata)
     end
 
@@ -153,7 +153,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_mdata_gsize(mdata : Value)
+    def self.lc_mdata_gsize(mdata :  LcVal)
         return num2int(mdata_gsize(mdata))
     end
 
@@ -161,7 +161,7 @@ module LinCAS::Internal
         next lc_mdata_gsize(*lc_cast(args,T1))
     end
 
-    private def self.mdata_named_index(mdata : Value, index : Value)
+    private def self.mdata_named_index(mdata :  LcVal, index :  LcVal)
         m_start      = -1 
         match        = nil
         ary          = mdata_ary(mdata)
@@ -184,7 +184,7 @@ module LinCAS::Internal
         return Null 
     end
 
-    def self.lc_mdata_index(mdata : Value,index : Value)
+    def self.lc_mdata_index(mdata :  LcVal,index :  LcVal)
         if index.is_a? LcString
             return mdata_named_index(mdata,index)
         elsif index.is_a? LcNum
@@ -203,7 +203,7 @@ module LinCAS::Internal
         next lc_mdata_index(*lc_cast(args,T2))
     end
 
-    def self.lc_mdata_captrured_names(mdata : Value)
+    def self.lc_mdata_captrured_names(mdata :  LcVal)
         regex      = mdata_regexp(mdata)
         size       = get_mdata_size(mdata)
         range      = 0...size 
@@ -225,7 +225,7 @@ module LinCAS::Internal
         next lc_mdata_captrured_names(*lc_cast(args,T1))
     end
 
-    def self.lc_mdata_to_h(mdata : Value)
+    def self.lc_mdata_to_h(mdata :  LcVal)
         regex      = mdata_regexp(mdata)
         size       = get_mdata_size(mdata)
         #range      = 0...size 
@@ -247,7 +247,7 @@ module LinCAS::Internal
         next lc_mdata_to_h(*lc_cast(args,T1))
     end
 
-    def self.lc_mdata_to_a(mdata : Value)
+    def self.lc_mdata_to_a(mdata :  LcVal)
         ary  = build_ary_new
         size = get_mdata_size(mdata)
         size.times do |i|
@@ -261,7 +261,7 @@ module LinCAS::Internal
         next lc_mdata_to_a(*lc_cast(args,T1))
     end
 
-    def self.lc_mdata_to_s(mdata : Value)
+    def self.lc_mdata_to_s(mdata :  LcVal)
         match = matched_data(lc_cast(mdata,LcMatchData),0)
         return match.null? ? Null : build_string_with_ptr(match)
     end

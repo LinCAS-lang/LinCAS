@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    alias Symbolic_t = Value | Symbolic 
+    alias Symbolic_t =  LcVal | Symbolic 
 
     class LcFunction < BaseC
         @func : Symbolic = NanC
@@ -77,7 +77,7 @@ module LinCAS::Internal
         end
     {% end %}
 
-    def self.s_invert(obj : Value)
+    def self.s_invert(obj :  LcVal)
         v = to_symbolic(obj)[0]
         return -v
     end
@@ -87,7 +87,7 @@ module LinCAS::Internal
         tmp.klass = klass 
         tmp.data  = klass.data.clone 
         tmp.id    = tmp.object_id 
-        return lc_cast(tmp,Value)
+        return lc_cast(tmp, LcVal)
     end
 
     function_allocator = LcProc.new do |args|
@@ -121,7 +121,7 @@ module LinCAS::Internal
         return tmp
     end
 
-    def self.lc_func_to_s(obj : Value)
+    def self.lc_func_to_s(obj :  LcVal)
         return build_string_recycle(get_function(obj).to_s.to_s)
     end
 
@@ -130,7 +130,7 @@ module LinCAS::Internal
     end
 
     {% for name in %w|sum sub prod div power|%}
-        def self.lc_func_{{name.id}}(f1 : Value, f2 : Value)
+        def self.lc_func_{{name.id}}(f1 :  LcVal, f2 :  LcVal)
             check_fun(f2) unless f2.is_a? LcNum
             return build_function(s_{{name.id}}(get_function(f1),(f2.is_a? LcNum) ? f2 : get_function(f2)))
         end
@@ -156,7 +156,7 @@ module LinCAS::Internal
         next lc_func_power(*lc_cast(args,T2))
     end
 
-    def self.lc_func_uminus(f : Value)
+    def self.lc_func_uminus(f :  LcVal)
         return build_function(-get_function(f))
     end
 
@@ -164,7 +164,7 @@ module LinCAS::Internal
         next lc_func_uminus(*lc_cast(args,T1))
     end
 
-    def self.lc_func_diff(f : Value, var : Value)
+    def self.lc_func_diff(f :  LcVal, var :  LcVal)
         check_fun(var)
         ensure_var(var)
         func = get_function(f)
@@ -176,7 +176,7 @@ module LinCAS::Internal
         next lc_func_diff(*lc_cast(args,T2))
     end
 
-    def self.lc_func_eval(f : Value, dict : Value)
+    def self.lc_func_eval(f :  LcVal, dict :  LcVal)
         hash_check(dict)
         tmp = get_function(f).eval(lc_cast(dict,LcHash))
         return num_auto(tmp)
@@ -186,7 +186,7 @@ module LinCAS::Internal
         next lc_func_eval(*lc_cast(args,T2))
     end
 
-    def self.lc_func_params(f : Value)
+    def self.lc_func_params(f :  LcVal)
         func = get_function(f)
         tmp  = [] of Variable
         ary  = build_ary_new
@@ -201,7 +201,7 @@ module LinCAS::Internal
         next lc_func_params(*lc_cast(args,T1))
     end
 
-    def self.lc_func_integrate(f : Value, a : Value, b : Value)
+    def self.lc_func_integrate(f :  LcVal, a :  LcVal, b :  LcVal)
         a1   = lc_num_to_cr_f(a)
         return Null unless a1
         b1   = lc_num_to_cr_f(b)
@@ -224,7 +224,7 @@ module LinCAS::Internal
         next lc_func_integrate(*lc_cast(args,T3))
     end
 
-    def self.lc_var_init(f : Value, string : Value)
+    def self.lc_var_init(f :  LcVal, string :  LcVal)
         check_string(string)
         str = string2cr(string).as(String)
         v   = Variable.new(str)
@@ -236,7 +236,7 @@ module LinCAS::Internal
         next lc_var_init(*lc_cast(args,T2))
     end
 
-    def self.lc_var_name(func : Value)
+    def self.lc_var_name(func :  LcVal)
         func = get_function(func)
         return build_string(lc_cast(func,Variable).name)
     end
@@ -245,8 +245,8 @@ module LinCAS::Internal
         next internal.lc_var_name(*lc_cast(args,T1))
     end
 
-    def self.lc_snum_init(f : Value, value : Value)
-        if !(value.is_a? Value)
+    def self.lc_snum_init(f :  LcVal, value :  LcVal)
+        if !(value.is_a?  LcVal)
             lc_raise(LcTypeError,"Argument must be Number, (#{lc_typeof(value)} given)")
             return Null 
         end
@@ -266,7 +266,7 @@ module LinCAS::Internal
         next lc_snum_init(*lc_cast(args,T2))
     end
 
-    def self.lc_val_get_v(func : Value)
+    def self.lc_val_get_v(func :  LcVal)
         func = get_function(func)
         if func.is_a? Snumber
             val  = lc_cast(func,Snumber).val 
@@ -283,7 +283,7 @@ module LinCAS::Internal
         next internal.lc_val_get_v(*lc_cast(args,T1))
     end
 
-    def self.lc_const_init(f : Value,value : Symbolic)
+    def self.lc_const_init(f :  LcVal,value : Symbolic)
         set_function(f,value)
         return f
     end
@@ -308,7 +308,7 @@ module LinCAS::Internal
         next lc_const_init(*lc_cast(args,T1),NanC)
     end
 
-    def self.lc_neg_init(f : Value,value : Value)
+    def self.lc_neg_init(f :  LcVal,value :  LcVal)
         check_fun(value)
         neg = Negative.create(get_function(value))
         set_function(f,neg)
@@ -319,7 +319,7 @@ module LinCAS::Internal
         next lc_neg_init(*lc_cast(args,T2))
     end
 
-    def self.lc_binary_op_init(f : Value,left : Value,right : Value,type : Class)
+    def self.lc_binary_op_init(f :  LcVal,left :  LcVal,right :  LcVal,type : Class)
         check_fun(left)
         check_fun(right)
         lft = get_function(left)
@@ -349,7 +349,7 @@ module LinCAS::Internal
         next lc_binary_op_init(*lc_cast(args,T3),Power)
     end
 
-    def self.lc_sfunc_init(f : Value, arg : Value,type)
+    def self.lc_sfunc_init(f :  LcVal, arg :  LcVal,type)
         check_fun(arg)
         tmp = type.new(get_function(arg))
         set_function(f,tmp)
@@ -392,7 +392,7 @@ module LinCAS::Internal
         next lc_sfunc_init(*lc_cast(args,T2),Sqrt)
     end
 
-    def self.lc_sfunc_arg(f : Value)
+    def self.lc_sfunc_arg(f :  LcVal)
         tmp = get_function(f).as(Function).value 
         return build_function(tmp)
     end
@@ -401,7 +401,7 @@ module LinCAS::Internal
         next lc_sfunc_arg(*lc_cast(args,T1))
     end
 
-    def self.lc_binop_left(f : Value)
+    def self.lc_binop_left(f :  LcVal)
         func = get_function(f)
         return Null if func == NanC
         return build_function(lc_cast(func,BinaryOp).left)
@@ -411,7 +411,7 @@ module LinCAS::Internal
         next lc_binop_left(*lc_cast(args,T1))
     end
 
-    def self.lc_binop_right(f : Value)
+    def self.lc_binop_right(f :  LcVal)
         func = get_function(f)
         return Null if func == NanC
         return build_function(lc_cast(func,BinaryOp).right)
@@ -444,7 +444,7 @@ module LinCAS::Internal
     internal.lc_add_internal(VarClass,"init",var_init,           1)
     internal.lc_add_internal(VarClass,"name",var_name,           0)
 
-    SnumClass = internal.lc_build_internal_class("Value",SymbolicClass)
+    SnumClass = internal.lc_build_internal_class(" LcVal",SymbolicClass)
 
     internal.lc_add_internal(SnumClass,"init",snum_init,         1)
     internal.lc_add_internal(SnumClass,"value",val_get_v,        0)
