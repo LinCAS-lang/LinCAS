@@ -534,7 +534,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_hash_size(hash : LcVal)
-        next num2int(hash_size(hash)
+        next num2int(hash_size(hash))
     end
 
     def self.lc_hash_to_a(hash :  LcVal)
