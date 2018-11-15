@@ -232,7 +232,7 @@ module LinCAS::Internal
     end
 
     def self.build_hash
-        return lc_hash_allocate(HashClass)
+        return lc_hash_allocate(@@lc_hash)
     end
 
     def self.lc_hash_allocate(klass :  LcVal)
@@ -301,10 +301,6 @@ module LinCAS::Internal
         return value
     end
 
-    hash_set_index = LcProc.new do |args|
-        next lc_hash_set_index(*lc_cast(args,T3))
-    end
-
     @[AlwaysInline]
     def self.hash_empty?(hash :  LcVal)
         return (hash_size(hash) == 0) ? true : false 
@@ -313,10 +309,6 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.lc_hash_empty(hash :  LcVal)
         return val2bool(hash_empty?(hash))
-    end
-
-    hash_empty = LcProc.new do |args|
-        next lc_hash_empty(*lc_cast(args,T1))
     end
 
     private def self.fetch_entry_in_bucket(entry : Entry?,key)
@@ -416,10 +408,6 @@ module LinCAS::Internal
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer)) 
     end
 
-    hash_inspect = LcProc.new do |args|
-        next lc_hash_inspect(*lc_cast(args,T1))
-    end
-
     def self.lc_hash_each_key(hash :  LcVal)
         hash_each_key(hash) do |key|
             Exec.lc_yield(key)
@@ -427,19 +415,11 @@ module LinCAS::Internal
         return Null
     end
 
-    hash_e_key = LcProc.new do |args|
-        next lc_hash_each_key(*lc_cast(args,T1))
-    end
-
     def self.lc_hash_each_value(hash :  LcVal)
         hash_each_value(hash) do |value|
             Exec.lc_yield(value)
         end
         return Null
-    end
-
-    hash_e_value = LcProc.new do |args|
-        next lc_hash_each_value(*lc_cast(args,T1))
     end
 
     private def self.hash_has_key(hash :  LcVal, key :  LcVal)
@@ -452,12 +432,9 @@ module LinCAS::Internal
         return fetch_entry_in_bucket(entry,key) ? true : false
     end
 
+    @[AlwaysInline]
     def self.lc_hash_has_key(hash :  LcVal,key :  LcVal)
         return val2bool(hash_has_key(hash,key))
-    end
-
-    hash_h_key = LcProc.new do |args|
-        next lc_hash_has_key(*lc_cast(args,T2))
     end
 
     def self.lc_hash_has_value(hash :  LcVal,value :  LcVal)
@@ -471,10 +448,6 @@ module LinCAS::Internal
         return found 
     end 
 
-    hash_has_v = LcProc.new do |args|
-        next lc_hash_has_value(*lc_cast(args,T2))
-    end
-
     def self.lc_hash_key_of(hash :  LcVal,value :  LcVal)
         key = Null
         hash_iterate(hash) do |entry|
@@ -487,10 +460,6 @@ module LinCAS::Internal
         return key
     end
 
-    hash_key_of = LcProc.new do |args|
-        next lc_hash_key_of(*lc_cast(args,T2))
-    end
-
     def self.lc_hash_keys(hash :  LcVal)
         ary = build_ary_new
         hash_each_key(hash) do |key|
@@ -498,10 +467,6 @@ module LinCAS::Internal
         end
         return ary
     end 
-
-    hash_keys = LcProc.new do |args|
-        next lc_hash_keys(*lc_cast(args,T1))
-    end
 
     def self.lc_hash_delete(hash :  LcVal,key :  LcVal)
         capa    = hash_capa(hash)
@@ -545,20 +510,12 @@ module LinCAS::Internal
         return Null  
     end 
 
-    hash_delete = LcProc.new do |args|
-        next lc_hash_delete(*lc_cast(args,T2))
-    end
-
     def self.lc_hash_clone(hash :  LcVal)
         new_hash = build_hash
         hash_iterate(hash) do |entry|
             lc_hash_set_index(new_hash,entry.key,entry.value)
         end
         return new_hash
-    end
-
-    hash_clone = LcProc.new do |args|
-        next lc_hash_clone(*lc_cast(args,T1))
     end
 
     def self.lc_hash_o_merge(hash :  LcVal, h2 :  LcVal)
@@ -569,21 +526,15 @@ module LinCAS::Internal
         return hash
     end
 
-    hash_o_merge = LcProc.new do |args|
-        next lc_hash_o_merge(*lc_cast(args,T2))
-    end
-
+    @[AlwaysInline]
     def self.lc_hash_merge(hash :  LcVal,h2 :  LcVal)
        new_hash = lc_hash_clone(hash)
        return lc_hash_o_merge(new_hash,h2)
     end
 
-    hash_merge = LcProc.new do |args|
-        next lc_hash_merge(*lc_cast(args,T2))
-    end
-
-    hash_size = LcProc.new do |args|
-        next num2int(hash_size(lc_cast(args,T1)[0]))
+    @[AlwaysInline]
+    def self.lc_hash_size(hash : LcVal)
+        next num2int(hash_size(hash)
     end
 
     def self.lc_hash_to_a(hash :  LcVal)
@@ -595,10 +546,6 @@ module LinCAS::Internal
             lc_ary_push(ary,tmp)
         end
         return ary 
-    end
-
-    hash_to_a = LcProc.new do |args|
-        next lc_hash_to_a(*lc_cast(args,T1))
     end
 
     def self.lc_hash_hash(hash :  LcVal)
@@ -613,35 +560,34 @@ module LinCAS::Internal
         end
         return num2int(res.hash(hasher).result.to_i64)
     end
+    
 
-    hash_hash = LcProc.new do |args|
-        next lc_hash_hash(*lc_cast(args,T1))
+    def init_hash
+        @@lc_hash = internal.lc_build_internal_class("Hash")
+
+        define_allocator(@@lc_hash,lc_hash_allocate)
+
+        define_method(@@lc_hash,"[]=",lc_hash_set_index,         2)
+        define_method(@@lc_hash,"empty?",lc_hash_empty,          0)
+        define_method(@@lc_hash,"fetch",lc_hash_fetch,           1)
+        alias_method_str(@@lc_hash,"fetch","[]"                   )
+        define_method(@@lc_hash,"inspect",lc_hash_inspect,       0)
+        define_method(@@lc_hash,"to_s",lc_hash_inspect,          0)
+        define_method(@@lc_hash,"each_key",lc_hash_each_key,     0)
+        define_method(@@lc_hash,"each_value",lc_hash_each_value, 0)
+        define_method(@@lc_hash,"has_key?",lc_hash_has_key,      1)
+        define_method(@@lc_hash,"has_value?",lc_hash_has_value,  1)
+        define_method(@@lc_hash,"key_of",lc_hash_key_of,         1)
+        define_method(@@lc_hash,"keys",lc_hash_keys,             0)
+        define_method(@@lc_hash,"delete",lc_hash_delete,         1)
+        define_method(@@lc_hash,"clone",lc_hash_clone,           0)
+        define_method(@@lc_hash,"merge",lc_hash_merge,           1)
+        define_method(@@lc_hash,"merge!",lc_hash_o_merge,        1)
+        define_method(@@lc_hash,"size",lc_hash_size,             0)
+        alias_method_str(@@lc_hash,"size","length"                )
+        define_method(@@lc_hash,"to_a",lc_hash_to_a,             0)
+        define_method(@@lc_hash,"hash",lc_hash_hash,             0)
     end
-
-    HashClass = internal.lc_build_internal_class("Hash")
-
-    internal.lc_set_allocator(HashClass,hash_allocator)
-
-    internal.lc_add_internal(HashClass,"[]=",hash_set_index,  2)
-    internal.lc_add_internal(HashClass,"empty?",hash_empty,   0)
-    internal.lc_add_internal(HashClass,"fetch",hash_fetch,    1)
-    internal.lc_add_internal(HashClass,"[]",hash_fetch,       1)
-    internal.lc_add_internal(HashClass,"inspect",hash_inspect,0)
-    internal.lc_add_internal(HashClass,"to_s",hash_inspect,   0)
-    internal.lc_add_internal(HashClass,"each_key",hash_e_key, 0)
-    internal.lc_add_internal(HashClass,"each_value",hash_e_value,    0)
-    internal.lc_add_internal(HashClass,"has_key?",hash_h_key,  1)
-    internal.lc_add_internal(HashClass,"has_value?",hash_has_v,1)
-    internal.lc_add_internal(HashClass,"key_of",hash_key_of,  1)
-    internal.lc_add_internal(HashClass,"keys",hash_keys,      0)
-    internal.lc_add_internal(HashClass,"delete",hash_delete,  1)
-    internal.lc_add_internal(HashClass,"clone",hash_clone,    0)
-    internal.lc_add_internal(HashClass,"merge",hash_merge,    1)
-    internal.lc_add_internal(HashClass,"merge!",hash_o_merge, 1)
-    internal.lc_add_internal(HashClass,"size",hash_size,      0)
-            alias_method_str(HashClass,"size","length"         )
-    internal.lc_add_internal(HashClass,"to_a",hash_to_a,      0)
-    internal.lc_add_internal(HashClass,"hash",hash_hash,      0)
 
 
 end

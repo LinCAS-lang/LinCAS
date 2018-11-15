@@ -168,7 +168,7 @@ module LinCAS
         internal.lc_add_internal(ErrClass,"defrost",err_defrost,    0)
 
 
-        lc_module_add_internal(LKernel,"raise",raise_err, 1)
+        lc_module_add_internal(@@lc_kernel,"raise",raise_err, 1)
 
         TypeErrClass = internal.lc_build_internal_class("TypeError",ErrClass)
 

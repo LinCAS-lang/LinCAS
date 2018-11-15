@@ -56,7 +56,7 @@ module LinCAS::Internal
         return nil
     end
 
-    def self.lc_require_file(path :  LcVal)
+    def self.lc_require_file(unused,path :  LcVal)
         str_check(path)
         iseq = require_file(path)
         if iseq 
@@ -66,11 +66,7 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    require_file_ = LcProc.new do |args|
-        next lc_require_file(lc_cast(args,T2)[1])
-    end
-
-    def self.lc_import_file(path :  LcVal)
+    def self.lc_import_file(unused,path :  LcVal)
         str_check(path)
         lc_str_concat(path,[Sep,lc_str_clone(path),Ext])
         iseq = require_file(path,DirLib)
@@ -81,11 +77,7 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    import_file = LcProc.new do |args|
-        next lc_import_file(lc_cast(args,T2)[1])
-    end
-
-    def self.lc_require_relative(path :  LcVal)
+    def self.lc_require_relative(unused,path :  LcVal)
         str_check(path)
         dir  = current_filedir
         dir  = build_string(dir)
@@ -95,10 +87,6 @@ module LinCAS::Internal
             return lctrue
         end 
         return lcfalse
-    end
-
-    require_relative = LcProc.new do |args|
-        next lc_require_relative(lc_cast(args,T2)[1])
     end
 
     private def self.normalize_iseq(iseq : Bytecode)
@@ -133,7 +121,7 @@ module LinCAS::Internal
         return tmp
     end
 
-    def self.lc_replace(string :  LcVal)
+    def self.lc_replace(unused,string :  LcVal)
         string = string2cr(string)
         if string
             parser = FFactory.makeParser(string,current_file,current_call_line)
@@ -158,14 +146,11 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    replace = LcProc.new do |args|
-        next lc_replace(lc_cast(args,T2)[1])
+    def self.init_load
+        lc_module_add_internal(@@lc_kernel,"require",wrap(lc_require_file,2),             1)
+        lc_module_add_internal(@@lc_kernel,"import",wrap(lc_import_file,2),               1)
+        lc_module_add_internal(@@lc_kernel,"require_relative",wrap(lc_require_relative,2),1)
+        lc_module_add_internal(@@lc_kernel,"replace",wrap(lc_replace,2),                  1)
     end
-
-
-    internal.lc_module_add_internal(LKernel,"require",require_file_,                 1)
-    internal.lc_module_add_internal(LKernel,"import",import_file,                    1)
-    internal.lc_module_add_internal(LKernel,"require_relative",require_relative,     1)
-    internal.lc_module_add_internal(LKernel,"replace",replace,                       1)
 
 end

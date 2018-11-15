@@ -67,8 +67,8 @@ module LinCAS::Internal
 
     def self.build_float(num : Floatnum)
         flo       = LcFloat.new(num)
-        flo.klass = FloatClass
-        flo.data  = FloatClass.data.clone
+        flo.klass = @@lc_float
+        flo.data  = @@lc_float.data.clone
         lc_obj_freeze(flo)
         return flo
     end
@@ -82,10 +82,6 @@ module LinCAS::Internal
         end
     end
 
-    float_sum = LcProc.new do |args|
-        next internal.lc_float_sum(*args.as(T2))
-    end
-
     def self.lc_float_sub(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -97,10 +93,6 @@ module LinCAS::Internal
         return Null
     end
 
-    float_sub = LcProc.new do |args|
-        next internal.lc_float_sub(*args.as(T2))
-    end
-
     def self.lc_float_mult(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -110,10 +102,6 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
-    end
-
-    float_mult = LcProc.new do |args|
-        next internal.lc_float_mult(*args.as(T2))
     end
 
     def self.lc_float_idiv(n1 :  LcVal, n2 :  LcVal)
@@ -131,10 +119,6 @@ module LinCAS::Internal
         return Null
     end
 
-    float_idiv = LcProc.new do |args|
-        next internal.lc_float_idiv(*args.as(T2))
-    end
-
     def self.lc_float_fdiv(n1 :  LcVal, n2 :  LcVal)
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
@@ -144,10 +128,6 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
-    end
-
-    float_fdiv = LcProc.new do |args|
-        next internal.lc_float_fdiv(*args.as(T2))
     end
 
     def self.lc_float_power(n1 :  LcVal, n2 :  LcVal)
@@ -161,41 +141,21 @@ module LinCAS::Internal
         return Null
     end
 
-    float_power = LcProc.new do |args|
-        next internal.lc_float_power(*args.as(T2))
-    end
-
     def self.lc_float_invert(n :  LcVal)
         return internal.build_float(- float2num(n))
-    end
-
-    float_invert = LcProc.new do |args|
-        next internal.lc_float_invert(*args.as(T1))
     end
 
     def self.lc_float_to_s(n :  LcVal)
         return internal.build_string(float2num(n).to_s)
     end
 
-    float_to_s = LcProc.new do |args|
-        next internal.lc_float_to_s(*args.as(T1))
-    end
-
     def self.lc_float_to_i(n :  LcVal)
         return internal.num2int(float2num(n).to_i)
     end
 
-    float_to_i = LcProc.new do |args|
-        next internal.lc_float_to_i(*args.as(T1))
-    end
-
-    float_to_f = LcProc.new do |args|
-        next args.as(T1)[0]
-    end
-
-    float_abs = LcProc.new do |args|
-        arg = args.as(T1)[0]
-        val = internal.lc_num_to_cr_f(arg)
+    @[AlwaysInline]
+    def lc_float_abs(n : LcVal)
+        val = internal.lc_num_to_cr_f(n)
         next Null unless val 
         next num2float(val.abs)
     end
@@ -227,8 +187,9 @@ module LinCAS::Internal
         Null
     end
 
-    float_floor = LcProc.new do |args|
-        float = internal.lc_num_to_cr_f(*args.as(T1))
+    @[AlwaysInline]
+    def self.lc_float_floor(n : LcVal)
+        float = lc_num_to_cr_f(n)
         if float.is_a? Float32 
             next num2float(LibM.floor_f32(float.as(Float32)))
         else 
@@ -236,8 +197,8 @@ module LinCAS::Internal
         end
     end
 
-    float_trunc = LcProc.new do |args|
-        float = internal.lc_num_to_cr_f(*args.as(T1))
+    def self.float_trunc(n : LcVal)
+        float = internal.lc_num_to_cr_f(n)
         if float.is_a? Float32 
             next num2float(LibM.trunc_f32(float.as(Float32)))
         else 
@@ -253,39 +214,42 @@ module LinCAS::Internal
         end
     end
 
-    float_eq = LcProc.new do |args|
-        next internal.lc_float_eq(*args.as(T2))
-    end
-
-    float_hash = LcProc.new do |args|
-        next num_hash(*lc_cast(args,T1))
-    end
-
-    FloatClass = internal.lc_build_internal_class("Float",NumClass)
-    internal.lc_undef_allocator(FloatClass)
-
-    internal.lc_add_internal(FloatClass,"+",float_sum,         1)
-    internal.lc_add_internal(FloatClass,"-",float_sub,         1)
-    internal.lc_add_internal(FloatClass,"*",float_mult,        1)
-    internal.lc_add_internal(FloatClass,"\\",float_idiv,       1)
-    internal.lc_add_internal(FloatClass,"/",float_fdiv,        1)
-    internal.lc_add_internal(FloatClass,"**",float_power,      1)
-    internal.lc_add_internal(FloatClass,"-@",float_invert,     0)
-    internal.lc_add_internal(FloatClass,"to_s",float_to_s,     0)
-    internal.lc_add_internal(FloatClass,"to_i",float_to_i,     0)
-    internal.lc_add_internal(FloatClass,"to_f",float_to_f,     0)
-    internal.lc_add_internal(FloatClass,"abs",float_abs,       0)
-    internal.lc_add_internal(FloatClass,"round",wrap(:lc_float_round,T2),  -1)
-    internal.lc_add_internal(FloatClass,"floor",float_floor,   0)
-    internal.lc_add_internal(FloatClass,"ceil",wrap(:lc_float_ceil,T1),     0)
-    internal.lc_add_internal(FloatClass,"trunc",float_trunc,   0)
-    internal.lc_add_internal(FloatClass,"hash",float_hash,     0)
-
-
     LcInfinity  =  num2float(Float64::INFINITY)
     LcNinfinity = num2float(-Float64::INFINITY)
-    internal.lc_define_const(FloatClass,"INFINITY",LcInfinity)
+    NanObj      = num2float(Float64::NAN)
 
-    NanObj = num2float(Float64::NAN)
-    internal.lc_define_const(FloatClass,"NAN",NanObj)
+    def self.init_float
+        @@lc_float = internal.lc_build_internal_class("Float",NumClass)
+        lc_undef_allocator(@@lc_float)
+    
+        define_method(@@lc_float,"+",lc_float_sum,         1)
+        define_method(@@lc_float,"-",lc_float_sub,         1)
+        define_method(@@lc_float,"*",lc_float_mult,        1)
+        define_method(@@lc_float,"\\",lc_float_idiv,       1)
+        define_method(@@lc_float,"/",lc_float_fdiv,        1)
+        define_method(@@lc_float,"**",lc_float_power,      1)
+        define_method(@@lc_float,"-@",lc_float_invert,     0)
+        define_method(@@lc_float,"to_s",lc_float_to_s,     0)
+        define_method(@@lc_float,"to_i",lc_float_to_i,     0)
+
+        float_to_f = LcProc.new do |args|
+            next args.as(T1)[0]
+        end
+
+        lc_add_internal(@@lc_float,"to_f",float_to_f,      0)
+        define_method(@@lc_float,"abs",lc_float_abs,       0)
+        define_method(@@lc_float,"round",lc_float_round,  -1)
+        define_method(@@lc_float,"floor",lc_float_floor,   0)
+        define_method(@@lc_float,"ceil",lc_float_ceil,     0)
+        define_method(@@lc_float,"trunc",lc_float_trunc,   0)
+
+        float_hash = LcProc.new do |args|
+            next num_hash(*lc_cast(args,T1))
+        end
+
+        lc_add_internal(@@lc_float,"hash",float_hash,      0)
+    
+        lc_define_const(@@lc_float,"INFINITY",LcInfinity)
+        lc_define_const(@@lc_float,"NAN",NanObj)
+    end
 end

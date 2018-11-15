@@ -237,7 +237,7 @@ module LinCAS::Internal
     end
 
 
-    PyObjClass = lc_build_internal_class("PyObject",Obj)
+    PyObjClass = lc_build_internal_class("PyObject",@@lc_object)
     lc_set_allocator(PyObjClass,pyobj_allocator)
 
     lc_add_internal(PyObjClass,"init",wrap(:lc_pyobj_init,T2),     -1)

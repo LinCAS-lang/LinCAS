@@ -156,8 +156,8 @@ module LinCAS::Internal
 
     def self.new_string
         str   = LcString.new
-        str.klass = StringClass
-        str.data  = StringClass.data.clone
+        str.klass = @@lc_string
+        str.data  = @@lc_string.data.clone
         str.id    = str.object_id
         return  str 
     end
@@ -267,10 +267,6 @@ module LinCAS::Internal
         str.data  = klass.data.clone
         return  str
     end
-
-    string_allocate = LcProc.new do |args|
-        next lc_string_allocate(*args.as(T1))
-    end
     
     #$I init
     #$U init(string) -> new_string
@@ -328,11 +324,6 @@ module LinCAS::Internal
         return concated_str
     end
 
-    str_add = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_str_add(*args)
-    end
-
     #$I concat
     #$U concat(str1,str2,str3...) -> str
     # Concatenates other strings at the given one
@@ -387,11 +378,6 @@ module LinCAS::Internal
         return new_str
     end 
 
-    str_multiply = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_str_multiply(*args)
-    end
-
     #$I include?
     #$U include?(string) -> boolean
     # Checks if a substring is contained in another one.
@@ -414,11 +400,6 @@ module LinCAS::Internal
         return lctrue
     end
 
-    str_include = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_str_include(*args)
-    end
-
     #$I ==
     #$U str == other -> boolean
     # Compares two strings or a string with another object
@@ -438,12 +419,6 @@ module LinCAS::Internal
         return lcfalse if str_size(str1) != str_size(str2)
         return internal.lc_str_include(str1,str2)
     end
-
-    str_compare = LcProc.new do |args|
-        args = args.as(T2)
-        internal.lc_str_compare(*args)
-    end
-
     
     # Same as lc_str_compare, but it checks if two strings are different
     def self.lc_str_icompare(str1 :  LcVal, str2 :  LcVal)
@@ -455,11 +430,6 @@ module LinCAS::Internal
             return Null
         end
         return lc_bool_invert(internal.lc_str_compare(str1,str2))
-    end
-
-    str_icompare = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_str_icompare(*args)
     end
 
     #$I clone
@@ -476,11 +446,6 @@ module LinCAS::Internal
     # * returns:: new LcString*
     def self.lc_str_clone(str :  LcVal)
         return internal.build_string(str)
-    end
-
-    str_clone = LcProc.new do |args|
-        args = args.as(T1)
-        next internal.lc_str_clone(args[0])
     end
 
     private def self.str_index_range(str : LcString,left : Intnum,right : Intnum,inclusive = true)
@@ -536,11 +501,6 @@ module LinCAS::Internal
         end
     end
 
-    str_index = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_str_index(*args)
-    end
-
     #$I insert
     #$U insert(index,string) -> str
     # Inserts a second string in the current one
@@ -570,11 +530,6 @@ module LinCAS::Internal
             (pointer_of(str) + x).copy_from(pointer_of(value),val_size)
         end
         return str
-    end
-
-    str_insert = LcProc.new do |args|
-        args = args.as(T3)
-        next internal.lc_str_insert(*args)
     end
 
     #$I []=
@@ -611,10 +566,6 @@ module LinCAS::Internal
         return str
     end
 
-    str_set_index = LcProc.new do |args|
-        next internal.lc_str_set_index(*args.as(T3))
-    end
-
     #$I size
     #$U size() -> integer
     #$U length() -> integer [alias]
@@ -627,10 +578,6 @@ module LinCAS::Internal
     # * argument:: string the method was called on
     def self.lc_str_size(str :  LcVal)
         return num2int(str_size(str))
-    end
-
-    str_size = LcProc.new do |args|
-        next num2int(str_size(args.as(T1)[0]))
     end
 
     #$I upcase!
@@ -648,10 +595,6 @@ module LinCAS::Internal
             char.unsafe_chr.upcase.ord.to_u8
         end
         return str
-    end
-
-    str_upr_o = LcProc.new do |args|
-        next internal.lc_str_upr_o(*args.as(T1))
     end
 
     #$I upcase
@@ -674,10 +617,6 @@ module LinCAS::Internal
         return build_string(ptr)
     end
 
-    str_upr = LcProc.new do |args|
-        next internal.lc_str_upr(*args.as(T1))
-    end
-
     #$I lowcase!
     #$U lowcase!() -> str
     # Performs the downcase on the whole string overwriting the original one
@@ -693,10 +632,6 @@ module LinCAS::Internal
             char.unsafe_chr.downcase.ord.to_u8
         end
         return str
-    end
-
-    str_lwr_o = LcProc.new do |args|
-        next internal.lc_str_lwr_o(*args.as(T1))
     end
 
     #$I lowcase
@@ -718,11 +653,6 @@ module LinCAS::Internal
         end
         return build_string(ptr)
     end
-
-    str_lwr = LcProc.new do |args|
-        next internal.lc_str_lwr(*args.as(T1))
-    end
-
 
     #$I split
     #$U split(delimiter := " ") -> array
@@ -791,10 +721,6 @@ module LinCAS::Internal
         return num2int(libc.strtol(pointer_of(str),Pointer(LibC::Char).null,10))
     end
 
-    str_to_i = LcProc.new do |args|
-        next internal.lc_str_to_i(*args.as(T1))
-    end
-
     #$I to_f
     #$U to_f() -> float
     # Converts a string into a float number
@@ -808,10 +734,6 @@ module LinCAS::Internal
     # * argument:: String to convert
     def self.lc_str_to_f(str :  LcVal)
         return num2float(libc.strtod(pointer_of(str),Pointer(LibC::Char*).null))
-    end
-
-    str_to_f = LcProc.new do |args|
-        next internal.lc_str_to_f(*args.as(T1))
     end
 
     #$I each 
@@ -839,10 +761,6 @@ module LinCAS::Internal
         return str
     end
 
-    str_each_char = LcProc.new do |args|
-        next internal.lc_str_each_char(*args.as(T1))
-    end
-
     #$I chars
     #$U chars() -> array 
     # Returns an array containing each char of the string
@@ -860,10 +778,6 @@ module LinCAS::Internal
             lc_ary_push(ary,build_string(ptr[i]))
         end
         return ary 
-    end
-
-    str_chars = LcProc.new do |args|
-        next internal.lc_str_chars(*args.as(T1))
     end
 
     #$I compact
@@ -892,10 +806,6 @@ module LinCAS::Internal
         return tmp
     end
 
-    str_compact = LcProc.new do |args|
-        next internal.lc_str_compact(*args.as(T1))
-    end
-
     #$I compact!
     #$U compact!() -> str
     # Deletes the spaces of str
@@ -920,10 +830,6 @@ module LinCAS::Internal
         resize_str_capacity_2(str,count)
         tmp = tmp.realloc(0)
         return str 
-    end
-
-    str_o_compact = LcProc.new do |args|
-        next internal.lc_str_o_compact(*args.as(T1))
     end
 
     private def self.str_gsub_char(string :  LcVal,char : LibC::Char,sub : LibC::Char*)
@@ -984,10 +890,6 @@ module LinCAS::Internal
         end
     end
 
-    str_gsub = LcProc.new do |args|
-        next lc_str_gsub(*lc_cast(args,T3))
-    end
-
     private def self.string_starts_with(string :  LcVal,char : LibC::Char)
         return false unless str_size(string) > 0
         return str_char_at(string,0) == char
@@ -1023,10 +925,6 @@ module LinCAS::Internal
         end
     end
 
-    str_s_with = LcProc.new do |args|
-        next lc_str_starts_with(*lc_cast(args,T2))
-    end
-
     @[AlwaysInline]
     private def self.prepare_string_for_sym(string : String)
         return ":\"#{string}\"" if Symbol.needs_quotes? string
@@ -1057,10 +955,6 @@ module LinCAS::Internal
         return build_symbol(string)
     end
 
-    str_to_sym = LcProc.new do |args|
-        next lc_str_to_symbol(*lc_cast(args,T1))
-    end
-
     @[AlwaysInline]
     def self.pystring_to_s(pystr : PyObject)
         if !is_pystring(pystr)
@@ -1077,46 +971,39 @@ module LinCAS::Internal
         return num2int(string2slice(str).hash.to_i64)
     end
 
-    str_hash = LcProc.new do |args|
-        next lc_str_hash(*lc_cast(args,T1))
-    end
-
         
 
+    def init_string
+        @@lc_string = lc_build_internal_class("String")
+        lc_set_allocator(@@lc_string,wrap(lc_string_allocate,1))
 
-
-
-    StringClass = internal.lc_build_internal_class("String")
-    internal.lc_set_allocator(StringClass,string_allocate)
-
-
-    internal.lc_add_internal(StringClass,"+",       wrap(:lc_str_add,T2),        1)
-    internal.lc_add_internal(StringClass,"concat",  wrap(:lc_str_concat,T2),    -1)
-    internal.lc_add_internal(StringClass,"*",       wrap(:lc_str_multiply,T2),   1)
-    internal.lc_add_internal(StringClass,"include?",wrap(:lc_str_include,T2),    1)
-    internal.lc_add_internal(StringClass,"==",      wrap(:lc_str_compare,T2),    1)
-    internal.lc_add_internal(StringClass, "!=",     wrap(:lc_str_icompare,T2),   1)
-    internal.lc_add_internal(StringClass,"clone",  str_clone,   0)
-    internal.lc_add_internal(StringClass,"[]",     str_index,   1)
-    internal.lc_add_internal(StringClass,"[]=",    str_set_index,2)
-    internal.lc_add_internal(StringClass,"insert", str_insert,  2)
-    internal.lc_add_internal(StringClass,"size",   str_size,    0)
-    internal.lc_add_internal(StringClass,"length", str_size,    0)
-    internal.lc_add_internal(StringClass,"upcase!",str_upr_o,   0)
-    internal.lc_add_internal(StringClass,"upcase", str_upr,     0)
-    internal.lc_add_internal(StringClass,"lowcase!",str_lwr_o,  0)
-    internal.lc_add_internal(StringClass,"lowcase",str_lwr,     0)
-    internal.lc_add_internal(StringClass,"split",  wrap(:lc_str_split,T2),    -1)
-    internal.lc_add_internal(StringClass,"to_i",   str_to_i,    0)
-    internal.lc_add_internal(StringClass,"to_f",   str_to_f,    0)
-    internal.lc_add_internal(StringClass,"to_sym", str_to_sym,  0)
-    internal.lc_add_internal(StringClass,"hash",   str_hash,    0)
-    internal.lc_add_internal(StringClass,"each_char",str_each_char, 0)
-    internal.lc_add_internal(StringClass,"chars",  str_chars,       0)
-    internal.lc_add_internal(StringClass,"compact",str_compact,     0)
-    internal.lc_add_internal(StringClass,"compact!",  str_o_compact,0)
-    internal.lc_add_internal(StringClass,"gsub",      str_gsub,     2)
-    internal.lc_add_internal(StringClass,"starts_with",str_s_with,  1)
-
+        lc_add_internal(@@lc_string,"+",       wrap(lc_str_add,2),        1)
+        lc_add_internal(@@lc_string,"concat",  wrap(lc_str_concat,2),    -1)
+        lc_add_internal(@@lc_string,"*",       wrap(lc_str_multiply,2),   1)
+        lc_add_internal(@@lc_string,"include?",wrap(lc_str_include,2),    1)
+        lc_add_internal(@@lc_string,"==",      wrap(lc_str_compare,2),    1)
+        lc_add_internal(@@lc_string, "!=",     wrap(lc_str_icompare,2),   1)
+        lc_add_internal(@@lc_string,"clone",   wrap(lc_str_clone,1),      0)
+        lc_add_internal(@@lc_string,"[]",      wrap(lc_str_index,2),      1)
+        lc_add_internal(@@lc_string,"[]=",     wrap(lc_str_set_index,3),  2)
+        lc_add_internal(@@lc_string,"insert",  wrap(lc_str_insert,3),     2)
+        lc_add_internal(@@lc_string,"size",    wrap(lc_str_size,1),       0)
+        alias_method_str(@@lc_string,"size","length"                       )
+        lc_add_internal(@@lc_string,"upcase!", wrap(lc_str_upr_o,1),      0)
+        lc_add_internal(@@lc_string,"upcase",  wrap(lc_str_upr,1),        0)
+        lc_add_internal(@@lc_string,"lowcase!",wrap(lc_str_lwr_o,1),      0)
+        lc_add_internal(@@lc_string,"lowcase", wrap(lc_str_lwr,1),        0)
+        lc_add_internal(@@lc_string,"split",   wrap(lc_str_split,2),     -1)
+        lc_add_internal(@@lc_string,"to_i",    wrap(lc_str_to_i,1),       0)
+        lc_add_internal(@@lc_string,"to_f",    wrap(lc_str_to_f,1),       0)
+        lc_add_internal(@@lc_string,"to_sym",  wrap(lc_str_to_symbol,1),  0)
+        lc_add_internal(@@lc_string,"hash",    wrap(lc_str_hash,1),       0)
+        lc_add_internal(@@lc_string,"each_char",wrap(lc_str_each_char,1), 0)
+        lc_add_internal(@@lc_string,"chars",   wrap(lc_str_chars,1),      0)
+        lc_add_internal(@@lc_string,"compact", wrap(lc_str_compact,1),    0)
+        lc_add_internal(@@lc_string,"compact!",wrap(lc_str_o_compact,1),  0)
+        lc_add_internal(@@lc_string,"gsub",    wrap(lc_str_gsub,3),       2)
+        lc_add_internal(@@lc_string,"starts_with",wrap(lc_str_starts_with,2),1)
+    end
 
 end

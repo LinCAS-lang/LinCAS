@@ -196,8 +196,8 @@ module LinCAS::Internal
 
     def self.new_ary_wrapper
         ary = Ary.new
-        ary.klass = AryClass
-        # ary.data  = AryClass.data.clone
+        ary.klass = @@lc_array
+        # ary.data  = @@lc_array.data.clone
         ary.id    = ary.object_id
         ary.flags |= ObjectFlags::FAKE
         return ary
@@ -205,8 +205,8 @@ module LinCAS::Internal
 
     def self.new_ary
         ary = LcArray.new
-        ary.klass = AryClass
-        ary.data  = AryClass.data.clone
+        ary.klass = @@lc_array
+        ary.data  = @@lc_array.data.clone
         ary.id    = ary.object_id
         return ary.as( LcVal)
     end
@@ -244,10 +244,6 @@ module LinCAS::Internal
         return ary.as( LcVal)
     end
 
-    ary_allocate = LcProc.new do |args|
-        next lc_ary_allocate(*args.as(T1))
-    end
-
     def self.lc_ary_init(ary :  LcVal, size :  LcVal)
         x = lc_num_to_cr_i(size)
         return Null unless x.is_a? Intnum 
@@ -255,10 +251,6 @@ module LinCAS::Internal
         ary_range_to_null(ary,0,x)
         set_ary_size(ary,x)
         Null
-    end
-
-    ary_init = LcProc.new do |args|
-        next internal.lc_ary_init(*args.as(T2))
     end
 
     def self.lc_ary_push(ary :  LcVal, value :  LcVal)
@@ -273,9 +265,6 @@ module LinCAS::Internal
         return value
     end
 
-    ary_push = LcProc.new do |args|
-        next internal.lc_ary_push(*args.as(T2))
-    end
 
     def self.lc_ary_pop(ary :  LcVal)
         i = ary_size(ary)
@@ -286,10 +275,6 @@ module LinCAS::Internal
         i -= 1
         set_ary_size(ary,i)
         return tmp 
-    end
-
-    ary_pop = LcProc.new do |args|
-        next internal.lc_ary_pop(*args.as(T1))
     end
 
     def self.lc_ary_index(ary :  LcVal, index :  LcVal)
@@ -321,10 +306,6 @@ module LinCAS::Internal
         Null 
     end
 
-    ary_index = LcProc.new do |args|
-        next internal.lc_ary_index(*args.as(T2))
-    end
-
     def self.lc_ary_index_assign(ary :  LcVal, index :  LcVal, value :  LcVal )
         x = internal.lc_num_to_cr_i(index)
         a_ary_size = ary_size(ary)
@@ -348,11 +329,6 @@ module LinCAS::Internal
             ary_set_index(ary,x,value)
         end
         value
-    end
-
-    ary_index_assign = LcProc.new do |args|
-        args = args.as(T3)
-        next internal.lc_ary_index_assign(*args)
     end
 
     private def self.ary_iterate(ary :  LcVal)
@@ -386,10 +362,6 @@ module LinCAS::Internal
         return lcfalse 
     end 
 
-    ary_include = LcProc.new do |args|
-        next internal.lc_ary_include(*args.as(T2))
-    end
-
     def self.lc_ary_clone(ary :  LcVal)
         a_ary_size = ary_size(ary)
         t_ary_size = ary_total_size(ary)
@@ -398,10 +370,6 @@ module LinCAS::Internal
         ptr.copy_from(ary_ptr(ary),a_ary_size)
         set_ary_size(ary2,a_ary_size)
         return ary2 
-    end
-
-    ary_clone = LcProc.new do |args|
-        next internal.lc_ary_clone(*args.as(T1))
     end
 
     def self.lc_ary_add(ary1 :  LcVal, ary2 :  LcVal)
@@ -420,43 +388,23 @@ module LinCAS::Internal
         return ary1
     end
 
-    ary_add = LcProc.new do |args|
-        next internal.lc_ary_add(*args.as(T2))
-    end
-
     @[AlwaysInline]
     def self.lc_ary_first(ary :  LcVal)
         return Null unless ary_size(ary) > 0
         return ary_at_index(ary,0)
     end 
 
-    ary_first = LcProc.new do |args|
-        next internal.lc_ary_first(*args.as(T1))
-    end
-
     def self.lc_ary_last(ary :  LcVal)
         return Null if ary_size(ary) == 0
         return ary_ptr(ary)[ary_size(ary) - 1]
-    end
-
-    ary_last = LcProc.new do |args|
-        next internal.lc_ary_last(*args.as(T1))
     end
 
     def self.lc_ary_len(ary :  LcVal)
         return num2int(ary_size(ary))
     end
 
-    ary_len = LcProc.new do |args|
-        next num2int(ary_size(args.as(T1)[0]))
-    end
-
     def self.lc_ary_empty(ary :  LcVal)
         return (ary_size(ary) == 0) ? lctrue : lcfalse
-    end
-
-    ary_empty = LcProc.new do |args|
-        next lc_ary_empty(*lc_cast(args,T1))
     end
 
     def self.ary_to_string(ary :  LcVal)
@@ -475,10 +423,6 @@ module LinCAS::Internal
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
-    ary_to_s = LcProc.new do |args|
-        next internal.lc_ary_to_s(*args.as(T1))
-    end
-
     def self.lc_ary_each(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
@@ -486,10 +430,6 @@ module LinCAS::Internal
             Exec.lc_yield(ary_at_index(ary,i))
         end
         Null 
-    end
-
-    ary_each = LcProc.new do |args|
-        next internal.lc_ary_each(*args.as(T1))
     end
 
     def self.lc_ary_map(ary :  LcVal)
@@ -501,10 +441,6 @@ module LinCAS::Internal
         return tmp 
     end 
 
-    ary_map = LcProc.new do |args|
-        next internal.lc_ary_map(*args.as(T1))
-    end
-
     def self.lc_ary_o_map(ary :  LcVal)
         arylen = ary_size(ary)
         arylen.times do |i|
@@ -512,10 +448,6 @@ module LinCAS::Internal
         end
         return ary 
     end 
-
-    ary_o_map = LcProc.new do |args|
-        next internal.lc_ary_o_map(*args.as(T1))
-    end
 
     def self.lc_ary_each_with_index(ary :  LcVal)
         arylen = ary_size(ary)
@@ -525,10 +457,6 @@ module LinCAS::Internal
             break if Exec.error?
         end
         return Null 
-    end
-
-    ary_each_with_index = LcProc.new do |args|
-        next internal.lc_ary_each_with_index(*args.as(T1))
     end
 
     def self.lc_ary_flatten(ary :  LcVal)
@@ -547,10 +475,6 @@ module LinCAS::Internal
             end 
         end 
         return new_ary
-    end
-
-    ary_flatten = LcProc.new do |args|
-        next internal.lc_ary_flatten(*args.as(T1))
     end
 
     def self.lc_ary_insert(ary :  LcVal, argv :  LcVal)
@@ -594,10 +518,6 @@ module LinCAS::Internal
         return lctrue 
     end
 
-    ary_eq = LcProc.new do |args|
-        next internal.lc_ary_eq(*args.as(T2))
-    end
-
     def self.lc_ary_swap(ary :  LcVal, i1 :  LcVal, i2 :  LcVal)
         i1_val = lc_num_to_cr_i(i1)
         return Null unless i1_val 
@@ -613,10 +533,6 @@ module LinCAS::Internal
         return Null 
     end 
 
-    ary_swap = LcProc.new do |args|
-        next internal.lc_ary_swap(*args.as(T3))
-    end
-
     def self.lc_ary_map_with_index(ary :  LcVal)
         size = ary_size(ary)
         tmp  = build_ary(size)
@@ -628,10 +544,6 @@ module LinCAS::Internal
         return tmp
     end 
 
-    ary_map_with_index = LcProc.new do |args|
-        next internal.lc_ary_map_with_index(*args.as(T1))
-    end
-
     def self.lc_ary_o_map_with_index(ary :  LcVal)
         size = ary_size(ary)
         size.times do |i|
@@ -640,10 +552,6 @@ module LinCAS::Internal
             ary_set_index(ary,i,value)
         end
         return ary 
-    end
-
-    ary_o_map_with_index = LcProc.new do |args|
-        next internal.lc_ary_o_map_with_index(*args.as(T1))
     end
 
     private def self.internal_ary_sort(ary :  LcVal*,size)
@@ -685,19 +593,11 @@ module LinCAS::Internal
         return s_ary 
     end
 
-    ary_sort = LcProc.new do |args|
-        next internal.lc_ary_sort(*args.as(T1))
-    end
-
     def self.lc_ary_o_sort(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
         internal_ary_sort(ptr,arylen)
         return ary 
-    end
-
-    ary_o_sort = LcProc.new do |args|
-        next internal.lc_ary_o_sort(*args.as(T1))
     end
 
     def self.lc_ary_reverse(ary :  LcVal)
@@ -712,10 +612,6 @@ module LinCAS::Internal
         return tmp 
     end
 
-    ary_reverse = LcProc.new do |args|
-        next internal.lc_ary_reverse(*args.as(T1))
-    end
-
     def self.lc_ary_o_reverse(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
@@ -723,10 +619,6 @@ module LinCAS::Internal
             ptr.swap(i,arylen - i - 1)
         end
         return ary 
-    end
-
-    ary_o_reverse = LcProc.new do |args|
-        next internal.lc_ary_o_reverse(*args.as(T1)) 
     end
 
     def self.lc_ary_max(ary :  LcVal)
@@ -743,10 +635,6 @@ module LinCAS::Internal
         return Null
     end
 
-    ary_max = LcProc.new do |args|
-        next internal.lc_ary_max(*args.as(T1))
-    end
-
     def self.lc_ary_min(ary :  LcVal)
         arylen = ary_size(ary)
         if arylen > 0
@@ -759,10 +647,6 @@ module LinCAS::Internal
             return min 
         end 
         return Null
-    end
-
-    ary_min = LcProc.new do |args|
-        next internal.lc_ary_min(*args.as(T1))
     end
 
     def self.lc_ary_delete_at(ary :  LcVal, index :  LcVal)
@@ -778,10 +662,6 @@ module LinCAS::Internal
         return ary
     end 
 
-    ary_delete_at = LcProc.new do |args|
-        next internal.lc_ary_delete_at(*args.as(T2))
-    end
-
     def self.lc_ary_compact(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
@@ -793,10 +673,6 @@ module LinCAS::Internal
         end
         return tmp 
     end 
-
-    ary_compact = LcProc.new do |args|
-        next internal.lc_ary_compact(*args.as(T1))
-    end
 
     def self.lc_ary_o_compact(ary :  LcVal)
         arylen = ary_size(ary)
@@ -815,10 +691,6 @@ module LinCAS::Internal
         return ary 
     end
 
-    ary_o_compact = LcProc.new do |args|
-        next internal.lc_ary_o_compact(*args.as(T1))
-    end
-
     def self.lc_ary_shift(ary :  LcVal)
         arylen = ary_size(ary)
         return ary if arylen == 0
@@ -831,10 +703,6 @@ module LinCAS::Internal
         return ary
     end 
 
-    ary_shift = LcProc.new do |args|
-        next internal.lc_ary_shift(*args.as(T1))
-    end
-
     def self.lc_ary_sort_by(ary :  LcVal)
         arylen = ary_size(ary)
         return ary if arylen < 2
@@ -845,18 +713,10 @@ module LinCAS::Internal
         return tmp
     end
 
-    ary_sort_by = LcProc.new do |args|
-        next internal.lc_ary_sort_by(*args.as(T1))
-    end
-
     def self.lc_ary_o_sort_by(ary :  LcVal)
         ary_sort_by_m(ary_ptr(ary),ary_size(ary))
         return ary 
     end 
-
-    ary_o_sort_by = LcProc.new do |args|
-        next internal.lc_ary_o_sort_by(*args.as(T1))
-    end
 
     def self.lc_ary_join(ary :  LcVal, argv :  LcVal)
         argv = argv.as(Ary)
@@ -908,50 +768,52 @@ module LinCAS::Internal
         return ary
     end        
 
-    AryClass = internal.lc_build_internal_class("Array")
-    internal.lc_set_allocator(AryClass,ary_allocate)
-
-    internal.lc_add_static(AryClass,"from_range",wrap(:lc_ary_from_range,T2), -2)
-
-    internal.lc_add_internal(AryClass,"init",ary_init,       1)
-    internal.lc_add_internal(AryClass,"+",ary_add,           1)
-    internal.lc_add_internal(AryClass,"push",ary_push,       1)
-    internal.lc_add_internal(AryClass,"<<",ary_push,         1)
-    internal.lc_add_internal(AryClass,"pop",ary_pop,         0)
-    internal.lc_add_internal(AryClass,"[]",ary_index,        1)
-    internal.lc_add_internal(AryClass,"[]=",ary_index_assign,2)
-    internal.lc_add_internal(AryClass,"include?",ary_include,1)
-    internal.lc_add_internal(AryClass,"clone",ary_clone,     0)
-    internal.lc_add_internal(AryClass,"first",ary_first,     0)
-    internal.lc_add_internal(AryClass,"last", ary_last,      0)
-    internal.lc_add_internal(AryClass,"size", ary_len,       0)
-            alias_method_str(AryClass,"size","length"         )
-    internal.lc_add_internal(AryClass,"empty?", ary_empty,   0)
-    internal.lc_add_internal(AryClass,"to_s", ary_to_s,      0)
-    internal.lc_add_internal(AryClass,"each",ary_each,       0)
-    internal.lc_add_internal(AryClass,"map",ary_map,         0)
-    internal.lc_add_internal(AryClass,"map!",ary_o_map,      0)
-    internal.lc_add_internal(AryClass,"flatten",ary_flatten, 0)
-    internal.lc_add_internal(AryClass,"insert",wrap(:lc_ary_insert,T2),      -2)
-    internal.lc_add_internal(AryClass,"==",ary_eq,           1)
-    internal.lc_add_internal(AryClass,"swap",ary_swap,       2)
-    internal.lc_add_internal(AryClass,"sort",ary_sort,       0)
-    internal.lc_add_internal(AryClass,"max",ary_max,         0)
-    internal.lc_add_internal(AryClass,"min",ary_min,         0)
-    internal.lc_add_internal(AryClass,"sort!",ary_o_sort,    0)
-    internal.lc_add_internal(AryClass,"reverse",ary_reverse, 0)
-    internal.lc_add_internal(AryClass,"shift",ary_shift,     0)
-    internal.lc_add_internal(AryClass,"join",wrap(:lc_ary_join,T2),          -1)
-    internal.lc_add_internal(AryClass,"sort_by",ary_sort_by,                  0)
-    internal.lc_add_internal(AryClass,"sort_by!",ary_o_sort_by,               0)
-    internal.lc_add_internal(AryClass,"reverse!",ary_o_reverse,               0)
-    internal.lc_add_internal(AryClass,"delete_at",ary_delete_at,              1)
-    internal.lc_add_internal(AryClass,"each_with_index",ary_each_with_index,  0)
-    internal.lc_add_internal(AryClass,"map_with_index",ary_map_with_index,    0)
-    internal.lc_add_internal(AryClass,"map_with_index!",ary_o_map_with_index, 0)
-    internal.lc_add_internal(AryClass,"compact",ary_compact,                  0)
-    internal.lc_add_internal(AryClass,"compact!",ary_o_compact,               0)
-end
+    def init_array
+        @@lc_array = internal.lc_build_internal_class("Array")
+        define_allocator(@@lc_array,lc_ary_allocate)
+    
+        lc_add_static(@@lc_array,"from_range",wrap(lc_ary_from_range,2), -2)
+    
+        lc_add_internal(@@lc_array,"init",           wrap(lc_ary_init,2),            1)
+        lc_add_internal(@@lc_array,"+",              wrap(lc_ary_add,2),             1)
+        lc_add_internal(@@lc_array,"push",           wrap(lc_ary_push,2),            1)
+        alias_method_str(@@lc_array,"push","<<"                                       )
+        lc_add_internal(@@lc_array,"pop",            wrap(lc_ary_pop,1),             0)
+        lc_add_internal(@@lc_array,"[]",             wrap(lc_ary_index,2),           1)
+        lc_add_internal(@@lc_array,"[]=",            wrap(lc_ary_index_assign,3),    2)
+        lc_add_internal(@@lc_array,"include?",       wrap(lc_ary_include,2),         1)
+        lc_add_internal(@@lc_array,"clone",          wrap(lc_ary_clone,1),           0)
+        lc_add_internal(@@lc_array,"first",          wrap(lc_ary_first,1),           0)
+        lc_add_internal(@@lc_array,"last",           wrap(lc_ary_last,1),            0)
+        lc_add_internal(@@lc_array,"size",           wrap(lc_ary_len,1),             0)
+        alias_method_str(@@lc_array,"size","length"                                   )
+        lc_add_internal(@@lc_array,"empty?",         wrap(lc_ary_empty,1),           0)
+        lc_add_internal(@@lc_array,"to_s",           wrap(lc_ary_to_s,1),            0)
+        lc_add_internal(@@lc_array,"each",           wrap(lc_ary_each,1),            0)
+        lc_add_internal(@@lc_array,"map",            wrap(lc_ary_map,1),             0)
+        lc_add_internal(@@lc_array,"map!",           wrap(lc_ary_o_map,1),           0)
+        lc_add_internal(@@lc_array,"flatten",        wrap(lc_ary_flatten,1),         0)
+        lc_add_internal(@@lc_array,"insert",         wrap(lc_ary_insert,2),         -2)
+        lc_add_internal(@@lc_array,"==",             wrap(lc_ary_eq,2),              1)
+        lc_add_internal(@@lc_array,"swap",           wrap(lc_ary_swap,3),            2)
+        lc_add_internal(@@lc_array,"sort",           wrap(lc_ary_sort,1),            0)
+        lc_add_internal(@@lc_array,"max",            wrap(lc_ary_max,1),             0)
+        lc_add_internal(@@lc_array,"min",            wrap(lc_ary_min,1),             0)
+        lc_add_internal(@@lc_array,"sort!",          wrap(lc_ary_o_sort,1),          0)
+        lc_add_internal(@@lc_array,"reverse",        wrap(lc_ary_reverse,1),         0)
+        lc_add_internal(@@lc_array,"shift",          wrap(lc_ary_shift,1),           0)
+        lc_add_internal(@@lc_array,"join",           wrap(lc_ary_join,2),           -1)
+        lc_add_internal(@@lc_array,"sort_by",        wrap(lc_ary_sort_by,1),         0)
+        lc_add_internal(@@lc_array,"sort_by!",       wrap(lc_ary_o_sort_by,1),       0)
+        lc_add_internal(@@lc_array,"reverse!",       wrap(lc_ary_o_reverse,1),       0)
+        lc_add_internal(@@lc_array,"delete_at",      wrap(lc_ary_delete_at,2),       1)
+        lc_add_internal(@@lc_array,"each_with_index",wrap(lc_ary_each_with_index,1), 0)
+        lc_add_internal(@@lc_array,"map_with_index", wrap(lc_ary_map_with_index,1),  0)
+        lc_add_internal(@@lc_array,"map_with_index!",wrap(lc_ary_o_map_with_index,1),0)
+        lc_add_internal(@@lc_array,"compact",        wrap(lc_ary_compact,1),         0)
+        lc_add_internal(@@lc_array,"compact!",       wrap(lc_ary_o_compact,1),       0)
+    end
+end    
 
 
 require "./Wrappers/LcArray"

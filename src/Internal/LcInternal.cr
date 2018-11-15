@@ -14,6 +14,40 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+module LinCAS::Internal
+    @@main_class = uninitialized LcClass
+    {% begin %}  
+        {{built_in = %w|
+            class 
+            module
+            object
+            kernel
+            array
+            boolean
+            complex
+            string
+            file
+            integer
+            float
+            hash
+            regexp
+            match_data
+            matrix
+        |}}  
+        {% for name in built_in %}
+            @@lc_{{name.id}} = uninitialized LcClass
+        {% end %}
+
+        def self.lc_initialize
+            Python.PyInitialize
+            {% for name in built_in %}
+                init_{{name.id}}
+            {% end %}
+            init_load
+        end
+    {% end %}
+end
+
 require "./LibC"
 require "./Pythonlib"
 require "./PyHelper"

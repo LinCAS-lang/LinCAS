@@ -79,15 +79,10 @@ module LinCAS::Internal
     # 123
     # ```
 
-    def self.lc_outl(arg)
+    def self.lc_outl(unused,arg)
         self.lc_out(arg)
         LibC.printf("\n")
     end 
-
-    lc_printl = LcProc.new do |args|
-        internal.lc_outl(args.as(T2)[1])
-        next Null
-    end
 
     #$S print
     #$U print(obj1,obj2,...) -> null
@@ -105,7 +100,7 @@ module LinCAS::Internal
     # hello everyone 123
     # ```
 
-    def self.lc_out(arg)
+    def self.lc_out(unused,arg)
         if arg.is_a? LcString
             LibC.printf("%s",arg.str_ptr)
         elsif arg.is_a? LcTrue
@@ -136,23 +131,14 @@ module LinCAS::Internal
         end
     end
 
-    lc_print = LcProc.new do |args|
-        internal.lc_out(args.as(T2)[1])
-        next Null
-    end
-
     #$S reads
     #$U reads() -> string
     # Reads a line from the STDIN
 
-    def self.lc_in
+    def self.lc_in(unused)
         value = STDIN.gets
         str   = internal.build_string(value || "")
         return str 
-    end
-
-    reads = LcProc.new do |args|
-        next internal.lc_in
     end
 
     #$S include
@@ -197,14 +183,10 @@ module LinCAS::Internal
             if !klass.is_a? Structure
                 klass = class_of(klass)
             end
-            internal.lc_include_module(klass.as(Lc_Class),mod.as(LcModule))
+            internal.lc_include_module(klass.as(LcClass),mod.as(LcModule))
             return lctrue
         end
         return lcfalse
-    end
-
-    include_m = LcProc.new do |args|
-        next internal.lc_include(*args.as(T2))
     end
 
     private def self.define_argv
@@ -254,7 +236,7 @@ module LinCAS::Internal
     # Goodbye people
     # ```
 
-    def self.lc_at_exit()
+    def self.lc_at_exit(unused)
         block = Exec.get_block
         if block 
             proc = lincas_block_to_proc(block)
@@ -265,30 +247,26 @@ module LinCAS::Internal
             return Null 
         end
     end
+    
 
-    at_exit_ = LcProc.new do |args|
-        next lc_at_exit
+    
+
+    def init_kernel
+        @@lc_kernel = internal.lc_build_internal_module("Kernel")
+
+        lc_module_add_internal(@@lc_kernel,"printl",wrap(lc_outl,2),            1)
+        lc_module_add_internal(@@lc_kernel,"print",wrap(lc_out,2),              1)
+        lc_module_add_internal(@@lc_kernel,"reads",wrap(lc_in,1),               0)
+        lc_module_add_internal(@@lc_kernel,"include",wrap(lc_include,2),        1)
+        lc_module_add_internal(@@lc_kernel,"exit",wrap(lc_exit,2),             -1)
+        lc_module_add_internal(@@lc_kernel,"at_exit",wrap(lc_at_exit,1),        0)
+    
+        lc_define_const(@@lc_kernel,"ARGV",define_argv)
+        lc_define_const(@@lc_kernel,"ENV", define_env)
+        lc_define_const(@@lc_kernel,"VERSION", define_version)
+    
+        lc_include_module(@@lc_class,@@lc_kernel)
     end
-    
-
-    
-
-
-
-    LKernel = internal.lc_build_internal_module("Kernel")
-
-    lc_module_add_internal(LKernel,"printl",lc_printl, 1)
-    lc_module_add_internal(LKernel,"print",lc_print,   1)
-    lc_module_add_internal(LKernel,"reads",reads,      0)
-    lc_module_add_internal(LKernel,"include",include_m,1)
-    lc_module_add_internal(LKernel,"exit",wrap(:lc_exit,T2),   -1)
-    lc_module_add_internal(LKernel,"at_exit",at_exit_, 0)
-
-    lc_define_const(LKernel,"ARGV",define_argv)
-    lc_define_const(LKernel,"ENV", define_env)
-    lc_define_const(LKernel,"VERSION", define_version)
-
-    lc_include_module(Lc_Class,LKernel)
 
     
 

@@ -21,10 +21,51 @@ module LinCAS::Internal
         end
     end
 
-    macro wrap(name,type)
+    macro wrap(name,argc)
         LcProc.new do |args|
-            next {{name.id}}(*args.as({{type}}))
+            next {{name.id}}(*args.as(T{{argc.id}}))
         end
+    end
+
+    macro define_method(klass,name,f_name,argc)
+        lc_add_internal(
+            {{klass}},
+            {{name}},
+            LcProc.new do |args|
+                {% if params >= 0 %}
+                    {{ tmp = argc + 1}}
+                    {{f_name}}(*args.as(T{{tmp}}))
+                {% else %}
+                    {{f_name}}(*args.as(T2))
+                {% end %}
+            end,
+            {{argc}}
+        )
+    end
+
+    macro define_ststic_method(klass,name,f_name,argc)
+        lc_add_static(
+            {{klass}},
+            {{name}},
+            LcProc.new do |args|
+                {% if params >= 0 %}
+                    {{ tmp = argc + 1}}
+                    {{f_name}}(*args.as(T{{tmp}}))
+                {% else %}
+                    {{f_name}}(*args.as(T2))
+                {% end %}
+            end,
+            {{argc}}
+        )
+    end
+
+    macro define_allocator(klass, f_name)
+        lc_set_allocator(
+            {{klass}},
+            LcProc.new do |args|
+                {{f_name}}(*args.as(T1))
+            end
+        )
     end
 
     global(

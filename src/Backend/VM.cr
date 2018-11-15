@@ -1118,7 +1118,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             lc_raise_1(LcTypeError,convert(:superclass_err) % klass.name)
             return nil
         elsif !(klass.parent) && parent == Null 
-            internal.lc_set_parent_class(klass,Internal::Obj)
+            internal.lc_set_parent_class(klass,internal.lc_object)
             return true
         end
         return true if parent == Null

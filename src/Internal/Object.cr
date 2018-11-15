@@ -16,9 +16,6 @@
 module LinCAS::Internal
 
     class LcObject < BaseC
-        def to_s 
-            return Internal.lc_obj_to_s(self)
-        end
     end
 
     @[AlwaysInline]
@@ -47,7 +44,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.boot_main_object
-        return internal.lc_obj_allocate(Obj)
+        return internal.lc_obj_allocate(@@lc_object)
     end
 
     def self.obj2py(obj :  LcVal, ref = false)
@@ -115,16 +112,8 @@ module LinCAS::Internal
         return obj.as( LcVal) 
     end
 
-    obj_allocator = LcProc.new do |args|
-        next internal.lc_obj_allocate(*args.as(T1))
-    end
-
     def self.lc_obj_init(obj :  LcVal)
         return obj 
-    end
-
-    obj_init = LcProc.new do |args|
-        next internal.lc_obj_init(*args.as(T1))
     end
 
     def self.lincas_obj_to_s(obj :  LcVal)
@@ -136,10 +125,6 @@ module LinCAS::Internal
 
     def self.lc_obj_to_s(obj :  LcVal)
         return build_string(lincas_obj_to_s(obj))
-    end
-
-    obj_to_s = LcProc.new do |args|
-        next internal.lc_obj_to_s(*args.as(T1))
     end
 
     def self.lc_obj_to_s(obj :  LcVal, io)
@@ -182,53 +167,29 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    obj_eq = LcProc.new do |args|
-        next internal.lc_obj_eq(*args.as(T2))
-    end
-
-    obj_ne = LcProc.new do |args|
-        next lc_bool_invert(internal.lc_obj_eq(*args.as(T2)))
-    end
-
     def self.lc_obj_freeze(obj :  LcVal)
         obj.flags |= ObjectFlags::FROZEN 
         return obj 
     end
 
-    obj_freeze = LcProc.new do |args|
-        next internal.lc_obj_freeze(*args.as(T1))
-    end
-
-    obj_frozen = LcProc.new do |args|
-        obj = args.as(T1)[0]
+    @[AlwaysInline]
+    def lc_obj_frozen(obj : LcVal)
         if obj.flags & ObjectFlags::FROZEN != 0
-            next lctrue 
+            return lctrue 
         end 
-        next lcfalse
+        return lcfalse
     end
 
-    obj_null = LcProc.new do |args|
-        obj = args.as(T1)[0]
-        next lctrue if obj.is_a? LcNull
-        next lcfalse
+    @[AlwaysInline]
+    def lc_obj_null(obj : LcVal)
+        return lctrue if obj == Null
+        return lcfalse
     end
 
-    obj_to_m = LcProc.new do |args|
+    def lc_obj_to_m(obj : LcVal)
         mx = internal.build_matrix(1,1)
         set_matrix_index(mx,0,0,args.as(T1)[0])
         next mx
-    end
-
-    obj_and = LcProc.new do |args|
-        next args.as(T2)[1]
-    end
-
-    obj_or = LcProc.new do |args|
-        next args.as(T2)[0]
-    end
-
-    obj_not = LcProc.new do |args|
-        next lcfalse
     end
 
     @[AlwaysInline]
@@ -237,18 +198,10 @@ module LinCAS::Internal
         return obj
     end
 
-    obj_defrost = LcProc.new do |args|
-        next lc_obj_defrost(*lc_cast(args,T1))
-    end
-
     def self.lc_obj_responds_to(obj :  LcVal,name :  LcVal)
         sname = id2string(name)
         return Null unless sname
         return val2bool(lc_obj_responds_to?(obj,sname))
-    end
-
-    obj_responds_to = LcProc.new do |args|
-        next internal.lc_obj_responds_to(*args.as(T2))
     end
     
     @[AlwaysInline]
@@ -256,17 +209,9 @@ module LinCAS::Internal
         return tuple2array(obj)
     end
 
-    obj_to_a = LcProc.new do |args|
-        next internal.lc_obj_to_a(*args.as(T1))
-    end
-
     @[AlwaysInline]
     def self.lc_obj_hash(obj :  LcVal)
        return num2int(obj.id.hash.to_i64)
-    end
-
-    obj_hash = LcProc.new do |args|
-        next lc_obj_hash(*lc_cast(args,T1))
     end
 
     @[AlwaysInline]
@@ -280,36 +225,54 @@ module LinCAS::Internal
         end
     end
 
+    def init_object
+        @@lc_object = internal.lc_build_internal_class("Object",@@lc_class)
+        define_allocator(@@lc_object,lc_obj_allocate)
 
-    Obj = internal.lc_build_internal_class("Object",Lc_Class)
-    internal.lc_set_allocator(Obj,obj_allocator)
+        define_method(@@lc_object,"init",lc_obj_init,     0)
+        define_method(@@lc_object,"==",lc_obj_eq,         1)
 
-    internal.lc_add_internal(Obj,"init",obj_init,     0)
-    internal.lc_add_internal(Obj,"==",obj_eq,         1)
-    internal.lc_add_internal(Obj,"!=",obj_eq,         1)
-    internal.lc_add_internal(Obj,"freeze",obj_freeze, 0)
-    internal.lc_add_internal(Obj,"frozen?",obj_frozen,0)
-    internal.lc_add_internal(Obj,"is_null",obj_null,  0)
-    internal.lc_add_internal(Obj,"inspect",obj_to_s,  0)
-            alias_method_str(Obj,"inspect","to_s"      )
-    internal.lc_add_internal(Obj,"to_m",obj_to_m,     0)
-    internal.lc_add_internal(Obj,"||",obj_or,         1)
-    internal.lc_add_internal(Obj,"&&",obj_and,        1)
-    internal.lc_add_internal(Obj,"!",obj_not,         0)
-    internal.lc_add_internal(Obj,"to_a",obj_to_a,     0)
+        obj_ne = LcProc.new do |args|
+            res = fast_compare(*args.as(T2))
+            next lc_bool_invert(res)
+        end
 
-    internal.lc_add_static(Lc_Class,"freeze",obj_freeze,   0)
-    internal.lc_add_static(Lc_Class,"defrost",obj_defrost, 0)
-    internal.lc_add_static(Lc_Class,"frozen?",obj_frozen,  0)
-    internal.lc_add_static(Lc_Class,"null?",obj_null,      0)
-    internal.lc_add_static(Lc_Class,"to_a",obj_to_a,       0)
-    internal.lc_add_static(Lc_Class,"||",obj_or,           1)
-    internal.lc_add_static(Lc_Class,"&&",obj_and,          1)
-    internal.lc_add_static(Lc_Class,"!",obj_not,           0)
+        lc_add_internal(@@lc_object,"!=",obj_ne,           1)
+        define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
+        define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
+        define_method(@@lc_object,"is_null",lc_obj_null,   0)
+        define_method(@@lc_object,"inspect",lc_obj_to_s,   0)
+        alias_method_str(@@lc_object,"inspect","to_s"       )
+        define_method(@@lc_object,"to_m",lc_obj_to_m,      0)
+        lc_add_internal(@@lc_object,"||",obj_or,           1)
+        lc_add_internal(@@lc_object,"&&",obj_and,          1)
+        lc_add_internal(@@lc_object,"!",obj_not,           0)
+        define_method(@@lc_object,"to_a",lc_obj_to_a,      0)
+        lc_add_static(@@lc_class,"freeze",lc_obj_freeze,   0)
+        lc_add_static(@@lc_class,"defrost",lc_obj_defrost, 0)
+        lc_add_static(@@lc_class,"frozen?",lc_obj_frozen,  0)
+        lc_add_static(@@lc_class,"null?",lc_obj_null,      0)
+        lc_add_static(@@lc_class,"to_a",lc_obj_to_a,       0)
 
-    internal.lc_class_add_method(Lc_Class,"respond_to?",obj_responds_to, 1)
-    internal.lc_class_add_method(Lc_Class,"hash",obj_hash,               0)
-    internal.lc_class_add_method(Lc_Class,"send",wrap(:lc_obj_send,T2),   -3)
+        obj_and = LcProc.new do |args|
+            next args.as(T2)[1]
+        end
+    
+        obj_or = LcProc.new do |args|
+            next args.as(T2)[0]
+        end
+    
+        obj_not = LcProc.new do |args|
+            next lcfalse
+        end
 
+        lc_add_static(@@lc_class,"||",obj_or,           1)
+        lc_add_static(@@lc_class,"&&",obj_and,          1)
+        lc_add_static(@@lc_class,"!",obj_not,           0)
+
+        lc_class_add_method(@@lc_class,"respond_to?",wrap(lc_obj_responds_to,2), 1)
+        lc_class_add_method(@@lc_class,"hash",wrap(lc_obj_hash,1),               0)
+        lc_class_add_method(@@lc_class,"send",wrap(lc_obj_send,2),              -3)
+    end
 
 end

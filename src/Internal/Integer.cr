@@ -64,8 +64,8 @@ module LinCAS::Internal
 
     def self.build_int(value : Intnum)
         int       = LcInt.new(value)
-        int.klass = IntClass
-        int.data  = IntClass.data.clone
+        int.klass = @@lc_integer
+        int.data  = @@lc_integer.data.clone
         int.flags |= ObjectFlags::FROZEN
         int.id    = (value * 2 + 1).to_u64
         return int.as( LcVal)
@@ -73,10 +73,9 @@ module LinCAS::Internal
 
     def self.build_fake_int(value : IntnumR)
         int       = LcInt.new(value)
-        int.klass = IntClass
-        int.flags |= ObjectFlags::FROZEN
+        int.klass = @@lc_integer
+        int.flags |= (ObjectFlags::FROZEN | ObjectFlags::FAKE)
         int.id    = (value * 2 + 1).to_u64
-        int.flags |= ObjectFlags::FAKE
         return int.as( LcVal)
     end
 
@@ -118,10 +117,6 @@ module LinCAS::Internal
         return Null
     end
 
-    int_sum = LcProc.new do |args|
-        next internal.lc_int_sum(*args.as(T2))
-    end
-
     private def self.int_sub_int(n1 :  LcVal, n2 :  LcVal)
         v1 = int2num(n1)
         v2 = int2num(n2)
@@ -155,10 +150,6 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
-    end
-
-    int_sub = LcProc.new do |args|
-        next internal.lc_int_sub(*args.as(T2))
     end
 
     private def self.int_mult_int(n1 :  LcVal, n2 :  LcVal)
@@ -198,10 +189,6 @@ module LinCAS::Internal
         # Should never get here
         return Null
     end
-    
-    int_mult = LcProc.new do |args|
-        next internal.lc_int_mult(*args.as(T2))
-    end
 
     private def self.int_idiv_int(n1 :  LcVal,n2 :  LcVal)
         v1 = int2num(n1)
@@ -231,10 +218,6 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
-    end
-
-    int_idiv = LcProc.new do |args|
-        next internal.lc_int_idiv(*args.as(T2))
     end
 
     private def self.int_fdiv_int(n1 :  LcVal, n2 :  LcVal)
@@ -267,10 +250,6 @@ module LinCAS::Internal
         end
         # Should never get here
         return Null
-    end
-
-    int_fdiv = LcProc.new do |args|
-        next internal.lc_int_fdiv(*args.as(T2))
     end
 
     private def self.int_power_int(n1 :  LcVal, n2 :  LcVal)
@@ -314,10 +293,6 @@ module LinCAS::Internal
         return Null
     end
 
-    int_power = LcProc.new do |args|
-        next internal.lc_int_power(*args.as(T2))
-    end
-
     def self.lc_int_odd(n :  LcVal)
         if int2num(n).odd? 
             return lctrue
@@ -326,24 +301,14 @@ module LinCAS::Internal
         end 
     end
 
-    int_odd = LcProc.new do |args|
-        next internal.lc_int_odd(*args.as(T1))
-    end
-
+    @[AlwaysInline]
     def self.lc_int_even(n :  LcVal)
         return internal.lc_bool_invert(lc_int_odd(n))
     end
 
-    int_even = LcProc.new do |args|
-        next internal.lc_int_even(*args.as(T1))
-    end
-
+    @[AlwaysInline]
     def self.lc_int_to_s(n :  LcVal)
         return internal.build_string(int2num(n).to_s)
-    end
-
-    int_to_s = LcProc.new do |args|
-        next internal.lc_int_to_s(*args.as(T1))
     end
 
     def self.lc_int_to_f(n :  LcVal)
@@ -354,20 +319,8 @@ module LinCAS::Internal
         return internal.num2float(val.to_f)
     end
 
-    int_to_f = LcProc.new do |args|
-        next internal.lc_int_to_f(*args.as(T1))
-    end
-
-    int_to_i = LcProc.new do |args|
-        next args.as(T1)[0]
-    end
-
     def self.lc_int_invert(n :  LcVal)
         return internal.build_int(- int2num(n))
-    end
-
-    int_invert = LcProc.new do |args|
-        next internal.lc_int_invert(*args.as(T1))
     end
 
     def self.lc_int_times(n :  LcVal)
@@ -378,13 +331,8 @@ module LinCAS::Internal
         return Null
     end
 
-    int_times = LcProc.new do |args|
-        next internal.lc_int_times(*args.as(T1))
-    end
-
-    int_abs = LcProc.new do |args|
-        arg = args.as(T1)[0]
-        val = internal.lc_num_to_cr_i(arg)
+    def self.lc_int_abs(n : LcVal)
+        val = int2num(n)
         next Null unless val 
         next num2int(val.abs)
     end
@@ -397,34 +345,37 @@ module LinCAS::Internal
         end
     end
 
-    int_eq = LcProc.new do |args|
-        next internal.lc_int_eq(*args.as(T2))
-    end
-
-    int_hash = LcProc.new do |args|
-        next num_hash(*lc_cast(args,T1))
-    end
-
     
+    def init_integer
+        @@lc_integer = internal.lc_build_internal_class("Integer",NumClass)
+        lc_undef_allocator(@@lc_integer)
+    
+        define_method(@@lc_integer,"+",lc_int_sum,         1)
+        define_method(@@lc_integer,"-",lc_int_sub,         1)
+        define_method(@@lc_integer,"*",lc_int_mult,        1)
+        define_method(@@lc_integer,"\\",lc_int_idiv,       1)
+        define_method(@@lc_integer,"/",lc_int_fdiv,        1)
+        define_method(@@lc_integer,"**",lc_int_power,      1)
+        define_method(@@lc_integer,"==",lc_int_eq,         1)
+        define_method(NumClass,"odd?",lc_int_odd,          0)
+        define_method(NumClass,"even?",lc_int_even,        0)
+        define_method(@@lc_integer,"-@",lc_int_invert,     0)
+        define_method(@@lc_integer,"to_s",lc_int_to_s,     0)
+        define_method(@@lc_integer,"to_f",lc_int_to_f,     0)
 
-    IntClass = internal.lc_build_internal_class("Integer",NumClass)
-    internal.lc_undef_allocator(IntClass)
+        int_to_i = LcProc.new do |args|
+            next args.as(T1)[0]
+        end
 
-    internal.lc_add_internal(IntClass,"+",int_sum,         1)
-    internal.lc_add_internal(IntClass,"-",int_sub,         1)
-    internal.lc_add_internal(IntClass,"*",int_mult,        1)
-    internal.lc_add_internal(IntClass,"\\",int_idiv,       1)
-    internal.lc_add_internal(IntClass,"/",int_fdiv,        1)
-    internal.lc_add_internal(IntClass,"**",int_power,      1)
-    internal.lc_add_internal(IntClass,"==",int_eq,         1)
-    internal.lc_add_internal(NumClass,"odd?",int_odd,      0)
-    internal.lc_add_internal(NumClass,"even?",int_even,    0)
-    internal.lc_add_internal(IntClass,"-@",int_invert,     0)
-    internal.lc_add_internal(IntClass,"to_s",int_to_s,     0)
-    internal.lc_add_internal(IntClass,"to_f",int_to_f,     0)
-    internal.lc_add_internal(IntClass,"to_i",int_to_i,     0)
-    internal.lc_add_internal(IntClass,"times",int_times,   0)
-    internal.lc_add_internal(IntClass,"abs",int_abs,       0)
-    internal.lc_add_internal(IntClass,"hash",int_hash,     0)
+        define_method(@@lc_integer,"to_i",int_to_i,        0)
+        define_method(@@lc_integer,"times",lc_int_times,   0)
+        define_method(@@lc_integer,"abs",lc_int_abs,       0)
+
+        int_hash = LcProc.new do |args|
+            next num_hash(*lc_cast(args,T1))
+        end
+
+        lc_add_internal(@@lc_integer,"hash",lc_int_hash,     0)
+    end
     
 end

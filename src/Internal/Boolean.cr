@@ -42,7 +42,7 @@ module LinCAS::Internal
 
     def self.build_true
         lcTrue       = LcBTrue.new
-        klass         = BoolClass
+        klass         = @@lc_boolean
         lcTrue.klass  = klass.as(LcClass)
         lcTrue.data   = klass.as(LcClass).data.clone
         lcTrue.flags |= ObjectFlags::FROZEN
@@ -51,7 +51,7 @@ module LinCAS::Internal
 
     def self.build_false
         lcFalse        = LcBFalse.new
-        klass          = BoolClass
+        klass          = @@lc_boolean
         lcFalse.klass  = klass.as(LcClass)
         lcFalse.data   = klass.as(LcClass).data.clone
         lcFalse.flags |= ObjectFlags::FROZEN
@@ -69,19 +69,9 @@ module LinCAS::Internal
         end
     end
 
-    bool_invert = LcProc.new do |args|
-        args = args.as(T1)
-        next internal.lc_bool_invert(args[0])
-    end
-
     def self.lc_bool_eq(val1, val2)
         return lctrue if val1 == val2
         return lcfalse
-    end
-
-    bool_eq = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_eq(args[0],args[1])
     end
 
     def self.lc_bool_gr(val1, val2)
@@ -108,18 +98,9 @@ module LinCAS::Internal
         )
     end
 
-    bool_ne = LcProc.new do |args|
-        next internal.lc_bool_ne(*args.as(T2))
-    end
-
     def self.lc_bool_and(val1, val2)
         return lctrue if val1 == lctrue && val2 == lctrue
         return lcfalse
-    end
-
-    bool_and = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_and(args[0],args[1])
     end
 
     def self.lc_bool_or(val1, val2)
@@ -127,21 +108,18 @@ module LinCAS::Internal
         return lcfalse 
     end
 
-    bool_or = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_or(args[0],args[1])
+    def init_boolean
+        @@lc_boolean = internal.lc_build_internal_class("Boolean")
+        lc_undef_allocator(@@lc_boolean)
+
+        lc_remove_internal(@@lc_boolean,"defrost")
+
+        define_method(@@lc_boolean,"!", lc_bool_invert,0)
+        define_method(@@lc_boolean,"==",lc_bool_eq,    1)
+        define_method(@@lc_boolean,"!=",lc_bool_ne,    1)
+        define_method(@@lc_boolean,"&&",lc_bool_and,   1)
+        define_method(@@lc_boolean,"||",lc_bool_or,    1)
     end
-
-    BoolClass = internal.lc_build_internal_class("Boolean")
-    internal.lc_undef_allocator(BoolClass)
-
-    internal.lc_remove_internal(BoolClass,"defrost")
-
-    internal.lc_add_internal(BoolClass,"!", bool_invert,0)
-    internal.lc_add_internal(BoolClass,"==",bool_eq,    1)
-    internal.lc_add_internal(BoolClass,"!=",bool_ne,    1)
-    internal.lc_add_internal(BoolClass,"&&",bool_and,   1)
-    internal.lc_add_internal(BoolClass,"||",bool_or,    1)
 
     global LcTrue  = Internal.build_true
     global LcFalse = Internal.build_false

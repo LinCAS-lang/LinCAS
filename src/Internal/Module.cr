@@ -17,8 +17,8 @@ module LinCAS::Internal
 
     macro module_initializer(mod,type)
         {{mod}}.type      = {{type}}
-        {{mod}}.klass     = Lc_Module
-        {{mod}}.parent    = Obj
+        {{mod}}.klass     = @@lc_module
+        {{mod}}.parent    = @@lc_object
         {{mod}}.allocator = Allocator::UNDEF
     end
 
@@ -48,8 +48,8 @@ module LinCAS::Internal
 
     def self.lc_build_internal_module(name : String)
         mod               = lc_build_module(name)
-        mod.symTab.parent = MainClass.symTab
-        MainClass.symTab.addEntry(name,mod)
+        mod.symTab.parent = @@main_class.symTab
+        @@main_class.symTab.addEntry(name,mod)
         return mod
     end
 
@@ -66,8 +66,8 @@ module LinCAS::Internal
 
     def self.lc_build_pymodule(name : String,obj : PyObject)
         tmp = lc_build_unregistered_pymodule(name,obj)
-        tmp.symTab.parent = MainClass.symTab
-        MainClass.symTab.addEntry(name,tmp)
+        tmp.symTab.parent = @@main_class.symTab
+        @@main_class.symTab.addEntry(name,tmp)
         tmp.flags |= ObjectFlags::REG_CLASS
         return tmp
     end
@@ -113,6 +113,8 @@ module LinCAS::Internal
         internal.lc_add_static(mod,name,method,arity)
     end
 
-    Lc_Module = internal.lc_build_internal_class("Module")
+    def self.init_module
+        @@lc_module = internal.lc_build_internal_class("Module")
+    end
 
 end

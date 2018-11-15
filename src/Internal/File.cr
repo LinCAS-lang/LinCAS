@@ -42,10 +42,6 @@ module LinCAS::Internal
         return val2bool(file_exist(file))
     end
 
-    f_exist = LcProc.new do |args|
-        next lc_file_exist(lc_cast(args,T2)[1])
-    end
-
     private def self.file_expand_path(file :  LcVal,dir :  LcVal? = nil)
         slash = SLASH.ord.to_u8
         tmp_s = build_string(SLASH.to_s)
@@ -101,11 +97,13 @@ module LinCAS::Internal
         return build_string_with_ptr(file_expand_path(file,argv.empty? ? nil : argv[0]))
     end
 
-    FileClass = internal.lc_build_internal_class("File")
-    internal.lc_undef_allocator(FileClass)
-
-    internal.lc_add_static(FileClass,"exist?", f_exist,             1)
-    internal.lc_add_static(FileClass,"expand_path",wrap(:lc_file_expand_path,T2),  -1)
+    def self.init_file
+        @@lc_file = internal.lc_build_internal_class("File")
+        lc_undef_allocator(@@lc_file)
+   
+        define_method(@@lc_file,"exist?", lc_file_exist,             1)
+        define_method(@@lc_file,"expand_path",lc_file_expand_path,  -1)
+    end
     
 
 end
