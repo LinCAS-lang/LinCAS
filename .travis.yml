@@ -40,11 +40,11 @@ before_install:
       mkdir ./bin; 
     fi
   - if [ ! -d "/usr/local/lib/LinCAS/LinCAS" ]; then
-      sudo mkdir /usr/local/lib/LinCAS/LinCAS;
+      sudo mkdir -p /usr/local/lib/LinCAS/LinCAS;
     fi 
   - if [ ! -d "/usr/local/lib/LinCAS/lib" ]; then
       echo Creating lib folder
-      sudo mkdir /usr/local/lib/LinCAS/lib
+      sudo mkdir -p /usr/local/lib/LinCAS/lib
     fi
 
 script: 
