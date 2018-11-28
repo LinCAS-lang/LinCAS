@@ -53,7 +53,7 @@ module LinCAS::Internal
         return num2int(value)
     end
 
-    def self.new_number(klass :  LcVal)
+    def self.build_number(klass :  LcVal)
         klass      = klass.as(LcClass)
         num        = Num_.new
         num.klass  = klass
@@ -62,8 +62,9 @@ module LinCAS::Internal
         return num.as( LcVal)
     end
 
-    number_allocator = LcProc.new do |args|
-        next internal.new_number(*args.as(T1))
+    @[AlwaysInline]
+    def self.lc_number_allocate(klass : LcVal)
+        return build_number(klass)
     end
 
     @[AlwaysInline]
@@ -105,20 +106,12 @@ module LinCAS::Internal
         end
     end
 
-    num_gr = LcProc.new do |args|
-        next internal.lc_num_gr(*args.as(T2))
-    end
-
     def self.lc_num_sm(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) < num2num(n2))
         else 
             lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
-    end
-
-    num_sm = LcProc.new do |args|
-        next internal.lc_num_sm(*args.as(T2))
     end
 
     def self.lc_num_ge(n1 :  LcVal, n2 :  LcVal)
@@ -129,10 +122,6 @@ module LinCAS::Internal
         end
     end
 
-    num_ge = LcProc.new do |args|
-        next internal.lc_num_ge(*args.as(T2))
-    end
-
     def self.lc_num_se(n1 :  LcVal, n2 :  LcVal)
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) <= num2num(n2))
@@ -141,18 +130,10 @@ module LinCAS::Internal
         end
     end
 
-    num_se = LcProc.new do |args|
-        next internal.lc_num_se(*args.as(T2))
-    end
-
     @[AlwaysInline]
     def self.lc_num_is_zero(num :  LcVal)
         return lcfalse unless num.is_a? NumType
         return val2bool(num2num(num) == 0)
-    end
-
-    num_is_zero = LcProc.new do |args|
-        next val2bool(num2num(args.as(T1)[0]) == 0)
     end
 
     def self.lc_num_coerce(n1 :  LcVal, n2 :  LcVal)
@@ -164,24 +145,21 @@ module LinCAS::Internal
         return tuple2array(num2float(v2),num2float(v1))
     end
 
-    num_coerce = LcProc.new do |args|
-        next internal.lc_num_coerce(*args.as(T2))
-    end
-
     
 
+    def self.init_number
+        @@lc_number = internal.lc_build_internal_class("Number")
+        define_allocator(@@lc_number,lc_number_allocate)
 
-    NumClass = internal.lc_build_internal_class("Number")
-    internal.lc_set_allocator(NumClass,number_allocator)
+        lc_remove_internal(@@lc_number,"defrost")
 
-    internal.lc_remove_internal(NumClass,"defrost")
-
-    internal.lc_add_internal(NumClass,">",num_gr,    1)
-    internal.lc_add_internal(NumClass,"<",num_sm,    1)
-    internal.lc_add_internal(NumClass,">=",num_ge,   1)
-    internal.lc_add_internal(NumClass,"<=",num_se,   1)
-    internal.lc_add_internal(NumClass,"zero?",num_is_zero,   0)
-    internal.lc_add_internal(NumClass,"coerce",num_coerce,   1)
+        define_method(@@lc_number,">",lc_num_gr,            1)
+        define_method(@@lc_number,"<",lc_num_sm,            1)
+        define_method(@@lc_number,">=",lc_num_ge,           1)
+        define_method(@@lc_number,"<=",lc_num_se,           1)
+        define_method(@@lc_number,"zero?",lc_num_is_zero,   0)
+        define_method(@@lc_number,"coerce",lc_num_coerce,   1)
+    end
 
     
 end

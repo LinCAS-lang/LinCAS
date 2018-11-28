@@ -69,7 +69,7 @@ class Object
     class FrozenError < Exception; end
 
     macro has_flag(obj,flag)
-       ({{obj}}.flags & ObjectFlags::{{flag.id}} != 0)
+       ({{obj}}.flags & ObjectFlags::{{flag.id}} != ObjectFlags::NONE)
     end
 
 end

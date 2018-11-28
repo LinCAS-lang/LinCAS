@@ -81,15 +81,11 @@ module LinCAS::Internal
         range.data  = klass.data.clone 
         return range.as( LcVal)
     end
-    
-    range_allocator = LcProc.new do |args|
-        next lc_range_allocate(*args.as(T1))
-    end
 
     def self.range_new
         range       = LcRange.new 
-        range.klass = RangeClass 
-        range.data  = RangeClass.data.clone 
+        range.klass = @@lc_range 
+        range.data  = @@lc_range.data.clone 
         return range 
     end
 
@@ -122,10 +118,6 @@ module LinCAS::Internal
         return lcfalse
     end
 
-    range_include = LcProc.new do |args|
-        next internal.lc_range_include(*args.as(T2))
-    end
-
     def self.lc_range_to_s(range :  LcVal)
         lft = r_left(range)
         rht = r_right(range)
@@ -135,21 +127,10 @@ module LinCAS::Internal
             io << rht
         end
         return build_string(string)
-    ensure 
-        GC.free(Box.box(string))
-        GC.collect 
-    end
-
-    range_to_s = LcProc.new do |args|
-        next internal.lc_range_to_s(*args.as(T1))
     end
 
     def self.lc_range_size(range)
         return num2int(range_size(range))
-    end
-
-    range_size = LcProc.new do |args|
-        next num2int(range_size(*args.as(T1)))
     end
 
     def self.lc_range_each(range)
@@ -169,10 +150,6 @@ module LinCAS::Internal
         Null
     end
 
-    range_each = LcProc.new do |args|
-        next internal.lc_range_each(*args.as(T1))
-    end
-
     def self.lc_range_map(range)
         ary = build_ary_new
         lft = r_left(range)
@@ -185,26 +162,12 @@ module LinCAS::Internal
         return ary
     end
 
-    range_map = LcProc.new do |args|
-        next internal.lc_range_map(*args.as(T1))
-    end
-
     def self.lc_range_eq(range1 :  LcVal,range2 :  LcVal)
         return lcfalse unless range2.is_a? LcRange
         return lctrue if r_left(range1) == r_left(range2) &&
                          r_right(range1) == r_right(range2) &&
                          inclusive(range1) == inclusive(range2)
         return lcfalse 
-    end
-
-    range_eq = LcProc.new do |args|
-        next internal.lc_range_eq(*args.as(T2))
-    end
-
-    range_defrost = LcProc.new do |args|
-        range = args.as(T1)[0]
-        range.flags &= ~ObjectFlags::FROZEN
-        next range
     end
 
     def self.lc_range_hash(range :  LcVal)
@@ -215,23 +178,21 @@ module LinCAS::Internal
         return num2int(h.result.to_i64)
     end
 
-    range_hash = LcProc.new do |args|
-        next lc_range_hash(*lc_cast(args,T1))
-    end
 
-
-    RangeClass = internal.lc_build_internal_class("Range")
-    internal.lc_set_allocator(RangeClass,range_allocator)
+    def self.init_range
+        @@lc_range = internal.lc_build_internal_class("Range")
+        define_allocator(@@lc_range,lc_range_allocate)
     
-    internal.lc_add_internal(RangeClass,"include?",range_include,  1)
-    internal.lc_add_internal(RangeClass,"to_s",range_to_s,         0)
-    internal.lc_add_internal(RangeClass,"size",range_size,         0)
-    internal.lc_add_internal(RangeClass,"length",range_size,       0)
-    internal.lc_add_internal(RangeClass,"each",range_each,         0)
-    internal.lc_add_internal(RangeClass,"map",range_map,           0)
-    internal.lc_add_internal(RangeClass,"==",range_eq,             1)
-    internal.lc_add_internal(RangeClass,"defrost",range_defrost,   0)
-    internal.lc_add_internal(RangeClass,"hash",range_hash,         0)
+        define_method(@@lc_range,"include?",lc_range_include,  1)
+        define_method(@@lc_range,"to_s",lc_range_to_s,         0)
+        define_method(@@lc_range,"size",lc_range_size,         0)
+        define_method(@@lc_range,"length",lc_range_size,       0)
+        define_method(@@lc_range,"each",lc_range_each,         0)
+        define_method(@@lc_range,"map",lc_range_map,           0)
+        define_method(@@lc_range,"==",lc_range_eq,             1)
+        define_method(@@lc_range,"defrost",lc_obj_defrost,     0)
+        define_method(@@lc_range,"hash",lc_range_hash,         0)
+    end
 
 
 end

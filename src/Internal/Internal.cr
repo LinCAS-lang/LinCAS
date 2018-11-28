@@ -32,7 +32,7 @@ module LinCAS::Internal
             {{klass}},
             {{name}},
             LcProc.new do |args|
-                {% if params >= 0 %}
+                {% if argc >= 0 %}
                     {{ tmp = argc + 1}}
                     {{f_name}}(*args.as(T{{tmp}}))
                 {% else %}
@@ -43,13 +43,13 @@ module LinCAS::Internal
         )
     end
 
-    macro define_ststic_method(klass,name,f_name,argc)
+    macro define_static_method(klass,name,f_name,argc)
         lc_add_static(
             {{klass}},
             {{name}},
             LcProc.new do |args|
-                {% if params >= 0 %}
-                    {{ tmp = argc + 1}}
+                {% if argc >= 0 %}
+                    {% tmp = argc + 1%}
                     {{f_name}}(*args.as(T{{tmp}}))
                 {% else %}
                     {{f_name}}(*args.as(T2))
@@ -139,10 +139,6 @@ module LinCAS::Internal
             return false 
         end 
         return true 
-    end
-
-    def self.lc_finalize
-        PyGC.clear_all
     end
 
     @[AlwaysInline]

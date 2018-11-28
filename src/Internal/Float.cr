@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "./Number"
 module LinCAS::Internal
 
     def self.lc_num_to_cr_f(num :  LcVal)
@@ -214,12 +215,12 @@ module LinCAS::Internal
         end
     end
 
-    LcInfinity  =  num2float(Float64::INFINITY)
+    LcInfinity  = num2float(Float64::INFINITY)
     LcNinfinity = num2float(-Float64::INFINITY)
     NanObj      = num2float(Float64::NAN)
 
     def self.init_float
-        @@lc_float = internal.lc_build_internal_class("Float",NumClass)
+        @@lc_float = internal.lc_build_internal_class("Float",@@lc_number)
         lc_undef_allocator(@@lc_float)
     
         define_method(@@lc_float,"+",lc_float_sum,         1)

@@ -57,10 +57,6 @@ module LinCAS::Internal
         next Exec.lc_call_fun(_self_,{{op}},obj)
     end
 
-    pyobj_allocator = LcProc.new do |args|
-        next lc_obj_allocate(PyObjClass)
-    end
-
     private def self.pyobj_convert(obj : PyObject)
         if is_pyint(obj)
             tmp = num2int(pyint2int(obj))
@@ -70,7 +66,7 @@ module LinCAS::Internal
             tmp = pystring_to_s(obj)
         elsif is_pyary(obj)
             tmp = pyary2ary(obj)
-        elsif obj == PyNone
+        elsif obj == @@pynone
             tmp = Null
         else
             lc_bug("Python object converter called on a wrong object")
@@ -107,7 +103,7 @@ module LinCAS::Internal
     end
 
 
-    # This function wraps Python objects in LinCAS obiects
+    # This function wraps Python objects in LinCAS objects
     # and it must be used on objects returned by python functions
     # or pyDicts which can't be converted in LinCAS objects or wrapped
     # as classes or modules. 
@@ -123,13 +119,13 @@ module LinCAS::Internal
         # so there is no need to call PyGC.track
         if pytype || is_pymodule(obj)
             name = pytype2string(obj)
-            return pytype ? lc_build_unregistered_pyclass(name,obj,PyObjClass) : 
+            return pytype ? lc_build_unregistered_pyclass(name,obj,@@lc_pyobject) : 
                                 lc_build_unregistered_pymodule(name,obj)
         end
         gcref = PyGC.track(obj)
         type  = pytypeof(obj)
         name  = pytype2string(type)
-        klass = lc_build_unregistered_pyclass(name,type,PyObjClass)
+        klass = lc_build_unregistered_pyclass(name,type,@@lc_pyobject)
         obj   =  build_pyobj(klass,obj)
         pyobj_set_gcref(obj,gcref)
         return obj
@@ -184,10 +180,6 @@ module LinCAS::Internal
         return tmp
     end
 
-    pyobj_to_s = LcProc.new do |args|
-        next lc_pyobj_to_s(*lc_cast(args,T1))
-    end
-
     def self.lc_pyobject_call(obj :  LcVal,argv : LcVal)
         argv = argv.as(Ary)
         pyobj_check(obj)
@@ -203,28 +195,16 @@ module LinCAS::Internal
         end
     end
 
-    pyobj_sum = LcProc.new do |args|
-        binary_op(args,"__sum__")
-    end
+    {% for name in %w|sum sub mul div pow| %}
+        @[AlwaysInline]
+        def self.lc_pyobj{{name.id}}(v1 : LcVal,v2 : LcVal)
+            return Exec.lc_call_fun(v1,"__{{name.id}}__",v2)
+        end
+    {% end %}
 
-    pyobj_sub = LcProc.new do |args|
-        binary_op(args,"__sub__")
-    end
-
-    pyobj_mul = LcProc.new do |args|
-        binary_op(args,"__mul__")
-    end
-
-    pyobj_div = LcProc.new do |args|
-        binary_op(args,"__div__")
-    end
-
-    pyobj_pow = LcProc.new do |args|
-        binary_op(args,"__pow__")
-    end
-
-    pyobj_at_index = LcProc.new do |args|
-        binary_op(args,"__getitem__")
+    @[AlwaysInline]
+    def self.lc_pyobj_at_index(obj : LcVal,index : LcVal)
+        return Exec.lc_call_fun(obj,"__getitem__",index)
     end
 
     @[AlwaysInline]
@@ -232,24 +212,22 @@ module LinCAS::Internal
         return Exec.lc_call_fun(obj,"__setitem__",index,item)
     end
 
-    pyobj_set_index = LcProc.new do |args|
-        next lc_pyobj_set_index(*lc_cast(args,T3))
+
+    def self.init_pyobject
+        @@lc_pyobject = lc_build_internal_class("PyObject",@@lc_object)
+        define_allocator(@@lc_pyobject,lc_obj_allocate)
+
+        define_method(@@lc_pyobject,"init",lc_pyobj_init,         -1)
+        define_method(@@lc_pyobject,"to_s",lc_pyobj_to_s,          0)
+        define_method(@@lc_pyobject,"pycall",lc_pyobject_call,    -2)
+        define_method(@@lc_pyobject,"+",lc_pyobj_sum,              1)
+        define_method(@@lc_pyobject,"-",lc_pyobj_sub,              1)
+        define_method(@@lc_pyobject,"*",lc_pyobj_mul,              1)
+        define_method(@@lc_pyobject,"/",lc_pyobj_div,              1)
+        define_method(@@lc_pyobject,"**",lc_pyobj_pow,             1)
+        define_method(@@lc_pyobject,"[]",lc_pyobj_at_index,        1)
+        define_method(@@lc_pyobject,"[]=",lc_pyobj_set_index,      2)
     end
-
-
-    PyObjClass = lc_build_internal_class("PyObject",@@lc_object)
-    lc_set_allocator(PyObjClass,pyobj_allocator)
-
-    lc_add_internal(PyObjClass,"init",wrap(:lc_pyobj_init,T2),     -1)
-    lc_add_internal(PyObjClass,"to_s",pyobj_to_s,            0)
-    lc_add_internal(PyObjClass,"pycall",wrap(:lc_pyobject_call,T2),-2)
-    lc_add_internal(PyObjClass,"+",pyobj_sum,                1)
-    lc_add_internal(PyObjClass,"-",pyobj_sub,                1)
-    lc_add_internal(PyObjClass,"*",pyobj_mul,                1)
-    lc_add_internal(PyObjClass,"/",pyobj_div,                1)
-    lc_add_internal(PyObjClass,"**",pyobj_pow,               1)
-    lc_add_internal(PyObjClass,"[]",pyobj_at_index,          1)
-    lc_add_internal(PyObjClass,"[]=",pyobj_set_index,        2)
 
 
 end

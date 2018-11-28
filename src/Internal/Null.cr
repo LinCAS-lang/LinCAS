@@ -20,34 +20,25 @@ module LinCAS::Internal
 
     def self.lc_build_null
         null  = LcNull.new
-        null.klass = NullClass
-        null.data  = NullClass.data.clone
+        null.klass = @@lc_null
+        null.data  = @@lc_null.data.clone
         null.flags |= ObjectFlags::FROZEN
         return null.as( LcVal)
     end
 
+    @[AlwaysInline]
     def self.lc_null_and(v1 :  LcVal, v2 :  LcVal)
         return v1
     end 
 
-    null_and = LcProc.new do |args|
-        next Null
-    end
-
+    @[AlwaysInline]
     def self.lc_null_or(v1 :  LcVal, v2 :  LcVal)
         return v2 
     end 
 
-    null_or = LcProc.new do |args|
-        next args.as(T2)[1]
-    end
-
+    @[AlwaysInline]
     def self.lc_null_not(v1 :  LcVal)
         next lctrue 
-    end
-
-    null_not = LcProc.new do |args|
-        next lctrue
     end
 
     @[AlwaysInline]
@@ -55,43 +46,42 @@ module LinCAS::Internal
         return build_string("")
     end
 
-    null_to_s = LcProc.new do |args|
-        next internal.lc_null_to_s
-    end
-
-    null_eq = LcProc.new do |args|
-        value = args.as(T2)[1]
+    @[AlwaysInline]
+    def self.lc_null_eq(value : LcVal)
         if value.is_a? LcNull
             next lctrue 
         end
         next lcfalse
     end
 
-    null_ne = LcProc.new do |args|
-        value = args.as(T2)[1]
+    @[AlwaysInline]
+    def self.lc_null_ne(value : LcVal)
         if value.is_a? LcNull
             next lcfalse
         end
         next lctrue
     end
 
-    null_clone = LcProc.new do |args|
-        next args.as(T1)[0]
+    def self.init_null
+    @@lc_null = internal.lc_build_internal_class("Null")
+        lc_undef_allocator(@@lc_null)
+
+        lc_remove_internal(@@lc_null,"defrost")
+
+        define_method(@@lc_null,"&&",lc_null_and,      1)
+        define_method(@@lc_null,"||",lc_null_or,       1)
+        define_method(@@lc_null,"!",lc_null_not,       0)
+        define_method(@@lc_null,"==",lc_null_eq,       1)
+        define_method(@@lc_null,"!=",lc_null_ne,       1)
+        define_method(@@lc_null,"to_s",lc_null_to_s,   0)
+        alias_method_str(@@lc_null,"to_s","inspect"     )
+
+        null_clone = LcProc.new do |args|
+            next args.as(T1)[0]
+        end
+
+        lc_add_internal(@@lc_null,"clone",null_clone, 0)
     end
-
-    NullClass = internal.lc_build_internal_class("NullClass")
-    internal.lc_undef_allocator(NullClass)
-
-    internal.lc_remove_internal(NullClass,"defrost")
-
-    internal.lc_add_internal(NullClass,"&&",null_and,      1)
-    internal.lc_add_internal(NullClass,"||",null_or,       1)
-    internal.lc_add_internal(NullClass,"!",null_not,       0)
-    internal.lc_add_internal(NullClass,"==",null_eq,       1)
-    internal.lc_add_internal(NullClass,"!=",null_ne,       1)
-    internal.lc_add_internal(NullClass,"to_s",null_to_s,   0)
-    internal.lc_add_internal(NullClass,"inspect",null_to_s,0)
-    internal.lc_add_internal(NullClass,"clone",null_clone, 0)
 
     global Null = Internal.lc_build_null
     

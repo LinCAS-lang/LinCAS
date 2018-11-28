@@ -338,16 +338,16 @@ module LinCAS::Internal
 
     private def self.method_new
         m       = Method.new
-        m.klass = MClass
-        m.data  = MClass.data.clone 
+        m.klass = @@lc_method
+        m.data  = @@lc_method.data.clone 
         m.id    = m.object_id 
         return m
     end
 
     private def self.unbound_method_new
         m       = UnboundMethod.new
-        m.klass = UnboundM
-        m.data  = UnboundM.data.clone 
+        m.klass = @@lc_unbound_method
+        m.data  = @@lc_unbound_method.data.clone 
         m.id    = m.object_id 
         return m
     end
@@ -380,18 +380,16 @@ module LinCAS::Internal
         return method_get_receiver(method)
     end
 
-    method_receiver = LcProc.new do |args|
-        next lc_method_receiver(*lc_cast(args,T1))
+    @[AlwaysInline]
+    def self.lc_method_name(m : LcVal)
+        m = m.as(Method).method
+        return build_string(m.name)
     end
 
-    method_name = LcProc.new do |args|
-        m = args.as(T1)[0].as(Method).method
-        next build_string(m.name)
-    end
-
-    method_owner = LcProc.new do |args|
-        m = args.as(T1)[0].as(Method).method
-        next m.owner || Null
+    @[AlwaysInline]
+    def self.lc_method_owner(m : LcVal)
+        m = m.as(Method).method
+        return m.owner || Null
     end
 
     def self.method_to_py(method :  LcVal)
@@ -408,18 +406,21 @@ module LinCAS::Internal
         {% end %}
     end
 
-    MClass = lc_build_internal_class("Method")
-    lc_undef_allocator(MClass)
+    def self.init_method
+        @@lc_method = lc_build_internal_class("Method")
+        lc_undef_allocator(@@lc_method)
 
-    lc_add_internal(MClass,"call",wrap(:lc_method_call,T2),                 -1)
-    lc_add_internal(MClass,"receiver",method_receiver,                       0)
-    lc_add_internal(MClass,"name",method_name,                               0)
-    lc_add_internal(MClass,"owner",method_owner,                             0)
+        define_method(@@lc_method,"call",lc_method_call,               -1)
+        define_method(@@lc_method,"receiver",lc_method_receiver,        0)
+        define_method(@@lc_method,"name",lc_method_name,                0)
+        define_method(@@lc_method,"owner",lc_method_owner,                             0)
 
+    end
 
-
-    UnboundM = lc_build_internal_class("UnboundMethod")
-    lc_undef_allocator(UnboundM)
+    def self.init_ubound_method
+        @@lc_unbound_method = lc_build_internal_class("UnboundMethod")
+        lc_undef_allocator(@@lc_unbound_method)
+    end
 
 
 end

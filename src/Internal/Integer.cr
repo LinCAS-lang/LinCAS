@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 module LinCAS::Internal
 
     struct LcInt < LcNum
@@ -20,13 +21,6 @@ module LinCAS::Internal
         def initialize(@val)
         end
         getter val
-        def to_s 
-            return @val.to_s 
-        end
-
-        def to_s(io)
-            io << @val 
-        end
     end
 
     macro num2bigint(num)
@@ -347,7 +341,7 @@ module LinCAS::Internal
 
     
     def init_integer
-        @@lc_integer = internal.lc_build_internal_class("Integer",NumClass)
+        @@lc_integer = internal.lc_build_internal_class("Integer",@@lc_number)
         lc_undef_allocator(@@lc_integer)
     
         define_method(@@lc_integer,"+",lc_int_sum,         1)
@@ -357,8 +351,8 @@ module LinCAS::Internal
         define_method(@@lc_integer,"/",lc_int_fdiv,        1)
         define_method(@@lc_integer,"**",lc_int_power,      1)
         define_method(@@lc_integer,"==",lc_int_eq,         1)
-        define_method(NumClass,"odd?",lc_int_odd,          0)
-        define_method(NumClass,"even?",lc_int_even,        0)
+        define_method(@@lc_number,"odd?",lc_int_odd,          0)
+        define_method(@@lc_number,"even?",lc_int_even,        0)
         define_method(@@lc_integer,"-@",lc_int_invert,     0)
         define_method(@@lc_integer,"to_s",lc_int_to_s,     0)
         define_method(@@lc_integer,"to_f",lc_int_to_f,     0)

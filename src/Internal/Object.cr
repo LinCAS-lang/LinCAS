@@ -18,6 +18,8 @@ module LinCAS::Internal
     class LcObject < BaseC
     end
 
+    class_getter lc_object
+
     @[AlwaysInline]
     def self.compare_by_type?(obj1 :  LcVal, obj2 :  LcVal)
         return obj1.is_a? NumType && obj2.is_a? NumType
@@ -225,7 +227,7 @@ module LinCAS::Internal
         end
     end
 
-    def init_object
+    def self.init_object
         @@lc_object = internal.lc_build_internal_class("Object",@@lc_class)
         define_allocator(@@lc_object,lc_obj_allocate)
 
@@ -244,15 +246,6 @@ module LinCAS::Internal
         define_method(@@lc_object,"inspect",lc_obj_to_s,   0)
         alias_method_str(@@lc_object,"inspect","to_s"       )
         define_method(@@lc_object,"to_m",lc_obj_to_m,      0)
-        lc_add_internal(@@lc_object,"||",obj_or,           1)
-        lc_add_internal(@@lc_object,"&&",obj_and,          1)
-        lc_add_internal(@@lc_object,"!",obj_not,           0)
-        define_method(@@lc_object,"to_a",lc_obj_to_a,      0)
-        lc_add_static(@@lc_class,"freeze",lc_obj_freeze,   0)
-        lc_add_static(@@lc_class,"defrost",lc_obj_defrost, 0)
-        lc_add_static(@@lc_class,"frozen?",lc_obj_frozen,  0)
-        lc_add_static(@@lc_class,"null?",lc_obj_null,      0)
-        lc_add_static(@@lc_class,"to_a",lc_obj_to_a,       0)
 
         obj_and = LcProc.new do |args|
             next args.as(T2)[1]
@@ -266,9 +259,19 @@ module LinCAS::Internal
             next lcfalse
         end
 
-        lc_add_static(@@lc_class,"||",obj_or,           1)
-        lc_add_static(@@lc_class,"&&",obj_and,          1)
-        lc_add_static(@@lc_class,"!",obj_not,           0)
+        lc_add_internal(@@lc_object,"||",obj_or,           1)
+        lc_add_internal(@@lc_object,"&&",obj_and,          1)
+        lc_add_internal(@@lc_object,"!",obj_not,           0)
+        define_method(@@lc_object,"to_a",lc_obj_to_a,    0)
+
+        define_static_method(@@lc_class,"freeze",lc_obj_freeze,   0)
+        define_static_method(@@lc_class,"defrost",lc_obj_defrost, 0)
+        define_static_method(@@lc_class,"frozen?",lc_obj_frozen,  0)
+        define_static_method(@@lc_class,"null?",lc_obj_null,      0)
+        define_static_method(@@lc_class,"to_a",lc_obj_to_a,       0)
+        lc_add_static(@@lc_class,"||",obj_or,              1)
+        lc_add_static(@@lc_class,"&&",obj_and,             1)
+        lc_add_static(@@lc_class,"!",obj_not,              0)
 
         lc_class_add_method(@@lc_class,"respond_to?",wrap(lc_obj_responds_to,2), 1)
         lc_class_add_method(@@lc_class,"hash",wrap(lc_obj_hash,1),               0)

@@ -13,8 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
+
+
 module LinCAS::Internal
 
+    @@sym_dict = uninitialized Hash(Class,LcClass)
     alias Symbolic_t =  LcVal | Symbolic 
 
     class LcFunction < BaseC
@@ -90,31 +94,31 @@ module LinCAS::Internal
         return lc_cast(tmp, LcVal)
     end
 
-    function_allocator = LcProc.new do |args|
-        args = lc_cast(args,T1)
-        next function_allocate(lc_cast(args[0],LcClass))
+    @[AlwaysInline]
+    def self.lc_function_allocate(unused,klass : LcClass)
+        return function_allocate(klass)
     end
 
     def self.build_function
-        return function_allocate(SymbolicClass)
+        return function_allocate(@@lc_symbolic)
     end
 
     def self.build_function(func : Symbolic)
-        tmp = function_allocate(SymDict[func.class])
+        tmp = function_allocate(@@sym_dict[func.class])
         set_function(tmp,func)
         return tmp
     end
 
     def self.build_function(func : FakeFun)
         func = get_function(func)
-        tmp  = function_allocate(SymDict[func.class])
+        tmp  = function_allocate(@@sym_dict[func.class])
         set_function(tmp,func)
         return tmp
     end
 
     def self.build_fake_fun(func : Symbolic)
         tmp = FakeFun.new
-        tmp.klass = SymbolicClass 
+        tmp.klass = @@lc_symbolic 
         tmp.id    = pointerof(func).address
         tmp.flags |= ObjectFlags::FAKE
         set_function(tmp,func)
@@ -125,10 +129,6 @@ module LinCAS::Internal
         return build_string_recycle(get_function(obj).to_s.to_s)
     end
 
-    func_to_s = LcProc.new do |args|
-        next lc_func_to_s(*lc_cast(args,T1))
-    end
-
     {% for name in %w|sum sub prod div power|%}
         def self.lc_func_{{name.id}}(f1 :  LcVal, f2 :  LcVal)
             check_fun(f2) unless f2.is_a? LcNum
@@ -136,32 +136,8 @@ module LinCAS::Internal
         end
     {% end %}
 
-    func_sum = LcProc.new do |args|
-        next lc_func_sum(*lc_cast(args,T2))
-    end
-
-    func_sub = LcProc.new do |args|
-        next lc_func_sub(*lc_cast(args,T2))
-    end
-
-    func_prod = LcProc.new do |args|
-        next lc_func_prod(*lc_cast(args,T2))
-    end
-
-    func_div = LcProc.new do |args|
-        next lc_func_div(*lc_cast(args,T2))
-    end
-
-    func_power = LcProc.new do |args|
-        next lc_func_power(*lc_cast(args,T2))
-    end
-
     def self.lc_func_uminus(f :  LcVal)
         return build_function(-get_function(f))
-    end
-
-    func_uminus = LcProc.new do |args|
-        next lc_func_uminus(*lc_cast(args,T1))
     end
 
     def self.lc_func_diff(f :  LcVal, var :  LcVal)
@@ -172,21 +148,13 @@ module LinCAS::Internal
         return build_function(func.diff(v))
     end
 
-    func_diff = LcProc.new do |args|
-        next lc_func_diff(*lc_cast(args,T2))
-    end
-
     def self.lc_func_eval(f :  LcVal, dict :  LcVal)
         hash_check(dict)
         tmp = get_function(f).eval(lc_cast(dict,LcHash))
         return num_auto(tmp)
     end
 
-    func_eval = LcProc.new do |args|
-        next lc_func_eval(*lc_cast(args,T2))
-    end
-
-    def self.lc_func_params(f :  LcVal)
+    def self.lc_func_vars(f :  LcVal)
         func = get_function(f)
         tmp  = [] of Variable
         ary  = build_ary_new
@@ -195,10 +163,6 @@ module LinCAS::Internal
             lc_ary_push(ary,build_function(param))
         end
         return ary 
-    end
-
-    func_params = LcProc.new do |args|
-        next lc_func_params(*lc_cast(args,T1))
     end
 
     def self.lc_func_integrate(f :  LcVal, a :  LcVal, b :  LcVal)
@@ -220,10 +184,6 @@ module LinCAS::Internal
         return num_auto(val)
     end
 
-    func_integrate = LcProc.new do |args|
-        next lc_func_integrate(*lc_cast(args,T3))
-    end
-
     def self.lc_var_init(f :  LcVal, string :  LcVal)
         check_string(string)
         str = string2cr(string).as(String)
@@ -232,17 +192,9 @@ module LinCAS::Internal
         return f 
     end
 
-    var_init = LcProc.new do |args|
-        next lc_var_init(*lc_cast(args,T2))
-    end
-
     def self.lc_var_name(func :  LcVal)
         func = get_function(func)
         return build_string(lc_cast(func,Variable).name)
-    end
-
-    var_name = LcProc.new do |args|
-        next internal.lc_var_name(*lc_cast(args,T1))
     end
 
     def self.lc_snum_init(f :  LcVal, value :  LcVal)
@@ -288,25 +240,7 @@ module LinCAS::Internal
         return f
     end
 
-    const_e_init = LcProc.new do |args|
-        next lc_const_init(*lc_cast(args,T1),EC)
-    end
-
-    const_pi_init = LcProc.new do |args|
-        next lc_const_init(*lc_cast(args,T1),PiC)
-    end
-
-    const_inf_init = LcProc.new do |args|
-        next lc_const_init(*lc_cast(args,T1),PinfinityC)
-    end
     
-    const_ninf_init = LcProc.new do |args|
-        next lc_const_init(*lc_cast(args,T1),NinfinityC)
-    end
-
-    const_nan_init = LcProc.new do |args|
-        next lc_const_init(*lc_cast(args,T1),NanC)
-    end
 
     def self.lc_neg_init(f :  LcVal,value :  LcVal)
         check_fun(value)
@@ -329,24 +263,29 @@ module LinCAS::Internal
         return f
     end
 
-    sum_init = LcProc.new do |args|
-        next lc_binary_op_init(*lc_cast(args,T3),Sum)
+    @[AlwaysInline]
+    def self.lc_sum_init(f : LcVal,left : LcVal, right : LcVal)
+        return lc_binary_op_init(f,left,right,Sum)
     end
 
-    sub_init = LcProc.new do |args|
-        next lc_binary_op_init(*lc_cast(args,T3),Sub)
+    @[AlwaysInline]
+    def self.lc_sub_init(f : LcVal,left : LcVal, right : LcVal)
+        return lc_binary_op_init(f,left,right,Sub)
     end
 
-    product_init = LcProc.new do |args|
-        next lc_binary_op_init(*lc_cast(args,T3),Product)
+    @[AlwaysInline]
+    def self.lc_product_init(f : LcVal,left : LcVal, right : LcVal)
+        return lc_binary_op_init(f,left,right,Product)
     end
 
-    division_init = LcProc.new do |args|
-        next lc_binary_op_init(*lc_cast(args,T3),Division)
+    @[AlwaysInline]
+    def self.lc_division_init(f : LcVal,left : LcVal, right : LcVal)
+        return lc_binary_op_init(f,left,right,Division)
     end
 
-    power_init = LcProc.new do |args|
-        next lc_binary_op_init(*lc_cast(args,T3),Power)
+    @[AlwaysInline]
+    def self.lc_power_init(f : LcVal,left : LcVal, right : LcVal)
+        return lc_binary_op_init(f,left,right,Power)
     end
 
     def self.lc_sfunc_init(f :  LcVal, arg :  LcVal,type)
@@ -356,49 +295,9 @@ module LinCAS::Internal
         return f
     end
 
-    cos_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Cos)
-    end
-
-    sin_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Sin)
-    end
-
-    acos_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Acos)
-    end
-
-    asin_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Asin)
-    end
-
-    tan_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Tan)
-    end
-
-    atan_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Atan)
-    end
-
-    log_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Log)
-    end
-
-    exp_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Exp)
-    end
-
-    sqrt_init = LcProc.new do |args|
-        next lc_sfunc_init(*lc_cast(args,T2),Sqrt)
-    end
-
     def self.lc_sfunc_arg(f :  LcVal)
         tmp = get_function(f).as(Function).value 
         return build_function(tmp)
-    end
-
-    sfunc_arg = LcProc.new do |args|
-        next lc_sfunc_arg(*lc_cast(args,T1))
     end
 
     def self.lc_binop_left(f :  LcVal)
@@ -407,147 +306,177 @@ module LinCAS::Internal
         return build_function(lc_cast(func,BinaryOp).left)
     end
 
-    binop_left = LcProc.new do |args|
-        next lc_binop_left(*lc_cast(args,T1))
-    end
-
     def self.lc_binop_right(f :  LcVal)
         func = get_function(f)
         return Null if func == NanC
         return build_function(lc_cast(func,BinaryOp).right)
     end
 
-    binop_right = LcProc.new do |args|
-        next lc_binop_right(*lc_cast(args,T1))
+    def init_symbolic
+        @@lc_symbolic = internal.lc_build_internal_class("Symbolic")
+
+        define_allocator(@@lc_symbolic,lc_function_allocate)
+
+        define_method(@@lc_symbolic,"to_s",lc_func_to_s,     0)
+        alias_method_str(@@lc_symbolic,"to_s","inspect"       )
+        define_method(@@lc_symbolic,"+",lc_func_sum,         1)
+        define_method(@@lc_symbolic,"-",lc_func_sub,         1)
+        define_method(@@lc_symbolic,"*",lc_func_prod,        1)
+        define_method(@@lc_symbolic,"/",lc_func_div,         1)
+        define_method(@@lc_symbolic,"\\",lc_func_div,        1)
+        define_method(@@lc_symbolic,"**",lc_func_power,      1)
+        define_method(@@lc_symbolic,"-@",lc_func_uminus,     0)
+        define_method(@@lc_symbolic,"diff",lc_func_diff,     1)
+        define_method(@@lc_symbolic,"eval",lc_func_eval,     1)
+        define_method(@@lc_symbolic,"vars",lc_func_vars,     0)
+        define_method(@@lc_symbolic,"integrate",lc_func_integrate, 2)
+
+        # Class Variable
+        var_class = lc_build_internal_class("Variable",@@lc_symbolic)
+
+        define_method(var_class,"init",lc_var_init,           1)
+        define_method(var_class,"name",lc_var_name,           0)
+
+        # Class Value
+        num_class = lc_build_internal_class("Value",@@lc_symbolic)
+
+        define_method(num_class,"init",lc_snum_init,         1)
+        define_method(num_class,"value",lc_val_get_v,        0)
+
+        # Class Constant
+        const_class = lc_build_internal_class("Constant",@@lc_symbolic)
+        define_method(const_class,"value",lc_val_get_v,       0)
+
+        # Class EClass & PiClass
+        e_class  = lc_build_internal_class("EClass",const_class)
+        pi_class = lc_build_internal_class("PiClass",const_class)
+
+        const_e_init  = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),EC)  }
+        const_pi_init = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),PiC) }
+
+        lc_add_internal(e_class,"init",const_e_init,         0)
+        lc_add_internal(pi_class,"init",const_pi_init,       0)
+
+        # Class Infinity, NegInfinity, NanClass
+        inf_class    = lc_build_internal_class("Infinity",const_class)
+        neginf_class = lc_build_internal_class("NegInfinity",inf_class)
+        nan_class    = lc_build_internal_class("NanClass",const_class)
+
+        const_inf_init  = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),PinfinityC) }
+        const_ninf_init = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),NinfinityC) }    
+        const_nan_init  = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),NanC)       }
+
+        lc_add_internal(inf_class,"init",const_inf_init,     0)
+        lc_add_internal(neginf_class,"init",const_ninf_init, 0)
+        lc_add_internal(nan_class,"init",const_nan_init,     0)
+
+        # Class Negative
+        neg_class = internal.lc_build_internal_class("Negative",@@lc_symbolic)
+        define_method(neg_class,"init",lc_neg_init,           1)
+
+        # Class BinaryOp
+        binary_op_class = lc_build_internal_class("BinaryOp",@@lc_symbolic)
+        define_method(binary_op_class,"left",lc_binop_left,        0)
+        define_method(binary_op_class,"right",lc_binop_right,      0)
+
+        # Class Sum
+        sum_class  = lc_build_internal_class("Sum",binary_op_class)
+        define_method(sum_class,"init",lc_sum_init,           2)
+
+        # Class Sub
+        sub_class  = lc_build_internal_class("Sub",binary_op_class)
+        define_method(sub_class,"init",lc_sub_init,           2)
+
+        # Class Product
+        prod_class  = lc_build_internal_class("Product",binary_op_class)
+        define_method(prod_class,"init",lc_product_init,      2)
+    
+        # Class Division
+        div_class  = lc_build_internal_class("Division",binary_op_class)
+        define_method(div_class,"init",lc_division_init,      2)
+
+        # Class Power
+        pow_class  = lc_build_internal_class("Power",binary_op_class)
+        define_method(pow_class,"init",lc_power_init,         2)
+
+        # Class Function
+        fun_class = lc_build_internal_class("Function",@@lc_symbolic)
+        define_method(fun_class,"argument",lc_sfunc_arg, 0)
+
+        # Class Log
+        log_class = lc_build_internal_class("Log",fun_class)
+        log_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Log) }
+        lc_add_internal(log_class,"init",log_init,           1)
+
+        # Class Exp
+        exp_class = lc_build_internal_class("Exp",fun_class)
+        exp_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Exp) }
+        lc_add_internal(exp_class,"init",exp_init,           1)
+
+        # Class Cos
+        cos_class = lc_build_internal_class("Cos",fun_class)
+        cos_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Cos) }
+        lc_add_internal(cos_class,"init",cos_init,           1)
+
+        # Class Acos
+        acos_class = lc_build_internal_class("Acos",fun_class)
+        acos_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Acos) }
+        lc_add_internal(acos_class,"init",acos_init,          1)
+
+        # Class Sin
+        sin_class = lc_build_internal_class("Sin",fun_class)
+        sin_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Sin) }
+        lc_add_internal(sin_class,"init",sin_init,            1)
+
+        #Class Asin
+        asin_class = lc_build_internal_class("Asin",fun_class)
+        asin_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Asin) }
+        lc_add_internal(asin_class,"init",asin_init,          1)
+
+        # Class Tan
+        tan_class = lc_build_internal_class("Tan",fun_class)
+        tan_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Tan) }
+        lc_add_internal(tan_class,"init",tan_init,            1)
+
+        # Class Atan
+        atan_class = lc_build_internal_class("Atan",fun_class)
+        atan_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Atan) }
+        lc_add_internal(atan_class,"init",atan_init,          1)
+
+        # Class Sqrt
+        sqrt_class = lc_build_internal_class("Sqrt",fun_class)
+        sqrt_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Sqrt) }
+        lc_add_internal(sqrt_class,"init",sqrt_init,          1)
+
+
+        @@sym_dict = {
+            Variable     => var_class,
+            Snumber      => num_class,
+            Constant     => const_class,
+            E            => e_class,
+            PI           => pi_class,
+            PInfinity    => inf_class,
+            NInfinity    => neginf_class,
+            Nan          => nan_class,
+            Negative     => neg_class,
+            BinaryOp     => binary_op_class,
+            Sum          => sum_class,
+            Sub          => sub_class,
+            Product      => prod_class,
+            Division     => div_class,
+            Power        => pow_class,
+            Function     => fun_class,
+            Cos          => cos_class,
+            Acos         => acos_class,
+            Sin          => sin_class,
+            Asin         => asin_class,
+            Tan          => tan_class,
+            Atan         => atan_class,
+            Log          => log_class,
+            Exp          => exp_class,
+            Sqrt         => sqrt_class
+        }    
     end
-
-    SymbolicClass = internal.lc_build_internal_class("Symbolic")
-
-    internal.lc_set_allocator(SymbolicClass,function_allocator)
-
-    internal.lc_add_internal(SymbolicClass,"to_s",func_to_s,     0)
-    internal.lc_add_internal(SymbolicClass,"inspect",func_to_s,  0)
-    internal.lc_add_internal(SymbolicClass,"+",func_sum,         1)
-    internal.lc_add_internal(SymbolicClass,"-",func_sub,         1)
-    internal.lc_add_internal(SymbolicClass,"*",func_prod,        1)
-    internal.lc_add_internal(SymbolicClass,"/",func_div,         1)
-    internal.lc_add_internal(SymbolicClass,"\\",func_div,        1)
-    internal.lc_add_internal(SymbolicClass,"**",func_power,       1)
-    internal.lc_add_internal(SymbolicClass,"-@",func_uminus,     0)
-    internal.lc_add_internal(SymbolicClass,"diff",func_diff,     1)
-    internal.lc_add_internal(SymbolicClass,"eval",func_eval,     1)
-    internal.lc_add_internal(SymbolicClass,"vars",func_params, 0)
-    internal.lc_add_internal(SymbolicClass,"integrate",func_integrate, 2)
-
-    VarClass = internal.lc_build_internal_class("Variable",SymbolicClass)
-
-    internal.lc_add_internal(VarClass,"init",var_init,           1)
-    internal.lc_add_internal(VarClass,"name",var_name,           0)
-
-    SnumClass = internal.lc_build_internal_class(" LcVal",SymbolicClass)
-
-    internal.lc_add_internal(SnumClass,"init",snum_init,         1)
-    internal.lc_add_internal(SnumClass,"value",val_get_v,        0)
-
-    ConstClass = internal.lc_build_internal_class("Constant",SymbolicClass)
-    internal.lc_add_internal(ConstClass,"value",val_get_v,       0)
-
-    EClass  = internal.lc_build_internal_class("EClass",ConstClass)
-    PiClass = internal.lc_build_internal_class("PiClass",ConstClass)
-
-    internal.lc_add_internal(EClass,"init",const_e_init,         0)
-    internal.lc_add_internal(PiClass,"init",const_pi_init,       0)
-
-    InfClass    = internal.lc_build_internal_class("Infinity",ConstClass)
-    NegInfClass = internal.lc_build_internal_class("NegInfinity",InfClass)
-    NanClass    = internal.lc_build_internal_class("NanClass",ConstClass)
-
-    internal.lc_add_internal(InfClass,"init",const_inf_init,     0)
-    internal.lc_add_internal(NegInfClass,"init",const_ninf_init, 0)
-    internal.lc_add_internal(NanClass,"init",const_nan_init,     0)
-
-    NegClass = internal.lc_build_internal_class("Negative",SymbolicClass)
-    internal.lc_add_internal(NegClass,"init",neg_init,           1)
-
-    BinaryOpC = internal.lc_build_internal_class("BinaryOp",SymbolicClass)
-    internal.lc_add_internal(BinaryOpC,"left",binop_left,        0)
-    internal.lc_add_internal(BinaryOpC,"right",binop_right,      0)
-
-    SumClass  = internal.lc_build_internal_class("Sum",BinaryOpC)
-    internal.lc_add_internal(SumClass,"init",sum_init,           2)
-
-    SubClass  = internal.lc_build_internal_class("Sub",BinaryOpC)
-    internal.lc_add_internal(SubClass,"init",sub_init,           2)
-
-    ProdClass  = internal.lc_build_internal_class("Product",BinaryOpC)
-    internal.lc_add_internal(ProdClass,"init",product_init,      2)
-
-    DivClass  = internal.lc_build_internal_class("Division",BinaryOpC)
-    internal.lc_add_internal(DivClass,"init",division_init,      2)
-
-    PowClass  = internal.lc_build_internal_class("Power",BinaryOpC)
-    internal.lc_add_internal(PowClass,"init",power_init,         2)
-
-    FunctionClass = internal.lc_build_internal_class("Function",SymbolicClass)
-    internal.lc_add_internal(FunctionClass,"argument",sfunc_arg, 0)
-
-    LogClass = internal.lc_build_internal_class("Log",FunctionClass)
-    internal.lc_add_internal(LogClass,"init",log_init,           1)
-
-    ExpClass = internal.lc_build_internal_class("Exp",FunctionClass)
-    internal.lc_add_internal(ExpClass,"init",exp_init,           1)
-
-    CosClass = internal.lc_build_internal_class("Cos",FunctionClass)
-    internal.lc_add_internal(CosClass,"init",cos_init,           1)
-
-    AcosClass = internal.lc_build_internal_class("Acos",FunctionClass)
-    internal.lc_add_internal(AcosClass,"init",acos_init,          1)
-
-    SinClass = internal.lc_build_internal_class("Sin",FunctionClass)
-    internal.lc_add_internal(SinClass,"init",sin_init,            1)
-
-    AsinClass = internal.lc_build_internal_class("Asin",FunctionClass)
-    internal.lc_add_internal(AsinClass,"init",asin_init,          1)
-
-    TanClass = internal.lc_build_internal_class("Tan",FunctionClass)
-    internal.lc_add_internal(TanClass,"init",tan_init,            1)
-
-    AtanClass = internal.lc_build_internal_class("Atan",FunctionClass)
-    internal.lc_add_internal(AtanClass,"init",atan_init,          1)
-
-    SqrtClass = internal.lc_build_internal_class("Sqrt",FunctionClass)
-    internal.lc_add_internal(SqrtClass,"init",sqrt_init,          1)
-
-
-
-
-    SymDict = {
-        Variable     => VarClass,
-        Snumber      => SnumClass,
-        Constant     => ConstClass,
-        E            => EClass,
-        PI           => PiClass,
-        PInfinity    => InfClass,
-        NInfinity    => NegInfClass,
-        Nan          => NanClass,
-        Negative     => NegClass,
-        BinaryOp     => BinaryOpC,
-        Sum          => SumClass,
-        Sub          => SubClass,
-        Product      => ProdClass,
-        Division     => DivClass,
-        Power        => PowClass,
-        Function     => FunctionClass,
-        Cos          => CosClass,
-        Acos         => AcosClass,
-        Sin          => SinClass,
-        Asin         => AsinClass,
-        Tan          => TanClass,
-        Atan         => AtanClass,
-        Log          => LogClass,
-        Exp          => ExpClass,
-        Sqrt         => SqrtClass
-    }
 
 
 

@@ -94,7 +94,7 @@ module LinCAS::Internal
     end
 
     def self.lc_build_pyclass(name : String,obj : PyObject)
-        klass               = lc_build_unregistered_pyclass(name,obj,PyObjClass)
+        klass               = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
         klass.symTab.parent = @@main_class.symTab
         @@main_class.symTab.addEntry(name,klass)
         klass.flags |= ObjectFlags::REG_CLASS
@@ -297,7 +297,7 @@ module LinCAS::Internal
         return klass 
     end 
 
-    def lc_class_inspect(klass : LcVal)
+    def self.lc_class_inspect(klass : LcVal)
         tmp = String.build do |io|
             io << '"'
             klass = klass.as(Structure)
@@ -312,7 +312,7 @@ module LinCAS::Internal
         return internal.build_string(tmp)
     end
 
-    def lc_class_to_s(klass : LcVal)
+    def self.lc_class_to_s(klass : LcVal)
         klass = klass.as(Structure)
         path  = path_of(klass)
         if path.empty?
@@ -476,33 +476,33 @@ module LinCAS::Internal
     end
 
 
-    def init_class
+    def self.init_class
         @@main_class     = lc_build_class("BaseClass")
         @@lc_class       = internal.lc_build_internal_class("Class",@@main_class)
         @@lc_class.klass = @@lc_class
 
-        lc_add_static(@@lc_class,"==",   lc_class_eq,         1)
-        lc_add_static(@@lc_class,"<>",   lc_class_ne,         1)
-        lc_add_static(@@lc_class,"!=",   lc_class_ne,         1)
-        lc_add_static(@@lc_class,"to_s", lc_class_to_s,       0)
+        define_static_method(@@lc_class,"==",   lc_class_eq,         1)
+        define_static_method(@@lc_class,"<>",   lc_class_ne,         1)
+        define_static_method(@@lc_class,"!=",   lc_class_ne,         1)
+        define_static_method(@@lc_class,"to_s", lc_class_to_s,       0)
         alias_method_str(@@lc_class,"to_s","name"              )
-        lc_add_static(@@lc_class,"inspect",lc_class_inspect,  0)
-        lc_add_static(@@lc_class,"defrost",lc_class_defrost,  0)
-        lc_add_static(@@lc_class,"parent",lc_class_parent,    0)
+        define_static_method(@@lc_class,"inspect",lc_class_inspect,  0)
+        define_static_method(@@lc_class,"defrost",lc_class_defrost,  0)
+        define_static_method(@@lc_class,"parent",lc_class_parent,    0)
 
-        lc_add_static(@@lc_class,"remove_instance_method",lc_class_rm_instance_method,     1)
-        lc_add_static(@@lc_class,"remove_static_method",lc_class_rm_static_method,         1)
-        lc_add_static(@@lc_class,"delete_static_method",lc_class_delete_static_method,     1)
-        lc_add_static(@@lc_class,"delete_instance_method",lc_class_delete_instance_method, 1)
-        lc_add_static(@@lc_class,"instance_method",lc_get_instance_method,                 1)
-        lc_add_static(@@lc_class,"ancestors", lc_class_ancestors,                          0)
+        define_static_method(@@lc_class,"remove_instance_method",lc_class_rm_instance_method,     1)
+        define_static_method(@@lc_class,"remove_static_method",lc_class_rm_static_method,         1)
+        define_static_method(@@lc_class,"delete_static_method",lc_class_delete_static_method,     1)
+        define_static_method(@@lc_class,"delete_instance_method",lc_class_delete_instance_method, 1)
+        define_static_method(@@lc_class,"instance_method",lc_instance_method,                 1)
+        define_static_method(@@lc_class,"ancestors", lc_class_ancestors,                          0)
 
-        lc_class_add_method(@@lc_class,"is_a?", lc_is_a,                                1)
-        lc_class_add_method(@@lc_class,"class",lc_class_class,                          0)
-        lc_class_add_method(@@lc_class,"remove_method",lc_class_rm_method,              1)
-        lc_class_add_method(@@lc_class,"delete_method",lc_class_delete_method,          1)
-        lc_class_add_method(@@lc_class,"alias",lc_alias_method,                         2)
-        lc_class_add_method(@@lc_class,"method",lc_get_method,                          1)
+        lc_class_add_method(@@lc_class,"is_a?", wrap(lc_is_a,2),                                1)
+        lc_class_add_method(@@lc_class,"class",wrap(lc_class_class,1),                          0)
+        lc_class_add_method(@@lc_class,"remove_method",wrap(lc_class_rm_method,2),              1)
+        lc_class_add_method(@@lc_class,"delete_method",wrap(lc_class_delete_method,2),          1)
+        lc_class_add_method(@@lc_class,"alias",wrap(lc_alias_method,3),                         2)
+        lc_class_add_method(@@lc_class,"method",wrap(lc_get_method, 2),                         1)
     end
 
 end

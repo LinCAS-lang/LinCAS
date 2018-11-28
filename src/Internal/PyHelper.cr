@@ -25,6 +25,22 @@ module LinCAS::Internal
         Py_TPFLAGS_TYPE_SUBCLASS    = 1_u32 << 31
     {% end %}
 
+    {% for name in %w|pyint pyfloat pytype pystring 
+                              pystatic_m pynone types_m|%}
+        @@{{name.id}} = uninitialized Void*
+    {% end %}
+
+    def self.init_pyhelper
+        dict      = Python.PyEval_GetBuiltins # This is a bit unsafe
+        @@pyint     = pydict_get1(dict,"int")
+        @@pyfloat   = pydict_get1(dict,"float")
+        @@pytype    = pydict_get1(dict,"type")
+        @@pystring  = pydict_get1(dict,"str")
+        @@pystatic_m = pydict_get1(dict,"staticmethod")
+        @@pynone    = Python.Py_BuildValue("")
+        @@types_m   = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),Structure).gc_ref)
+    end
+
     macro pyobj_incref(obj)
         Python.Py_IncRef({{obj}})
     end
@@ -245,15 +261,6 @@ module LinCAS::Internal
 
     # Checks
 
-    DICT      = Python.PyEval_GetBuiltins # This is a bit unsafe
-    PyInt     = pydict_get1(DICT,"int")
-    PyFloat   = pydict_get1(DICT,"float")
-    PyType    = pydict_get1(DICT,"type")
-    PyString  = pydict_get1(DICT,"str")
-    PyStaticM = pydict_get1(DICT,"staticmethod")
-    PyNone    = Python.Py_BuildValue("")
-    Types     = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),Structure).gc_ref)
-
     @[AlwaysInline]
     def self.pytype_check(obj,type)
         t = pytypeof(obj)
@@ -271,19 +278,19 @@ module LinCAS::Internal
     end
     
     macro is_pyfloat(obj)
-        pytype_check({{obj}},PyFloat)
+        pytype_check({{obj}},@@pyfloat)
     end
 
     macro is_pyfloat_abs(obj)
-        {{obj}} == PyFloat
+        {{obj}} == @@pyfloat
     end
 
     macro is_pyint(obj)
-        pytype_check({{obj}},PyInt)
+        pytype_check({{obj}},@@pyint)
     end
 
     macro is_pyint_abs(obj)
-        {{obj}} == PyInt
+        {{obj}} == @@pyint
     end
 
     macro is_pytype(obj)
@@ -293,7 +300,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.is_pytype_abs(obj)
         t = pytypeof(obj)
-        res = t == PyType
+        res = t == @@pytype
         pyobj_decref(t)
         res
     end
@@ -305,7 +312,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.is_pystring_abs(obj)
         t = pytypeof(obj)
-        res = t == PyString
+        res = t == @@pystring
         pyobj_decref(t)
         res
     end
@@ -325,11 +332,11 @@ module LinCAS::Internal
     end
 
     macro is_pystatic_method(obj)
-        pytype_check({{obj}},PyStaticM)
+        pytype_check({{obj}},@@pystatic_m)
     end
 
     def self.is_pyfunction(obj : PyObject)
-        funcType = pyobj_attr(Types,"BuiltinFunctionType")
+        funcType = pyobj_attr(@@types_m,"BuiltinFunctionType")
         if !funcType.null?
             res = pytype_check(obj,funcType)
             pyobj_decref(funcType)
@@ -341,7 +348,7 @@ module LinCAS::Internal
     end
 
     def self.is_pyimethod(obj)
-        funcType = pyobj_attr(Types,"MethodType")
+        funcType = pyobj_attr(@@types_m,"MethodType")
         if !funcType.null?
             res = pytype_check(obj,funcType)
             pyobj_decref(funcType)

@@ -278,7 +278,7 @@ module LinCAS::Internal
 
 
     def init_complex
-        @@lc_complex = lc_build_internal_class("Complex",NumClass)
+        @@lc_complex = lc_build_internal_class("Complex",@@lc_number)
         lc_undef_allocator(@@lc_complex)
 
         define_static_method(@@lc_complex,"rect",lc_complex_rect,    2)

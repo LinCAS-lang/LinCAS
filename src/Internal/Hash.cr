@@ -347,10 +347,6 @@ module LinCAS::Internal
         return hash_fetch(hash,key,Null)
     end 
 
-    hash_fetch = LcProc.new do |args|
-        next lc_hash_fetch(*lc_cast(args,T2))
-    end
-
     private def self.hash_iterate(hash :  LcVal)
         current = hash_first(hash)
         while current 

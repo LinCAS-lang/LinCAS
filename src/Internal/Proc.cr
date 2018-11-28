@@ -69,11 +69,15 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).part
     end
 
+    macro is_initialized_proc?(proc)
+        ({{proc}}.as(LCProc).init)
+    end
+
     macro check_proc(proc)
         if !({{proc}}.is_a? LCProc)
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{proc}})} into Proc")
             return Null
-        elsif !({{proc}}.as(LCProc).init)
+        elsif !is_initialized_proc? {{proc}}
             # lc_raise(LcInstanceErr,"Proc uncorrectly initialized")
             return Null
         end
@@ -104,7 +108,7 @@ module LinCAS::Internal
     end
 
     def self.build_proc
-        return lc_proc_allocate(ProcClass)
+        return lc_proc_allocate(@@lc_proc)
     end
 
     def self.lincas_block_to_proc(block : LcBlock)
@@ -175,15 +179,29 @@ module LinCAS::Internal
     end
 
     def self.lc_proc_clone(proc :  LcVal)
-        proc = build_proc
-        
+        new_proc = build_proc
+        set_proc_self(new_proc, get_proc_self(proc))
+        set_proc_args(new_proc, get_proc_args(proc))
+        set_proc_code(new_proc, get_proc_code(proc))
+        set_proc_scope(new_proc,get_proc_scope(proc))
+        p_part = get_proc_part(proc)
+        n_part = get_proc_part(new_proc)
+        if is_initialized_proc? proc
+            p_part.each do |v|
+                n_part << v
+            end
+            set_proc_as_init
+        end
+        return new_proc
     end
 
+    def self.init_proc
+        @@lc_proc = lc_build_internal_class("Proc")
+        define_allocator(@@lc_proc,lc_proc_allocate_0)
 
-    ProcClass = lc_build_internal_class("Proc")
-    lc_set_allocator(ProcClass,proc_allocator)
-
-    lc_add_internal(ProcClass, "init", wrap(:lc_proc_init,T1),   0)
-    lc_add_internal(ProcClass, "call", wrap(:lc_proc_call,T2),  -1)
+        define_method(@@lc_proc, "init",lc_proc_init,   0)
+        define_method(@@lc_proc, "call",lc_proc_call,  -1)
+        define_method(@@lc_proc, "clone",lc_proc_clone, 0)
+    end
 
 end
