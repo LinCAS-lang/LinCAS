@@ -68,12 +68,12 @@ module LinCAS::Internal
 
         lc_remove_internal(@@lc_null,"defrost")
 
-        define_method(@@lc_null,"&&",lc_null_and,      1)
-        define_method(@@lc_null,"||",lc_null_or,       1)
-        define_method(@@lc_null,"!",lc_null_not,       0)
-        define_method(@@lc_null,"==",lc_null_eq,       1)
-        define_method(@@lc_null,"!=",lc_null_ne,       1)
-        define_method(@@lc_null,"to_s",lc_null_to_s,   0)
+        add_method(@@lc_null,"&&",lc_null_and,      1)
+        add_method(@@lc_null,"||",lc_null_or,       1)
+        add_method(@@lc_null,"!",lc_null_not,       0)
+        add_method(@@lc_null,"==",lc_null_eq,       1)
+        add_method(@@lc_null,"!=",lc_null_ne,       1)
+        add_method(@@lc_null,"to_s",lc_null_to_s,   0)
         alias_method_str(@@lc_null,"to_s","inspect"     )
 
         null_clone = LcProc.new do |args|

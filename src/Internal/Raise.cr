@@ -136,12 +136,12 @@ module LinCAS
             @@lc_error = internal.lc_build_internal_class("Error")
             define_allocator(@@lc_error,err_allocator)
         
-            define_method(@@lc_error,"init",lc_err_init,          1)
-            define_method(@@lc_error,"to_s",lc_err_msg,           0)
+            add_method(@@lc_error,"init",lc_err_init,          1)
+            add_method(@@lc_error,"to_s",lc_err_msg,           0)
             alias_method_str(@@lc_error,"to_s","message"           )
-            define_method(@@lc_error,"backtrace",lc_err_backtrace,0)
-            define_method(@@lc_error,"full_msg",lc_err_full_msg,  0)
-            define_method(@@lc_error,"defrost",lc_obj_defrost,    0)
+            add_method(@@lc_error,"backtrace",lc_err_backtrace,0)
+            add_method(@@lc_error,"full_msg",lc_err_full_msg,  0)
+            add_method(@@lc_error,"defrost",lc_obj_defrost,    0)
 
 
             lc_module_add_internal(@@lc_kernel,"raise",wrap(lc_raise_err,2), 1)

@@ -27,7 +27,7 @@ module LinCAS::Internal
         end
     end
 
-    macro define_method(klass,name,f_name,argc)
+    macro add_method(klass,name,f_name,argc)
         lc_add_internal(
             {{klass}},
             {{name}},
@@ -43,7 +43,7 @@ module LinCAS::Internal
         )
     end
 
-    macro define_static_method(klass,name,f_name,argc)
+    macro add_static_method(klass,name,f_name,argc)
         lc_add_static(
             {{klass}},
             {{name}},

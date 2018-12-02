@@ -344,26 +344,26 @@ module LinCAS::Internal
         @@lc_integer = internal.lc_build_internal_class("Integer",@@lc_number)
         lc_undef_allocator(@@lc_integer)
     
-        define_method(@@lc_integer,"+",lc_int_sum,         1)
-        define_method(@@lc_integer,"-",lc_int_sub,         1)
-        define_method(@@lc_integer,"*",lc_int_mult,        1)
-        define_method(@@lc_integer,"\\",lc_int_idiv,       1)
-        define_method(@@lc_integer,"/",lc_int_fdiv,        1)
-        define_method(@@lc_integer,"**",lc_int_power,      1)
-        define_method(@@lc_integer,"==",lc_int_eq,         1)
-        define_method(@@lc_number,"odd?",lc_int_odd,          0)
-        define_method(@@lc_number,"even?",lc_int_even,        0)
-        define_method(@@lc_integer,"-@",lc_int_invert,     0)
-        define_method(@@lc_integer,"to_s",lc_int_to_s,     0)
-        define_method(@@lc_integer,"to_f",lc_int_to_f,     0)
+        add_method(@@lc_integer,"+",lc_int_sum,         1)
+        add_method(@@lc_integer,"-",lc_int_sub,         1)
+        add_method(@@lc_integer,"*",lc_int_mult,        1)
+        add_method(@@lc_integer,"\\",lc_int_idiv,       1)
+        add_method(@@lc_integer,"/",lc_int_fdiv,        1)
+        add_method(@@lc_integer,"**",lc_int_power,      1)
+        add_method(@@lc_integer,"==",lc_int_eq,         1)
+        add_method(@@lc_number,"odd?",lc_int_odd,          0)
+        add_method(@@lc_number,"even?",lc_int_even,        0)
+        add_method(@@lc_integer,"-@",lc_int_invert,     0)
+        add_method(@@lc_integer,"to_s",lc_int_to_s,     0)
+        add_method(@@lc_integer,"to_f",lc_int_to_f,     0)
 
         int_to_i = LcProc.new do |args|
             next args.as(T1)[0]
         end
 
-        define_method(@@lc_integer,"to_i",int_to_i,        0)
-        define_method(@@lc_integer,"times",lc_int_times,   0)
-        define_method(@@lc_integer,"abs",lc_int_abs,       0)
+        add_method(@@lc_integer,"to_i",int_to_i,        0)
+        add_method(@@lc_integer,"times",lc_int_times,   0)
+        add_method(@@lc_integer,"abs",lc_int_abs,       0)
 
         int_hash = LcProc.new do |args|
             next num_hash(*lc_cast(args,T1))

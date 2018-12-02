@@ -153,12 +153,12 @@ module LinCAS::Internal
 
         lc_remove_internal(@@lc_number,"defrost")
 
-        define_method(@@lc_number,">",lc_num_gr,            1)
-        define_method(@@lc_number,"<",lc_num_sm,            1)
-        define_method(@@lc_number,">=",lc_num_ge,           1)
-        define_method(@@lc_number,"<=",lc_num_se,           1)
-        define_method(@@lc_number,"zero?",lc_num_is_zero,   0)
-        define_method(@@lc_number,"coerce",lc_num_coerce,   1)
+        add_method(@@lc_number,">",lc_num_gr,            1)
+        add_method(@@lc_number,"<",lc_num_sm,            1)
+        add_method(@@lc_number,">=",lc_num_ge,           1)
+        add_method(@@lc_number,"<=",lc_num_se,           1)
+        add_method(@@lc_number,"zero?",lc_num_is_zero,   0)
+        add_method(@@lc_number,"coerce",lc_num_coerce,   1)
     end
 
     

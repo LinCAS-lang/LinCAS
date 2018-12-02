@@ -199,9 +199,9 @@ module LinCAS::Internal
         @@lc_proc = lc_build_internal_class("Proc")
         define_allocator(@@lc_proc,lc_proc_allocate_0)
 
-        define_method(@@lc_proc, "init",lc_proc_init,   0)
-        define_method(@@lc_proc, "call",lc_proc_call,  -1)
-        define_method(@@lc_proc, "clone",lc_proc_clone, 0)
+        add_method(@@lc_proc, "init",lc_proc_init,   0)
+        add_method(@@lc_proc, "call",lc_proc_call,  -1)
+        add_method(@@lc_proc, "clone",lc_proc_clone, 0)
     end
 
 end

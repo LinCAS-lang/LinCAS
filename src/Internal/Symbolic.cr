@@ -18,7 +18,7 @@
 
 module LinCAS::Internal
 
-    @@sym_dict = uninitialized Hash(Class,LcClass)
+    @@sym_dict = uninitialized Hash(SBaseC.class | SBaseS.class,LcClass)
     alias Symbolic_t =  LcVal | Symbolic 
 
     class LcFunction < BaseC
@@ -317,35 +317,35 @@ module LinCAS::Internal
 
         define_allocator(@@lc_symbolic,lc_function_allocate)
 
-        define_method(@@lc_symbolic,"to_s",lc_func_to_s,     0)
+        add_method(@@lc_symbolic,"to_s",lc_func_to_s,     0)
         alias_method_str(@@lc_symbolic,"to_s","inspect"       )
-        define_method(@@lc_symbolic,"+",lc_func_sum,         1)
-        define_method(@@lc_symbolic,"-",lc_func_sub,         1)
-        define_method(@@lc_symbolic,"*",lc_func_prod,        1)
-        define_method(@@lc_symbolic,"/",lc_func_div,         1)
-        define_method(@@lc_symbolic,"\\",lc_func_div,        1)
-        define_method(@@lc_symbolic,"**",lc_func_power,      1)
-        define_method(@@lc_symbolic,"-@",lc_func_uminus,     0)
-        define_method(@@lc_symbolic,"diff",lc_func_diff,     1)
-        define_method(@@lc_symbolic,"eval",lc_func_eval,     1)
-        define_method(@@lc_symbolic,"vars",lc_func_vars,     0)
-        define_method(@@lc_symbolic,"integrate",lc_func_integrate, 2)
+        add_method(@@lc_symbolic,"+",lc_func_sum,         1)
+        add_method(@@lc_symbolic,"-",lc_func_sub,         1)
+        add_method(@@lc_symbolic,"*",lc_func_prod,        1)
+        add_method(@@lc_symbolic,"/",lc_func_div,         1)
+        add_method(@@lc_symbolic,"\\",lc_func_div,        1)
+        add_method(@@lc_symbolic,"**",lc_func_power,      1)
+        add_method(@@lc_symbolic,"-@",lc_func_uminus,     0)
+        add_method(@@lc_symbolic,"diff",lc_func_diff,     1)
+        add_method(@@lc_symbolic,"eval",lc_func_eval,     1)
+        add_method(@@lc_symbolic,"vars",lc_func_vars,     0)
+        add_method(@@lc_symbolic,"integrate",lc_func_integrate, 2)
 
         # Class Variable
         var_class = lc_build_internal_class("Variable",@@lc_symbolic)
 
-        define_method(var_class,"init",lc_var_init,           1)
-        define_method(var_class,"name",lc_var_name,           0)
+        add_method(var_class,"init",lc_var_init,           1)
+        add_method(var_class,"name",lc_var_name,           0)
 
         # Class Value
         num_class = lc_build_internal_class("Value",@@lc_symbolic)
 
-        define_method(num_class,"init",lc_snum_init,         1)
-        define_method(num_class,"value",lc_val_get_v,        0)
+        add_method(num_class,"init",lc_snum_init,         1)
+        add_method(num_class,"value",lc_val_get_v,        0)
 
         # Class Constant
         const_class = lc_build_internal_class("Constant",@@lc_symbolic)
-        define_method(const_class,"value",lc_val_get_v,       0)
+        add_method(const_class,"value",lc_val_get_v,       0)
 
         # Class EClass & PiClass
         e_class  = lc_build_internal_class("EClass",const_class)
@@ -372,36 +372,36 @@ module LinCAS::Internal
 
         # Class Negative
         neg_class = internal.lc_build_internal_class("Negative",@@lc_symbolic)
-        define_method(neg_class,"init",lc_neg_init,           1)
+        add_method(neg_class,"init",lc_neg_init,           1)
 
         # Class BinaryOp
         binary_op_class = lc_build_internal_class("BinaryOp",@@lc_symbolic)
-        define_method(binary_op_class,"left",lc_binop_left,        0)
-        define_method(binary_op_class,"right",lc_binop_right,      0)
+        add_method(binary_op_class,"left",lc_binop_left,        0)
+        add_method(binary_op_class,"right",lc_binop_right,      0)
 
         # Class Sum
         sum_class  = lc_build_internal_class("Sum",binary_op_class)
-        define_method(sum_class,"init",lc_sum_init,           2)
+        add_method(sum_class,"init",lc_sum_init,           2)
 
         # Class Sub
         sub_class  = lc_build_internal_class("Sub",binary_op_class)
-        define_method(sub_class,"init",lc_sub_init,           2)
+        add_method(sub_class,"init",lc_sub_init,           2)
 
         # Class Product
         prod_class  = lc_build_internal_class("Product",binary_op_class)
-        define_method(prod_class,"init",lc_product_init,      2)
+        add_method(prod_class,"init",lc_product_init,      2)
     
         # Class Division
         div_class  = lc_build_internal_class("Division",binary_op_class)
-        define_method(div_class,"init",lc_division_init,      2)
+        add_method(div_class,"init",lc_division_init,      2)
 
         # Class Power
         pow_class  = lc_build_internal_class("Power",binary_op_class)
-        define_method(pow_class,"init",lc_power_init,         2)
+        add_method(pow_class,"init",lc_power_init,         2)
 
         # Class Function
         fun_class = lc_build_internal_class("Function",@@lc_symbolic)
-        define_method(fun_class,"argument",lc_sfunc_arg, 0)
+        add_method(fun_class,"argument",lc_sfunc_arg, 0)
 
         # Class Log
         log_class = lc_build_internal_class("Log",fun_class)

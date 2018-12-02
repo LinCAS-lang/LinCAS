@@ -410,10 +410,10 @@ module LinCAS::Internal
         @@lc_method = lc_build_internal_class("Method")
         lc_undef_allocator(@@lc_method)
 
-        define_method(@@lc_method,"call",lc_method_call,               -1)
-        define_method(@@lc_method,"receiver",lc_method_receiver,        0)
-        define_method(@@lc_method,"name",lc_method_name,                0)
-        define_method(@@lc_method,"owner",lc_method_owner,                             0)
+        add_method(@@lc_method,"call",lc_method_call,               -1)
+        add_method(@@lc_method,"receiver",lc_method_receiver,        0)
+        add_method(@@lc_method,"name",lc_method_name,                0)
+        add_method(@@lc_method,"owner",lc_method_owner,                             0)
 
     end
 

@@ -223,26 +223,26 @@ module LinCAS::Internal
         @@lc_float = internal.lc_build_internal_class("Float",@@lc_number)
         lc_undef_allocator(@@lc_float)
     
-        define_method(@@lc_float,"+",lc_float_sum,         1)
-        define_method(@@lc_float,"-",lc_float_sub,         1)
-        define_method(@@lc_float,"*",lc_float_mult,        1)
-        define_method(@@lc_float,"\\",lc_float_idiv,       1)
-        define_method(@@lc_float,"/",lc_float_fdiv,        1)
-        define_method(@@lc_float,"**",lc_float_power,      1)
-        define_method(@@lc_float,"-@",lc_float_invert,     0)
-        define_method(@@lc_float,"to_s",lc_float_to_s,     0)
-        define_method(@@lc_float,"to_i",lc_float_to_i,     0)
+        add_method(@@lc_float,"+",lc_float_sum,         1)
+        add_method(@@lc_float,"-",lc_float_sub,         1)
+        add_method(@@lc_float,"*",lc_float_mult,        1)
+        add_method(@@lc_float,"\\",lc_float_idiv,       1)
+        add_method(@@lc_float,"/",lc_float_fdiv,        1)
+        add_method(@@lc_float,"**",lc_float_power,      1)
+        add_method(@@lc_float,"-@",lc_float_invert,     0)
+        add_method(@@lc_float,"to_s",lc_float_to_s,     0)
+        add_method(@@lc_float,"to_i",lc_float_to_i,     0)
 
         float_to_f = LcProc.new do |args|
             next args.as(T1)[0]
         end
 
         lc_add_internal(@@lc_float,"to_f",float_to_f,      0)
-        define_method(@@lc_float,"abs",lc_float_abs,       0)
-        define_method(@@lc_float,"round",lc_float_round,  -1)
-        define_method(@@lc_float,"floor",lc_float_floor,   0)
-        define_method(@@lc_float,"ceil",lc_float_ceil,     0)
-        define_method(@@lc_float,"trunc",lc_float_trunc,   0)
+        add_method(@@lc_float,"abs",lc_float_abs,       0)
+        add_method(@@lc_float,"round",lc_float_round,  -1)
+        add_method(@@lc_float,"floor",lc_float_floor,   0)
+        add_method(@@lc_float,"ceil",lc_float_ceil,     0)
+        add_method(@@lc_float,"trunc",lc_float_trunc,   0)
 
         float_hash = LcProc.new do |args|
             next num_hash(*lc_cast(args,T1))
