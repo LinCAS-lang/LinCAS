@@ -947,7 +947,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             if !has_flag receiver,FROZEN
                 receiver.data.addVar(name,value)
             else 
-                lc_raise(LcFrozenError,"Cann't modify frozen #{class_of(receiver).name}")
+                lc_raise(LcFrozenError,"Can't modify frozen #{class_of(receiver).name}")
             end
         else
             lc_bug("Fake object for STORE_G instruction")
