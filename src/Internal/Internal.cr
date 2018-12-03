@@ -184,5 +184,10 @@ module LinCAS::Internal
         return SymTab.new(symTab.sym_tab)
     end
 
+    def self.init_lazy_const(const : LcVal*,klass : LcClass)
+        const.value.klass = klass 
+        const.value.data  = klass.data.clone
+    end
+
 
 end

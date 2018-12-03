@@ -200,7 +200,7 @@ module LinCAS::Internal
         if n2.is_a? LcInt 
             if int2num(n2) == 0
                 lc_raise(LcZeroDivisionError,"(Division by 0)")
-                return positive_num(n1) ? LcInfinity : LcNinfinity
+                return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             {% if flag?(:fast_math) %}
                 return num2int(int2num(n1) / int2num(n2))
@@ -232,7 +232,7 @@ module LinCAS::Internal
     def self.lc_int_fdiv(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             if int2num(n1) == 0
-                return positive_num(n1) ? LcInfinity : LcNinfinity
+                return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             {% if flag?(:fast_math) %}
                 return num2float(int2num(n1) / int2num(n2).to_f)
@@ -325,10 +325,11 @@ module LinCAS::Internal
         return Null
     end
 
+    @[AlwaysInline]
     def self.lc_int_abs(n : LcVal)
         val = int2num(n)
-        next Null unless val 
-        next num2int(val.abs)
+        return Null unless val 
+        return num2int(val.abs)
     end
 
     def self.lc_int_eq(n :  LcVal, obj :  LcVal)
@@ -340,7 +341,7 @@ module LinCAS::Internal
     end
 
     
-    def init_integer
+    def self.init_integer
         @@lc_integer = internal.lc_build_internal_class("Integer",@@lc_number)
         lc_undef_allocator(@@lc_integer)
     
@@ -361,7 +362,7 @@ module LinCAS::Internal
             next args.as(T1)[0]
         end
 
-        add_method(@@lc_integer,"to_i",int_to_i,        0)
+        add_method(@@lc_integer,"to_i",lc_obj_self,        0)
         add_method(@@lc_integer,"times",lc_int_times,   0)
         add_method(@@lc_integer,"abs",lc_int_abs,       0)
 
@@ -369,7 +370,7 @@ module LinCAS::Internal
             next num_hash(*lc_cast(args,T1))
         end
 
-        lc_add_internal(@@lc_integer,"hash",lc_int_hash,     0)
+        lc_add_internal(@@lc_integer,"hash",int_hash,     0)
     end
     
 end

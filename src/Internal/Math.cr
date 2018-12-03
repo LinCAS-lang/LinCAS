@@ -32,7 +32,7 @@ module LinCAS::Internal
     end
 
     macro default_def(name,sym = nil)
-        private def self.lc_{{name.id}}(v :  LcVal)
+        private def self.lc_{{name.id}}(unused,v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -44,7 +44,7 @@ module LinCAS::Internal
     end
 
     macro def_with_block(name, sym = nil)
-        private def self.lc_{{name.id}}(v :  LcVal)
+        private def self.lc_{{name.id}}(unused,v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -57,7 +57,7 @@ module LinCAS::Internal
     end
 
     macro default_adef(name, sym = nil)
-        private def self.lc_a{{name.id}}(v :  LcVal)
+        private def self.lc_a{{name.id}}(unused,v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -69,7 +69,7 @@ module LinCAS::Internal
     end
 
     macro adef_with_block(name, sym = nil)
-        private def self.lc_a{{name.id}}(v :  LcVal)
+        private def self.lc_a{{name.id}}(unused,v :  LcVal)
             {% if sym %}
                 return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
             {% end %}
@@ -147,7 +147,7 @@ module LinCAS::Internal
 
     default_adef sinh
     
-    def self.lc_gamma(v :  LcVal)
+    def self.lc_gamma(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
@@ -175,10 +175,10 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_atan2(v1 :  LcVal, v2 :  LcVal)
+    def self.lc_atan2(unused,v1 :  LcVal, v2 :  LcVal)
         if v1.is_a? LcCmx && v2.is_a? LcCmx
              tmp = complex_div(v1,v2)
-             return lc_atan(tmp)
+             return lc_atan(nil,tmp)
         elsif v1.is_a? LcCmx || v2.is_a? LcCmx
             return complex_div_num(v1,v2) if v1.is_a? LcCmx
             return complex_div_num(v2,v1)
@@ -190,7 +190,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_sqrt(v :  LcVal)
+    def self.lc_sqrt(unused,v :  LcVal)
         return build_function(Sqrt.create(get_function(v))) if v.is_a? LcFunction
         return complex_sqrt(v) if v.is_a? LcCmx
         val = internal.lc_num_to_cr_f(v)
@@ -201,13 +201,13 @@ module LinCAS::Internal
         return num2float(Math.sqrt(val).to_f)
     end
 
-    def self.lc_cbrt(v :  LcVal)
+    def self.lc_cbrt(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         return num2float(Math.cbrt(val).to_f)
     end
 
-    def self.lc_nrt(v1 :  LcVal,v2 :  LcVal)
+    def self.lc_nrt(unused,v1 :  LcVal,v2 :  LcVal)
         val1 = internal.lc_num_to_cr_i(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -224,7 +224,7 @@ module LinCAS::Internal
         return num2float(val2 ** (1/val1.to_f))
     end
 
-    def self.lc_copysign(v1 :  LcVal, v2 :  LcVal)
+    def self.lc_copysign(unused,v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -232,7 +232,7 @@ module LinCAS::Internal
         return num2float(Math.copysign(val1,val2).to_f)
     end
 
-    def self.lc_log10(v :  LcVal)
+    def self.lc_log10(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
@@ -242,7 +242,7 @@ module LinCAS::Internal
         return num2float(Math.log10(val).to_f)
     end
 
-    def self.lc_hypot(v1 :  LcVal, v2 :  LcVal)
+    def self.lc_hypot(unused,v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)

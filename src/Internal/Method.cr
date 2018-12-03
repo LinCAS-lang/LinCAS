@@ -417,7 +417,7 @@ module LinCAS::Internal
 
     end
 
-    def self.init_ubound_method
+    def self.init_unbound_method
         @@lc_unbound_method = lc_build_internal_class("UnboundMethod")
         lc_undef_allocator(@@lc_unbound_method)
     end

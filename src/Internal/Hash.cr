@@ -530,7 +530,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_hash_size(hash : LcVal)
-        next num2int(hash_size(hash))
+        return num2int(hash_size(hash))
     end
 
     def self.lc_hash_to_a(hash :  LcVal)
@@ -558,7 +558,7 @@ module LinCAS::Internal
     end
     
 
-    def init_hash
+    def self.init_hash
         @@lc_hash = internal.lc_build_internal_class("Hash")
 
         define_allocator(@@lc_hash,lc_hash_allocate)
@@ -580,9 +580,11 @@ module LinCAS::Internal
         add_method(@@lc_hash,"merge",lc_hash_merge,           1)
         add_method(@@lc_hash,"merge!",lc_hash_o_merge,        1)
         add_method(@@lc_hash,"size",lc_hash_size,             0)
-        alias_method_str(@@lc_hash,"size","length"                )
+        alias_method_str(@@lc_hash,"size","length"             )
         add_method(@@lc_hash,"to_a",lc_hash_to_a,             0)
         add_method(@@lc_hash,"hash",lc_hash_hash,             0)
+
+        lc_define_const(@@lc_kernel,"ENV", define_env)
     end
 
 

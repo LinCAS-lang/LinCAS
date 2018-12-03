@@ -95,8 +95,8 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_function_allocate(unused,klass : LcClass)
-        return function_allocate(klass)
+    def self.lc_function_allocate(klass : LcVal)
+        return function_allocate(klass.as(LcClass))
     end
 
     def self.build_function
@@ -312,7 +312,7 @@ module LinCAS::Internal
         return build_function(lc_cast(func,BinaryOp).right)
     end
 
-    def init_symbolic
+    def self.init_symbolic
         @@lc_symbolic = internal.lc_build_internal_class("Symbolic")
 
         define_allocator(@@lc_symbolic,lc_function_allocate)

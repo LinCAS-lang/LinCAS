@@ -41,19 +41,29 @@ module LinCAS::Internal
     end
 
     def self.build_true
-        lcTrue       = LcBTrue.new
-        klass         = @@lc_boolean
-        lcTrue.klass  = klass.as(LcClass)
-        lcTrue.data   = klass.as(LcClass).data.clone
+        lcTrue        = LcBTrue.new
+        lcTrue.klass  = @@lc_boolean
+        lcTrue.data   = @@lc_boolean.data.clone
+        lcTrue.flags |= ObjectFlags::FROZEN
+        return lcTrue.as( LcVal)
+    end
+
+    def self.lazy_build_true
+        lcTrue        = LcBTrue.new
         lcTrue.flags |= ObjectFlags::FROZEN
         return lcTrue.as( LcVal)
     end
 
     def self.build_false
         lcFalse        = LcBFalse.new
-        klass          = @@lc_boolean
-        lcFalse.klass  = klass.as(LcClass)
-        lcFalse.data   = klass.as(LcClass).data.clone
+        lcFalse.klass  = @@lc_boolean
+        lcFalse.data   = @@lc_boolean.data.clone
+        lcFalse.flags |= ObjectFlags::FROZEN
+        return lcFalse.as( LcVal)
+    end
+
+    def self.lazy_build_false
+        lcFalse        = LcBFalse.new
         lcFalse.flags |= ObjectFlags::FROZEN
         return lcFalse.as( LcVal)
     end
@@ -108,7 +118,7 @@ module LinCAS::Internal
         return lcfalse 
     end
 
-    def init_boolean
+    def self.init_boolean
         @@lc_boolean = internal.lc_build_internal_class("Boolean")
         lc_undef_allocator(@@lc_boolean)
 
@@ -119,9 +129,12 @@ module LinCAS::Internal
         add_method(@@lc_boolean,"!=",lc_bool_ne,    1)
         add_method(@@lc_boolean,"&&",lc_bool_and,   1)
         add_method(@@lc_boolean,"||",lc_bool_or,    1)
+
+        init_lazy_const(pointerof(LcTrue),@@lc_boolean)
+        init_lazy_const(pointerof(LcFalse),@@lc_boolean)
     end
 
-    global LcTrue  = Internal.build_true
-    global LcFalse = Internal.build_false
+    global LcTrue  = Internal.lazy_build_true
+    global LcFalse = Internal.lazy_build_false
 
 end

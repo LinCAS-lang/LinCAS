@@ -110,7 +110,7 @@ module LinCAS::Internal
         if n2.is_a? LcFloat
             if float2num(n2) == 0
                 lc_raise(LcZeroDivisionError,"(Division by 0)")
-                return positive_num(n1) ? LcInfinity : LcNinfinity
+                return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             return num2int((float2num(n1) / float2num(n2)).to_i)
         else
@@ -155,10 +155,10 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def lc_float_abs(n : LcVal)
+    def self.lc_float_abs(n : LcVal)
         val = internal.lc_num_to_cr_f(n)
-        next Null unless val 
-        next num2float(val.abs)
+        return Null unless val 
+        return num2float(val.abs)
     end
 
     def self.lc_float_round(flo : LcVal, argv : LcVal)
@@ -192,18 +192,18 @@ module LinCAS::Internal
     def self.lc_float_floor(n : LcVal)
         float = lc_num_to_cr_f(n)
         if float.is_a? Float32 
-            next num2float(LibM.floor_f32(float.as(Float32)))
+            return num2float(LibM.floor_f32(float.as(Float32)))
         else 
-            next num2float(LibM.floor_f64(float.as(Float64)))
+            return num2float(LibM.floor_f64(float.as(Float64)))
         end
     end
 
-    def self.float_trunc(n : LcVal)
+    def self.lc_float_trunc(n : LcVal)
         float = internal.lc_num_to_cr_f(n)
         if float.is_a? Float32 
-            next num2float(LibM.trunc_f32(float.as(Float32)))
+            return num2float(LibM.trunc_f32(float.as(Float32)))
         else 
-            next num2float(LibM.trunc_f64(float.as(Float64)))
+            return num2float(LibM.trunc_f64(float.as(Float64)))
         end
     end
 
@@ -215,13 +215,18 @@ module LinCAS::Internal
         end
     end
 
-    LcInfinity  = num2float(Float64::INFINITY)
-    LcNinfinity = num2float(-Float64::INFINITY)
-    NanObj      = num2float(Float64::NAN)
+    @@lc_infinity  = uninitialized LcVal
+    @@lc_ninfinity = uninitialized LcVal
+    @@lc_nanobj    = uninitialized LcVal
 
     def self.init_float
+
         @@lc_float = internal.lc_build_internal_class("Float",@@lc_number)
         lc_undef_allocator(@@lc_float)
+
+        @@lc_infinity  = num2float(Float64::INFINITY)
+        @@lc_ninfinity = num2float(-Float64::INFINITY)
+        @@lc_nanobj    = num2float(Float64::NAN)
     
         add_method(@@lc_float,"+",lc_float_sum,         1)
         add_method(@@lc_float,"-",lc_float_sub,         1)
@@ -250,7 +255,7 @@ module LinCAS::Internal
 
         lc_add_internal(@@lc_float,"hash",float_hash,      0)
     
-        lc_define_const(@@lc_float,"INFINITY",LcInfinity)
-        lc_define_const(@@lc_float,"NAN",NanObj)
+        lc_define_const(@@lc_float,"INFINITY",@@lc_infinity)
+        lc_define_const(@@lc_float,"NAN",@@lc_nanobj)
     end
 end

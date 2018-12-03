@@ -16,9 +16,10 @@
 module LinCAS::Internal
 
     REQUIRED = [] of String
-    DirLib   = build_string(ENV["libDir"])
-    Ext      = build_string(".lc")
-    Sep      = build_string("/")
+
+    {%for name in %w|dirlib ext sep|%}
+        @@{{name.id}} = uninitialized LcVal
+    {% end %}
 
     ParserAbort = Parser::ParserAbort
 
@@ -68,8 +69,8 @@ module LinCAS::Internal
 
     def self.lc_import_file(unused,path :  LcVal)
         str_check(path)
-        lc_str_concat(path,[Sep,lc_str_clone(path),Ext])
-        iseq = require_file(path,DirLib)
+        lc_str_concat(path,[@@sep,lc_str_clone(path),@@ext])
+        iseq = require_file(path,@@dirlib)
         if iseq 
             Exec.run(iseq)
             return lctrue
@@ -147,6 +148,9 @@ module LinCAS::Internal
     end
 
     def self.init_load
+        @@dirlib   = build_string(ENV["libDir"])
+        @@ext      = build_string(".lc")
+        @@sep      = build_string("/")
         lc_module_add_internal(@@lc_kernel,"require",wrap(lc_require_file,2),             1)
         lc_module_add_internal(@@lc_kernel,"import",wrap(lc_import_file,2),               1)
         lc_module_add_internal(@@lc_kernel,"require_relative",wrap(lc_require_relative,2),1)

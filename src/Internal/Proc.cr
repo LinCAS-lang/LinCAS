@@ -27,6 +27,7 @@ module LinCAS::Internal
         @scp  = uninitialized VM::Scope
         @part = [] of  LcVal
         property init, me, args, code, scp
+        getter part
     end
 
     macro set_proc_self(proc,me)
@@ -49,7 +50,7 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).code = {{code}}
     end
 
-    macro get_proc_code(proc,code)
+    macro get_proc_code(proc)
         {{proc}}.as(LCProc).code
     end
 
@@ -57,7 +58,7 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).scp = {{scp}}
     end
 
-    macro get_proc_scope(proc,scp)
+    macro get_proc_scope(proc)
         {{proc}}.as(LCProc).scp
     end
 
@@ -190,7 +191,7 @@ module LinCAS::Internal
             p_part.each do |v|
                 n_part << v
             end
-            set_proc_as_init
+            set_proc_as_init(new_proc)
         end
         return new_proc
     end

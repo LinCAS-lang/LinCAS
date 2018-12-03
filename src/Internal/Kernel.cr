@@ -80,8 +80,9 @@ module LinCAS::Internal
     # ```
 
     def self.lc_outl(unused,arg)
-        self.lc_out(arg)
+        self.lc_out(nil,arg)
         LibC.printf("\n")
+        return Null
     end 
 
     #$S print
@@ -116,11 +117,12 @@ module LinCAS::Internal
         else
             arg = arg.as( LcVal)
             if internal.lc_obj_responds_to? arg,"to_s"
-                self.lc_out(Exec.lc_call_fun(arg,"to_s"))
+                self.lc_out(nil,Exec.lc_call_fun(arg,"to_s"))
             else 
                 LibC.printf(internal.lc_typeof(arg))
             end
         end
+        return Null
     end
 
     private def self.print_str(arg)
@@ -251,7 +253,7 @@ module LinCAS::Internal
 
     
 
-    def init_kernel
+    def self.init_kernel
         @@lc_kernel = internal.lc_build_internal_module("Kernel")
 
         lc_module_add_internal(@@lc_kernel,"printl",wrap(lc_outl,2),            1)
@@ -260,10 +262,6 @@ module LinCAS::Internal
         lc_module_add_internal(@@lc_kernel,"include",wrap(lc_include,2),        1)
         lc_module_add_internal(@@lc_kernel,"exit",wrap(lc_exit,2),             -1)
         lc_module_add_internal(@@lc_kernel,"at_exit",wrap(lc_at_exit,1),        0)
-    
-        lc_define_const(@@lc_kernel,"ARGV",define_argv)
-        lc_define_const(@@lc_kernel,"ENV", define_env)
-        lc_define_const(@@lc_kernel,"VERSION", define_version)
     
         lc_include_module(@@lc_class,@@lc_kernel)
     end

@@ -277,7 +277,7 @@ module LinCAS::Internal
     {% end %}
 
 
-    def init_complex
+    def self.init_complex
         @@lc_complex = lc_build_internal_class("Complex",@@lc_number)
         lc_undef_allocator(@@lc_complex)
 

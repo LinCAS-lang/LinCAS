@@ -26,6 +26,7 @@
             object
             kernel
             array
+            error
             boolean
             number
             complex

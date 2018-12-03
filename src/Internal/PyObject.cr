@@ -197,7 +197,7 @@ module LinCAS::Internal
 
     {% for name in %w|sum sub mul div pow| %}
         @[AlwaysInline]
-        def self.lc_pyobj{{name.id}}(v1 : LcVal,v2 : LcVal)
+        def self.lc_pyobj_{{name.id}}(v1 : LcVal,v2 : LcVal)
             return Exec.lc_call_fun(v1,"__{{name.id}}__",v2)
         end
     {% end %}

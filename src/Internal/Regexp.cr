@@ -189,7 +189,7 @@ module LinCAS::Internal
         return build_match_data(regex,compiled,string,pos.to_i32,ary.to_slice(arylen),regex_captured(regex))
     end
 
-    def self.lc_regex_error(string :  LcVal)
+    def self.lc_regex_error(unused,string :  LcVal)
         str_check(string)
         gsub_str = str_gsub_char(string,PATTERN,SUB)
         compiled = LibPCRE.compile(gsub_str,(OPT_NONE | UTF_8 | NO_UTF8_CHECK),out error, out erroffset,nil)
@@ -199,7 +199,12 @@ module LinCAS::Internal
         return build_string("#{String.new(error)} at #{erroffset}")
     end
 
-    def self.lc_regex_escape(string :  LcVal)
+    @[AlwaysInline]
+    def self.lc_regex_escape(string : LcVal)
+        return lc_regex_escape(nil,string)
+    end
+
+    def self.lc_regex_escape(unused,string :  LcVal)
         str_check(string)
         buffer  = string_buffer_new
         string_char_iterate(lc_cast(string,LcString)) do |chr|
@@ -244,7 +249,7 @@ module LinCAS::Internal
         return lc_regex_union(nil,[regex,other])
     end
 
-    def self.lc_regex_union_part(value :  LcVal)
+    def self.lc_regex_union_part(unused,value :  LcVal)
         if value.is_a? LcString
             return lc_regex_escape(value)
         elsif value.is_a? LcRegexp
@@ -285,16 +290,16 @@ module LinCAS::Internal
     end
 
 
-    def init_regexp
+    def self.init_regexp
         @@lc_regexp = internal.lc_build_internal_class("Regexp")
-        lc_set_allocator(@@lc_regexp,regex_allocate)
+        define_allocator(@@lc_regexp,lc_regex_allocate)
 
         add_static_method(@@lc_regexp,"error?",lc_regex_error,          1)
         add_static_method(@@lc_regexp,"escape",lc_regex_escape,         1)
         add_static_method(@@lc_regexp,"union",lc_regex_union,          -1)
         add_static_method(@@lc_regexp,"union_part",lc_regex_union_part, 1)
 
-        add_method(@@lc_regexp,"init",lc_regex_init,                    1)
+        add_method(@@lc_regexp,"init",lc_regex_initialize,              1)
         add_method(@@lc_regexp,"to_s",lc_regex_to_s,                    0)
         alias_method_str(@@lc_regexp,"to_s","origin")
         add_method(@@lc_regexp,"inspect",lc_regex_inspect,              0)

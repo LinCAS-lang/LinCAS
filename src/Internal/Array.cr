@@ -768,7 +768,7 @@ module LinCAS::Internal
         return ary
     end        
 
-    def init_array
+    def self.init_array
         @@lc_array = internal.lc_build_internal_class("Array")
         define_allocator(@@lc_array,lc_ary_allocate)
     
@@ -812,6 +812,8 @@ module LinCAS::Internal
         lc_add_internal(@@lc_array,"map_with_index!",wrap(lc_ary_o_map_with_index,1),0)
         lc_add_internal(@@lc_array,"compact",        wrap(lc_ary_compact,1),         0)
         lc_add_internal(@@lc_array,"compact!",       wrap(lc_ary_o_compact,1),       0)
+
+        lc_define_const(@@lc_kernel,"ARGV",define_argv)
     end
 end    
 

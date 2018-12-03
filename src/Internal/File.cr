@@ -37,7 +37,7 @@ module LinCAS::Internal
         return file_accessible(file,F_OK)
     end
 
-    def self.lc_file_exist(file :  LcVal)
+    def self.lc_file_exist(unused,file :  LcVal)
         str_check(file)
         return val2bool(file_exist(file))
     end

@@ -26,6 +26,12 @@ module LinCAS::Internal
         return null.as( LcVal)
     end
 
+    def self.lc_lazy_build_null
+        null  = LcNull.new
+        null.flags |= ObjectFlags::FROZEN
+        return null.as( LcVal)
+    end
+
     @[AlwaysInline]
     def self.lc_null_and(v1 :  LcVal, v2 :  LcVal)
         return v1
@@ -38,7 +44,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_null_not(v1 :  LcVal)
-        next lctrue 
+        return lctrue 
     end
 
     @[AlwaysInline]
@@ -47,19 +53,19 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_null_eq(value : LcVal)
+    def self.lc_null_eq(unused,value : LcVal)
         if value.is_a? LcNull
-            next lctrue 
+            return lctrue 
         end
-        next lcfalse
+        return lcfalse
     end
 
     @[AlwaysInline]
-    def self.lc_null_ne(value : LcVal)
+    def self.lc_null_ne(unused,value : LcVal)
         if value.is_a? LcNull
-            next lcfalse
+            return lcfalse
         end
-        next lctrue
+        return lctrue
     end
 
     def self.init_null
@@ -81,8 +87,9 @@ module LinCAS::Internal
         end
 
         lc_add_internal(@@lc_null,"clone",null_clone, 0)
+        init_lazy_const(pointerof(Null),@@lc_null)
     end
 
-    global Null = Internal.lc_build_null
+    global Null = Internal.lc_lazy_build_null
     
 end

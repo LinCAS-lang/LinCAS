@@ -973,7 +973,7 @@ module LinCAS::Internal
 
         
 
-    def init_string
+    def self.init_string
         @@lc_string = lc_build_internal_class("String")
         lc_set_allocator(@@lc_string,wrap(lc_string_allocate,1))
 
@@ -1004,6 +1004,8 @@ module LinCAS::Internal
         lc_add_internal(@@lc_string,"compact!",wrap(lc_str_o_compact,1),  0)
         lc_add_internal(@@lc_string,"gsub",    wrap(lc_str_gsub,3),       2)
         lc_add_internal(@@lc_string,"starts_with",wrap(lc_str_starts_with,2),1)
+        
+        lc_define_const(@@lc_kernel,"VERSION", define_version)
     end
 
 end

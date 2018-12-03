@@ -573,7 +573,7 @@ module LinCAS::Internal
                 Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j))
                 break if Exec.error?
             end
-            break if Exec.error
+            break if Exec.error?
         end
         return Null 
     end
@@ -789,7 +789,12 @@ module LinCAS::Internal
         return tmp
     end
 
-    def self.lc_matrix_id(size :  LcVal)
+    @[AlwaysInline]
+    def self.lc_matrix_id(size : LcVal)
+        return lc_matrix_id(nil,size)
+    end
+
+    def self.lc_matrix_id(klass,size :  LcVal)
         rws = lc_num_to_cr_i(size)
         return Null unless rws 
         if rws < 0
@@ -803,7 +808,7 @@ module LinCAS::Internal
     def self.lc_matrix_size(mx : LcVal)
         rws = matrix_rws(mx)
         cls = matrix_cls(mx)
-        next tuple2array(num2int(rws),num2int(cls))
+        return tuple2array(num2int(rws),num2int(cls))
     end
 
     def self.lc_matrix_max(mx :  LcVal)
@@ -856,23 +861,23 @@ module LinCAS::Internal
         @@lc_matrix = internal.lc_build_internal_class("Matrix")
         define_allocator(@@lc_matrix,lc_matrix_allocate)
 
-        lc_add_static(@@lc_matrix,"identity",lc_matrix_id,      1)
-        lc_add_internal(@@lc_matrix,"init",lc_matrix_init,      2)
-        lc_add_internal(@@lc_matrix,"to_s",lc_matrix_to_s,      0)
-        lc_add_internal(@@lc_matrix,"==",lc_matrix_eq,          1)
-        lc_add_internal(@@lc_matrix,"[]",lc_matrix_index,       2)
-        lc_add_internal(@@lc_matrix,"[]=",lc_matrix_set_index,  3)
-        lc_add_internal(@@lc_matrix,"+",lc_matrix_sum,          1)
-        lc_add_internal(@@lc_matrix,"-",lc_matrix_sub,          1)
-        lc_add_internal(@@lc_matrix,"*",lc_matrix_prod,         1)
-        lc_add_internal(@@lc_matrix,"tr",lc_matrix_t,           0)
-        lc_add_internal(@@lc_matrix,"det",lc_matrix_det,        0)
-        lc_add_internal(@@lc_matrix,"lu",lc_matrix_lu,          0)
-        lc_add_internal(@@lc_matrix,"clone",lc_matrix_clone,    0)
-        lc_add_internal(@@lc_matrix,"each",lc_matrix_each,      0)
-        lc_add_internal(@@lc_matrix,"map",lc_matrix_map,        0)
-        lc_add_internal(@@lc_matrix,"map!",lc_matrix_o_map,     0)
-        lc_add_internal(@@lc_matrix,"size",lc_matrix_size,      0)
+        add_static_method(@@lc_matrix,"identity",lc_matrix_id,      1)
+        add_method(@@lc_matrix,"init",lc_matrix_init,      2)
+        add_method(@@lc_matrix,"to_s",lc_matrix_to_s,      0)
+        add_method(@@lc_matrix,"==",lc_matrix_eq,          1)
+        add_method(@@lc_matrix,"[]",lc_matrix_index,       2)
+        add_method(@@lc_matrix,"[]=",lc_matrix_set_index,  3)
+        add_method(@@lc_matrix,"+",lc_matrix_sum,          1)
+        add_method(@@lc_matrix,"-",lc_matrix_sub,          1)
+        add_method(@@lc_matrix,"*",lc_matrix_prod,         1)
+        add_method(@@lc_matrix,"tr",lc_matrix_t,           0)
+        add_method(@@lc_matrix,"det",lc_matrix_det,        0)
+        add_method(@@lc_matrix,"lu",lc_matrix_lu,          0)
+        add_method(@@lc_matrix,"clone",lc_matrix_clone,    0)
+        add_method(@@lc_matrix,"each",lc_matrix_each,      0)
+        add_method(@@lc_matrix,"map",lc_matrix_map,        0)
+        add_method(@@lc_matrix,"map!",lc_matrix_o_map,     0)
+        add_method(@@lc_matrix,"size",lc_matrix_size,      0)
         alias_method_str(@@lc_matrix,"size","shape"              )
 
         matrix_rws_ = LcProc.new do |args|
@@ -887,13 +892,13 @@ module LinCAS::Internal
 
         lc_add_internal(@@lc_matrix,"rows",matrix_rws_,         0)
         lc_add_internal(@@lc_matrix,"cols",matrix_cls_,         0)
-        lc_add_internal(@@lc_matrix,"max",lc_matrix_max,        0)
-        lc_add_internal(@@lc_matrix,"min",lc_matrix_min,        0)
-        lc_add_internal(@@lc_matrix,"each_with_index",lc_matrix_each_with_index,   0)
-        lc_add_internal(@@lc_matrix,"map_with_index",lc_matrix_map_with_index,     0)
-        lc_add_internal(@@lc_matrix,"map_with_index!",lc_matrix_o_map_with_index,  0)
-        lc_add_internal(@@lc_matrix,"swap_rows",lc_matrix_swap_rws,                2)
-        lc_add_internal(@@lc_matrix,"swap_cols",lc_matrix_swap_cls,                2)
+        add_method(@@lc_matrix,"max",lc_matrix_max,        0)
+        add_method(@@lc_matrix,"min",lc_matrix_min,        0)
+        add_method(@@lc_matrix,"each_with_index",lc_matrix_each_with_index,   0)
+        add_method(@@lc_matrix,"map_with_index",lc_matrix_map_with_index,     0)
+        add_method(@@lc_matrix,"map_with_index!",lc_matrix_o_map_with_index,  0)
+        add_method(@@lc_matrix,"swap_rows",lc_matrix_swap_rws,                2)
+        add_method(@@lc_matrix,"swap_cols",lc_matrix_swap_cls,                2)
     end
 
 end

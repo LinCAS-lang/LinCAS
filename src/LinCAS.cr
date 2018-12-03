@@ -117,7 +117,7 @@ if dir
                 Internal.lc_finalize
             end
         end
-        #Internal.lc_initialize
+        Internal.lc_initialize
         parser = FFactory.makeParser(File.expand_path(dir))
         parser.noSummary # TODO: improving parsing time computation
         if tk_display

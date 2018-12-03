@@ -114,7 +114,13 @@ module LinCAS::Internal
         return obj.as( LcVal) 
     end
 
+    @[AlwaysInline]
     def self.lc_obj_init(obj :  LcVal)
+        return obj 
+    end
+
+    @[AlwaysInline]
+    def self.lc_obj_self(obj : LcVal)
         return obj 
     end
 
@@ -175,7 +181,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def lc_obj_frozen(obj : LcVal)
+    def self.lc_obj_frozen(obj : LcVal)
         if obj.flags & ObjectFlags::FROZEN != 0
             return lctrue 
         end 
@@ -183,15 +189,15 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def lc_obj_null(obj : LcVal)
+    def self.lc_obj_null(obj : LcVal)
         return lctrue if obj == Null
         return lcfalse
     end
 
-    def lc_obj_to_m(obj : LcVal)
+    def self.lc_obj_to_m(obj : LcVal)
         mx = internal.build_matrix(1,1)
-        set_matrix_index(mx,0,0,args.as(T1)[0])
-        next mx
+        set_matrix_index(mx,0,0,obj)
+        return mx
     end
 
     @[AlwaysInline]

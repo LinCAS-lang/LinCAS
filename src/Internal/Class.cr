@@ -480,12 +480,11 @@ module LinCAS::Internal
         @@main_class     = lc_build_class("BaseClass")
         @@lc_class       = internal.lc_build_internal_class("Class",@@main_class)
         @@lc_class.klass = @@lc_class
-
         add_static_method(@@lc_class,"==",   lc_class_eq,         1)
         add_static_method(@@lc_class,"<>",   lc_class_ne,         1)
         add_static_method(@@lc_class,"!=",   lc_class_ne,         1)
         add_static_method(@@lc_class,"to_s", lc_class_to_s,       0)
-        alias_method_str(@@lc_class,"to_s","name"              )
+        add_static_method(@@lc_class,"name", lc_class_to_s,       0)
         add_static_method(@@lc_class,"inspect",lc_class_inspect,  0)
         add_static_method(@@lc_class,"defrost",lc_class_defrost,  0)
         add_static_method(@@lc_class,"parent",lc_class_parent,    0)
