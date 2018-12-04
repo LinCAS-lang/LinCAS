@@ -67,9 +67,11 @@ module LinCAS::Internal
             buffer_append(path,lc_cast(file,LcString))
         end
         buffer_trunc(path)
-        path_  = build_string_with_ptr(buff_ptr(path),buff_size(path))
-        pieces = lc_str_split(path_,tmp_s)
-        elem   = build_ary_new
+        path_    = build_string_with_ptr(buff_ptr(path),buff_size(path))
+        tmp_a    = Ary.new(1) 
+        tmp_a[0] = tmp_s
+        pieces   = lc_str_split(path_,tmp_a)
+        elem     = build_ary_new
         ary_iterate(pieces) do |e|
             e_ptr = pointer_of(e)
             if strcmp(e_ptr,"..") == 0

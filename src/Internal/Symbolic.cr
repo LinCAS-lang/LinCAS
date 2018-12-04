@@ -121,7 +121,7 @@ module LinCAS::Internal
         tmp.klass = @@lc_symbolic 
         tmp.id    = pointerof(func).address
         tmp.flags |= ObjectFlags::FAKE
-        set_function(tmp,func)
+        tmp.func  = func
         return tmp
     end
 
