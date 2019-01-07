@@ -289,7 +289,7 @@ module LinCAS::Internal
         add_method(@@lc_complex,"abs2",lc_complex_abs2,           0)
         add_method(@@lc_complex,"logabs",lc_complex_logabs,       0)
         add_method(@@lc_complex,"inspect",lc_complex_inspect,     0)
-        alias_method_str(@@lc_complex,"inspect","to_s"                )  
+        alias_method_str(@@lc_complex,"inspect","to_s"             )  
         add_method(@@lc_complex,"+",lc_complex_sum,               1)
         add_method(@@lc_complex,"-",lc_complex_sub,               1)
         add_method(@@lc_complex,"*",lc_complex_prod,              1)
