@@ -15,70 +15,46 @@
 
 module LinCAS::Internal
 
-    macro mfun(name)
-        arg = args.as(T2)[1]
-        next lc_{{name.id}}_ary(arg) if arg.is_a? LcArray
-        next lc_{{name.id}}(arg)
+    macro default_def(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        return num2float(Math.{{name.id}}(val).to_f)
     end
 
-    macro mfun2(name)
-        args = args.as(T3)
-        arg1 = args[1]
-        arg2 = args[2]
-        if arg1.is_a? LcArray && arg2.is_a? LcArray
-            next lc_{{name.id}}_ary(arg1,arg2)
-        end
-        next lc_{{name.id}}(arg1,arg2)
+    macro def_with_block(name,var, sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        {{yield}}
+        return num2float(Math.{{name.id}}(val).to_f)
     end
 
-    macro default_def(name,sym = nil)
-        private def self.lc_{{name.id}}(unused,v :  LcVal)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            return num2float(Math.{{name.id}}(val).to_f)
-        end
+    macro default_adef(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_arc{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        return num2float(Math.a{{name.id}}(val).to_f)
     end
 
-    macro def_with_block(name, sym = nil)
-        private def self.lc_{{name.id}}(unused,v :  LcVal)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            {{yield}}
-            return num2float(Math.{{name.id}}(val).to_f)
-        end
-    end
-
-    macro default_adef(name, sym = nil)
-        private def self.lc_a{{name.id}}(unused,v :  LcVal)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_arc{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            return num2float(Math.a{{name.id}}(val).to_f)
-        end
-    end
-
-    macro adef_with_block(name, sym = nil)
-        private def self.lc_a{{name.id}}(unused,v :  LcVal)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_arc{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            {{yield}}
-            return num2float(Math.a{{name.id}}(val).to_f)
-        end
+    macro adef_with_block(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_arc{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        {{yield}}
+        return num2float(Math.a{{name.id}}(val).to_f)
     end
 
     {% for name in %w|cos sin acos asin tan atan cosh sinh asinh acosh gamma
@@ -116,36 +92,55 @@ module LinCAS::Internal
         end
     {% end %}
 
-   
-    default_def cos, Cos
+    def self.lc_cos(unused,v : LcVal)
+        default_def cos, v, Cos
+    end
+ 
+    def self.lc_sin(unused,v : LcVal)
+        default_def sin, v, Sin
+    end
 
-    default_def sin, Sin
+    def self.lc_tan(unused,v : LcVal)
+        default_def tan, v, Tan
+    end
 
-    default_def tan, Tan
-
-    adef_with_block(cos, Acos) do 
-        if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null 
+    def self.lc_acos(unused, v : LcVal)
+        adef_with_block(cos,v, Acos) do 
+            if val > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null 
+            end
         end
     end
 
-    adef_with_block(sin, Asin) do 
-        if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null 
+    def self.lc_asin(unused, v : LcVal)
+        adef_with_block(sin,v, Asin) do 
+            if val > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null 
+            end
         end
     end
 
-    default_adef tan, Atan
+    def self.lc_atan(unused,v : LcVal)
+        default_adef tan, v, Atan
+    end
 
-    default_def sinh
+    def self.lc_sinh(unused,v : LcVal)
+        default_def sinh, v 
+    end
 
-    default_def cosh
+    def self.lc_cosh(unused,v : LcVal)
+        default_def cosh, v 
+    end
 
-    default_adef cosh
+    def self.lc_acosh(unused, v : LcVal)
+        default_adef cosh, v
+    end
 
-    default_adef sinh
+    def self.lc_asinh(unused, v : LcVal)
+        default_adef sinh, v
+    end
     
     def self.lc_gamma(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
@@ -157,21 +152,29 @@ module LinCAS::Internal
         return num2float(Math.gamma(val).to_f)
     end
 
-    default_def exp, Exp
+    def self.lc_exp(unused,v : LcVal)
+        default_def exp, v, Exp
+    end
     
-    def_with_block(log, Log) do 
-        if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null
+    def self.lc_log(unused,v : LcVal)
+        def_with_block(log,v,Log) do 
+            if val < 0
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null
+            end
         end
     end
 
-    default_def tanh
+    def self.lc_tanh(unused,v : LcVal)
+        default_def tanh, v
+    end
 
-    adef_with_block(tanh) do
-        if val.abs > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null
+    def self.lc_atanh(unused, v : LcVal)
+        adef_with_block(tanh,v) do
+            if val.abs > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null
+            end
         end
     end
 
