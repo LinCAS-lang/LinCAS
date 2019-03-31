@@ -35,11 +35,10 @@ module LinCAS::Internal
 
     class LcString < BaseC
         def initialize
-            @str_ptr = CHAR_PTR.null
+            @str_ptr = CHAR_PTR.malloc(1,0).as(CHAR_PTR)
             @size    = 0.as(Intnum)
         end
         property str_ptr, size
-
     end 
 
     macro ptr_init(ptr,length)
@@ -184,7 +183,8 @@ module LinCAS::Internal
     end
 
     def self.build_string_with_ptr(ptr : LibC::Char*,size : Intnum = -1)
-        str = new_string
+        str = new_string 
+        return str if ptr.null?
         str.str_ptr = ptr 
         if size > 0
             set_size(str,size)
