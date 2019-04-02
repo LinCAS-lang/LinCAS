@@ -979,6 +979,7 @@ module LinCAS::Internal
 
         lc_add_internal(@@lc_string,"+",       wrap(lc_str_add,2),        1)
         lc_add_internal(@@lc_string,"concat",  wrap(lc_str_concat,2),    -1)
+        alias_method_str(@@lc_string,"concat","<<"                         )
         lc_add_internal(@@lc_string,"*",       wrap(lc_str_multiply,2),   1)
         lc_add_internal(@@lc_string,"include?",wrap(lc_str_include,2),    1)
         lc_add_internal(@@lc_string,"==",      wrap(lc_str_compare,2),    1)
