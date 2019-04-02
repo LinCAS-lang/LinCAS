@@ -43,8 +43,8 @@ module Test::Assert {
 
     let self.assert_false(val) { 
         assert_block(
-            val.to_s().concat(" was expected to be true")
-        ) { val == true } 
+            val.to_s().concat(" was expected to be false")
+        ) { val == false } 
     }
 
     let self.assert_null(val) {
