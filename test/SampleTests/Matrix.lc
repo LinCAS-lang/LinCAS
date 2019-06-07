@@ -17,10 +17,10 @@ m1 := |1,2,3;4,5,6;7,8,9|
 # but in an automatic way (using a block)
 #
 m2 := new Matrix(RWS,RWS) { (r,c)
-    return r * RWS + c + 1
+    r * RWS + c + 1
 }
 
-printl m1 & "" & m2
+printl m1, "", m2
 printl
 
 # This sums the two matrices.
