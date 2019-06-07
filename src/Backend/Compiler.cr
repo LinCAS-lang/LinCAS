@@ -1266,7 +1266,7 @@ class LinCAS::Compiler
                 is = @ifactory.makeBCode(Code::S_INVERT)
                 link(op,is)
                 set_last(op,is)
-                return is 
+                return op
             else
                 return compile_exp(node,false)
         end

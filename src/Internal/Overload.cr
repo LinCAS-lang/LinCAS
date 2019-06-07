@@ -66,4 +66,14 @@ class Object
         exit status
     end
 
+    class FrozenError < Exception; end
+
+    macro has_flag(obj,flag)
+       ({{obj}}.flags & ObjectFlags::{{flag.id}} != ObjectFlags::NONE)
+    end
+
+    macro set_flag(obj, flag)
+        ({{obj}}.flags ||= ObjectFlags::{{flag.id}})
+    end
+
 end

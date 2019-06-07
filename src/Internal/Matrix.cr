@@ -29,7 +29,7 @@ module LinCAS::Internal
 
 
     class Matrix < BaseC
-        @ptr  = Pointer(Value).null
+        @ptr  = Pointer( LcVal).null
         @rows = 0.as(Intnum)
         @cols = 0.as(Intnum)
         @rw_magnitude = true 
@@ -101,7 +101,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.lc_set_matrix_index(matrix : Value, i : Intnum, j : Intnum, value : Value)
+    def self.lc_set_matrix_index(matrix :  LcVal, i : Intnum, j : Intnum, value :  LcVal)
         set_matrix_index(matrix,i,j,value)
     end
 
@@ -114,23 +114,15 @@ module LinCAS::Internal
     end
 
     def self.build_matrix
-        matrix       = Matrix.new
-        matrix.klass = MatrixClass 
-        matrix.data  = MatrixClass.data.clone
-        return matrix.as(Value)
+        matrix = lincas_obj_alloc Matrix, @@lc_matrix, data: @@lc_matrix.data.clone
+        return matrix.as( LcVal)
     end
 
-    def self.lc_matrix_allocate(klass : Value)
-        klass        = klass.as(LcClass)
-        matrix       = Matrix.new 
-        matrix.klass = klass 
-        matrix.data  = klass.data.clone 
-        return matrix.as(Value)
+    def self.lc_matrix_allocate(klass :  LcVal)
+        klass  = klass.as(LcClass)
+        matrix = lincas_obj_alloc Matrix, klass, data: klass.data.clone 
+        return matrix.as( LcVal)
     end 
-
-    matrix_allocate = LcProc.new do |args|
-        next lc_matrix_allocate(*args.as(T1))
-    end
     
     #$I init
     #$U init(rows,cols)        -> matrix
@@ -148,7 +140,7 @@ module LinCAS::Internal
     #     1,3|
     # ```
 
-    def self.lc_matrix_init(matrix : Value, rows : Value, cols : Value)
+    def self.lc_matrix_init(matrix :  LcVal, rows :  LcVal, cols :  LcVal)
         r = lc_num_to_cr_i(rows)
         return Null unless r 
         c = lc_num_to_cr_i(cols)
@@ -170,11 +162,7 @@ module LinCAS::Internal
         return matrix
     end
 
-    matrix_init = LcProc.new do |args|
-        next internal.lc_matrix_init(*args.as(T3))
-    end
-
-    def self.matrix_to_string(matrix : Value)
+    def self.matrix_to_string(matrix :  LcVal)
         rws    = matrix_rws(matrix)
         cls    = matrix_cls(matrix)
         buffer = string_buffer_new
@@ -203,7 +191,7 @@ module LinCAS::Internal
     #      4,5,6|
     # ```
 
-    def self.lc_matrix_to_s(matrix : Value)
+    def self.lc_matrix_to_s(matrix :  LcVal)
         buffer = matrix_to_string(matrix)
         size   = buff_size(buffer)
         if size > STR_MAX_CAPA
@@ -213,11 +201,7 @@ module LinCAS::Internal
         return build_string_with_ptr(buff_ptr(buffer),size)
     end
 
-    matrix_to_s = LcProc.new do |args|
-        next internal.lc_matrix_to_s(*args.as(T1))
-    end
-
-    def self.lc_matrix_index(matrix : Value,i : LcRange, j : LcRange)
+    def self.lc_matrix_index(matrix :  LcVal,i : LcRange, j : LcRange)
         r_lower = r_left(i)
         r_upper = r_right(i)
         c_lower = r_left(j)
@@ -266,7 +250,7 @@ module LinCAS::Internal
     #      8,9|
     # ```
 
-    def self.lc_matrix_index(matrix : Value,i, j)
+    def self.lc_matrix_index(matrix :  LcVal,i, j)
         if i.is_a? LcRange 
             cls     = matrix_cls(matrix)
             c       = lc_num_to_cr_i(j)
@@ -323,10 +307,6 @@ module LinCAS::Internal
         end
     end
 
-    matrix_index = LcProc.new do |args|
-        next internal.lc_matrix_index(*args.as(T3))
-    end
-
     #$I []=
     #$U m[row,col] := object
     # It assigns to a component the given value (object).
@@ -341,7 +321,7 @@ module LinCAS::Internal
     # m[2,3] := 9 #=> IndexError: (Index [2,3] out of matrix)
     # ```
 
-    def self.lc_matrix_set_index(matrix : Value, i : Value,j : Value, value : Value)
+    def self.lc_matrix_set_index(matrix :  LcVal, i :  LcVal,j :  LcVal, value :  LcVal)
         r = lc_num_to_cr_i(i)
         return Null unless r 
         c = lc_num_to_cr_i(j)
@@ -352,10 +332,6 @@ module LinCAS::Internal
         end
         set_matrix_index(matrix,r,c,value)
         return matrix 
-    end
-
-    matrix_set_index = LcProc.new do |args|
-        next internal.lc_matrix_set_index(*args.as(T4))
     end
 
     #$I +
@@ -376,7 +352,7 @@ module LinCAS::Internal
     # m1 + m3 #=> MathError: Incompatible matrices for sum
     # ```
 
-    def self.lc_matrix_sum(m1 : Value, m2 : Value)
+    def self.lc_matrix_sum(m1 :  LcVal, m2 :  LcVal)
         unless m2.is_a? Matrix 
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
             return Null 
@@ -391,15 +367,11 @@ module LinCAS::Internal
         m1_ptr = matrix_ptr(m1)
         m2_ptr = matrix_ptr(m2)
         matrix_ptr(tmp).map_with_index!(rws * cls) do |c,i|
-            value = Exec.lc_call_fun(m1_ptr[i],"+",m2_ptr[i]).as(Value)
+            value = Exec.lc_call_fun(m1_ptr[i],"+",m2_ptr[i]).as( LcVal)
             break if Exec.error?
             value
         end
         return tmp 
-    end
-
-    matrix_sum = LcProc.new do |args|
-        next internal.lc_matrix_sum(*args.as(T2))
     end
 
     #$I -
@@ -420,7 +392,7 @@ module LinCAS::Internal
     # m1 - m3 #=> MathError: Incompatible matrices for difference
     # ```
 
-    def self.lc_matrix_sub(m1 : Value, m2 : Value)
+    def self.lc_matrix_sub(m1 :  LcVal, m2 :  LcVal)
         matrix_check(m2)
         if !same_matrix_size(m1,m2)
             lc_raise(LcMathError,"Incompatible matrices for difference")
@@ -432,15 +404,11 @@ module LinCAS::Internal
         m1_ptr = matrix_ptr(m1)
         m2_ptr = matrix_ptr(m2)
         matrix_ptr(tmp).map_with_index!(rws * cls) do |c,i|
-            value = Exec.lc_call_fun(m1_ptr[i],"-",m2_ptr[i]).as(Value)
+            value = Exec.lc_call_fun(m1_ptr[i],"-",m2_ptr[i]).as( LcVal)
             break if Exec.error?
             value
         end
         return tmp 
-    end
-
-    matrix_sub = LcProc.new do |args|
-        next internal.lc_matrix_sub(*args.as(T2))
     end
 
     #$I *
@@ -466,21 +434,21 @@ module LinCAS::Internal
     # m1 * m3 #=> MathError: Incompatible matrices for product
     # ```
 
-    def self.lc_matrix_prod(m1 : Value, num : LcNum)
+    def self.lc_matrix_prod(m1 :  LcVal, num : LcNum)
         val = num2num(num)
         cls = matrix_cls(m1)
         rws = matrix_rws(m1)
         tmp = build_matrix(rws,cls)
         ptr = matrix_ptr(m1)
         matrix_ptr(tmp).map_with_index! (rws * cls) do |c,i|
-            value = Exec.lc_call_fun(ptr[i],"*",num).as(Value)
+            value = Exec.lc_call_fun(ptr[i],"*",num).as( LcVal)
             break if Exec.error?
             value
         end
         return tmp 
     end
 
-    def self.lc_matrix_prod(m1 : Value, m2)
+    def self.lc_matrix_prod(m1 :  LcVal, m2)
         unless m2.is_a? Matrix 
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
             return Null 
@@ -499,15 +467,15 @@ module LinCAS::Internal
                 (0...cls1).each do |k|
                     if k == 0
                         value = Exec.lc_call_fun(matrix_at_index(m1,i,k),
-                                                        "*",matrix_at_index(m2,k,j)).as(Value)
+                                                        "*",matrix_at_index(m2,k,j)).as( LcVal)
                         break if Exec.error?
                         set_matrix_index(tmp,i,j,value)
                     else
                         tmp_val = matrix_at_index(tmp,i,j)
                         value = Exec.lc_call_fun(matrix_at_index(m1,i,k),
-                                                        "*",matrix_at_index(m2,k,j)).as(Value) 
+                                                        "*",matrix_at_index(m2,k,j)).as( LcVal) 
                         break if Exec.error?
-                        value = Exec.lc_call_fun(tmp_val,"+",value).as(Value)
+                        value = Exec.lc_call_fun(tmp_val,"+",value).as( LcVal)
                         break if Exec.error?
                         set_matrix_index(tmp,i,j,value) 
                     end
@@ -517,10 +485,6 @@ module LinCAS::Internal
             break if Exec.error?
         end
         return tmp
-    end
-
-    matrix_prod = LcProc.new do |args|
-        next internal.lc_matrix_prod(*args.as(T2))
     end
 
     #$I tr
@@ -533,7 +497,7 @@ module LinCAS::Internal
     #      5,6,2|
     # ```
 
-    def self.lc_matrix_t(mx : Value)
+    def self.lc_matrix_t(mx :  LcVal)
         cls = matrix_cls(mx)
         rws = matrix_rws(mx)
         tmp = build_matrix(cls,rws)
@@ -543,10 +507,6 @@ module LinCAS::Internal
             end
         end
         return tmp 
-    end
-
-    matrix_t = LcProc.new do |args|
-        next internal.lc_matrix_t(*args.as(T1))
     end
 
     #$I each
@@ -563,7 +523,7 @@ module LinCAS::Internal
     # 4
     # ```
 
-    def self.lc_matrix_each(mx : Value)
+    def self.lc_matrix_each(mx :  LcVal)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
         ptr  = matrix_ptr(mx)
@@ -575,11 +535,7 @@ module LinCAS::Internal
         return mx
     end
 
-    matrix_each = LcProc.new do |args|
-        next internal.lc_matrix_each(*args.as(T1))
-    end
-
-    def self.lc_matrix_map(mx : Value)
+    def self.lc_matrix_map(mx :  LcVal)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
         tmp  = build_matrix(rws,cls)
@@ -594,26 +550,18 @@ module LinCAS::Internal
         return tmp 
     end
 
-    matrix_map = LcProc.new do |args|
-        next internal.lc_matrix_map(*args.as(T1))
-    end
-
-    def self.lc_matrix_o_map(mx : Value)
+    def self.lc_matrix_o_map(mx :  LcVal)
         size = matrix_rws(mx) * matrix_cls(mx)
         ptr  = matrix_ptr(mx)
         ptr.map!(size) do |elem|
-            value = Exec.lc_yield(elem).as(Value)
+            value = Exec.lc_yield(elem).as( LcVal)
             break if Exec.error?
             value
         end
         return mx 
     end
 
-    matrix_o_map = LcProc.new do |args|
-        next internal.lc_matrix_o_map(*args.as(T1))
-    end
-
-    def self.lc_matrix_each_with_index(mx : Value)
+    def self.lc_matrix_each_with_index(mx :  LcVal)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
         rws.times do |i|
@@ -621,22 +569,18 @@ module LinCAS::Internal
                 Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j))
                 break if Exec.error?
             end
-            break if Exec.error
+            break if Exec.error?
         end
         return Null 
     end
 
-    matrix_each_with_index = LcProc.new do |args|
-       next internal.lc_matrix_map_with_index(*args.as(T1))
-    end
-
-    def self.lc_matrix_map_with_index(mx : Value)
+    def self.lc_matrix_map_with_index(mx :  LcVal)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
         tmp = build_matrix(rws,cls)
         rws.times do |i|
             cls.times do |j|
-                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as(Value)
+                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
                 break if Exec.error?
                 set_matrix_index(tmp,i,j,value)
             end
@@ -645,26 +589,18 @@ module LinCAS::Internal
         return tmp 
     end
 
-    matrix_map_with_index = LcProc.new do |args|
-        next internal.lc_matrix_map_with_index(*args.as(T1))
-    end
-
-    def self.lc_matrix_o_map_with_index(mx : Value)
+    def self.lc_matrix_o_map_with_index(mx :  LcVal)
         rws  = matrix_rws(mx)
         cls  = matrix_cls(mx)
         rws.times do |i|
             cls.times do |j|
-                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as(Value)
+                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
                 break if Exec.error?
                 set_matrix_index(mx,i,j,value)
             end
             break if Exec.error?
         end
         return mx 
-    end
-
-    matrix_o_map_with_index = LcProc.new do |args|
-        next internal.lc_matrix_o_map_with_index(*args.as(T1))
     end
 
     private def self.mx_swap_rws(ptr : Pointer,r1 : Intnum, r2 : Intnum, cls : Intnum)
@@ -679,7 +615,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_matrix_swap_rws(mx : Value, r1 : Value, r2 : Value)
+    def self.lc_matrix_swap_rws(mx :  LcVal, r1 :  LcVal, r2 :  LcVal)
         r1_val = lc_num_to_cr_i(r1)
         return Null unless r1_val
         r2_val = lc_num_to_cr_i(r2)
@@ -695,11 +631,7 @@ module LinCAS::Internal
         return mx
     end
 
-    matrix_swap_rws = LcProc.new do |args|
-        next internal.lc_matrix_swap_rws(*args.as(T3))
-    end
-
-    def self.lc_matrix_swap_cls(mx : Value, c1 : Value, c2 : Value)
+    def self.lc_matrix_swap_cls(mx :  LcVal, c1 :  LcVal, c2 :  LcVal)
         c1_val = lc_num_to_cr_i(c1)
         return Null unless c1_val
         c2_val = lc_num_to_cr_i(c2)
@@ -721,7 +653,7 @@ module LinCAS::Internal
         next internal.lc_matrix_swap_cls(*args.as(T3))
     end 
 
-    def self.lc_matrix_clone(mx : Value)
+    def self.lc_matrix_clone(mx :  LcVal)
         rws = matrix_rws(mx)
         cls = matrix_cls(mx)
         tmp = build_matrix(rws,cls)
@@ -729,11 +661,7 @@ module LinCAS::Internal
         return tmp 
     end
 
-    matrix_clone = LcProc.new do |args|
-        next internal.lc_matrix_clone(*args.as(T1))
-    end
-
-    private def self.lc_transfer_data(mx : Value*, ptr : Floatnum*, count : Intnum)   
+    private def self.lc_transfer_data(mx :  LcVal*, ptr : Floatnum*, count : Intnum)   
         success = true  
         ptr.map_with_index!(count) do |c,i|
             num = lc_num_to_cr_f(mx[i])
@@ -747,7 +675,7 @@ module LinCAS::Internal
         return nil
     end
 
-    def self.lc_matrix_det(mx : Value)
+    def self.lc_matrix_det(mx :  LcVal)
         unless matrix_squared(mx)
             lc_raise(LcMathError,"(Non-squared matrix for determinant)")
             return Null 
@@ -783,12 +711,8 @@ module LinCAS::Internal
         return num2float(det.to_f.as(Floatnum)) 
     end
 
-    matrix_det = LcProc.new do |args|
-        next internal.lc_matrix_det(*args.as(T1))
-    end
 
-
-    def self.lc_matrix_lu(mx : Value)
+    def self.lc_matrix_lu(mx :  LcVal)
         unless matrix_squared(mx)
             lc_raise(LcMathError,"(Non-squared matrix for LU reduction)")
             return Null 
@@ -850,10 +774,6 @@ module LinCAS::Internal
         puts
     end
 
-    matrix_lu = LcProc.new do |args|
-        next internal.lc_matrix_lu(*args.as(T1))
-    end
-
     private def self.matrix_id(size : Intnum)
         tmp = build_matrix(size,size)
         size.times do |i|
@@ -865,7 +785,12 @@ module LinCAS::Internal
         return tmp
     end
 
-    def self.lc_matrix_id(size : Value)
+    @[AlwaysInline]
+    def self.lc_matrix_id(size : LcVal)
+        return lc_matrix_id(nil,size)
+    end
+
+    def self.lc_matrix_id(klass,size :  LcVal)
         rws = lc_num_to_cr_i(size)
         return Null unless rws 
         if rws < 0
@@ -875,35 +800,20 @@ module LinCAS::Internal
         return matrix_id(rws) 
     end
 
-    matrix_identity = LcProc.new do |args|
-        size = args.as(T2)[1]
-        next internal.lc_matrix_id(size)
-    end
-
-    matrix_size = LcProc.new do |args|
-        mx  = args.as(T1)[0]
+    @[AlwaysInline]
+    def self.lc_matrix_size(mx : LcVal)
         rws = matrix_rws(mx)
         cls = matrix_cls(mx)
-        next tuple2array(num2int(rws),num2int(cls))
+        return tuple2array(num2int(rws),num2int(cls))
     end
 
-    matrix_rws_ = LcProc.new do |args|
-        mx  = args.as(T1)[0]
-        next num2int(matrix_rws(mx))
-    end
-
-    matrix_cls_ = LcProc.new do |args|
-        mx  = args.as(T1)[0]
-        next num2int(matrix_cls(mx))
-    end
-
-    def self.lc_matrix_max(mx : Value)
+    def self.lc_matrix_max(mx :  LcVal)
         rws    = matrix_rws(mx)
         cls    = matrix_cls(mx)
         ptr    = matrix_ptr(mx)
         length = rws * cls
         if length > 0
-            tmp    = Pointer(Value).malloc(length)
+            tmp    = Pointer( LcVal).malloc(length)
             tmp.copy_from(ptr,length)
             internal_ary_sort(tmp,length)
             value = tmp[length - 1]
@@ -913,17 +823,13 @@ module LinCAS::Internal
         return Null 
     end
 
-    matrix_max = LcProc.new do |args|
-        next internal.lc_matrix_max(*args.as(T1))
-    end
-
-    def self.lc_matrix_min(mx : Value)
+    def self.lc_matrix_min(mx :  LcVal)
         rws    = matrix_rws(mx)
         cls    = matrix_cls(mx)
         ptr    = matrix_ptr(mx)
         length = rws * cls
         if length > 0
-            tmp    = Pointer(Value).malloc(length)
+            tmp    = Pointer( LcVal).malloc(length)
             tmp.copy_from(ptr,length)
             internal_ary_sort(tmp,length)
             value = tmp[0]
@@ -933,11 +839,7 @@ module LinCAS::Internal
         return Null 
     end
 
-    matrix_min = LcProc.new do |args|
-        next internal.lc_matrix_min(*args.as(T1))
-    end
-
-    def self.lc_matrix_eq(mx : Value, mx2 : Value)
+    def self.lc_matrix_eq(mx :  LcVal, mx2 :  LcVal)
         return lcfalse unless mx2.is_a? Matrix
         return lcfalse unless same_matrix_size(mx,mx2)
         rws = matrix_rws(mx)
@@ -950,40 +852,49 @@ module LinCAS::Internal
         return lctrue
     end
 
-    matrix_eq = LcProc.new do |args|
-        next lc_matrix_eq(*lc_cast(args,T2))
+
+    def self.init_matrix
+        @@lc_matrix = internal.lc_build_internal_class("Matrix")
+        define_allocator(@@lc_matrix,lc_matrix_allocate)
+
+        add_static_method(@@lc_matrix,"identity",lc_matrix_id,      1)
+        add_method(@@lc_matrix,"init",lc_matrix_init,      2)
+        add_method(@@lc_matrix,"to_s",lc_matrix_to_s,      0)
+        add_method(@@lc_matrix,"==",lc_matrix_eq,          1)
+        add_method(@@lc_matrix,"[]",lc_matrix_index,       2)
+        add_method(@@lc_matrix,"[]=",lc_matrix_set_index,  3)
+        add_method(@@lc_matrix,"+",lc_matrix_sum,          1)
+        add_method(@@lc_matrix,"-",lc_matrix_sub,          1)
+        add_method(@@lc_matrix,"*",lc_matrix_prod,         1)
+        add_method(@@lc_matrix,"tr",lc_matrix_t,           0)
+        add_method(@@lc_matrix,"det",lc_matrix_det,        0)
+        add_method(@@lc_matrix,"lu",lc_matrix_lu,          0)
+        add_method(@@lc_matrix,"clone",lc_matrix_clone,    0)
+        add_method(@@lc_matrix,"each",lc_matrix_each,      0)
+        add_method(@@lc_matrix,"map",lc_matrix_map,        0)
+        add_method(@@lc_matrix,"map!",lc_matrix_o_map,     0)
+        add_method(@@lc_matrix,"size",lc_matrix_size,      0)
+        alias_method_str(@@lc_matrix,"size","shape"              )
+
+        matrix_rws_ = LcProc.new do |args|
+            mx  = args.as(T1)[0]
+            next num2int(matrix_rws(mx))
+        end
+    
+        matrix_cls_ = LcProc.new do |args|
+            mx  = args.as(T1)[0]
+            next num2int(matrix_cls(mx))
+        end
+
+        lc_add_internal(@@lc_matrix,"rows",matrix_rws_,         0)
+        lc_add_internal(@@lc_matrix,"cols",matrix_cls_,         0)
+        add_method(@@lc_matrix,"max",lc_matrix_max,        0)
+        add_method(@@lc_matrix,"min",lc_matrix_min,        0)
+        add_method(@@lc_matrix,"each_with_index",lc_matrix_each_with_index,   0)
+        add_method(@@lc_matrix,"map_with_index",lc_matrix_map_with_index,     0)
+        add_method(@@lc_matrix,"map_with_index!",lc_matrix_o_map_with_index,  0)
+        add_method(@@lc_matrix,"swap_rows",lc_matrix_swap_rws,                2)
+        add_method(@@lc_matrix,"swap_cols",lc_matrix_swap_cls,                2)
     end
-
-
-    MatrixClass = internal.lc_build_internal_class("Matrix")
-    internal.lc_set_allocator(MatrixClass,matrix_allocate)
-
-    internal.lc_add_static(MatrixClass,"identity",matrix_identity,1)
-    internal.lc_add_internal(MatrixClass,"init",matrix_init,      2)
-    internal.lc_add_internal(MatrixClass,"to_s",matrix_to_s,      0)
-    internal.lc_add_internal(MatrixClass,"==",matrix_eq,          1)
-    internal.lc_add_internal(MatrixClass,"[]",matrix_index,       2)
-    internal.lc_add_internal(MatrixClass,"[]=",matrix_set_index,  3)
-    internal.lc_add_internal(MatrixClass,"+",matrix_sum,          1)
-    internal.lc_add_internal(MatrixClass,"-",matrix_sub,          1)
-    internal.lc_add_internal(MatrixClass,"*",matrix_prod,         1)
-    internal.lc_add_internal(MatrixClass,"tr",matrix_t,           0)
-    internal.lc_add_internal(MatrixClass,"det",matrix_det,        0)
-    internal.lc_add_internal(MatrixClass,"lu",matrix_lu,          0)
-    internal.lc_add_internal(MatrixClass,"clone",matrix_clone,    0)
-    internal.lc_add_internal(MatrixClass,"each",matrix_each,      0)
-    internal.lc_add_internal(MatrixClass,"map",matrix_map,        0)
-    internal.lc_add_internal(MatrixClass,"map!",matrix_o_map,     0)
-    internal.lc_add_internal(MatrixClass,"size",matrix_size,      0)
-    internal.lc_add_internal(MatrixClass,"length",matrix_size,    0)
-    internal.lc_add_internal(MatrixClass,"rows",matrix_rws_,      0)
-    internal.lc_add_internal(MatrixClass,"cols",matrix_cls_,      0)
-    internal.lc_add_internal(MatrixClass,"max",matrix_max,        0)
-    internal.lc_add_internal(MatrixClass,"min",matrix_min,        0)
-    internal.lc_add_internal(MatrixClass,"each_with_index",matrix_each_with_index,   0)
-    internal.lc_add_internal(MatrixClass,"map_with_index",matrix_map_with_index,     0)
-    internal.lc_add_internal(MatrixClass,"map_with_index!",matrix_o_map_with_index,  0)
-    internal.lc_add_internal(MatrixClass,"swap_rows",matrix_swap_rws,                2)
-    internal.lc_add_internal(MatrixClass,"swap_cols",matrix_swap_cls,                2)
 
 end

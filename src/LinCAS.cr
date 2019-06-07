@@ -46,12 +46,6 @@ module LinCAS
     alias Num  = Intnum  | Floatnum
     alias NumR = IntnumR | Floatnum
 
-    def self.lc_initialize
-        Python.Py_Initialize
-    end
-
-    lc_initialize
-
 end
 
 require "./Listeners"
@@ -77,7 +71,7 @@ require "./Intermediate/IntermediateFactory"
 require "./Intermediate/Bytecode"
 require "./Internal/MethodWrapper"
 require "./Backend/Compiler"
-require "./Internal/LcInternal"
+require "./Prelude"
 require "./Backend/VM"
 require "../util/AstPrinter"
 require "../util/Disassembler"
@@ -121,9 +115,9 @@ if dir
         at_exit do
             if Python.Py_IsInitialized
                 Internal.lc_finalize
-                Python.Py_Finalize 
             end
         end
+        Internal.lc_initialize
         parser = FFactory.makeParser(File.expand_path(dir))
         parser.noSummary # TODO: improving parsing time computation
         if tk_display

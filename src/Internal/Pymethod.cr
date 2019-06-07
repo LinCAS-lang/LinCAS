@@ -38,7 +38,7 @@ module LinCAS::Internal
         return -1
     end
 
-    private def self.prepare_pycall_args(argv : An,static = false)
+    private def self.prepare_pycall_args(argv : Ary,static = false)
         sub     = static ? 1 : 0
         argc    = argv.size
         pytuple = new_pytuple(argc-sub)
@@ -53,7 +53,7 @@ module LinCAS::Internal
         return pytuple
     end
 
-    def self.lc_call_python(method : LcMethod, argv : Array(Value))
+    def self.lc_call_python(method : LcMethod, argv : Ary)
         pym    = lc_cast(method.pyobj,PyObject) 
         lc_bug("Python method not set") if pym.null?
         if method.static
@@ -69,7 +69,7 @@ module LinCAS::Internal
         return pyobj2lc(result)
     end
 
-    def self.lc_seek_instance_pymethod(obj : Value, name : String)
+    def self.lc_seek_instance_pymethod(obj :  LcVal, name : String)
         lc_bug("Expected LcPyObject (#{obj.class} received)") unless obj.is_a? LcPyObject
         pyobj  = pyobj_get_obj(obj)
         method = pyobj_attr(pyobj,name)
@@ -95,7 +95,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.define_pymethod(method : Value,func : Proc, _self_ : PyObject, flags : LibC::Int)
+    def self.define_pymethod(method :  LcVal,func : Proc, _self_ : PyObject, flags : LibC::Int)
         if (pym_def = method_pym_def(method)).null?
             pym_def = new_pymethod_def(lc_cast(method,Method).method.name, func.pointer, flags)
             set_method_pym_def(method,pym_def)

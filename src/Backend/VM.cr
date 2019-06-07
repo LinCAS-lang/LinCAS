@@ -23,24 +23,16 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     private struct ObjectWrapper
-        def initialize(@object : Value)
+        def initialize(@object :  LcVal)
         end
         getter object
-    end
-
-    macro wrap_object(object)
-        ObjectWrapper.new({{object}})
-    end
-
-    macro unwrap_object(object)
-        {{object}}.as(ObjectWrapper).object 
     end
 
     private class VMerror < Exception        
     end
 
     private class ErrorHandler
-        @error : Value? = nil 
+        @error :  LcVal? = nil 
         @ex_h  = 0
         getter error 
 
@@ -60,7 +52,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
 
         @[AlwaysInline]
-        def handle_error(error : Value?)
+        def handle_error(error :  LcVal?)
             @error = error 
         end
     end
@@ -73,7 +65,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
        MAIN_SCP 
     end
 
-    class Scope < Hash(String,Value)
+    class Scope < Hash(String, LcVal)
 
         def initialize(@type : SCPType)
             super()
@@ -81,12 +73,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
         @previous : Scope?   = nil
         @lcblock  : LcBlock? = nil 
-        @ans      : Value    = Null
+        @ans      :  LcVal    = Null
 
         property previous, lcblock, ans
         getter type
 
-        def set_var(name : String, object : Value)
+        def set_var(name : String, object :  LcVal)
             self[name] = object 
         end 
 
@@ -112,7 +104,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @last_is : Bytecode?   = nil
         @handled_ret           = false
         
-        def initialize(@me : Value,@context : Structure,@argc : IntnumR,@type : FrameType)  
+        def initialize(@me :  LcVal,@context : Structure,@argc : IntnumR,@type : FrameType)  
         end
 
         property fp,argc,pc,scp,me,context,catch_t,type,last_is, handled_ret
@@ -130,14 +122,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         property file,line
     end
 
-    alias StackValue  = ObjectWrapper | Scope | Symbolic
-
     ErrHandler  = ErrorHandler.new 
     CallTracker = VMcall_tracker.new
-
-    W_true      = ObjectWrapper.new(LcTrue)
-    W_false     = ObjectWrapper.new(LcFalse)
-    W_null      = ObjectWrapper.new(Null)
 
     macro current_scope
         current_frame.scp
@@ -165,10 +151,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     macro call_internal_3(method,args)
         {{method}}.call({{args}}[0],{{args}}[1],{{args}}[2],{{args}}[3])
-    end
-
-    macro call_internal_n(method,args)
-        {{method}}.call(args)
     end
 
     macro call_usr(method,argc)
@@ -240,7 +222,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    private def class_of(obj : Value)
+    private def class_of(obj :  LcVal)
         if obj.is_a? Structure 
             #if internal.struct_type(obj.as(Structure),SType::CLASS)
             #    return obj.klass 
@@ -263,13 +245,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
             when 3
                 return call_internal_3(method,args)
             else
-                return call_internal_n(method,args)
+                return call_internal_1(method,args)
         end
     end
 
     @to_replace : Bytecode?
     def initialize
-        @stack   = [] of StackValue
+        @stack   = Ary[]
         @framev  = [] of LcFrame
         @sp      = 0                          # stack pointer
         @vm_fp   = 0                          # frame pointer
@@ -291,21 +273,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_print_stack
-        print '['
-        (0...@sp).each do |i|
-            element = @stack[i]
-            if element.is_a? ObjectWrapper
-                print "Object"
-            elsif element.is_a? Bytecode
-                print "pc"
-            elsif element.is_a? Scope
-                print "data"
-            else
-                print element
-            end 
-            print ',' if i < @sp - 1
-        end
-        puts ']'
+        puts @stack.shared_copy(0,@sp)
     end
 
     @[AlwaysInline]
@@ -318,7 +286,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def push(object : StackValue)
+    protected def push(object :  LcVal)
         if ensured_stack_space? 1
             if @sp >= @stack.size
                 @stack.push(object)
@@ -327,6 +295,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             end  
             @sp += 1
         end
+        # vm_print_stack
     end
 
     @[AlwaysInline]
@@ -344,7 +313,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def new_frame(self_ref : Value, context : Structure,argc : Int32,type : FrameType)
+    protected def new_frame(self_ref :  LcVal, context : Structure,argc : IntnumR,type : FrameType)
         if @vm_fp >= @framev.size
             return LcFrame.new(self_ref,context,argc,type)
         else 
@@ -360,30 +329,28 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
+    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
         scp.previous = current_scope
-        push(scp)
         fm.scp = scp
         push_frame(fm)
     end
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref : Value, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
+    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
         scp.previous = scpr
-        push(scp)
         fm.scp = scp
         push_frame(fm)
     end
 
     protected def push_shared_frame
         fm      = current_frame
-        tmp     = new_frame(fm.me.as(Value),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
+        tmp     = new_frame(fm.me.as( LcVal),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
         tmp.pc  = fm.pc 
         tmp.fp  = fm.fp
         tmp.scp = fm.scp
@@ -445,7 +412,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    def vm_set_ans(obj : Value)
+    def vm_set_ans(obj :  LcVal)
         current_frame.scp.ans = obj 
     end
 
@@ -456,17 +423,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
         fm.pc  = bytecode
         scp    = Scope.new(SCPType::MAIN_SCP)
         fm.scp = scp
-        push(scp)
         push_frame(fm)
         vm_run_bytecode
-    end
-
-    def opt_unwrap(obj)
-        if obj.is_a? Symbolic 
-            return obj 
-        else
-            return unwrap_object(obj)
-        end
     end
 
     protected def vm_run_bytecode
@@ -485,24 +443,24 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::QUIT
                     return Null 
                 when Code::PUSHN
-                    push(W_null)
+                    push(Null)
                 when Code::PUSHT
-                    push(W_true)
+                    push(LcTrue)
                 when Code::PUSHF
-                    push(W_false)
+                    push(LcFalse)
                 when Code::PUSHSELF
-                    push(wrap_object(current_frame.me))
+                    push(current_frame.me)
                 when Code::PUSHINT
                     int = internal.num2int(is.value.as(Intnum))
-                    push(wrap_object(int))
+                    push(int)
                 when Code::PUSHFLO
                     flo = internal.num2float(is.value.as(Floatnum))
-                    push(wrap_object(flo))
+                    push(flo)
                 when Code::PUSHSTR
                     str = internal.build_string(is.text)
-                    push(wrap_object(str))
+                    push(str)
                 when Code::POPOBJ
-                    obj = unwrap_object(pop)
+                    obj = pop
                     context = current_frame.scp 
                     context.ans = obj
                 when Code::CALL
@@ -520,7 +478,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                             puts "Handling return"
                         {% end %}
                         @handle_ret = false
-                        return unwrap_object(pop)
+                        return pop
                     end
                 when Code::NEXT
                     vm_next
@@ -529,7 +487,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
                             puts "Handling next"
                         {% end %}
                         @handle_ret = false
-                        return unwrap_object(pop)
+                        return pop
                     end
                 when Code::STOREL
                     vm_store_local(is.text,is.value.as(Intnum))
@@ -597,10 +555,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
                 when Code::JUMPT
                     vm_jumpt(is.jump.as(Bytecode))
                 when Code::EQ_CMP
-                    obj1 = unwrap_object(pop)
-                    obj2 = unwrap_object(pop)
+                    obj1 = pop
+                    obj2 = pop
                     res = internal.lc_obj_match(obj2,obj1)
-                    push(wrap_object(res))
+                    push(res)
                 when Code::SET_C_T
                     catch_t               = is.catch_t.as(CatchTable)
                     current_frame.catch_t = catch_t
@@ -618,48 +576,54 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     vm_store_c(is.text)
                 when Code::PUSHANS 
                     ans = current_frame.scp.ans
-                    push(wrap_object(ans))
+                    push(ans)
                 when Code::HASH_NEW
                     vm_hash_new(is.argc)
                 when Code::SYMBOL_NEW 
-                    obj = wrap_object(internal.build_symbol(is.text))
+                    obj = internal.build_symbol(is.text)
                     push(obj)
                 when Code::NEW_SVAR
-                    push(Internal::Variable.new(is.text))
+                    v = Internal::Variable.new(is.text)
+                    push(internal.build_fake_fun(v))
                 when Code::NEW_SNUM
-                    push(Internal::Snumber.new(is.value.as(IntnumR)))
+                    n = Internal::Snumber.new(is.value.as(IntnumR))
+                    push(internal.build_fake_fun(n))
                 when Code::S_SUM
-                    right = opt_unwrap(pop)
-                    left  = opt_unwrap(pop)
-                    push(internal.s_sum(left,right))
+                    right = pop
+                    left  = pop
+                    s     = internal.s_sum(left,right)
+                    push(internal.build_fake_fun(s))
                 when Code::S_SUB
-                    right = opt_unwrap(pop)
-                    left  = opt_unwrap(pop)
-                    push(internal.s_sub(left,right))
+                    right = pop
+                    left  = pop
+                    s     = internal.s_sub(left,right)
+                    push(internal.build_fake_fun(s))
                 when Code::S_PROD
-                    right = opt_unwrap(pop)
-                    left  = opt_unwrap(pop)
-                    push(internal.s_prod(left,right))
+                    right = pop
+                    left  = pop
+                    s     = internal.s_prod(left,right)
+                    push(internal.build_fake_fun(s))
                 when Code::S_DIV
-                    right = opt_unwrap(pop)
-                    left  = opt_unwrap(pop)
-                    push(internal.s_div(left,right))
+                    right = pop
+                    left  = pop
+                    s     = internal.s_div(left,right)
+                    push(internal.build_fake_fun(s))
                 when Code::S_POW
-                    right = opt_unwrap(pop)
-                    left  = opt_unwrap(pop)
-                    push(internal.s_power(left,right))
+                    right = pop
+                    left  = pop
+                    s     = internal.s_power(left,right) 
+                    push(internal.build_fake_fun(s))
                 when Code::S_INVERT
-                    obj = opt_unwrap(pop)
-                    push(internal.s_invert(obj))
+                    obj = pop
+                    s   = internal.s_invert(obj)
+                    push(internal.build_fake_fun(s))
                 when Code::NEW_FUNC
                     tmp = pop
-                    if tmp.is_a? Symbolic
-                        tmp = wrap_object(internal.build_function(tmp))
-                    end
+                    tmp = internal.build_function(tmp) if tmp.is_a? Internal::FakeFun
                     push(tmp)
             end
             if ErrHandler.handled_error?
-                vm_handle_error(ErrHandler.error.as(Value))
+                vm_handle_error(ErrHandler.error.as( LcVal))
             end
             if @quit
                 @quit = false
@@ -693,20 +657,29 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def vm_arity_check(argc1 : Intnum, argc2 : Intnum)
-        if !(argc1 >= argc2)
-            lc_raise(LcArgumentError,convert(:few_args) % {argc1,argc2})
+        if !(argc1.abs >= argc2)
+            lc_raise(LcArgumentError,convert(:few_args) % {argc1.abs,argc2})
             return false 
         end 
         return true
     end
 
     @[AlwaysInline]
-    protected def vm_get_args(argc)
-        argv = [] of Value
+    protected def vm_get_args(argc, self_only = false)
+        argv = StaticArray( LcVal,4).new(Null)
+        j    = -1
         (argc + 1).downto 1 do |i|
-            argv << unwrap_object(@stack[@sp - 1 - i])
+            {% if flag?(:vm_debug) %}
+                puts "getting arg at #{@sp - i} (stack level: #{@sp})"
+            {% end %}
+            argv[j += 1] = @stack[@sp - i]
+            break if self_only
         end
         return argv
+    end
+
+    protected def vm_get_py_args(argc)
+        return @stack.shared_copy(@sp - argc, argc)
     end
 
     @[AlwaysInline]
@@ -759,7 +732,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def fetch_call_method(receiver : Value, name : String)
+    protected def fetch_call_method(receiver :  LcVal, name : String)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -768,7 +741,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def fetch_method(receiver : Value, name : String)
+    protected def fetch_method(receiver :  LcVal, name : String)
         if receiver.is_a? Structure
             return vm_fetch_static_method(receiver,name)
         else
@@ -778,27 +751,34 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def vm_get_receiver(argc)
-        return unwrap_object(@stack[@sp - argc - 1])
+        tmp = @stack[@sp - argc - 1]
+        return tmp
     end
 
     @[AlwaysInline]
     protected def vm_call_method(method : LcMethod,argc : Intnum)
-        return nil unless vm_arity_check(argc,method.arity)
+        m_arity = method.arity
+        return nil unless vm_arity_check(argc,m_arity)
         case method.type
             when  LcMethodT::INTERNAL
                 @internal = true
-                argv  = vm_get_args(argc)
-                value = internal_call(method.code.as(LcProc),argv,method.arity)
-                push(wrap_object(value.as(Value)))
+                if m_arity < 0
+                    argv    = vm_get_args(argc,true)
+                    argv[1] = @stack.shared_copy(@sp - argc,argc).as( LcVal)
+                else
+                    argv  = vm_get_args(argc)
+                end
+                value = internal_call(method.code.as(LcProc),argv,m_arity)
+                push(value.as( LcVal))
                 vm_return_internal
             when LcMethodT::USER
                 @internal = false
                 call_usr(method,argc)
             when LcMethodT::PYTHON
                 @internal = true
-                argv  = vm_get_args(argc)
+                argv  = vm_get_py_args(argc)
                 value = call_python(method,argv)
-                push(wrap_object(value.as(Value)))
+                push(value.as( LcVal))
                 vm_return_internal
             else
                 lc_bug("Invalid method type received")
@@ -880,7 +860,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     private def get_arg(n)
         argc = current_frame.argc
         if argc > n && argc > 0
-            return @stack[@sp - argc - 1 + n]
+            return @stack[@sp - argc + n]
         else
             return nil
         end
@@ -891,7 +871,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         args.arg.each do |name|
             value = get_arg(count)
             if value
-                store_local(name,unwrap_object(value))
+                store_local(name,value)
             elsif
                 lc_raise(LcArgumentError,convert(:few_args) % {count,argc})
                 return nil
@@ -902,7 +882,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
             value = get_arg(count)
             name  = arg.name
             if value
-                store_local(name,unwrap_object(value))
+                store_local(name,value)
             else
                 pc  = current_frame.pc 
                 current_frame.pc = arg.optcode
@@ -922,7 +902,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return true
     end
 
-    protected def store_local(name : String,value : Value)
+    protected def store_local(name : String,value :  LcVal)
         scp = current_scope
         scp.set_var(name,value)
     end
@@ -932,21 +912,21 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_store_local_0(name : String)
         value = pop
         scp   = current_scope
-        scp.set_var(name,unwrap_object(value))
+        scp.set_var(name,value)
         push(value)
     end
 
     protected def vm_store_local_1(name : String)
         value = pop
         scp   = current_scope.previous.as(Scope)
-        scp.set_var(name,unwrap_object(value))
+        scp.set_var(name,value)
         push(value)
     end
 
     protected def vm_store_local_2(name : String)
         value = pop
         scp   = current_scope.previous.as(Scope).previous.as(Scope)
-        scp.set_var(name,unwrap_object(value))
+        scp.set_var(name,value)
         push(value)
     end
 
@@ -956,20 +936,28 @@ class LinCAS::VM < LinCAS::MsgGenerator
         depth.times do |i|
             scp = scp.previous.as(Scope)
         end
-        scp.set_var(name,unwrap_object(value))
+        scp.set_var(name,value)
         push(value)
     end
 
     protected def vm_store_g(name : String)
-        value    = unwrap_object(pop)
-        receiver = unwrap_object(pop)
-        receiver.data.addVar(name,value)
-        push(wrap_object(value))
+        value    = pop
+        receiver = pop
+        if !has_flag receiver,FAKE
+            if !has_flag receiver,FROZEN
+                receiver.data.addVar(name,value)
+            else 
+                lc_raise(LcFrozenError,"Can't modify frozen #{class_of(receiver).name}")
+            end
+        else
+            lc_bug("Fake object for STORE_G instruction")
+        end
+        push(value)
     end
 
     protected def vm_store_c(name : String)
-        value = unwrap_object(pop)
-        obj   = unwrap_object(pop)
+        value = pop
+        obj   = pop
         klass = class_of(obj)
         const = internal.lc_seek_const(klass,name)
         if const 
@@ -977,7 +965,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         else
             internal.lc_define_const(klass,name,value)
         end
-        push(wrap_object(obj))
+        push(obj)
     end
 
 # load 
@@ -986,15 +974,15 @@ class LinCAS::VM < LinCAS::MsgGenerator
         scp   = current_scope
         value = scp.get_var(name)
         if value 
-            push(wrap_object(value))
+            push(value)
         else 
             klass = class_of(current_frame.me)
             const = internal.lc_seek_const(klass,name)
             if const
-                push(wrap_object(const.as(Value)))
+                push(const.as( LcVal))
             else
                 lc_raise_1(LcNameError,convert(:undefined_id) % {name,klass.path.to_s})
-                push(W_null)
+                push(Null)
             end
         end 
     end
@@ -1006,10 +994,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
         value = scp.get_var(name)
         if value 
-            push(wrap_object(value))
+            push(value)
         else 
             lc_raise_1(LcNameError,convert(:undef_var) % name)
-            push(W_null)
+            push(Null)
         end
     end
 
@@ -1017,10 +1005,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         scp   = current_scope
         value = scp.get_var(name)
         if value 
-            push(wrap_object(value))
+            push(value)
         else 
             lc_raise_1(LcNameError,convert(:undef_var) % name)
-            push(W_null)
+            push(Null)
         end
     end
 
@@ -1028,10 +1016,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         scp   = current_scope.previous.as(Scope)
         value = scp.get_var(name)
         if value 
-            push(wrap_object(value))
+            push(value)
         else 
             lc_raise_1(LcNameError,convert(:undef_var) % name)
-            push(W_null)
+            push(Null)
         end
     end
 
@@ -1039,15 +1027,15 @@ class LinCAS::VM < LinCAS::MsgGenerator
         scp   = current_scope.previous.as(Scope).previous.as(Scope)
         value = scp.get_var(name)
         if value 
-            push(wrap_object(value))
+            push(value)
         else 
             lc_raise_1(LcNameError,convert(:undef_var) % name)
-            push(W_null)
+            push(Null)
         end
     end
 
     protected def vm_load_c(name : String)
-        selfr = unwrap_object(pop)
+        selfr = pop
         if !(selfr.is_a? Structure)
             klass = class_of(selfr)
         else
@@ -1055,45 +1043,45 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
         const = internal.lc_seek_const(klass,name)
         if const
-            push(wrap_object(const))
+            push(const)
         else
             path = klass.path
             lc_raise_1(LcNameError,convert(:undef_const_2) % {name,path.empty? ? klass.name : path.to_s})
-            push(W_null)
+            push(Null)
         end
     end
 
     protected def vm_load_g(name : String)
-        obj   = unwrap_object(pop)
+        obj   = pop
         value = obj.data.getVar(name)
         if value
-            push(wrap_object(value))
+            push(value)
         else 
-            push(W_null)
+            push(Null)
         end
     end
 
 
     protected def vm_get_c(name : String)
-        prev = unwrap_object(pop)
+        prev = pop
         if !(prev.is_a? Structure)
             lc_raise_1(LcNameError,convert(:not_a_struct) % name)
-            push(W_null)
+            push(Null)
             return nil
         end
         prev = prev.as(Structure)
         const = internal.lc_seek_const(prev,name)
         if const 
-            push(wrap_object(const.as(Value)))
+            push(const.as( LcVal))
         else
             lc_raise_1(LcNameError,convert(:undef_const_2) % {name,prev.path.to_s})
-            push(W_null)
+            push(Null)
         end
     end
 
     protected def vm_put_class(name : String,bytecode : Bytecode)
-       parent  = unwrap_object(pop) 
-       obj     = unwrap_object(pop)
+       parent  = pop 
+       obj     = pop
        p_scope = class_of(obj)
        klass   = vm_create_class(name,parent,p_scope)
        if klass
@@ -1103,10 +1091,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
        end
     end
 
-    protected def vm_create_class(name : String,parent : Value,scope : Structure)
+    protected def vm_create_class(name : String,parent :  LcVal,scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
-            if p_def.flags & ObjectFlags::FROZEN != ObjectFlags::NONE
+            if has_flag p_def, FROZEN
                 lc_raise_1(LcFrozenError,convert(:frozen_class))
                 return nil 
             end 
@@ -1124,17 +1112,17 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    protected def vm_set_parent(klass : LcClass,parent : Value)
+    protected def vm_set_parent(klass : LcClass,parent :  LcVal)
         if !(parent.is_a? Structure) && parent != Null
             lc_raise_1(LcTypeError,convert(:no_parent) % internal.lc_typeof(parent))
-            push(wrap_object(klass))
+            push(klass)
             return nil
         end 
         if klass.parent && parent != Null 
             lc_raise_1(LcTypeError,convert(:superclass_err) % klass.name)
             return nil
         elsif !(klass.parent) && parent == Null 
-            internal.lc_set_parent_class(klass,Internal::Obj)
+            internal.lc_set_parent_class(klass,internal.lc_object)
             return true
         end
         return true if parent == Null
@@ -1143,7 +1131,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_put_module(name : String, bytecode : Bytecode)
-        obj     = unwrap_object(pop)
+        obj     = pop
         p_scope = class_of(obj)
         mod     = vm_create_module(name,p_scope)
         if mod 
@@ -1156,7 +1144,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_create_module(name : String, scope : Structure)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcModule
-            if p_def.flags & ObjectFlags::FROZEN != ObjectFlags::NONE
+            if has_flag p_def, FROZEN
                 lc_raise_1(LcFrozenError,convert(:frozen_module))
                 return nil 
             end 
@@ -1237,7 +1225,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_put_static_method(name : String,method : LcMethod)
         object       = pop
-        klass        = class_of(unwrap_object(object))
+        klass        = class_of(object)
         method.owner = klass
         klass.statics.addEntry(name,method)
         push(object)
@@ -1245,7 +1233,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_put_instance_method(name : String,method : LcMethod)
         object       = pop
-        klass        = class_of(unwrap_object(object))
+        klass        = class_of(object)
         method.owner = klass
         klass.methods.addEntry(name,method)
         push(object)
@@ -1255,18 +1243,18 @@ class LinCAS::VM < LinCAS::MsgGenerator
         ary = internal.new_ary 
         i   = 0
         while i < size 
-            obj = unwrap_object(pop)
+            obj = pop
             internal.lc_ary_push(ary,obj)
             i += 1
         end 
-        push(wrap_object(ary))
+        push(ary)
     end
 
     protected def vm_range_new(inclusive)
-        right = unwrap_object(pop)
-        left  = unwrap_object(pop)
+        right = pop
+        left  = pop
         range = internal.build_range(left,right,inclusive)
-        push(wrap_object(range))
+        push(range)
     end
 
     protected def vm_mx_new(rws : Intnum, cls : Intnum)
@@ -1275,42 +1263,41 @@ class LinCAS::VM < LinCAS::MsgGenerator
         mx = internal.build_matrix(rws,cls)
         while i < rws 
             while j < cls 
-                value = unwrap_object(pop)
+                value = pop
                 internal.lc_set_matrix_index(mx,i,j,value)
                 j += 1
             end 
             i += 1 
             j  = 0
         end
-        push(wrap_object(mx))
+        push(mx)
     end
 
     protected def vm_hash_new(size : IntnumR)
         hash = internal.build_hash
         size.times do
-            value = unwrap_object(pop)
-            key   = unwrap_object(pop)
+            value = pop
+            key   = pop
             internal.lc_hash_set_index(hash,key,value)
         end
-        push(wrap_object(hash))
+        push(hash)
     end
 
     protected def vm_new_obj
         CallTracker.push_track(filename,line,"new")
-        klass = unwrap_object(pop)
+        klass = pop
         if !(klass.is_a? LcClass)
             lc_raise(LcTypeError,"Argument of new must be a class (#{internal.lc_typeof(klass)} given)")
             return nil 
         end
         obj   = internal.lc_new_object(klass)
-        push(wrap_object(obj))
+        push(obj)
         CallTracker.pop_track
     end
 
     protected def vm_opt_call_init(argc : Intnum,block : LcBlock? = nil)
         init = "init"
-        obj  = @stack[@sp - argc - 1].as(ObjectWrapper)
-        obj  = unwrap_object(obj)
+        obj  = vm_get_receiver(argc)
         if internal.lc_obj_responds_to?(obj,init)
             if block
                 vm_m_call_with_block(init,argc,block)
@@ -1321,7 +1308,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_jumpf(code : Bytecode)
-        obj = unwrap_object(pop)
+        obj = pop
         if !test(obj)
             fm    = current_frame
             fm.pc = code 
@@ -1329,7 +1316,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_jumpt(code : Bytecode)
-        obj = unwrap_object(pop)
+        obj = pop
         if test(obj)
             fm    = current_frame
             fm.pc = code 
@@ -1366,7 +1353,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         ErrHandler.handle_error(error)
     end
 
-    def lc_raise(error : Value)
+    def lc_raise(error :  LcVal)
         error = error.as(LcError)
         error.backtrace = CallTracker.get_backtrace
         ErrHandler.handle_error(error)
@@ -1376,46 +1363,46 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return vm_get_block
     end
 
-    def lc_yield(*args : Value)
+    def lc_yield(*args :  LcVal)
         vm_push_args(args)
         if block_given?
             vm_call_block(args.size)
             set_handle_ret_flag
-            return vm_run_bytecode.as(Value)
+            return vm_run_bytecode.as( LcVal)
         else 
             lc_raise(LcArgumentError,convert(:no_block))
         end
     end
 
-    def lc_call_fun(receiver : Value, method : String, *args)
-        push(wrap_object(receiver))
+    def lc_call_fun(receiver :  LcVal, method : String, *args)
+        push(receiver)
         vm_push_args(args)
         vm_m_call(method,args.size)
         if @internal
-            return unwrap_object(pop)
+            return pop
         else
             set_handle_ret_flag
             return vm_run_bytecode
         end
     end
 
-    def call_method(method : Internal::Method, argv : An)
+    def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
         m    = method.method
         rec  = method.receiver
-        push(wrap_object(rec))
+        push(rec)
         vm_push_args(argv)
         CallTracker.push_track(filename,line,m.name)
         vm_push_new_frame(rec,m.owner.as(Structure),argv.size)
         vm_call_method(m,m.arity)
         if @internal
-            return unwrap_object(pop)
+            return pop
         else
             set_handle_ret_flag
             return vm_run_bytecode
         end
     end
 
-    def call_proc(proc : Internal::LCProc, argv : An)
+    def call_proc(proc : Internal::LCProc, argv : Ary)
         vm_push_args(argv)
         _self = proc.me 
         args  = proc.args
@@ -1432,7 +1419,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_push_args(args)
         args.each do |arg|
-            push(wrap_object(arg))
+            push(arg)
         end 
     end
 
@@ -1454,7 +1441,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         return catch_t
     end
 
-    protected def vm_handle_error(error : Value)
+    protected def vm_handle_error(error :  LcVal)
         if ErrHandler.exception_handler?
             catch_t = get_catch_t
             name    = catch_t.var_name

@@ -5,25 +5,32 @@ module LinCAS
         # @size
         # @ptr
 
-        def self.[]()
+        def size
+            if @size.is_a? BigInt
+                raise Exception.new("(Ary index is a BigInt)")
+            end
+            return @size.as(IntnumR)
+        end
+
+        def self.[]() : Ary
             _self_ = Internal.new_ary_wrapper
             Internal.lc_ary_init(_self_,Internal.build_fake_int(3))
             _self_.size = 0
             return _self_
         end
 
-        def self.new(size : IntnumR)
+        def self.new(size : IntnumR) : Ary
             _self_ = Internal.new_ary_wrapper
             Internal.lc_ary_init(_self_,Internal.build_fake_int(size))
             return _self_
         end
 
-        def push(val : Value)
+        def push(val :  LcVal)
             raise FrozenError.new("Attempted to modify frozen Ary") if frozen?
             Internal.lc_ary_push(self,val)
         end
 
-        def <<(val : Value)
+        def <<(val :  LcVal)
             push(val)
         end
 
@@ -32,9 +39,16 @@ module LinCAS
             Internal.lc_ary_pop(self)
         end
 
-        def [](index : IntnumR)
+        def [](index : Intnum)
             if index >= @size || index < 0
                 raise IndexError.new("index out of bounds (Ary)")
+            end
+            return @ptr[index]
+        end
+
+        def []?(index : Intnum)
+            if index >= @size || index < 0
+                return Null
             end
             return @ptr[index]
         end
@@ -52,7 +66,7 @@ module LinCAS
             end
         end
 
-        def []=(index : IntnumR, val : Value)
+        def []=(index : IntnumR, val :  LcVal)
             raise FrozenError.new("Attempted to modify frozen Ary") if frozen?
             if index < 0
                 raise IndexError.new("index out of bounds (Ary)")
@@ -69,6 +83,16 @@ module LinCAS
             copy.ptr  = @ptr + from
             copy.freeze
             return copy
+        end
+
+        def array_copy 
+            copy = [] of  LcVal 
+            each { |v| copy << v }
+            return copy
+        end
+
+        def shifted_copy
+            shared_copy 1,size - 1
         end
 
         def each
@@ -97,12 +121,16 @@ module LinCAS
         # end
 
         def to_s(io)
-            io << to_s
+            io << '['
+            each_with_index do |el,i|
+                io << el.klass.name
+                io << ',' unless i == size - 1
+            end
+            io << ']'
         end
 
         def to_s
-            str = Internal.lc_ary_to_s(self)
-            return Internal.string2cr(str)
+            String.build { |io| to_s(io) }
         end
 
         def freeze
@@ -115,6 +143,10 @@ module LinCAS
 
         def frozen?
             @frozen
+        end
+
+        def empty?
+            size == 0
         end
 
     end    

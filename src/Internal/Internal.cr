@@ -19,6 +19,53 @@ module LinCAS::Internal
         module ::LinCAS
             {{exp}}
         end
+    end 
+
+    macro wrap(name,argc)
+        LcProc.new do |args|
+            next {{name.id}}(*args.as(T{{argc.id}}))
+        end
+    end
+
+    macro add_method(klass,name,f_name,argc)
+        lc_add_internal(
+            {{klass}},
+            {{name}},
+            LcProc.new do |args|
+                {% if argc >= 0 %}
+                    {{ tmp = argc + 1}}
+                    {{f_name}}(*args.as(T{{tmp}}))
+                {% else %}
+                    {{f_name}}(*args.as(T2))
+                {% end %}
+            end,
+            {{argc}}
+        )
+    end
+
+    macro add_static_method(klass,name,f_name,argc)
+        lc_add_static(
+            {{klass}},
+            {{name}},
+            LcProc.new do |args|
+                {% if argc >= 0 %}
+                    {% tmp = argc + 1%}
+                    {{f_name}}(*args.as(T{{tmp}}))
+                {% else %}
+                    {{f_name}}(*args.as(T2))
+                {% end %}
+            end,
+            {{argc}}
+        )
+    end
+
+    macro define_allocator(klass, f_name)
+        lc_set_allocator(
+            {{klass}},
+            LcProc.new do |args|
+                {{f_name}}(*args.as(T1))
+            end
+        )
     end
 
     global(
@@ -48,8 +95,8 @@ module LinCAS::Internal
         property klass, data, id, flags
     end
 
-    global alias Value  = Internal::BaseS | Internal::BaseC | Structure
-    global alias ValueR = Internal::BaseS | Internal::BaseC
+    global alias  LcVal  = Internal::BaseS | Internal::BaseC | Structure
+    global alias  LcValR = Internal::BaseS | Internal::BaseC
     
     macro internal 
         self 
@@ -87,15 +134,29 @@ module LinCAS::Internal
         Exec.get_current_call_line
     end
 
-    def self.test(object : Value)
+    def self.lincas_obj_alloc_fake(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
+        tmp = lincas_obj_alloc(type,klass,*args,**opt)
+        set_flag tmp, FAKE
+        return tmp
+    end
+
+    def self.lincas_obj_alloc(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
+        tmp       = type.new(*args)
+        tmp.klass = klass
+        if id = opt[:id]?
+            tmp.id = id.as(UInt64) 
+        end
+        if data = opt[:data]?
+            tmp.data = data 
+        end
+        return tmp
+    end
+
+    def self.test(object :  LcVal)
         if object == Null || object == LcFalse
             return false 
         end 
         return true 
-    end
-
-    def self.lc_finalize
-        PyGC.clear_all
     end
 
     @[AlwaysInline]
@@ -103,7 +164,7 @@ module LinCAS::Internal
         klass.type == type
     end
 
-    def self.coerce(v1 : Value, v2 : Value)
+    def self.coerce(v1 :  LcVal, v2 :  LcVal)
         if internal.lc_obj_responds_to? v2,"coerce"
             return Exec.lc_call_fun(v2,"coerce",v1)
         else 
@@ -112,7 +173,7 @@ module LinCAS::Internal
         end 
     end 
 
-    def self.lc_typeof(v : Value)
+    def self.lc_typeof(v :  LcVal)
         if v.is_a? Structure 
             if struct_type(v,SType::MODULE)
                 return "#{v.as(LcModule).name} : Module"
@@ -120,7 +181,7 @@ module LinCAS::Internal
                 return "#{v.as(LcClass).name} : Class"
             end 
         else 
-            return v.as(ValueR).klass.name
+            return v.as( LcValR).klass.name
         end 
         # Should never get here
         ""
@@ -139,6 +200,11 @@ module LinCAS::Internal
             return HybridSymT.new(symTab.sym_tab,symTab.pyObj)
         end
         return SymTab.new(symTab.sym_tab)
+    end
+
+    def self.init_lazy_const(const : LcVal*,klass : LcClass)
+        const.value.klass = klass 
+        const.value.data  = klass.data.clone
     end
 
 

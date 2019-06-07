@@ -16,6 +16,8 @@
 module LinCAS
     
     module Internal
+
+        @@err_dict = uninitialized Hash(ErrType,LcClass)
         
         enum ErrType
             TypeError
@@ -73,26 +75,24 @@ module LinCAS
 
         def self.build_error(error : ErrType,body : String, backtrace : String)
             body  = String.build { |io| io << error << ':' << ' ' << body}
-            klass = ErrDict[error]
+            klass = @@err_dict[error]
             err   = lc_err_new(klass).as(LcError)
             err.body      = body 
             err.backtrace = backtrace
-            return err.as(Value)
+            return err.as( LcVal)
         end
 
-        def self.lc_err_new(klass : Value)
-            klass     = klass.as(LcClass)
-            err       = LcError.new 
-            err.klass = klass 
-            err.data  = klass.data.clone
-            return err.as(Value)
+        def self.lc_err_new(klass :  LcVal)
+            klass = klass.as(LcClass)
+            err   = lincas_obj_alloc LcError, klass, data: klass.data.clone
+            return err.as( LcVal)
         end
 
-        err_allocator = LcProc.new do |args|
-            next internal.lc_err_new(*args.as(T1))
+        def self.lc_err_allocate(klass : LcVal)
+            return lc_err_new(klass)
         end
 
-        def self.lc_err_init(err : Value, body : Value)
+        def self.lc_err_init(err :  LcVal, body :  LcVal)
             body = string2cr(body)
             return Null unless body
             err = err.as(LcError)
@@ -102,44 +102,22 @@ module LinCAS
             Null
         end
 
-        err_init = LcProc.new do |args|
-            next internal.lc_err_init(*args.as(T2))
-        end
-
-        def self.lc_err_msg(err : Value)
+        def self.lc_err_msg(err :  LcVal)
             return internal.build_string(err.as(LcError).body)
         end
 
-        err_msg = LcProc.new do |args|
-            next internal.lc_err_msg(*args.as(T1))
-        end
-
-        def self.lc_err_backtrace(err : Value)
+        def self.lc_err_backtrace(err :  LcVal)
             return internal.build_string(err.as(LcError).backtrace)
         end
 
-        err_backtrace = LcProc.new do |args|
-            next internal.lc_err_backtrace(*args.as(T1))
-        end
-
-        def self.lc_err_full_msg(err : Value)
+        def self.lc_err_full_msg(err :  LcVal)
             err = err.as(LcError)
             internal.build_string(String.build do |io|
                 io << err.body << err.backtrace
             end)
         end
 
-        err_full_msg = LcProc.new do |args|
-            next internal.lc_err_full_msg(*args.as(T1))
-        end
-
-        err_defrost = LcProc.new do |args|
-            err = args.as(T1)[0]
-            err.flags &= ~ObjectFlags::FROZEN
-            next err
-        end
-
-        def self.lc_raise_err(error : Value)
+        def self.lc_raise_err(unused,error :  LcVal)
             if error.is_a? LcString 
                 err = build_error(LcRuntimeError,String.new(error.as(LcString).str_ptr),"")
                 Exec.lc_raise(err)
@@ -152,79 +130,60 @@ module LinCAS
             Exec.lc_raise(error)
         end
 
-        raise_err = LcProc.new do |args|
-            lc_raise_err(args.as(T2)[1])
-            next Null
-        end
-
-        ErrClass = internal.lc_build_internal_class("Error")
-        internal.lc_set_allocator(ErrClass,err_allocator)
+        def self.init_error
+            @@lc_error = internal.lc_build_internal_class("Error")
+            define_allocator(@@lc_error,lc_err_allocate)
         
-        internal.lc_add_internal(ErrClass,"init",err_init,          1)
-        internal.lc_add_internal(ErrClass,"to_s",err_msg,           0)
-        internal.lc_add_internal(ErrClass,"message",err_msg,        0)
-        internal.lc_add_internal(ErrClass,"backtrace",err_backtrace,0)
-        internal.lc_add_internal(ErrClass,"full_msg",err_full_msg,  0)
-        internal.lc_add_internal(ErrClass,"defrost",err_defrost,    0)
+            add_method(@@lc_error,"init",lc_err_init,          1)
+            add_method(@@lc_error,"to_s",lc_err_msg,           0)
+            alias_method_str(@@lc_error,"to_s","message"           )
+            add_method(@@lc_error,"backtrace",lc_err_backtrace,0)
+            add_method(@@lc_error,"full_msg",lc_err_full_msg,  0)
+            add_method(@@lc_error,"defrost",lc_obj_defrost,    0)
 
 
-        lc_module_add_internal(LKernel,"raise",raise_err, 1)
+            lc_module_add_internal(@@lc_kernel,"raise",wrap(lc_raise_err,2), 1)
 
-        TypeErrClass = internal.lc_build_internal_class("TypeError",ErrClass)
+            @@lc_type_err    = lc_build_internal_class("TypeError",@@lc_error     )
+            @@lc_arg_err     = lc_build_internal_class("ArgumentError",@@lc_error )
+            @@lc_runtime_err = lc_build_internal_class("RuntimeError",@@lc_error  )
+            @@lc_name_err    = lc_build_internal_class("NameError",@@lc_error     )
+            @@lc_nomet_err   = lc_build_internal_class("NoMethodError",@@lc_error )
+            @@lc_frozen_err  = lc_build_internal_class("FrozenError",@@lc_error   )
+            @@lc_zerodiv_err = lc_build_internal_class("ZeroDivisionError",@@lc_error   )
+            @@lc_systemstack_err = lc_build_internal_class("SystemStackError",@@lc_error)
+            @@lc_index_err   = lc_build_internal_class("IndexError",@@lc_error    )
+            @@lc_math_err    = lc_build_internal_class("MathError",@@lc_error     )
+            @@lc_instance_err = lc_build_internal_class("InstanceError",@@lc_error)
+            @@lc_load_err    = lc_build_internal_class("LoadError",@@lc_error     )
+            @@lc_key_err     = lc_build_internal_class("KeyError",@@lc_error      )
+            @@lc_not_supp_err = lc_build_internal_class("NotSupportedError",@@lc_error)
+            @@lc_sintax_err  = lc_build_internal_class("SintaxError",@@lc_error   )
+            @@lc_pyexception = lc_build_internal_class("PyException",@@lc_error   )
+            @@lc_pyimport_err = lc_build_internal_class("PyImportError",@@lc_error)
+            @@lc_not_impl_err = lc_build_internal_class("NotImplementedError",@@lc_error)
 
-        ArgErrClass  = internal.lc_build_internal_class("ArgumentError",ErrClass)
-
-        RuntimeErrClass = internal.lc_build_internal_class("RuntimeError",ErrClass)
-
-        NameErrClass = internal.lc_build_internal_class("NameError",ErrClass)
-
-        NoMErrClass  = internal.lc_build_internal_class("NoMethodError",ErrClass)
-
-        FrozenErrClass = internal.lc_build_internal_class("FrozenError",ErrClass)
-
-        ZeroDivErrClass = internal.lc_build_internal_class("ZeroDivisionError",ErrClass)
-
-        SysStackErrClass = internal.lc_build_internal_class("SystemStackError",ErrClass)
-
-        IndexErrClass = internal.lc_build_internal_class("IndexError",ErrClass)
-
-        MathErr = internal.lc_build_internal_class("MathError",ErrClass)
-
-        InstanceErr = internal.lc_build_internal_class("InstanceError",ErrClass)
-
-        LoadErrClass = internal.lc_build_internal_class("LoadError",ErrClass)
-
-        KeyError = internal.lc_build_internal_class("KeyError",ErrClass)
-
-        NotSupportedError = internal.lc_build_internal_class("NotSupportedError",ErrClass)
-
-        SintaxErr = internal.lc_build_internal_class("SintaxError",ErrClass)
-
-        PyException = internal.lc_build_internal_class("PyException",ErrClass)
-
-        PyImportError = internal.lc_build_internal_class("PyImportError",ErrClass)
-        NotImplError  = internal.lc_build_internal_class("NotImplementedError",ErrClass)
-
-        ErrDict = {
-            ErrType::TypeError         => TypeErrClass,
-            ErrType::ArgumentError     => ArgErrClass,
-            ErrType::RuntimeError      => RuntimeErrClass,
-            ErrType::NameError         => NameErrClass,
-            ErrType::NoMethodError     => NoMErrClass,
-            ErrType::ZeroDivisionError => ZeroDivErrClass,
-            ErrType::SystemStackError  => SysStackErrClass,
-            ErrType::FrozenError       => FrozenErrClass,
-            ErrType::IndexError        => IndexErrClass,
-            ErrType::MathError         => MathErr,
-            ErrType::InstanceError     => InstanceErr,
-            ErrType::LoadError         => LoadErrClass,
-            ErrType::KeyError          => KeyError, 
-            ErrType::NotSupportedError => NotSupportedError,
-            ErrType::SintaxError       => SintaxErr,
-            ErrType::PyException       => PyException,
-            ErrType::PyImportError     => PyImportError,
-            ErrType::NotImplementedError => NotImplError
-        }
+            @@err_dict = {
+                ErrType::TypeError         => @@lc_type_err,
+                ErrType::ArgumentError     => @@lc_arg_err,
+                ErrType::RuntimeError      => @@lc_runtime_err,
+                ErrType::NameError         => @@lc_name_err,
+                ErrType::NoMethodError     => @@lc_nomet_err,
+                ErrType::ZeroDivisionError => @@lc_zerodiv_err,
+                ErrType::SystemStackError  => @@lc_systemstack_err,
+                ErrType::FrozenError       => @@lc_frozen_err,
+                ErrType::IndexError        => @@lc_index_err,
+                ErrType::MathError         => @@lc_math_err,
+                ErrType::InstanceError     => @@lc_instance_err,
+                ErrType::LoadError         => @@lc_load_err,
+                ErrType::KeyError          => @@lc_key_err, 
+                ErrType::NotSupportedError => @@lc_not_supp_err,
+                ErrType::SintaxError       => @@lc_sintax_err,
+                ErrType::PyException       => @@lc_pyexception,
+                ErrType::PyImportError     => @@lc_pyimport_err,
+                ErrType::NotImplementedError => @@lc_not_impl_err
+            }
+        end
 
 
         macro lc_raise(error_t,body)

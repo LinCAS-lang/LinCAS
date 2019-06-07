@@ -16,14 +16,18 @@
 
 
 module LinCAS::Internal
+
+    #$C Proc
         
     class LCProc < BaseC
         @init = false
-        @me   = uninitialized Value
+        @me   = uninitialized  LcVal
         @args = uninitialized FuncArgSet
         @code = uninitialized Bytecode
         @scp  = uninitialized VM::Scope
+        @part = [] of  LcVal
         property init, me, args, code, scp
+        getter part
     end
 
     macro set_proc_self(proc,me)
@@ -46,7 +50,7 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).code = {{code}}
     end
 
-    macro get_proc_code(proc,code)
+    macro get_proc_code(proc)
         {{proc}}.as(LCProc).code
     end
 
@@ -54,7 +58,7 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).scp = {{scp}}
     end
 
-    macro get_proc_scope(proc,scp)
+    macro get_proc_scope(proc)
         {{proc}}.as(LCProc).scp
     end
 
@@ -62,26 +66,32 @@ module LinCAS::Internal
         {{proc}}.as(LCProc).init = true
     end
 
+    macro get_proc_part(proc)
+        {{proc}}.as(LCProc).part
+    end
+
+    macro is_initialized_proc?(proc)
+        ({{proc}}.as(LCProc).init)
+    end
+
     macro check_proc(proc)
         if !({{proc}}.is_a? LCProc)
             lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{proc}})} into Proc")
             return Null
-        elsif !({{proc}}.as(LCProc).init)
+        elsif !is_initialized_proc? {{proc}}
             # lc_raise(LcInstanceErr,"Proc uncorrectly initialized")
             return Null
         end
     end
 
-    def self.lc_proc_allocate_0(klass : Value)
-        klass      = klass.as(LcClass)
-        proc       = LCProc.new
-        proc.klass = klass
-        proc.data  = klass.data.clone
+    def self.lc_proc_allocate_0(klass :  LcVal)
+        klass = klass.as(LcClass)
+        proc  = lincas_obj_alloc LCProc, klass, data: klass.data.clone
         proc.id    = proc.object_id
-        return proc.as(Value)
+        return proc.as( LcVal)
     end
 
-    def self.lc_proc_allocate(klass : Value)
+    def self.lc_proc_allocate(klass :  LcVal)
         proc = lc_proc_allocate_0(klass)
         block      = Exec.get_block
         if block 
@@ -97,7 +107,7 @@ module LinCAS::Internal
     end
 
     def self.build_proc
-        return lc_proc_allocate(ProcClass)
+        return lc_proc_allocate(@@lc_proc)
     end
 
     def self.lincas_block_to_proc(block : LcBlock)
@@ -106,7 +116,7 @@ module LinCAS::Internal
         return proc
     end
 
-    private def self.proc_init(proc : Value,block : LcBlock)
+    private def self.proc_init(proc :  LcVal,block : LcBlock)
         set_proc_self(proc, block.me)
         set_proc_args(proc, block.args)
         set_proc_code(proc, block.body)
@@ -114,7 +124,7 @@ module LinCAS::Internal
         set_proc_as_init(proc)
     end
 
-    def self.lc_proc_init(proc : Value)
+    def self.lc_proc_init(proc :  LcVal)
         block      = Exec.get_block
         if block 
             proc_init(proc,block)
@@ -124,24 +134,73 @@ module LinCAS::Internal
         return proc
     end
 
-    proc_init_ = LcProc.new do |args|
-        next lc_proc_init(*lc_cast(args,T1))
-    end
-
-    def self.lc_proc_call(proc : Value,args : An)
+    #$I call
+    #$U call(*args)
+    # Calls the procedure passing the given arguments
+    
+    def self.lc_proc_call(proc :  LcVal,argv :  LcVal)
         check_proc(proc)
-        Exec.call_proc(lc_cast(proc,LCProc),args)
+        argv = argv.as Ary
+        Exec.call_proc(lc_cast(proc,LCProc),argv)
     end
 
-    proc_call = LcProc.new do |args|
-        args = lc_cast(args,An)
-        next lc_proc_call(args.shift,args)
+    private def self.clone_part(a : An)
+        tmp = [] of  LcVal 
+        a.times do |v|
+            tmp << v 
+        end
+        tmp
     end
 
-    ProcClass = lc_build_internal_class("Proc")
-    lc_set_allocator(ProcClass,proc_allocator)
+    
+    def self.lc_proc_partial(proc :  LcVal, argv : An)
+        proc_arity = get_proc_args(proc).size
+        if argv.size >= proc_arity
+            return Exec.call_proc(lc_cast(proc,LCProc),argv)
+        end
+        return proc if argv.empty?
+        part = get_proc_part(proc)
+        diff = proc_arity - part 
+        if diff <= argv.size 
+            tmp = clone_part(part)
+            diff.times do |i|
+                tmp << argv[i]
+            end
+            return Exec.call_proc(lc_cast(proc,LCProc),tmp)
+        else
+            new_proc = lc_proc_clone(proc)
+            part = get_proc_part(proc)
+            argv.each do |v|
+                part << v 
+            end
+            return new_proc
+        end
+    end
 
-    lc_add_internal(ProcClass, "init", proc_init_,        0)
-    lc_add_internal(ProcClass, "call", proc_call,        -1)
+    def self.lc_proc_clone(proc :  LcVal)
+        new_proc = build_proc
+        set_proc_self(new_proc, get_proc_self(proc))
+        set_proc_args(new_proc, get_proc_args(proc))
+        set_proc_code(new_proc, get_proc_code(proc))
+        set_proc_scope(new_proc,get_proc_scope(proc))
+        p_part = get_proc_part(proc)
+        n_part = get_proc_part(new_proc)
+        if is_initialized_proc? proc
+            p_part.each do |v|
+                n_part << v
+            end
+            set_proc_as_init(new_proc)
+        end
+        return new_proc
+    end
+
+    def self.init_proc
+        @@lc_proc = lc_build_internal_class("Proc")
+        define_allocator(@@lc_proc,lc_proc_allocate_0)
+
+        add_method(@@lc_proc, "init",lc_proc_init,   0)
+        add_method(@@lc_proc, "call",lc_proc_call,  -1)
+        add_method(@@lc_proc, "clone",lc_proc_clone, 0)
+    end
 
 end

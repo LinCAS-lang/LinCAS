@@ -25,7 +25,7 @@ module LinCAS::Internal
         nan_ops
 
         def +(obj : Snumber)
-            return self if obj == 1
+            return self if obj == 0
             return Sum.new(self,obj)
         end
 

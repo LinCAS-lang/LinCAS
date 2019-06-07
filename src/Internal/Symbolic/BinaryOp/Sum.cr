@@ -162,7 +162,7 @@ module LinCAS::Internal
             return lft + rht 
         end
 
-        def eval(dict : LcHash) : Num
+        def eval(dict : LcHash)
             lft = @left.eval(dict)
             rht = @right.eval(dict)
             return lft + rht 

@@ -15,75 +15,51 @@
 
 module LinCAS::Internal
 
-    macro mfun(name)
-        arg = args.as(T2)[1]
-        next lc_{{name.id}}_ary(arg) if arg.is_a? LcArray
-        next lc_{{name.id}}(arg)
+    macro default_def(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        return num2float(Math.{{name.id}}(val).to_f)
     end
 
-    macro mfun2(name)
-        args = args.as(T3)
-        arg1 = args[1]
-        arg2 = args[2]
-        if arg1.is_a? LcArray && arg2.is_a? LcArray
-            next lc_{{name.id}}_ary(arg1,arg2)
-        end
-        next lc_{{name.id}}(arg1,arg2)
+    macro def_with_block(name,var, sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        {{yield}}
+        return num2float(Math.{{name.id}}(val).to_f)
     end
 
-    macro default_def(name,sym = nil)
-        private def self.lc_{{name.id}}(v : Value)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            return num2float(Math.{{name.id}}(val).to_f)
-        end
+    macro default_adef(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_arc{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        return num2float(Math.a{{name.id}}(val).to_f)
     end
 
-    macro def_with_block(name, sym = nil)
-        private def self.lc_{{name.id}}(v : Value)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            {{yield}}
-            return num2float(Math.{{name.id}}(val).to_f)
-        end
-    end
-
-    macro default_adef(name, sym = nil)
-        private def self.lc_a{{name.id}}(v : Value)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_arc{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            return num2float(Math.a{{name.id}}(val).to_f)
-        end
-    end
-
-    macro adef_with_block(name, sym = nil)
-        private def self.lc_a{{name.id}}(v : Value)
-            {% if sym %}
-                return build_function({{sym}}.create(get_function(v))) if v.is_a? LcFunction
-            {% end %}
-            return complex_arc{{name.id}}(v) if v.is_a? LcCmx
-            val = internal.lc_num_to_cr_f(v)
-            return Null unless val
-            {{yield}}
-            return num2float(Math.a{{name.id}}(val).to_f)
-        end
+    macro adef_with_block(name,var,sym = nil)
+        {% if sym %}
+            return build_function({{sym}}.create(get_function({{var}}))) if {{var}}.is_a? LcFunction
+        {% end %}
+        return complex_arc{{name.id}}({{var}}) if {{var}}.is_a? LcCmx
+        val = internal.lc_num_to_cr_f({{var}})
+        return Null unless val
+        {{yield}}
+        return num2float(Math.a{{name.id}}(val).to_f)
     end
 
     {% for name in %w|cos sin acos asin tan atan cosh sinh asinh acosh gamma
                     exp log tanh atanh sqrt cbrt log10 |%}
-        private def self.lc_{{name.id}}_ary(v : Value)
+        private def self.lc_{{name.id}}_ary(v :  LcVal)
             new_ary = build_ary_new
             ary_iterate(v) do |obj|
                 res = lc_{{name.id}}(obj)
@@ -98,7 +74,7 @@ module LinCAS::Internal
     {% end %}
 
     {% for name in %w|atan2 nrt copysign hypot| %}
-        def self.lc_{{name.id}}_ary(a1 : Value, a2 : Value)
+        def self.lc_{{name.id}}_ary(a1 :  LcVal, a2 :  LcVal)
             if ary_size(a1) != ary_size(a2)
                 lc_raise(LcArgumentError,"(Array size missmatch)")
                 return Null 
@@ -116,68 +92,57 @@ module LinCAS::Internal
         end
     {% end %}
 
-
-    default_def cos, Cos
-    m_cos = LcProc.new do |args|
-        mfun cos
+    def self.lc_cos(unused,v : LcVal)
+        default_def cos, v, Cos
+    end
+ 
+    def self.lc_sin(unused,v : LcVal)
+        default_def sin, v, Sin
     end
 
-    default_def sin, Sin
-    m_sin = LcProc.new do |args|
-        mfun sin
+    def self.lc_tan(unused,v : LcVal)
+        default_def tan, v, Tan
     end
 
-    default_def tan, Tan
-    m_tan = LcProc.new do |args|
-        mfun tan
-    end
-
-    adef_with_block(cos, Acos) do 
-        if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null 
+    def self.lc_acos(unused, v : LcVal)
+        adef_with_block(cos,v, Acos) do 
+            if val > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null 
+            end
         end
     end
-    m_acos = LcProc.new do |args|
-        mfun acos      
-    end
 
-    adef_with_block(sin, Asin) do 
-        if val > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null 
+    def self.lc_asin(unused, v : LcVal)
+        adef_with_block(sin,v, Asin) do 
+            if val > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null 
+            end
         end
     end
-    m_asin = LcProc.new do |args|
-        mfun asin
+
+    def self.lc_atan(unused,v : LcVal)
+        default_adef tan, v, Atan
     end
 
-    default_adef tan, Atan
-    m_atan = LcProc.new do |args|
-        mfun atan
+    def self.lc_sinh(unused,v : LcVal)
+        default_def sinh, v 
     end
 
-    default_def sinh
-    m_sinh = LcProc.new do |args|
-        mfun sinh
+    def self.lc_cosh(unused,v : LcVal)
+        default_def cosh, v 
     end
 
-    default_def cosh
-    m_cosh = LcProc.new do |args|
-        mfun cosh
+    def self.lc_acosh(unused, v : LcVal)
+        default_adef cosh, v
     end
 
-    default_adef cosh
-    m_acosh = LcProc.new do |args|
-        mfun acosh
-    end
-
-    default_adef sinh
-    m_asinh = LcProc.new do |args|
-        mfun asinh
+    def self.lc_asinh(unused, v : LcVal)
+        default_adef sinh, v
     end
     
-    def self.lc_gamma(v : Value)
+    def self.lc_gamma(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
@@ -187,44 +152,36 @@ module LinCAS::Internal
         return num2float(Math.gamma(val).to_f)
     end
 
-    m_gamma = LcProc.new do |args|
-        mfun gamma
-    end
-
-    default_def exp, Exp
-    m_exp = LcProc.new do |args|
-        mfun exp
+    def self.lc_exp(unused,v : LcVal)
+        default_def exp, v, Exp
     end
     
-    def_with_block(log, Log) do 
-        if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null
+    def self.lc_log(unused,v : LcVal)
+        def_with_block(log,v,Log) do 
+            if val < 0
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null
+            end
         end
     end
-    m_log = LcProc.new do |args|
-        mfun log
+
+    def self.lc_tanh(unused,v : LcVal)
+        default_def tanh, v
     end
 
-    default_def tanh
-    m_tanh = LcProc.new do |args|
-        mfun tanh
-    end
-
-    adef_with_block(tanh) do
-        if val.abs > 1
-            lc_raise(LcMathError,"(Value out of domain)")
-            return Null
+    def self.lc_atanh(unused, v : LcVal)
+        adef_with_block(tanh,v) do
+            if val.abs > 1
+                lc_raise(LcMathError,"(Value out of domain)")
+                return Null
+            end
         end
     end
-    m_atanh = LcProc.new do |args|
-        mfun atanh
-    end
 
-    def self.lc_atan2(v1 : Value, v2 : Value)
+    def self.lc_atan2(unused,v1 :  LcVal, v2 :  LcVal)
         if v1.is_a? LcCmx && v2.is_a? LcCmx
              tmp = complex_div(v1,v2)
-             return lc_atan(tmp)
+             return lc_atan(nil,tmp)
         elsif v1.is_a? LcCmx || v2.is_a? LcCmx
             return complex_div_num(v1,v2) if v1.is_a? LcCmx
             return complex_div_num(v2,v1)
@@ -236,12 +193,8 @@ module LinCAS::Internal
         end
     end
 
-    m_atan2 = LcProc.new do |args|
-        mfun2 atan2
-    end
-
-    def self.lc_sqrt(v : Value)
-        return build_function(Sqrt.new(get_function(v))) if v.is_a? LcFunction
+    def self.lc_sqrt(unused,v :  LcVal)
+        return build_function(Sqrt.create(get_function(v))) if v.is_a? LcFunction
         return complex_sqrt(v) if v.is_a? LcCmx
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
@@ -251,21 +204,13 @@ module LinCAS::Internal
         return num2float(Math.sqrt(val).to_f)
     end
 
-    m_sqrt = LcProc.new do |args|
-        mfun sqrt
-    end
-
-    def self.lc_cbrt(v : Value)
+    def self.lc_cbrt(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         return num2float(Math.cbrt(val).to_f)
     end
 
-    m_cbrt = LcProc.new do |args|
-        mfun cbrt
-    end
-
-    def self.lc_nrt(v1 : Value,v2 : Value)
+    def self.lc_nrt(unused,v1 :  LcVal,v2 :  LcVal)
         val1 = internal.lc_num_to_cr_i(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -282,11 +227,7 @@ module LinCAS::Internal
         return num2float(val2 ** (1/val1.to_f))
     end
 
-    m_nrt = LcProc.new do |args|
-        mfun2 nrt
-    end
-
-    def self.lc_copysign(v1 : Value, v2 : Value)
+    def self.lc_copysign(unused,v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -294,11 +235,7 @@ module LinCAS::Internal
         return num2float(Math.copysign(val1,val2).to_f)
     end
 
-    m_copysign = LcProc.new do |args|
-        mfun2 copysign
-    end
-
-    def self.lc_log10(v : Value)
+    def self.lc_log10(unused,v :  LcVal)
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
@@ -308,11 +245,7 @@ module LinCAS::Internal
         return num2float(Math.log10(val).to_f)
     end
 
-    m_log10 = LcProc.new do |args|
-        mfun log10
-    end
-
-    def self.lc_hypot(v1 : Value, v2 : Value)
+    def self.lc_hypot(unused,v1 :  LcVal, v2 :  LcVal)
         val1 = internal.lc_num_to_cr_f(v1)
         return Null unless val1
         val2 = internal.lc_num_to_cr_f(v2)
@@ -320,37 +253,35 @@ module LinCAS::Internal
         return num2float(Math.hypot(val1,val2).to_f)
     end
 
-    m_hypot = LcProc.new do |args|
-        mfun2 hypot
-    end
-
-    MathM = internal.lc_build_internal_module("Math")
+    def self.init_math
+        @@lc_math = internal.lc_build_internal_module("Math")
     
-    internal.lc_module_add_internal(MathM,"cos",m_cos,    1)
-    internal.lc_module_add_internal(MathM,"sin",m_sin,    1)
-    internal.lc_module_add_internal(MathM,"acos",m_acos,  1)
-    internal.lc_module_add_internal(MathM,"asin",m_asin,  1)
-    internal.lc_module_add_internal(MathM,"tan",m_tan,    1)
-    internal.lc_module_add_internal(MathM,"atan",m_atan,  1)
-    internal.lc_module_add_internal(MathM,"cosh",m_cosh,  1)
-    internal.lc_module_add_internal(MathM,"sinh",m_sinh,  1)
-    internal.lc_module_add_internal(MathM,"asinh",m_asinh,1)
-    internal.lc_module_add_internal(MathM,"acosh",m_acosh,1)
-    internal.lc_module_add_internal(MathM,"gamma",m_gamma,1)
-    internal.lc_module_add_internal(MathM,"exp",m_exp,    1)
-    internal.lc_module_add_internal(MathM,"log",m_log,    1)
-    internal.lc_module_add_internal(MathM,"tanh",m_tanh,  1)
-    internal.lc_module_add_internal(MathM,"atanh",m_atanh,1)
-    internal.lc_module_add_internal(MathM,"atan2",m_atan2,2)
-    internal.lc_module_add_internal(MathM,"sqrt",m_sqrt,  1)
-    internal.lc_module_add_internal(MathM,"cbrt",m_cbrt,  1)
-    internal.lc_module_add_internal(MathM,"nrt",m_nrt,    2)
-    internal.lc_module_add_internal(MathM,"copysign",m_copysign,2)
-    internal.lc_module_add_internal(MathM,"log10",m_log10,1)
-    internal.lc_module_add_internal(MathM,"hypot",m_hypot,2)
+        lc_module_add_internal(@@lc_math,"cos",wrap(lc_cos,2),     1)
+        lc_module_add_internal(@@lc_math,"sin", wrap(lc_sin,2),    1)
+        lc_module_add_internal(@@lc_math,"acos", wrap(lc_acos,2),  1)
+        lc_module_add_internal(@@lc_math,"asin", wrap(lc_asin,2),  1)
+        lc_module_add_internal(@@lc_math,"tan", wrap(lc_tan,2),    1)
+        lc_module_add_internal(@@lc_math,"atan", wrap(lc_atan,2),  1)
+        lc_module_add_internal(@@lc_math,"cosh", wrap(lc_cosh,2),  1)
+        lc_module_add_internal(@@lc_math,"sinh", wrap(lc_sinh,2),  1)
+        lc_module_add_internal(@@lc_math,"asinh", wrap(lc_asinh,2),1)
+        lc_module_add_internal(@@lc_math,"acosh", wrap(lc_acosh,2),1)
+        lc_module_add_internal(@@lc_math,"gamma", wrap(lc_gamma,2),1)
+        lc_module_add_internal(@@lc_math,"exp", wrap(lc_exp,2),    1)
+        lc_module_add_internal(@@lc_math,"log", wrap(lc_log,2),    1)
+        lc_module_add_internal(@@lc_math,"tanh", wrap(lc_tanh,2),  1)
+        lc_module_add_internal(@@lc_math,"atanh", wrap(lc_atanh,2),1)
+        lc_module_add_internal(@@lc_math,"atan2", wrap(lc_atan2,3),2)
+        lc_module_add_internal(@@lc_math,"sqrt", wrap(lc_sqrt,2),  1)
+        lc_module_add_internal(@@lc_math,"cbrt", wrap(lc_cbrt,2),  1)
+        lc_module_add_internal(@@lc_math,"nrt", wrap(lc_nrt,3),    2)
+        lc_module_add_internal(@@lc_math,"copysign",wrap(lc_copysign,3),2)
+        lc_module_add_internal(@@lc_math,"log10", wrap(lc_log10,2),1)
+        lc_module_add_internal(@@lc_math,"hypot", wrap(lc_hypot,3),2)
 
 
-    internal.lc_define_const(MathM,"PI",num2float(Math::PI))
-    internal.lc_define_const(MathM,"E",num2float(Math::E))
+        lc_define_const(@@lc_math,"PI",num2float(Math::PI))
+        lc_define_const(@@lc_math,"E",num2float(Math::E))
+    end
 
 end

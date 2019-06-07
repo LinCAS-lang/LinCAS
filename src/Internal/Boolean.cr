@@ -36,26 +36,32 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.bool2val(value : Value)
+    def self.bool2val(value :  LcVal)
         return value == lctrue ? true : false
     end
 
     def self.build_true
-        lcTrue       = LcBTrue.new
-        klass         = BoolClass
-        lcTrue.klass  = klass.as(LcClass)
-        lcTrue.data   = klass.as(LcClass).data.clone
+        lcTrue = lincas_obj_alloc LcBTrue, @@lc_boolean, data: @@lc_boolean.data.clone
+        set_flag lcTrue, FROZEN
+        return lcTrue.as( LcVal)
+    end
+
+    def self.lazy_build_true
+        lcTrue        = LcBTrue.new
         lcTrue.flags |= ObjectFlags::FROZEN
-        return lcTrue.as(Value)
+        return lcTrue.as( LcVal)
     end
 
     def self.build_false
+        lcFalse = lincas_obj_alloc LcBFalse, @@lc_boolean, data: @@lc_boolean.data.clone
+        set_flag lcFalse, FROZEN
+        return lcFalse.as( LcVal)
+    end
+
+    def self.lazy_build_false
         lcFalse        = LcBFalse.new
-        klass          = BoolClass
-        lcFalse.klass  = klass.as(LcClass)
-        lcFalse.data   = klass.as(LcClass).data.clone
         lcFalse.flags |= ObjectFlags::FROZEN
-        return lcFalse.as(Value)
+        return lcFalse.as( LcVal)
     end
 
     def self.lc_bool_invert(value)
@@ -69,19 +75,9 @@ module LinCAS::Internal
         end
     end
 
-    bool_invert = LcProc.new do |args|
-        args = args.as(T1)
-        next internal.lc_bool_invert(args[0])
-    end
-
     def self.lc_bool_eq(val1, val2)
         return lctrue if val1 == val2
         return lcfalse
-    end
-
-    bool_eq = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_eq(args[0],args[1])
     end
 
     def self.lc_bool_gr(val1, val2)
@@ -108,18 +104,9 @@ module LinCAS::Internal
         )
     end
 
-    bool_ne = LcProc.new do |args|
-        next internal.lc_bool_ne(*args.as(T2))
-    end
-
     def self.lc_bool_and(val1, val2)
         return lctrue if val1 == lctrue && val2 == lctrue
         return lcfalse
-    end
-
-    bool_and = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_and(args[0],args[1])
     end
 
     def self.lc_bool_or(val1, val2)
@@ -127,23 +114,23 @@ module LinCAS::Internal
         return lcfalse 
     end
 
-    bool_or = LcProc.new do |args|
-        args = args.as(T2)
-        next internal.lc_bool_or(args[0],args[1])
+    def self.init_boolean
+        @@lc_boolean = internal.lc_build_internal_class("Boolean")
+        lc_undef_allocator(@@lc_boolean)
+
+        lc_remove_internal(@@lc_boolean,"defrost")
+
+        add_method(@@lc_boolean,"!", lc_bool_invert,0)
+        add_method(@@lc_boolean,"==",lc_bool_eq,    1)
+        add_method(@@lc_boolean,"!=",lc_bool_ne,    1)
+        add_method(@@lc_boolean,"&&",lc_bool_and,   1)
+        add_method(@@lc_boolean,"||",lc_bool_or,    1)
+
+        init_lazy_const(pointerof(LcTrue),@@lc_boolean)
+        init_lazy_const(pointerof(LcFalse),@@lc_boolean)
     end
 
-    BoolClass = internal.lc_build_internal_class("Boolean")
-    internal.lc_undef_allocator(BoolClass)
-
-    internal.lc_remove_internal(BoolClass,"defrost")
-
-    internal.lc_add_internal(BoolClass,"!", bool_invert,0)
-    internal.lc_add_internal(BoolClass,"==",bool_eq,    1)
-    internal.lc_add_internal(BoolClass,"!=",bool_ne,    1)
-    internal.lc_add_internal(BoolClass,"&&",bool_and,   1)
-    internal.lc_add_internal(BoolClass,"||",bool_or,    1)
-
-    global LcTrue  = Internal.build_true
-    global LcFalse = Internal.build_false
+    global LcTrue  = Internal.lazy_build_true
+    global LcFalse = Internal.lazy_build_false
 
 end

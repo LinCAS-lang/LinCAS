@@ -12,8 +12,6 @@
 **/
 
 
-include Smath
-
 let newton(f,beg, tol := 10**(-8), kmax := 100)
 {
     var_list := f.vars()

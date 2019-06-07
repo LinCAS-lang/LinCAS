@@ -109,23 +109,16 @@ module LinCAS::Internal
     end
 
     def self.build_regex
-        return lc_regex_allocate(RegexpClass)
+        return lc_regex_allocate(@@lc_regexp)
     end
 
-    def self.lc_regex_allocate(klass : Value)
-        klass     = klass.as(LcClass)
-        reg       = LcRegexp.new
-        reg.klass = klass
-        reg.data  = klass.data.clone 
-        reg.id    = reg.object_id
-        return reg.as(Value)
+    def self.lc_regex_allocate(klass :  LcVal)
+        klass = klass.as(LcClass)
+        reg   = lincas_obj_alloc LcRegexp, klass, data: klass.data.clone 
+        return reg.as( LcVal)
     end
 
-    regex_allocate = LcProc.new do |args|
-        next lc_regex_allocate(*args.as(T1))
-    end
-
-    def self.lc_regex_initialize(regex : Value, source : Value)
+    def self.lc_regex_initialize(regex :  LcVal, source :  LcVal)
         str_check(source)
         origin   = str_gsub_char(source,PATTERN,SUB)
         compiled = LibPCRE.compile(origin,(OPT_NONE | UTF_8 | NO_UTF8_CHECK),out error, out erroffset,nil)
@@ -143,15 +136,11 @@ module LinCAS::Internal
         return Null
     end
 
-    regex_init = LcProc.new do |args|
-        next lc_regex_initialize(*lc_cast(args,T2))
-    end
-
-    def self.regex_to_s(regex : Value)
+    def self.regex_to_s(regex :  LcVal)
         return regex_origin(regex)
     end
 
-    private def self.lc_regex_to_s(regex : Value)
+    private def self.lc_regex_to_s(regex :  LcVal)
         origin = regex_to_s(regex)
         if origin.null?
             return build_string("")
@@ -160,11 +149,7 @@ module LinCAS::Internal
         end
     end
 
-    regex_to_s_ = LcProc.new do |args|
-        next lc_regex_to_s(*lc_cast(args,T1))
-    end
-
-    def self.regex_inspect(regex : Value)
+    def self.regex_inspect(regex :  LcVal)
         buffer = string_buffer_new
         origin = regex_origin(regex)
         buffer_append_n(buffer,SLASH,origin.null? ? "" : origin,SLASH)
@@ -172,16 +157,15 @@ module LinCAS::Internal
         return buffer
     end
 
-    def self.lc_regex_inspect(regex : Value)
+    def self.lc_regex_inspect(regex :  LcVal)
         buffer = regex_inspect(regex)
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
-    regex_inspect_ = LcProc.new do |args|
-        next lc_regex_inspect(*lc_cast(args,T1))
-    end
-
-    def self.lc_regex_match(regex : Value,string : Value,position : Value? = nil)
+    def self.lc_regex_match(regex :  LcVal,argv : LcVal)
+        argv     = argv.as(Ary)
+        string   = argv[0]
+        position = argv.size > 1 ? argv[1] : nil
         str_check(string)
         regex_check(regex)
         if position 
@@ -202,16 +186,7 @@ module LinCAS::Internal
         return build_match_data(regex,compiled,string,pos.to_i32,ary.to_slice(arylen),regex_captured(regex))
     end
 
-    regex_match = LcProc.new do |args|
-        args = args.as(An)
-        if args.size < 2
-            lc_raise(LcArgumentError,"Wrong number of arguments (0 instead of 1)")
-            next Null 
-        end
-        next lc_regex_match(args[0],args[1],args[2]?)
-    end
-
-    def self.lc_regex_error(string : Value)
+    def self.lc_regex_error(unused,string :  LcVal)
         str_check(string)
         gsub_str = str_gsub_char(string,PATTERN,SUB)
         compiled = LibPCRE.compile(gsub_str,(OPT_NONE | UTF_8 | NO_UTF8_CHECK),out error, out erroffset,nil)
@@ -221,11 +196,12 @@ module LinCAS::Internal
         return build_string("#{String.new(error)} at #{erroffset}")
     end
 
-    regex_error = LcProc.new do |args|
-        next lc_regex_error(lc_cast(args,T2)[1])
+    @[AlwaysInline]
+    def self.lc_regex_escape(string : LcVal)
+        return lc_regex_escape(nil,string)
     end
 
-    def self.lc_regex_escape(string : Value)
+    def self.lc_regex_escape(unused,string :  LcVal)
         str_check(string)
         buffer  = string_buffer_new
         string_char_iterate(lc_cast(string,LcString)) do |chr|
@@ -241,11 +217,8 @@ module LinCAS::Internal
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
-    regex_escape = LcProc.new do |args|
-        next lc_regex_escape(lc_cast(args,T2)[1])
-    end
-
-    def self.lc_regex_union(other : An)
+    def self.lc_regex_union(unused,other : LcVal | Array(LcVal))
+        other  = other.as(Ary | Array(LcVal))
         buffer = string_buffer_new
         error  = false
         size   = other.size - 1
@@ -268,18 +241,12 @@ module LinCAS::Internal
         lc_regex_initialize(regex,string)
         return regex
     end
-
-    regex_union = LcProc.new do |args|
-        args  = lc_cast(args,An)
-        args.shift
-        next lc_regex_union(args)
-    end
     
-    regex_sum = LcProc.new do |args|
-        next lc_regex_union(lc_cast(args,T2).to_a)
+    def self.lc_regex_sum(regex : LcVal, other : LcVal)
+        return lc_regex_union(nil,[regex,other])
     end
 
-    def self.lc_regex_union_part(value : Value)
+    def self.lc_regex_union_part(unused,value :  LcVal)
         if value.is_a? LcString
             return lc_regex_escape(value)
         elsif value.is_a? LcRegexp
@@ -289,20 +256,12 @@ module LinCAS::Internal
         return Null
     end
 
-    regex_union_part = LcProc.new do |args|
-        next lc_regex_union_part(lc_cast(args,T2)[1])
-    end
-
-    def self.lc_regex_eq(regex : Value, other : Value)
+    def self.lc_regex_eq(regex :  LcVal, other :  LcVal)
         return lcfalse unless other.is_a? LcRegexp
         return str_low_l_cmp(regex_origin(regex),regex_origin(other)) ? lctrue : lcfalse 
     end
 
-    regex_eq = LcProc.new do |args|
-        next lc_regex_eq(*lc_cast(args,T2))
-    end
-
-    def self.lc_regex_name_table(regex : Value)
+    def self.lc_regex_name_table(regex :  LcVal)
         compiled  = regex_compiled(regex)
         extra     = regex_extra(regex)
         t_pointer = CHAR_PTR.null
@@ -327,34 +286,31 @@ module LinCAS::Internal
         return table
     end
 
-    regex_name_table = LcProc.new do |args|
-        next lc_regex_name_table(*lc_cast(args,T1))
+
+    def self.init_regexp
+        @@lc_regexp = internal.lc_build_internal_class("Regexp")
+        define_allocator(@@lc_regexp,lc_regex_allocate)
+
+        add_static_method(@@lc_regexp,"error?",lc_regex_error,          1)
+        add_static_method(@@lc_regexp,"escape",lc_regex_escape,         1)
+        add_static_method(@@lc_regexp,"union",lc_regex_union,          -1)
+        add_static_method(@@lc_regexp,"union_part",lc_regex_union_part, 1)
+
+        add_method(@@lc_regexp,"init",lc_regex_initialize,              1)
+        add_method(@@lc_regexp,"to_s",lc_regex_to_s,                    0)
+        alias_method_str(@@lc_regexp,"to_s","origin")
+        add_method(@@lc_regexp,"inspect",lc_regex_inspect,              0)
+        add_method(@@lc_regexp,"match",lc_regex_match,                 -2)
+        add_method(@@lc_regexp,"+",lc_regex_sum,                        1)
+        add_method(@@lc_regexp,"==",lc_regex_eq,                        1)
+        add_method(@@lc_regexp,"name_table",lc_regex_name_table,        0)
+
+        regex_clone = LcProc.new do |args|
+            next lc_cast(args,T1)[0]
+        end
+
+        lc_add_internal(@@lc_regexp,"clone",regex_clone,                   1)
     end
-
-    regex_clone = LcProc.new do |args|
-        next lc_cast(args,T1)[0]
-    end
-
-
-
-
-    RegexpClass = internal.lc_build_internal_class("Regexp")
-    internal.lc_set_allocator(RegexpClass,regex_allocate)
-
-    internal.lc_add_static(RegexpClass,"error?",regex_error,   1)
-    internal.lc_add_static(RegexpClass,"escape",regex_escape,  1)
-    internal.lc_add_static(RegexpClass,"union",regex_union,   -1)
-    internal.lc_add_static(RegexpClass,"union_part",regex_union_part,   1)
-
-    internal.lc_add_internal(RegexpClass,"init",regex_init,    1)
-    internal.lc_add_internal(RegexpClass,"to_s",regex_to_s_,   0)
-    internal.lc_add_internal(RegexpClass,"inspect",regex_inspect_,      0)
-    internal.lc_add_internal(RegexpClass,"origin",regex_to_s_, 0)
-    internal.lc_add_internal(RegexpClass,"match",regex_match, -1)
-    internal.lc_add_internal(RegexpClass,"+",regex_sum,        1)
-    internal.lc_add_internal(RegexpClass,"==",regex_eq,        1)
-    internal.lc_add_internal(RegexpClass,"name_table",regex_name_table, 0)
-    internal.lc_add_internal(RegexpClass,"clone",regex_clone,  1)
     
     
 end

@@ -56,12 +56,10 @@ module LinCAS::Internal
     end
 
     def self.complex_allocate
-        cmx        = LcCmx.new
-        cmx.klass  = ComplexClass
-        cmx.data   = ComplexClass.data.clone 
+        cmx        = lincas_obj_alloc LcCmx, @@lc_complex, data: @@lc_complex.data.clone 
         cmx.id     = pointerof(cmx).hash
         lc_obj_freeze(cmx)
-        return lc_cast(cmx,Value)
+        return lc_cast(cmx, LcVal)
     end
 
     def self.build_complex(cmx : LibComplex::Gsl_cpx)
@@ -70,7 +68,7 @@ module LinCAS::Internal
         return tmp 
     end
 
-    def self.lc_complex_rect(klass : Value, real : Value, img : Value)
+    def self.lc_complex_rect(klass :  LcVal, real :  LcVal, img :  LcVal)
         nums = float2cr(real,img)
         return Null unless nums 
         real,img = nums 
@@ -78,11 +76,7 @@ module LinCAS::Internal
         return build_complex(cpx)
     end
 
-    complex_rect = LcProc.new do |args|
-        next lc_complex_rect(*lc_cast(args,T3))
-    end
-
-    def self.lc_complex_polar(cmx : Value, r : Value, th : Value)
+    def self.lc_complex_polar(cmx :  LcVal, r :  LcVal, th :  LcVal)
         nums = float2cr(r,th)
         return Null unless nums 
         r,th = nums 
@@ -90,51 +84,31 @@ module LinCAS::Internal
         return build_complex(cpx)
     end
 
-    complex_polar = LcProc.new do |args|
-        next lc_complex_polar(*lc_cast(args,T3))
-    end
-
-    def self.lc_complex_arg(cmx : Value)
+    def self.lc_complex_arg(cmx :  LcVal)
         return num2float(
             LibComplex.gsl_complex_arg(get_complex(cmx))
         )
     end
 
-    complex_arg = LcProc.new do |args|
-        next lc_complex_arg(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_abs(cmx : Value)
+    def self.lc_complex_abs(cmx :  LcVal)
         return num2float(
             LibComplex.gsl_complex_abs(get_complex(cmx))
         )
     end
 
-    complex_abs = LcProc.new do |args|
-        next lc_complex_abs(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_abs2(cmx : Value)
+    def self.lc_complex_abs2(cmx :  LcVal)
         return num2float(
             LibComplex.gsl_complex_abs2(get_complex(cmx))
         )
     end
 
-    complex_abs2 = LcProc.new do |args|
-        next lc_complex_abs2(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_logabs(cmx : Value)
+    def self.lc_complex_logabs(cmx :  LcVal)
         return num2float(
             LibComplex.gsl_complex_logabs(get_complex(cmx))
         )
     end
 
-    complex_logabs = LcProc.new do |args|
-        next lc_complex_logabs(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_inspect(cpx : Value)
+    def self.lc_complex_inspect(cpx :  LcVal)
         complex_check2(cpx)
         cpx  = get_complex(cpx)
         real = cpx.dat[0]
@@ -146,11 +120,7 @@ module LinCAS::Internal
         return build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
     end
 
-    complex_inspect = LcProc.new do |args|
-        next lc_complex_inspect(*lc_cast(args,T1))
-    end
-
-    private def self.complex_add(v1 : Value, v2 : Value)
+    private def self.complex_add(v1 :  LcVal, v2 :  LcVal)
         complex_check2(v1)
         complex_check2(v1)
         v1  = get_complex(v1)
@@ -159,7 +129,7 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_add_num(cpx : Value, n : Value)
+    private def self.complex_add_num(cpx :  LcVal, n :  LcVal)
         complex_check2(cpx)
         cpx = get_complex(cpx)
         n   = num2num(n).to_f64
@@ -167,15 +137,11 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    def self.lc_complex_sum(cpx : Value, v : Value)
+    def self.lc_complex_sum(cpx :  LcVal, v :  LcVal)
         complex_compute(cpx,v,complex_add)
     end
 
-    complex_sum = LcProc.new do |args|
-        next lc_complex_sum(*lc_cast(args,T2))
-    end
-
-    private def self.complex_sub(v1 : Value, v2 : Value)
+    private def self.complex_sub(v1 :  LcVal, v2 :  LcVal)
         complex_check2(v1)
         complex_check2(v1)
         v1  = get_complex(v1)
@@ -184,7 +150,7 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_sub_num(cpx : Value, n : Value)
+    private def self.complex_sub_num(cpx :  LcVal, n :  LcVal)
         complex_check2(cpx)
         cpx  = get_complex(cpx)
         n    = num2num(n).to_f64
@@ -192,15 +158,11 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    def self.lc_complex_sub(cpx : Value, v : Value)
+    def self.lc_complex_sub(cpx :  LcVal, v :  LcVal)
         complex_compute(cpx,v,complex_sub)
     end
 
-    complex_sub_ = LcProc.new do |args|
-        next lc_complex_sub(*lc_cast(args,T2))
-    end
-
-    private def self.complex_mul(v1 : Value, v2 : Value)
+    private def self.complex_mul(v1 :  LcVal, v2 :  LcVal)
         complex_check2(v1)
         complex_check2(v1)
         v1  = get_complex(v1)
@@ -209,7 +171,7 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_mul_num(cpx : Value, n : Value)
+    private def self.complex_mul_num(cpx :  LcVal, n :  LcVal)
         complex_check2(cpx)
         cpx  = get_complex(cpx)
         n    = num2num(n).to_f64
@@ -217,15 +179,11 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    def self.lc_complex_prod(cpx : Value, v : Value)
+    def self.lc_complex_prod(cpx :  LcVal, v :  LcVal)
         complex_compute(cpx,v,complex_mul)
     end
 
-    complex_prod = LcProc.new do |args|
-        next lc_complex_prod(*lc_cast(args,T2))
-    end
-
-    private def self.complex_div(v1 : Value, v2 : Value)
+    private def self.complex_div(v1 :  LcVal, v2 :  LcVal)
         complex_check2(v1)
         complex_check2(v1)
         v1  = get_complex(v1)
@@ -234,7 +192,7 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_div_num(cpx : Value, n : Value)
+    private def self.complex_div_num(cpx :  LcVal, n :  LcVal)
         complex_check2(cpx)
         cpx  = get_complex(cpx)
         n    = num2num(n).to_f64
@@ -242,15 +200,11 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    def self.lc_complex_div(cpx : Value, v : Value)
+    def self.lc_complex_div(cpx :  LcVal, v :  LcVal)
         complex_compute(cpx,v,complex_div)
     end
 
-    complex_div_ = LcProc.new do |args|
-        next lc_complex_div(*lc_cast(args,T2))
-    end
-
-    private def self.complex_pow(v1 : Value, v2 : Value)
+    private def self.complex_pow(v1 :  LcVal, v2 :  LcVal)
         complex_check2(v1)
         complex_check2(v1)
         v1  = get_complex(v1)
@@ -259,7 +213,7 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_pow_num(cpx : Value, n : Value)
+    private def self.complex_pow_num(cpx :  LcVal, n :  LcVal)
         complex_check2(cpx)
         cpx  = get_complex(cpx)
         n    = num2num(n).to_f64
@@ -267,48 +221,32 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    def self.lc_complex_pow(cpx : Value, v : Value)
+    def self.lc_complex_pow(cpx :  LcVal, v :  LcVal)
         complex_compute(cpx,v,complex_pow)
     end
 
-    complex_pow_ = LcProc.new do |args|
-        next lc_complex_pow(*lc_cast(args,T2))
-    end
-
-    def self.lc_complex_conj(cpx : Value)
+    def self.lc_complex_conj(cpx :  LcVal)
         complex_check2(cpx)
         cpx = get_complex(cpx)
         cpx = LibComplex.gsl_complex_conjugate(cpx)
         return build_complex(cpx)
     end
 
-    complex_conj = LcProc.new do |args|
-        next lc_complex_conj(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_inv(cpx : Value)
+    def self.lc_complex_inv(cpx :  LcVal)
         complex_check2(cpx)
         cpx = get_complex(cpx)
         cpx = LibComplex.gsl_complex_inverse(cpx)
         return build_complex(cpx)
     end
 
-    complex_inv = LcProc.new do |args|
-        next lc_complex_inv(*lc_cast(args,T1))
-    end
-
-    def self.lc_complex_neg(cpx : Value)
+    def self.lc_complex_neg(cpx :  LcVal)
         complex_check2(cpx)
         cpx = get_complex(cpx)
         cpx = LibComplex.gsl_complex_negative(cpx)
         return build_complex(cpx)
     end
 
-    complex_neg = LcProc.new do |args|
-        next lc_complex_neg(*lc_cast(args,T1))
-    end
-
-    private def self.complex_sqrt(cpx : Value)
+    private def self.complex_sqrt(cpx :  LcVal)
         complex_check2(cpx)
         cpx = get_complex(cpx)
         tmp = LibComplex.gsl_complex_sqrt(cpx)
@@ -321,14 +259,14 @@ module LinCAS::Internal
         return build_complex(tmp)
     end
 
-    private def self.complex_sqrt_num(n : Value)
+    private def self.complex_sqrt_num(n :  LcVal)
         n   = lc_num_to_cr_f(n)
         return Null unless n
         return complex_sqrt_num(n)
     end
 
     {% for name in %w|exp sin cos tan log arcsin arccos arctan sinh cosh tanh arcsinh arccosh arctanh| %}
-        private def self.complex_{{name.id}}(cpx : Value)
+        private def self.complex_{{name.id}}(cpx :  LcVal)
             complex_check2(cpx)
             cpx = get_complex(cpx)
             tmp = LibComplex.gsl_complex_{{name.id}}(cpx)
@@ -337,26 +275,28 @@ module LinCAS::Internal
     {% end %}
 
 
-    ComplexClass = lc_build_internal_class("Complex",NumClass)
-    lc_undef_allocator(ComplexClass)
+    def self.init_complex
+        @@lc_complex = lc_build_internal_class("Complex",@@lc_number)
+        lc_undef_allocator(@@lc_complex)
 
-    lc_add_static(ComplexClass,"rect",complex_rect,           2)
-    lc_add_static(ComplexClass,"polar",complex_polar,         2)
+        add_static_method(@@lc_complex,"rect",lc_complex_rect,    2)
+        add_static_method(@@lc_complex,"polar",lc_complex_polar,  2)
 
-    lc_add_internal(ComplexClass,"arg",complex_arg,           0)
-    lc_add_internal(ComplexClass,"abs",complex_abs,           0)
-    lc_add_internal(ComplexClass,"abs2",complex_abs2,         0)
-    lc_add_internal(ComplexClass,"logabs",complex_logabs,     0)
-    lc_add_internal(ComplexClass,"inspect",complex_inspect,   0)
-    alias_method_str(ComplexClass,"inspect","to_s")
-    lc_add_internal(ComplexClass,"+",complex_sum,             1)
-    lc_add_internal(ComplexClass,"-",complex_sub_,            1)
-    lc_add_internal(ComplexClass,"*",complex_prod,            1)
-    lc_add_internal(ComplexClass,"/",complex_div_,            1)
-    lc_add_internal(ComplexClass,"**",complex_pow_,           1)
-    lc_add_internal(ComplexClass,"conjg",complex_conj,        0)
-    lc_add_internal(ComplexClass,"inverse",complex_inv,       0)
-    lc_add_internal(ComplexClass,"-@",complex_neg,            0)
+        add_method(@@lc_complex,"arg",lc_complex_arg,             0)
+        add_method(@@lc_complex,"abs",lc_complex_abs,             0)
+        add_method(@@lc_complex,"abs2",lc_complex_abs2,           0)
+        add_method(@@lc_complex,"logabs",lc_complex_logabs,       0)
+        add_method(@@lc_complex,"inspect",lc_complex_inspect,     0)
+        alias_method_str(@@lc_complex,"inspect","to_s"             )  
+        add_method(@@lc_complex,"+",lc_complex_sum,               1)
+        add_method(@@lc_complex,"-",lc_complex_sub,               1)
+        add_method(@@lc_complex,"*",lc_complex_prod,              1)
+        add_method(@@lc_complex,"/",lc_complex_div,               1)
+        add_method(@@lc_complex,"**",lc_complex_pow,              1)
+        add_method(@@lc_complex,"conjg",lc_complex_conj,          0)
+        add_method(@@lc_complex,"inverse",lc_complex_inv,         0)
+        add_method(@@lc_complex,"-@",lc_complex_neg,              0)
+    end
 
 
 end

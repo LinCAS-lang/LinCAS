@@ -25,10 +25,10 @@ module LinCAS::Internal
     # available as instance methods in instantiated objects
     
 
-    ExitProcs = [] of Value
+    ExitProcs = [] of  LcVal
     @@running = false
     @@version = load_version.as(String)
-    ExitArg   = [Null]
+    ExitArg   = Ary.new(1)
 
     private def self.load_version : String
         if File.exists?(file = "/usr/local/lib/LinCAS/LinCAS/VERSION")
@@ -44,7 +44,7 @@ module LinCAS::Internal
         ""
     end
 
-    private def self.set_at_exit_proc(proc : Value)
+    private def self.set_at_exit_proc(proc :  LcVal)
         if @@running
             lc_raise(LcRuntimeError,"can't call at_exit() inside a finalization proc")
         else
@@ -79,15 +79,11 @@ module LinCAS::Internal
     # 123
     # ```
 
-    def self.lc_outl(arg)
-        self.lc_out(arg)
+    def self.lc_outl(unused,arg)
+        self.lc_out(nil,arg)
         LibC.printf("\n")
+        return Null
     end 
-
-    lc_printl = LcProc.new do |args|
-        internal.lc_outl(args.as(T2)[1])
-        next Null
-    end
 
     #$S print
     #$U print(obj1,obj2,...) -> null
@@ -105,7 +101,7 @@ module LinCAS::Internal
     # hello everyone 123
     # ```
 
-    def self.lc_out(arg)
+    def self.lc_out(unused,arg)
         if arg.is_a? LcString
             LibC.printf("%s",arg.str_ptr)
         elsif arg.is_a? LcTrue
@@ -119,13 +115,14 @@ module LinCAS::Internal
         elsif arg.is_a? LcArray
             LibC.printf("%s",internal.lc_ary_to_s(arg).as(LcString).str_ptr)
         else
-            arg = arg.as(Value)
+            arg = arg.as( LcVal)
             if internal.lc_obj_responds_to? arg,"to_s"
-                self.lc_out(Exec.lc_call_fun(arg,"to_s"))
+                self.lc_out(nil,Exec.lc_call_fun(arg,"to_s"))
             else 
                 LibC.printf(internal.lc_typeof(arg))
             end
         end
+        return Null
     end
 
     private def self.print_str(arg)
@@ -136,23 +133,14 @@ module LinCAS::Internal
         end
     end
 
-    lc_print = LcProc.new do |args|
-        internal.lc_out(args.as(T2)[1])
-        next Null
-    end
-
     #$S reads
     #$U reads() -> string
     # Reads a line from the STDIN
 
-    def self.lc_in
+    def self.lc_in(unused)
         value = STDIN.gets
         str   = internal.build_string(value || "")
         return str 
-    end
-
-    reads = LcProc.new do |args|
-        next internal.lc_in
     end
 
     #$S include
@@ -187,7 +175,7 @@ module LinCAS::Internal
     # Static methods are passed as static, while non-static
     # as instance ones
 
-    def self.lc_include(klass : Value, mod : Value)
+    def self.lc_include(klass :  LcVal, mod :  LcVal)
         if !(mod.is_a? Structure)
             lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
         elsif !((struct_type(mod.as(Structure),SType::MODULE)) || 
@@ -197,14 +185,10 @@ module LinCAS::Internal
             if !klass.is_a? Structure
                 klass = class_of(klass)
             end
-            internal.lc_include_module(klass.as(Lc_Class),mod.as(LcModule))
+            internal.lc_include_module(klass.as(LcClass),mod.as(LcModule))
             return lctrue
         end
         return lcfalse
-    end
-
-    include_m = LcProc.new do |args|
-        next internal.lc_include(*args.as(T2))
     end
 
     private def self.define_argv
@@ -223,18 +207,15 @@ module LinCAS::Internal
     #$U exit(status := 0)
     # exits the program with the given status
 
-    def self.lc_exit(status : Value? = nil)
-        if status
-            status = lc_num_to_cr_i(status)
+    def self.lc_exit(unused,argv : LcVal)
+        argv = lc_cast(argv,Ary)
+        if !argv.empty?
+            status = lc_num_to_cr_i(argv[0])
         else
             status = 0
         end
         lincas_exit status.to_i32 if status
         return Null
-    end
-
-    exit_ = LcProc.new do |args|
-        next lc_exit(lc_cast(args,An)[1]?)
     end
 
     private def self.define_version
@@ -257,7 +238,7 @@ module LinCAS::Internal
     # Goodbye people
     # ```
 
-    def self.lc_at_exit()
+    def self.lc_at_exit(unused)
         block = Exec.get_block
         if block 
             proc = lincas_block_to_proc(block)
@@ -268,30 +249,22 @@ module LinCAS::Internal
             return Null 
         end
     end
+    
 
-    at_exit_ = LcProc.new do |args|
-        next lc_at_exit
+    
+
+    def self.init_kernel
+        @@lc_kernel = internal.lc_build_internal_module("Kernel")
+
+        lc_module_add_internal(@@lc_kernel,"printl",wrap(lc_outl,2),            1)
+        lc_module_add_internal(@@lc_kernel,"print",wrap(lc_out,2),              1)
+        lc_module_add_internal(@@lc_kernel,"reads",wrap(lc_in,1),               0)
+        lc_module_add_internal(@@lc_kernel,"include",wrap(lc_include,2),        1)
+        lc_module_add_internal(@@lc_kernel,"exit",wrap(lc_exit,2),             -1)
+        lc_module_add_internal(@@lc_kernel,"at_exit",wrap(lc_at_exit,1),        0)
+    
+        lc_include_module(@@lc_class,@@lc_kernel)
     end
-    
-
-    
-
-
-
-    LKernel = internal.lc_build_internal_module("Kernel")
-
-    lc_module_add_internal(LKernel,"printl",lc_printl, 1)
-    lc_module_add_internal(LKernel,"print",lc_print,   1)
-    lc_module_add_internal(LKernel,"reads",reads,      0)
-    lc_module_add_internal(LKernel,"include",include_m,1)
-    lc_module_add_internal(LKernel,"exit",exit_,      -1)
-    lc_module_add_internal(LKernel,"at_exit",at_exit_, 0)
-
-    lc_define_const(LKernel,"ARGV",define_argv)
-    lc_define_const(LKernel,"ENV", define_env)
-    lc_define_const(LKernel,"VERSION", define_version)
-
-    lc_include_module(Lc_Class,LKernel)
 
     
 

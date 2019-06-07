@@ -22,14 +22,14 @@ module LinCAS::Internal
 
     Tilde = '~'.ord.to_u8
 
-    private def self.file_accessible(file : Value,flag)
+    private def self.file_accessible(file :  LcVal,flag)
         return LibC.access(pointer_of(file),flag) == 0
     end
     private def self.file_accessible(file : String,flag)
         return LibC.access(file,flag) == 0
     end
 
-    private def self.file_exist(file : Value)
+    private def self.file_exist(file :  LcVal)
         return file_accessible(file,F_OK)
     end
 
@@ -37,16 +37,12 @@ module LinCAS::Internal
         return file_accessible(file,F_OK)
     end
 
-    def self.lc_file_exist(file : Value)
+    def self.lc_file_exist(unused,file :  LcVal)
         str_check(file)
         return val2bool(file_exist(file))
     end
 
-    f_exist = LcProc.new do |args|
-        next lc_file_exist(lc_cast(args,T2)[1])
-    end
-
-    private def self.file_expand_path(file : Value,dir : Value? = nil)
+    private def self.file_expand_path(file :  LcVal,dir :  LcVal? = nil)
         slash = SLASH.ord.to_u8
         tmp_s = build_string(SLASH.to_s)
         path  = string_buffer_new
@@ -71,9 +67,11 @@ module LinCAS::Internal
             buffer_append(path,lc_cast(file,LcString))
         end
         buffer_trunc(path)
-        path_  = build_string_with_ptr(buff_ptr(path),buff_size(path))
-        pieces = lc_str_split(path_,tmp_s)
-        elem   = build_ary_new
+        path_    = build_string_with_ptr(buff_ptr(path),buff_size(path))
+        tmp_a    = Ary.new(1) 
+        tmp_a[0] = tmp_s
+        pieces   = lc_str_split(path_,tmp_a)
+        elem     = build_ary_new
         ary_iterate(pieces) do |e|
             e_ptr = pointer_of(e)
             if strcmp(e_ptr,"..") == 0
@@ -94,22 +92,20 @@ module LinCAS::Internal
         return buff_ptr(path)
     end
 
-    def self.lc_file_expand_path(file : Value, dir : Value? = nil)
+    def self.lc_file_expand_path(file :  LcVal, argv : LcVal)
+        argv = argv.as(Ary)
         str_check(file)
-        str_check(dir) if dir 
-        return build_string_with_ptr(file_expand_path(file,dir))
+        str_check(argv[0]) unless argv.empty? 
+        return build_string_with_ptr(file_expand_path(file,argv.empty? ? nil : argv[0]))
     end
 
-    f_expand_path = LcProc.new do |args|
-        args = lc_cast(args,An)
-        next lc_file_expand_path(args[1],args[2]?)
+    def self.init_file
+        @@lc_file = internal.lc_build_internal_class("File")
+        lc_undef_allocator(@@lc_file)
+   
+        add_method(@@lc_file,"exist?", lc_file_exist,             1)
+        add_method(@@lc_file,"expand_path",lc_file_expand_path,  -1)
     end
-
-    FileClass = internal.lc_build_internal_class("File")
-    internal.lc_undef_allocator(FileClass)
-
-    internal.lc_add_static(FileClass,"exist?", f_exist,             1)
-    internal.lc_add_static(FileClass,"expand_path",f_expand_path,  -1)
     
 
 end

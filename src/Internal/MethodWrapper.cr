@@ -14,26 +14,21 @@
 
 
 module LinCAS
-    alias T1 = Tuple(Value)
-    alias T2 = Tuple(Value,Value)
-    alias T3 = Tuple(Value,Value,Value)
-    alias T4 = Tuple(Value,Value,Value,Value)
-    alias An = Array(Value)
-    alias Va = T1 | T2 | T3 | T4 | An 
+    alias T1 = Tuple( LcVal)
+    alias T2 = Tuple( LcVal, LcVal)
+    alias T3 = Tuple( LcVal, LcVal, LcVal)
+    alias T4 = Tuple( LcVal, LcVal, LcVal, LcVal)
+    alias Va = T1 | T2 | T3 | T4
 
-    alias PV = Proc(Va,Value?)
+    alias PV = Proc(Va, LcVal)
 
     struct LcProc
         @proc : PV
-        def initialize(&block : Va -> Value?)
+        def initialize(&block : Va ->  LcVal)
             @proc = block 
         end
 
-        def call(args : An)
-            return @proc.call(args)
-        end
-
-        def call(*args : Value)
+        def call(*args :  LcVal)
             return @proc.call(args)
         end
 

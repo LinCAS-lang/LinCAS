@@ -17,7 +17,7 @@ module LinCAS::Internal
 
     alias PyObject = Python::PyObject
     PYPATTERN      = /'.+'/
-    #Types          = pyimport("types")
+    #@@types_m          = pyimport("types")
 
     macro check_pyerror(ptr)
         if {{ptr}}.null? || pyerr_occurred
@@ -27,8 +27,8 @@ module LinCAS::Internal
     end
 
     macro return_pynone
-        pyobj_incref(PyNone)
-        return PyNone 
+        pyobj_incref(@@pynone)
+        return @@pynone 
     end
 
     @[AlwaysInline]
@@ -94,7 +94,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.lc_pyimport(name : Value, import_name : Value)
+    def self.lc_pyimport(unused,name :  LcVal, import_name :  LcVal)
         name = id2string(name)
         return Null unless name
         import_name = id2string(import_name)
@@ -102,13 +102,8 @@ module LinCAS::Internal
         return pyimport(name,import_name)
     end
 
-    py_import = LcProc.new do |args|
-        args = lc_cast(args,T3)
-        next lc_pyimport(args[1],args[2])
-    end
-
     def self.pytuple2ary(tuple : PyObject)
-        ary  = [] of Value
+        ary  = [] of  LcVal
         size = pytuple_size(tuple)
         size.times do |i|
             item = pytuple_at_index(tuple,i)
@@ -122,9 +117,10 @@ module LinCAS::Internal
         return ary
     end
 
-
-    PyModule = lc_build_internal_module("Python")
+    def self.init_pymodule
+        @@lc_pymodule = lc_build_internal_module("Python")
     
-    lc_module_add_internal(PyModule,"pyimport",py_import,   2)
+        lc_module_add_internal(@@lc_pymodule,"pyimport",wrap(lc_pyimport,3),   2)
+    end
     
 end
