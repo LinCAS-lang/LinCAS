@@ -57,20 +57,15 @@ module LinCAS::Internal
     end
 
     def self.build_int(value : Intnum)
-        int       = LcInt.new(value)
-        int.klass = @@lc_integer
-        int.data  = @@lc_integer.data.clone
-        int.flags |= ObjectFlags::FROZEN
-        int.id    = (value * 2 + 1).to_u64
-        return int.as( LcVal)
+        int    = lincas_obj_alloc LcInt, @@lc_integer, value, data: @@lc_integer.data.clone
+        int.id = (value * 2 + 1).to_u64
+        return lc_obj_freeze(int)
     end 
 
     def self.build_fake_int(value : IntnumR)
-        int       = LcInt.new(value)
-        int.klass = @@lc_integer
-        int.flags |= (ObjectFlags::FROZEN | ObjectFlags::FAKE)
+        int = lincas_obj_alloc_fake LcInt, @@lc_integer, value
         int.id    = (value * 2 + 1).to_u64
-        return int.as( LcVal)
+        return lc_obj_freeze(int)
     end
 
     private def self.int_plus_int(n1 :  LcVal,n2 :  LcVal)

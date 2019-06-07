@@ -39,12 +39,9 @@ module LinCAS::Internal
     end
 
     def self.symbol_new(string : String)
-        sym = LcSymbol.new(string)
-        sym.klass = @@lc_symbol 
-        sym.data  = @@lc_symbol.data.clone 
+        sym    = lincas_obj_alloc LcSymbol, @@lc_symbol, string, data: @@lc_symbol.data.clone 
         sym.id = sym.object_id
-        lc_obj_freeze(sym)
-        return sym.as( LcVal)
+        return lc_obj_freeze(sym)
     end
 
     def self.build_symbol(string : String)

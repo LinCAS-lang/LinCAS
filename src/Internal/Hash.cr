@@ -236,11 +236,9 @@ module LinCAS::Internal
     end
 
     def self.lc_hash_allocate(klass :  LcVal)
-        hash = LcHash.new
-        klass = lc_cast(klass,LcClass)
-        hash.klass = klass 
-        hash.data  = klass.data.clone 
-        hash.id    = hash.object_id
+        klass   = lc_cast(klass,LcClass)
+        hash    = lincas_obj_alloc LcHash, klass, data: klass.data.clone
+        hash.id = hash.object_id
         lc_hash_init(hash)
         return lc_cast(hash, LcVal)
     end

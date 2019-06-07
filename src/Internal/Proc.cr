@@ -85,10 +85,8 @@ module LinCAS::Internal
     end
 
     def self.lc_proc_allocate_0(klass :  LcVal)
-        klass      = klass.as(LcClass)
-        proc       = LCProc.new
-        proc.klass = klass
-        proc.data  = klass.data.clone
+        klass = klass.as(LcClass)
+        proc  = lincas_obj_alloc LCProc, klass, data: klass.data.clone
         proc.id    = proc.object_id
         return proc.as( LcVal)
     end

@@ -19,7 +19,7 @@ module LinCAS::Internal
         module ::LinCAS
             {{exp}}
         end
-    end
+    end 
 
     macro wrap(name,argc)
         LcProc.new do |args|
@@ -132,6 +132,24 @@ module LinCAS::Internal
 
     macro current_call_line
         Exec.get_current_call_line
+    end
+
+    def self.lincas_obj_alloc_fake(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
+        tmp = lincas_obj_alloc(type,klass,*args,**opt)
+        set_flag tmp, FAKE
+        return tmp
+    end
+
+    def self.lincas_obj_alloc(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
+        tmp       = type.new(*args)
+        tmp.klass = klass
+        if id = opt[:id]?
+            tmp.id = id.as(UInt64) 
+        end
+        if data = opt[:data]?
+            tmp.data = data 
+        end
+        return tmp
     end
 
     def self.test(object :  LcVal)

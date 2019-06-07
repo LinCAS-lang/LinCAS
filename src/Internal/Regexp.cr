@@ -113,11 +113,8 @@ module LinCAS::Internal
     end
 
     def self.lc_regex_allocate(klass :  LcVal)
-        klass     = klass.as(LcClass)
-        reg       = LcRegexp.new
-        reg.klass = klass
-        reg.data  = klass.data.clone 
-        reg.id    = reg.object_id
+        klass = klass.as(LcClass)
+        reg   = lincas_obj_alloc LcRegexp, klass, data: klass.data.clone 
         return reg.as( LcVal)
     end
 

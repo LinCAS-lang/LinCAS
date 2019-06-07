@@ -106,11 +106,9 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_allocate(klass :  LcVal)
-        klass     = klass.as(LcClass)
-        obj       = LcObject.new
-        obj.klass = klass
-        obj.data  = klass.data.clone
-        obj.id    = pointerof(obj).address
+        klass  = klass.as(LcClass)
+        obj    = lincas_obj_alloc(LcObject,klass, data: klass.data.clone)
+        obj.id = pointerof(obj).address
         return obj.as( LcVal) 
     end
 
@@ -176,7 +174,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_freeze(obj :  LcVal)
-        obj.flags |= ObjectFlags::FROZEN 
+        set_flag obj, FROZEN 
         return obj 
     end
 

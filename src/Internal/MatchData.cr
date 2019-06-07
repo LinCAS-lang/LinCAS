@@ -73,10 +73,11 @@ module LinCAS::Internal
         ary      : Slice(Int32),
         g_size   : Int32)
 
-        data = LcMatchData.new(regexp,captured,string,position,ary,g_size).as( LcVal)
-        data.klass = @@lc_match_data
-        data.data  = @@lc_match_data.data.clone
-        return data
+        data = lincas_obj_alloc(LcMatchData, @@lc_match_data,
+                regexp,captured,string,position,ary,g_size,
+                data: @@lc_match_data.data.clone)
+        data.id = data.object_id
+        return data.as(LcVal)
     end
 
     @[AlwaysInline]

@@ -204,10 +204,8 @@ module LinCAS::Internal
     end
 
     def self.new_ary
-        ary = LcArray.new
-        ary.klass = @@lc_array
-        ary.data  = @@lc_array.data.clone
-        ary.id    = ary.object_id
+        ary    = lincas_obj_alloc LcArray, @@lc_array, data: @@lc_array.data.clone
+        ary.id = ary.object_id
         return ary.as( LcVal)
     end
 
@@ -237,9 +235,7 @@ module LinCAS::Internal
 
     def self.lc_ary_allocate(klass :  LcVal)
         klass     = klass.as(LcClass)
-        ary       = LcArray.new
-        ary.klass = klass
-        ary.data  = klass.data.clone
+        ary       = lincas_obj_alloc LcArray, klass, data: klass.data.clone
         ary.id    = ary.object_id
         return ary.as( LcVal)
     end

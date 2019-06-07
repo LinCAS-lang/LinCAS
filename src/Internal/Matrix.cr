@@ -114,17 +114,13 @@ module LinCAS::Internal
     end
 
     def self.build_matrix
-        matrix       = Matrix.new
-        matrix.klass = @@lc_matrix 
-        matrix.data  = @@lc_matrix.data.clone
+        matrix = lincas_obj_alloc Matrix, @@lc_matrix, data: @@lc_matrix.data.clone
         return matrix.as( LcVal)
     end
 
     def self.lc_matrix_allocate(klass :  LcVal)
-        klass        = klass.as(LcClass)
-        matrix       = Matrix.new 
-        matrix.klass = klass 
-        matrix.data  = klass.data.clone 
+        klass  = klass.as(LcClass)
+        matrix = lincas_obj_alloc Matrix, klass, data: klass.data.clone 
         return matrix.as( LcVal)
     end 
     

@@ -72,4 +72,8 @@ class Object
        ({{obj}}.flags & ObjectFlags::{{flag.id}} != ObjectFlags::NONE)
     end
 
+    macro set_flag(obj, flag)
+        ({{obj}}.flags ||= ObjectFlags::{{flag.id}})
+    end
+
 end

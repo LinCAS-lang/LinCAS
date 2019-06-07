@@ -19,11 +19,8 @@ module LinCAS::Internal
     end
 
     def self.lc_build_null
-        null  = LcNull.new
-        null.klass = @@lc_null
-        null.data  = @@lc_null.data.clone
-        null.flags |= ObjectFlags::FROZEN
-        return null.as( LcVal)
+        null  = lincas_obj_alloc LcNull, @@lc_null, @@lc_null.data.clone
+        return lc_obj_freeze null
     end
 
     def self.lc_lazy_build_null

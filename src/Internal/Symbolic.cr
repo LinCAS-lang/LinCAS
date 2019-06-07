@@ -87,10 +87,8 @@ module LinCAS::Internal
     end
 
     def self.function_allocate(klass : LcClass)
-        tmp = LcFunction.new
-        tmp.klass = klass 
-        tmp.data  = klass.data.clone 
-        tmp.id    = tmp.object_id 
+        tmp     = lincas_obj_alloc LcFunction, klass, data: klass.data.clone
+        tmp.id  = tmp.object_id 
         return lc_cast(tmp, LcVal)
     end
 

@@ -154,9 +154,13 @@ module LinCAS::Internal
     end
 
     def self.new_string
-        str   = LcString.new
-        str.klass = @@lc_string
-        str.data  = @@lc_string.data.clone
+        str = lincas_obj_alloc(
+            LcString, 
+            @@lc_string, 
+            data: @@lc_string.data.clone)
+        # str   = LcString.new
+        # str.klass = @@lc_string
+        # str.data  = @@lc_string.data.clone
         str.id    = str.object_id
         return  str 
     end
@@ -287,8 +291,11 @@ module LinCAS::Internal
             resize_str_capacity(lcStr,str_size(value))
             pointer_of(lcStr).copy_from(value.str_ptr,str_size(value))
         elsif value.is_a? String
-            resize_str_capacity(lcStr,value.as(String).size)
-            pointer_of(lcStr).move_from(value.to_unsafe,value.size)
+            sz = value.as(String).size
+            resize_str_capacity(lcStr,sz + 1)
+            ptr = pointer_of(lcStr)
+            ptr.move_from(value.to_unsafe,sz)
+            ptr[sz] = 0_u8
         else
             lc_raise(
                 LcTypeError,
