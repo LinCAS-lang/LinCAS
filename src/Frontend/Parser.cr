@@ -14,7 +14,10 @@
 # limitations under the License.
 
 enum LinCAS::FuncVisib
-    PUBLIC PROTECTED PRIVATE UNDEFINED
+    PUBLIC
+    PROTECTED
+    PRIVATE
+    UNDEFINED
 end
 class LinCAS::Parser < LinCAS::MsgGenerator
 
