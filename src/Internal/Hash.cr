@@ -214,7 +214,7 @@ module LinCAS::Internal
             end
             return (Exec.lc_call_fun(v1,"==",v2) == lctrue) ? true : false
         end
-        return lc_obj_compare(v1,v2)
+        return bool2val(lc_obj_compare(v1,v2))
     end
 
     private def self.rehash(hash : LcHash)
