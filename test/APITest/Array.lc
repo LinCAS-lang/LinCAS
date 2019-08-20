@@ -114,9 +114,12 @@ class ArrayTest inherits Test::TestCase
 
     test("#insert") {
         a := [1,2,3]
-        a := a.insert(0,0)
-        assert(a.is_a? (Array))
-        assert_eq(a,[0,1,2,3])
+        b := a.insert(0,0)
+        assert(b.is_a? (Array))
+        assert_eq(b,[0,1,2,3])
+        b := [1,2,3].insert(1,-1,-2)
+        assert(b.is_a? (Array))  
+        assert_eq(b,[1,-1,-2,2,3])      
     }
 
     test("#==") {

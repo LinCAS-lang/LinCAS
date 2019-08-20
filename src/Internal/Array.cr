@@ -489,7 +489,7 @@ module LinCAS::Internal
         return Null unless x.is_a? Intnum
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        if (x > arylen - 1) || (x < 0)
+        if arylen - 1 < x < 0
             lc_raise(LcIndexError,"(Index #{x} out of array)")
             return Null 
         elsif x == arylen - 1
@@ -503,10 +503,11 @@ module LinCAS::Internal
                 resize_ary_capa(ary,elemc)
             end
             tmp   = ptr + x + elemc 
-            tmp.copy_from(ptr + x,arylen - x)
+            tmp.move_from(ptr + x,arylen - x)
             (x...(x + elemc)).each do |i|
                 ary_set_index(ary,i,argv[i - x + 1])
             end 
+            set_ary_size(ary, arylen + elemc)
             return ary 
         end
     end
