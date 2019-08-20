@@ -1,0 +1,241 @@
+class ArrayTest inherits Test::TestCase
+{
+    test("literal init") {
+        a := []
+        assert_block("Wrong initialization of array literal" ) { a.is_a? (Array)}
+        assert_block("Array was expected to be empty"        ) { a.empty? ()    }
+        b := [0]
+        assert_block("Array was expected to have 1 element"  ) { b.size() == 1  }
+    }
+
+    test("instantiation") {
+        a := new Array(0)
+        assert_block("Wrong initialization of array literal" ) { a.is_a? (Array)}
+        assert_block("Array was expected to be empty"         ) { a.empty? ()    }
+        b := new Array(3)
+        assert_eq(b.size(),3)
+        b.each() { (e) assert_eq(e,null) }
+    }
+
+    test("#push") {
+        a := []
+        a << 12
+        a.push(15)
+        assert_eq(a,[12,15])
+    }
+
+    test("#pop") {
+        a := [12,15]
+        r := a.pop()
+        assert_eq(r,15)
+        assert_eq(a,[12])
+    }
+
+    test("#[]") {
+        a := [1,2,3,4,5,6,7]
+        assert_eq(a[1],2)
+        assert_eq(a[0..4],[1,2,3,4,5])
+    }
+
+    test("#[]=") {
+        a    := [1]
+        a[1] := 2
+        assert_eq(a,[1,2])
+    }
+
+    test("#include?") {
+        a := [10,"bar",:k]
+        assert_true(a.include? (10))
+        assert_true(a.include? (:k))
+    }
+
+    test("#clone") {
+        a := [1,2,3]
+        b := a.clone()
+        assert_eq(b,a)
+        a << "string"
+        assert_not_eq(b,a)
+    }
+
+    test("#first") {
+        a := ["string", :sym, 12]
+        printl a.first() == "string"
+        assert_eq(a.first(), "string")
+    }
+
+    test("#last") {
+        a := ["string", :sym, 12]
+        assert_eq(a.last(), 12)
+    }
+
+    test("#size") {
+        s := [1,2,3,4]
+        assert_eq(s.size(),   4)
+        assert_eq(s.length(), 4)
+    }
+
+    test("#empty?") {
+        assert([].empty?())
+    }
+
+    test("#to_s") {
+        assert_eq([1,2,3].to_s(), "[1, 2, 3]")
+    }
+
+    test("#each") {
+        a := [10,20,30]
+        b := a.clone()
+        i := 0
+        a.each() { (v)
+            assert_eq(v,b[i])
+            i += 1
+        }
+    }
+
+    test("#map") {
+        b := [1,2,3].map() { (v) v * 2}
+        assert(b.is_a? (Array))
+        assert_eq(b, [2,4,6])
+    }
+
+    test("#map") {
+        a := [1,2,3]
+        a.map!() { (v) v * 2 }
+        assert(a.is_a? (Array))
+        assert_eq(a, [2,4,6])
+    }
+
+    test("#flatten") {
+        a := [1,[2,[3]]]
+        c := a.flatten()
+        assert(c.is_a? (Array))
+        assert_eq(c,[1,2,3])
+    }
+
+    test("#insert") {
+        a := [1,2,3]
+        a := a.insert(0,0)
+        assert(a.is_a? (Array))
+        assert_eq(a,[0,1,2,3])
+    }
+
+    test("#==") {
+        a := [1,2,3]
+        b := [1,2,3]
+        assert_true(a == b)
+    }
+
+    test("#swap") {
+        a := [2,4,6,8]
+        a.swap(1,2)
+        assert_eq(a,[2,6,4,8])
+    }
+
+    test("#sort") {
+        a := [2,6,1,8,9,3,0,4,7,5]
+        assert_eq(a.sort(), [0,1,2,3,4,5,6,7,8,9])
+    }
+
+    test("#sort!") {
+        a := [2,6,1,8,9,3,0,4,7,5]
+        a.sort!()
+        assert_eq(a.sort(), [0,1,2,3,4,5,6,7,8,9])
+    }
+
+    test("#max") {
+        a := [3,1,2]
+        assert_eq(a.max(), 3)
+    }
+
+    test("#min") {
+        a := [1,3,2]
+        assert_eq(a.min(), 1)
+    }
+
+    test("#reverse") {
+        a := [0,1,2,3,4,5,6,7,8,9]
+        assert_eq(a.reverse(),[9,8,7,6,5,4,3,2,1,0])
+    }
+
+    test("#reverse!") {
+        a := [0,1,2,3,4,5,6,7,8,9]
+        a.reverse!()
+        assert_eq(a,[9,8,7,6,5,4,3,2,1,0])
+    }
+
+    test("#shift") {
+        a := [1,2,3,4]
+        assert_eq(a.shift(),1)
+        assert_eq(a,[2,3,4])
+        assert_eq(a.shift(),2)
+        assert_eq(a,[3,4])
+    }
+
+    test("#join") {
+        a := [1,2,3,4]
+        assert_eq(a.join(),"1234")
+        assert_eq(a.join(","),"1,2,3,4")
+        a << a.clone()
+        assert_eq(a.join(),"12341234")
+        assert_eq(a.join(","),"1,2,3,4,1,2,3,4")
+        a.last().push([:a,:b,:c])
+        assert_eq(a.join(),"12341234:a:b:c")
+        assert_eq(a.join(","),"1,2,3,4,1,2,3,4,:a,:b,:c")
+    }
+
+    test("#sort_by") {
+        a := [:b, :n, :k, :c, :a]
+        assert_eq(a.sort_by() { (v) v.to_s()}, [:a, :b, :c, :k, :n])
+    }
+
+    test("#sort_by!") {
+        a := [:b, :n, :k, :c, :a]
+        a.sort_by!() { (v) v.to_s() }
+        assert_eq(a, [:a, :b, :c, :k, :n])
+    }
+
+    test("#delete_at") {
+        a := [1,2,3,4]
+        assert_eq(a.delete_at(0),1)
+        assert_eq(a,[2,3,4])
+        assert_eq(a.delete_at(1),3)
+        assert_eq(a,[2,4])
+        assert_eq(a.delete_at(1),4)
+        assert_eq(a,[2])
+    }
+
+    test("#each_with_index") {
+        a := [10,20,30]
+        b := a.clone()
+        a.each_with_index() { (v,i)
+            assert_eq(v,b[i])
+        }
+    }
+
+    test("#map_with_index") {
+        a := [10,20,30]
+        b := a.map_with_index() { (v,i)
+            v + i
+        }
+        assert_eq(b,[10,21,32])
+    }
+
+    test("#map_with_index!") {
+        a := [10,20,30]
+        a.map_with_index!() { (v,i)
+            v + i
+        }
+        assert_eq(a,[10,21,32])
+    }
+
+    test("#compact") {
+        a := [1,null,3,null,null,10,:x]
+        assert_eq(a.compact(),[1,3,10,:x])
+    }
+
+    test("#compact!") {
+        a := [1,null,3,null,null,10,:x]
+        a.compact!()
+        assert_eq(a,[1,3,10,:x])
+    }
+}

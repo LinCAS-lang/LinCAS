@@ -1,0 +1,5 @@
+import "test"
+
+[
+    "./APITest/Array.lc"
+].each() { (file) require_relative(file)}
