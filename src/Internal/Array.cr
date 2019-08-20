@@ -672,31 +672,22 @@ module LinCAS::Internal
     end 
 
     def self.lc_ary_compact(ary :  LcVal)
-        arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        tmp    = build_ary_new
-        arylen.times do |i|
-            if ptr[i] != Null 
-                lc_ary_push(tmp,ptr[i])
-            end   
-        end
-        return tmp 
+        copy = lc_ary_clone(ary)
+        return lc_ary_o_compact(copy)
     end 
 
     def self.lc_ary_o_compact(ary :  LcVal)
         arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        tmp    = Pointer( LcVal).malloc(arylen)
-        count  = 0
-        arylen.times do |i|
-            if ptr[i] != Null 
-                tmp[count] = ptr[i]
-                count += 1 
-            end
+        b = c = f  = ary_ptr(ary)
+        p_end  = c + arylen
+        while c < p_end 
+            if c.value != Null 
+                f.value = c.value 
+                f += 1 
+            end 
+            c += 1
         end
-        ptr.copy_from(tmp,count)
-        set_ary_size(ary,count)
-        tmp = tmp.realloc(0)
+        set_ary_size(ary, p_end - f + 1)
         return ary 
     end
 
