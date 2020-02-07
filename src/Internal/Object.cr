@@ -217,7 +217,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_obj_hash(obj :  LcVal)
-       return num2int(obj.id.hash.to_i64)
+       return num2int(obj.id.hash.to_i64!)
     end
 
     @[AlwaysInline]
