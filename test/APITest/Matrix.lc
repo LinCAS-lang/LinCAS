@@ -1,0 +1,16 @@
+class MatrixTest inherits Test::TestCase
+{
+    test("::identity") {
+        i_mx := Matrix.identity(4)
+        assert_block("Matrix::identity should return a matrix") { i_mx.is_a? (Matrix) }
+        for i : 0 to 3 {
+            for j : 0 to 3 {
+                if i == j {
+                    assert_eq(i_mx[i,j],1,"Diagonal values should be '1'")
+                }  else {
+                    assert_eq(i_mx[i,j],0,"Non-diagonal values should be '0'")
+                }
+            }
+        }
+    }
+}

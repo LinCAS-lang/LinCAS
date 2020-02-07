@@ -1,5 +1,6 @@
 import "test"
 
 [
-    "./APITest/Array.lc"
+    "./APITest/Array.lc",
+    "./APITest/Matrix.lc"
 ].each() { (file) require_relative(file)}
