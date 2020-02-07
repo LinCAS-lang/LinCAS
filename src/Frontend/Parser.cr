@@ -164,7 +164,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
 
     macro printReport
         if @withSummary
-            time = Time.now.millisecond - @nowTime
+            time = Time.local.millisecond - @nowTime
             msg = Msg.new(MsgType::PARSER_SUMMARY,[@sourceLines.to_s,
                                                    @errHandler.errors.to_s,
                                                    time.to_s])
@@ -260,7 +260,7 @@ class LinCAS::Parser < LinCAS::MsgGenerator
     end
 
     def parse
-        @nowTime = Time.now.millisecond
+        @nowTime = Time.local.millisecond
         if @tokenDisplay
             while !(@currentTk.is_a? EofTk)
                 if @currentTk.ttype != TkType::ERROR
