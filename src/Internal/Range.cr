@@ -21,9 +21,6 @@ module LinCAS::Internal
         @right : Intnum = 0
         @inclusive = true
         property left,right,inclusive
-        def to_s
-            return "#{@left}#{@inclusive ? ".." : "..."}#{@right}"
-        end
     end    
 
     macro r_left(range)
@@ -47,10 +44,11 @@ module LinCAS::Internal
         rht = r_right(range)
         inc = inclusive(range) ? 1 : 0
         if lft > rht
-            return lft - rht + inc 
+            size = lft - rht + inc 
         else 
-            return rht - lft + inc 
+            size = rht - lft + inc 
         end
+        return i_to_t(size,IntD) || 0
     end
 
     @[AlwaysInline]
