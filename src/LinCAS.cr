@@ -36,7 +36,14 @@ module LinCAS
         TkType::NOT_EQ, TkType::SMALLER_EQ,
         TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
     }
-    alias IntnumR  = Int32   | Int64
+    {% if flag?(:x86_64)%}
+      alias IntD  = Int64
+      alias FloatD = Float64
+    {% else %}
+      alias IntD  = Int32
+      alias FloaD = Float32
+    {% end %}
+    alias IntnumR  = Int32 | Int64
     alias Floatnum = Float32 | Float64
     {% if flag?(:fast_math) %}
         alias Intnum   = IntnumR
@@ -96,7 +103,7 @@ options:
 Hd
 
 begin
-    OptionParser.parse! do |parser|
+    OptionParser.parse do |parser|
         parser.on("-t","--tokens") { tk_display   = true }
         parser.on("-a","--ast")    { ast_display  = true }
         parser.on("-i","--iseq")   { iseq_display = true }

@@ -68,13 +68,13 @@ module LinCAS::Internal
 
     def self.build_int(value : Intnum)
         int    = lincas_obj_alloc LcInt, @@lc_integer, value, data: @@lc_integer.data.clone
-        int.id = (value * 2 + 1).to_u64
+        #int.id = (value * 2 + 1).to_u64!
         return lc_obj_freeze(int)
     end 
 
     def self.build_fake_int(value : IntnumR)
         int = lincas_obj_alloc_fake LcInt, @@lc_integer, value
-        int.id    = (value * 2 + 1).to_u64
+        #int.id    = (value * 2 + 1).to_u64!
         return lc_obj_freeze(int)
     end
 

@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2019 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ module LinCAS::Internal
     MIN_ARY_CAPA = 5
 
     class LcArray < BaseC
+        @total_size : IntnumR
+        @size       : IntnumR
         def initialize
-            @total_size = 0.as(Intnum)
-            @size       = 0.as(Intnum)
+            @total_size = 0
+            @size       = 0
             @ptr        = Pointer( LcVal).null
         end
         property total_size, size, ptr
@@ -210,7 +212,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.build_ary(size : Intnum)
+    def self.build_ary(size : IntnumR)
         ary = new_ary
         resize_ary_capa(ary,size) if size > 0
         return ary.as( LcVal)
@@ -218,7 +220,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.build_ary(size :  LcVal)
-        sz = internal.lc_num_to_cr_i(size)
+        sz = internal.lc_num_to_cr_i(size,Int64)
         if sz && sz > 0
             return build_ary(sz)
         else 
@@ -243,6 +245,11 @@ module LinCAS::Internal
     def self.lc_ary_init(ary :  LcVal, size :  LcVal)
         x = lc_num_to_cr_i(size)
         return Null unless x.is_a? Intnum 
+        if (x.is_a? BigInt)
+            lc_raise(LcArgumentError,"BigInt not supported for array creation")
+            return Null 
+        end
+        x = x.to_i64
         resize_ary_capa_3(ary,x)
         ary_range_to_null(ary,0,x)
         set_ary_size(ary,x)
@@ -284,8 +291,8 @@ module LinCAS::Internal
             if left + range_size > arylen 
                 range_size = arylen - left 
             end
-            new_ary    = build_ary(range_size)
-            set_ary_size(new_ary,range_size)
+            new_ary    = build_ary(IntD.new(range_size)) # TO FIX
+            set_ary_size(new_ary,IntD.new(range_size))   # TO FIX
             ary_ptr(new_ary).copy_from(ary_ptr(ary) + left, range_size)
             return new_ary
         else
@@ -303,7 +310,7 @@ module LinCAS::Internal
     end
 
     def self.lc_ary_index_assign(ary :  LcVal, index :  LcVal, value :  LcVal )
-        x = internal.lc_num_to_cr_i(index)
+        x = internal.lc_num_to_cr_i(index,IntD).as(IntD)
         a_ary_size = ary_size(ary)
         t_ary_size = ary_total_size(ary)
         return Null unless x.is_a? Intnum
@@ -623,7 +630,7 @@ module LinCAS::Internal
     def self.lc_ary_o_reverse(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        (arylen / 2).times do |i|
+        (arylen // 2).times do |i|
             ptr.swap(i,arylen - i - 1)
         end
         return ary 
@@ -830,7 +837,7 @@ module LinCAS::Internal
         lc_add_internal(@@lc_array,"map_with_index!",wrap(lc_ary_o_map_with_index,1),0)
         lc_add_internal(@@lc_array,"compact",        wrap(lc_ary_compact,1),         0)
         lc_add_internal(@@lc_array,"compact!",       wrap(lc_ary_o_compact,1),       0)
-
+        Exec.init
         lc_define_const(@@lc_kernel,"ARGV",define_argv)
     end
 end    

@@ -163,8 +163,9 @@ module LinCAS::Internal
         float = float2num(flo)
         num   = argv.empty? ? 1 : argv[0]
         unless num.is_a? Intnum 
-            num = internal.lc_num_to_cr_i(num).as(Intnum)
+            num = internal.lc_num_to_cr_i(num)
         end
+        return Null unless num
         return num2float(float.round(num.to_i64))
     end
 
