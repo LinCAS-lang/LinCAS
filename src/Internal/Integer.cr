@@ -45,14 +45,24 @@ module LinCAS::Internal
         return int.as(LcInt).val
     end 
 
-    def self.lc_num_to_cr_i(value)
+    def self.lc_num_to_cr_i(value, r_type = nil)
         if value.is_a? LcInt
-            return value.as(LcInt).val
+            v = value.val
         elsif value.is_a? LcFloat
-            return value.as(LcFloat).val.to_i
+            v = value.val.to_i
         else
             lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
             return nil 
+        end
+        return r_type ? i_to_t(v,r_type) : v
+    end
+
+    def self.i_to_t(int : Intnum, t)
+        if (v2 = t.new(int)) == int 
+            return v2 
+        else
+            lc_raise(LcTypeError,"Bad approximation of #{int.class} into #{t}")
+            return nil
         end
     end
 
@@ -183,12 +193,12 @@ module LinCAS::Internal
         v1 = int2num(n1)
         v2 = int2num(n2)
         if v1.is_a? BigInt && v2.is_a? BigInt
-            return v1 / v2 
+            return v1 // v2 
         end
         if !(v1.is_a? BigInt || v2.is_a? BigInt)
-            return v1.as(IntnumR) / v2.as(IntnumR)
+            return v1.as(IntnumR) // v2.as(IntnumR)
         end
-        return v1.to_big_i / v1.to_big_i
+        return v1.to_big_i // v1.to_big_i
     end
 
     def self.lc_int_idiv(n1 :  LcVal, n2 :  LcVal)
@@ -198,7 +208,7 @@ module LinCAS::Internal
                 return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             {% if flag?(:fast_math) %}
-                return num2int(int2num(n1) / int2num(n2))
+                return num2int(int2num(n1) // int2num(n2))
             {% else %}
                 return num2int(int_idiv_int(n1,n2))
             {% end %}
