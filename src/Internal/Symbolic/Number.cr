@@ -149,8 +149,8 @@ module LinCAS::Internal
             return Division.new(self,obj) if _mcd == 1
             v1 = @value / _mcd 
             v2 = obj.val / _mcd 
-            return num2sym(v1) if v2 == 1 
-            return Division.new(num2sym(v1),num2sym(v2))
+            return num2sym(v1.to_i) if v2 == 1 
+            return Division.new(num2sym(v1.to_i),num2sym(v2.to_i))
         end 
 
         def /(obj : Negative) : Symbolic
