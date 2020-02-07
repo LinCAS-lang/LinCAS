@@ -59,7 +59,6 @@ class ArrayTest inherits Test::TestCase
 
     test("#first") {
         a := ["string", :sym, 12]
-        printl a.first() == "string"
         assert_eq(a.first(), "string")
     }
 
