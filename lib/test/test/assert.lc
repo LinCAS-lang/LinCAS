@@ -18,21 +18,27 @@ module Test::Assert {
         ) { !val }
     }
 
-    let self.assert_eq(given,expected) {
-        assert_block(
-            "".concat(
+    let self.assert_eq(given,expected, msg:=null) {
+        if !msg {
+            msg := "".concat(
                 expected.to_s(),
                 " was expected but ",given.to_s(),
                 " was given"
             )
+        }
+        assert_block(
+            msg
         ) { expected == given }
     }
 
-    let self.assert_not_eq(val1, val2) {
-        assert_block(
-            "".concat(
+    let self.assert_not_eq(val1, val2, msg:=null) {
+        if !msg {
+            mgs := "".concat(
                 val1.to_s(), " was not expected to be ",val2.to_s()
             )
+        }
+        assert_block(
+            msg
         ) { val1 != val2 }
     }
 
