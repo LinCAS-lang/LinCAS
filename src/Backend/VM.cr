@@ -269,7 +269,6 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     def init()
         @stack = Ary[]
-        puts "VM ok"
     end
 
     @[AlwaysInline]
