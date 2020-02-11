@@ -13,4 +13,64 @@ class MatrixTest inherits Test::TestCase
             }
         }
     }
+
+    test("instantiation") {
+        mx := new Matrix(2,2)
+        assert_block("Wrong initialization of matrix" ) { mx.is_a? (Matrix) }
+        assert_eq(mx.size(),[2,2],"Matrix initialized with a wron shape (2x2) expected")
+        mx := |0,0;1,1|
+        assert_block("Wrong initialization of matrix literal" ) { mx.is_a? (Matrix) }
+        assert_eq(mx.size(),[2,2],"Matrix literal initialized with a wron shape (2x2) expected")
+    }
+
+    # test("#to_s") {
+    #     mx := |0,0;1,1|
+    #     str := "|0,0;\n1,1|"
+    #     assert_eq(mx.to_s(), str)
+    # }
+
+    test("#==") {
+        mx1 := |1,2;3,4|
+        mx2 := new Matrix(2,2) { (i,j) mx1[i,j] }
+        assert_true(mx1 == mx2)
+    }
+
+    test("#[]") {
+        mx := |1,2;3,4|
+        assert_eq(mx[0,0],1)
+        assert_eq(mx[0,1],2)
+        assert_eq(mx[0...2,0],|1;3|)        
+        assert_eq(mx[1,0...2],|3,4|)
+    }
+
+    test("#[]=") {
+        mx := |1,2;3,4|
+        mx[1,1] := 5
+        assert_eq(mx[1,1],5)
+        assert_raise(TypeError) { mx[0..1,1] := 3 }
+    }
+
+    test("#+") {
+
+    }
+
+    test("#-") {
+
+    }
+
+    test("#*") {
+
+    }
+
+    test("#tr") {
+
+    }
+
+    test("#det") {
+
+    }
+
+    test("#lu") {
+
+    }
 }

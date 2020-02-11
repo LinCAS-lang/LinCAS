@@ -60,4 +60,15 @@ module Test::Assert {
         ) { val == null }
     }
 
+    let self.assert_raise(error_cls) {
+        try {
+            yield
+        } catch e {
+           error := e
+        }
+        assert_block(
+            "Raised error should be ".concat(error_cls, " not ", error.class())
+        ) { error_cls == error.class() }
+    }
+
 }
