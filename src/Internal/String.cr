@@ -34,9 +34,10 @@ module LinCAS::Internal
     alias CHAR_PTR = Pointer(LibC::Char)
 
     class LcString < BaseC
+        @size : IntnumR
         def initialize
             @str_ptr = CHAR_PTR.malloc(1,0).as(CHAR_PTR)
-            @size    = 0.as(Intnum)
+            @size    = IntD.new(0)
         end
         property str_ptr, size
     end 
@@ -378,7 +379,7 @@ module LinCAS::Internal
     def self.lc_str_multiply(lcStr :  LcVal, times :  LcVal)
         new_str = build_string("")
         strlen  = str_size(lcStr)
-        tms     = internal.lc_num_to_cr_i(times)
+        tms     = lc_num_to_cr_i(times, IntD).as(IntD)
         return Null unless tms.is_a? Number 
         resize_str_capacity(new_str,strlen * tms)
         set_size(new_str,strlen * tms)
