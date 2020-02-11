@@ -266,7 +266,7 @@ module LinCAS::Internal
             rws     = matrix_rws(matrix) - 1
             r_lower = 0 if r_lower < 0
             r_upper = rws if r_upper > rws
-            tmp = build_matrix(range_size(i),c)
+            tmp = build_matrix(range_size(i),1)
             (r_lower..r_upper).each do |r|
                 (matrix_ptr(tmp) + index(r - r_lower,0,1)).copy_from(
                     (matrix_ptr(matrix) + index(r,c,cls)), 1
