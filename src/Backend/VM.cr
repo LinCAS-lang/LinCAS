@@ -626,9 +626,9 @@ class LinCAS::VM < LinCAS::MsgGenerator
                     tmp = internal.build_function(tmp) if tmp.is_a? Internal::FakeFun
                     push(tmp)
             end
-            if ErrHandler.handled_error?
-                vm_handle_error(ErrHandler.error.as( LcVal))
-            end
+            # if ErrHandler.handled_error?
+            #     vm_handle_error(ErrHandler.error.as(LcVal))
+            # end
             if @quit
                 @quit = false
                 return Null
@@ -1341,7 +1341,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
             str << msg
         end
         error = internal.build_error(code,msg,backtrace) 
-        ErrHandler.handle_error(error)
+        vm_handle_error(error)
+        error
     end
 
 
@@ -1354,13 +1355,15 @@ class LinCAS::VM < LinCAS::MsgGenerator
             str << msg
         end
         error = internal.build_error(code,msg,backtrace) 
-        ErrHandler.handle_error(error)
+        vm_handle_error(error)
+        error
     end
 
     def lc_raise(error :  LcVal)
         error = error.as(LcError)
         error.backtrace = CallTracker.get_backtrace
-        ErrHandler.handle_error(error)
+        vm_handle_error(error)
+        error
     end 
 
     def get_block 
@@ -1372,7 +1375,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         if block_given?
             vm_call_block(args.size)
             set_handle_ret_flag
-            return vm_run_bytecode.as( LcVal)
+            return vm_run_bytecode.as(LcVal)
         else 
             lc_raise(LcArgumentError,convert(:no_block))
         end
@@ -1446,19 +1449,20 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_handle_error(error :  LcVal)
+        error = error.as(LcError)
         if ErrHandler.exception_handler?
             catch_t = get_catch_t
             name    = catch_t.var_name
             iseq    = catch_t.code 
             if name 
-                store_local(name,ErrHandler.error.as(LcError))
+                store_local(name,error)
             end 
-            ErrHandler.handle_error(nil)
+            # ErrHandler.handle_error(nil)
             ErrHandler.exception_handler = -1
             current_frame.pc             = iseq
             LibC.longjmp(catch_t.buff,1)
         else
-            error = ErrHandler.error.as(LcError)
+            # error = ErrHandler.error.as(LcError)
             msg   = String.build do |io|
                 io << error.body 
                 io << '\n' << error.backtrace
