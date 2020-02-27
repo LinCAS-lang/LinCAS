@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2019 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,11 @@ module LinCAS::Internal
     MIN_ARY_CAPA = 5
 
     class LcArray < BaseC
+        @total_size : IntnumR
+        @size       : IntnumR
         def initialize
-            @total_size = 0.as(Intnum)
-            @size       = 0.as(Intnum)
+            @total_size = 0
+            @size       = 0
             @ptr        = Pointer( LcVal).null
         end
         property total_size, size, ptr
@@ -210,7 +212,7 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.build_ary(size : Intnum)
+    def self.build_ary(size : IntnumR)
         ary = new_ary
         resize_ary_capa(ary,size) if size > 0
         return ary.as( LcVal)
@@ -218,7 +220,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.build_ary(size :  LcVal)
-        sz = internal.lc_num_to_cr_i(size)
+        sz = internal.lc_num_to_cr_i(size,Int64)
         if sz && sz > 0
             return build_ary(sz)
         else 
@@ -243,6 +245,11 @@ module LinCAS::Internal
     def self.lc_ary_init(ary :  LcVal, size :  LcVal)
         x = lc_num_to_cr_i(size)
         return Null unless x.is_a? Intnum 
+        if (x.is_a? BigInt)
+            lc_raise(LcArgumentError,"BigInt not supported for array creation")
+            return Null 
+        end
+        x = x.to_i64
         resize_ary_capa_3(ary,x)
         ary_range_to_null(ary,0,x)
         set_ary_size(ary,x)
@@ -284,8 +291,8 @@ module LinCAS::Internal
             if left + range_size > arylen 
                 range_size = arylen - left 
             end
-            new_ary    = build_ary(range_size)
-            set_ary_size(new_ary,range_size)
+            new_ary    = build_ary(IntD.new(range_size)) # TO FIX
+            set_ary_size(new_ary,IntD.new(range_size))   # TO FIX
             ary_ptr(new_ary).copy_from(ary_ptr(ary) + left, range_size)
             return new_ary
         else
@@ -303,12 +310,12 @@ module LinCAS::Internal
     end
 
     def self.lc_ary_index_assign(ary :  LcVal, index :  LcVal, value :  LcVal )
-        x = internal.lc_num_to_cr_i(index)
+        x = internal.lc_num_to_cr_i(index,IntD).as(IntD)
         a_ary_size = ary_size(ary)
         t_ary_size = ary_total_size(ary)
         return Null unless x.is_a? Intnum
-        if x > a_ary_size && x < t_ary_size
-            set_ary_size(ary,x)
+        if x >= a_ary_size && x < t_ary_size
+            set_ary_size(ary,x + 1)
             ary_range_to_null(ary,a_ary_size,x)
             ary_set_index(ary,x,value)
         elsif x < a_ary_size
@@ -321,7 +328,7 @@ module LinCAS::Internal
             end 
             resize_ary_capa(ary,t_ary_size)
             ary_range_to_null(ary,a_ary_size,x)
-            set_ary_size(ary,x)
+            set_ary_size(ary,x + 1)
             ary_set_index(ary,x,value)
         end
         value
@@ -341,6 +348,16 @@ module LinCAS::Internal
         ary_p = ary_ptr(ary)
         size  = ary_size(ary)
         i     = 0
+        while i < size 
+            yield(ary_p[i],i)
+            i += 1
+        end
+    end
+
+    private def self.ary_iterate_with_index(ary :  LcVal, index : Int64)
+        ary_p = ary_ptr(ary)
+        size  = ary_size(ary)
+        i     = index
         while i < size 
             yield(ary_p[i],i)
             i += 1
@@ -479,7 +496,7 @@ module LinCAS::Internal
         return Null unless x.is_a? Intnum
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        if (x > arylen - 1) || (x < 0)
+        if arylen - 1 < x < 0
             lc_raise(LcIndexError,"(Index #{x} out of array)")
             return Null 
         elsif x == arylen - 1
@@ -493,10 +510,11 @@ module LinCAS::Internal
                 resize_ary_capa(ary,elemc)
             end
             tmp   = ptr + x + elemc 
-            tmp.copy_from(ptr + x,arylen - x)
+            tmp.move_from(ptr + x,arylen - x)
             (x...(x + elemc)).each do |i|
                 ary_set_index(ary,i,argv[i - x + 1])
             end 
+            set_ary_size(ary, arylen + elemc)
             return ary 
         end
     end
@@ -537,6 +555,7 @@ module LinCAS::Internal
             break if Exec.error?
             ary_set_index(tmp,i,value)
         end
+        set_ary_size(tmp,size)
         return tmp
     end 
 
@@ -611,7 +630,7 @@ module LinCAS::Internal
     def self.lc_ary_o_reverse(ary :  LcVal)
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
-        (arylen / 2).times do |i|
+        (arylen // 2).times do |i|
             ptr.swap(i,arylen - i - 1)
         end
         return ary 
@@ -648,55 +667,49 @@ module LinCAS::Internal
     def self.lc_ary_delete_at(ary :  LcVal, index :  LcVal)
         i      = lc_num_to_cr_i(index)
         arylen = ary_size(ary)
+        del    = Null
         if i 
             if i >= 0 && i < arylen 
                 ptr = ary_ptr(ary)
+                del = ptr[i]
                 (ptr + i).copy_from(ptr + (i + 1),arylen - i + 1)
                 set_ary_size(ary,arylen - 1)
             end 
         end
-        return ary
+        return del
     end 
 
     def self.lc_ary_compact(ary :  LcVal)
-        arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        tmp    = build_ary_new
-        arylen.times do |i|
-            if ptr[i] != Null 
-                lc_ary_push(tmp,ptr[i])
-            end   
-        end
-        return tmp 
+        copy = lc_ary_clone(ary)
+        return lc_ary_o_compact(copy)
     end 
 
     def self.lc_ary_o_compact(ary :  LcVal)
         arylen = ary_size(ary)
-        ptr    = ary_ptr(ary)
-        tmp    = Pointer( LcVal).malloc(arylen)
-        count  = 0
-        arylen.times do |i|
-            if ptr[i] != Null 
-                tmp[count] = ptr[i]
-                count += 1 
-            end
+        b = c = f  = ary_ptr(ary)
+        p_end  = c + arylen
+        while c < p_end 
+            if c.value != Null 
+                f.value = c.value 
+                f += 1 
+            end 
+            c += 1
         end
-        ptr.copy_from(tmp,count)
-        set_ary_size(ary,count)
-        tmp = tmp.realloc(0)
+        set_ary_size(ary, p_end - f + 1)
         return ary 
     end
 
     def self.lc_ary_shift(ary :  LcVal)
         arylen = ary_size(ary)
-        return ary if arylen == 0
+        return Null if arylen == 0
         ptr    = ary_ptr(ary)
+        val    = ptr[0]
         tmp    = Pointer( LcVal).malloc(arylen)
         tmp.copy_from(ptr,arylen)
         ptr.copy_from(tmp + 1, arylen - 1)
         set_ary_size(ary,arylen  -1)
         tmp = tmp.realloc(0)
-        return ary
+        return val
     end 
 
     def self.lc_ary_sort_by(ary :  LcVal)
@@ -719,15 +732,31 @@ module LinCAS::Internal
         if argv.empty?
             separator = ""
         else 
-            separator = string2cr(argv[0])
+            separator = string2cr(argv[0]) || ""
         end 
-        arylen = ary_size(ary)
-        string = String.build do |io|
-            arylen.times do |i|
-                io << ary_at_index(ary,i).to_s 
-                io << separator if i < arylen - 1
+        buffer     = string_buffer_new
+        processing = [{ary,ary_size(ary),0_i64}]
+        while !processing.empty?
+            frame   = processing.pop
+            current = frame[0]  # Array pointer
+            length  = frame[1]  # Array size
+            i       = frame[2]  # Last index
+            ary_iterate_with_index(current,i) do |v,j|
+                if v.is_a? LcArray
+                    if v == ary
+                        lc_raise(LcArgumentError,"Recursive array join") 
+                        return Null 
+                    end 
+                    processing << {current,length,j+1} << {v,ary_size(v),0_i64}
+                    buffer_append(buffer,separator) unless v.size == 0
+                else
+                    buffer_append(buffer,separator) if j > 0
+                    string_buffer_appender(buffer,v)
+                end 
             end
         end
+        buffer_trunc(buffer)
+        string = build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
         if string.size > STR_MAX_CAPA
             lc_raise(LcRuntimeError,"String overflows max length")
             return Null 
@@ -793,22 +822,22 @@ module LinCAS::Internal
         lc_add_internal(@@lc_array,"==",             wrap(lc_ary_eq,2),              1)
         lc_add_internal(@@lc_array,"swap",           wrap(lc_ary_swap,3),            2)
         lc_add_internal(@@lc_array,"sort",           wrap(lc_ary_sort,1),            0)
+        lc_add_internal(@@lc_array,"sort!",          wrap(lc_ary_o_sort,1),          0)
         lc_add_internal(@@lc_array,"max",            wrap(lc_ary_max,1),             0)
         lc_add_internal(@@lc_array,"min",            wrap(lc_ary_min,1),             0)
-        lc_add_internal(@@lc_array,"sort!",          wrap(lc_ary_o_sort,1),          0)
         lc_add_internal(@@lc_array,"reverse",        wrap(lc_ary_reverse,1),         0)
+        lc_add_internal(@@lc_array,"reverse!",       wrap(lc_ary_o_reverse,1),       0)
         lc_add_internal(@@lc_array,"shift",          wrap(lc_ary_shift,1),           0)
         lc_add_internal(@@lc_array,"join",           wrap(lc_ary_join,2),           -1)
         lc_add_internal(@@lc_array,"sort_by",        wrap(lc_ary_sort_by,1),         0)
         lc_add_internal(@@lc_array,"sort_by!",       wrap(lc_ary_o_sort_by,1),       0)
-        lc_add_internal(@@lc_array,"reverse!",       wrap(lc_ary_o_reverse,1),       0)
         lc_add_internal(@@lc_array,"delete_at",      wrap(lc_ary_delete_at,2),       1)
         lc_add_internal(@@lc_array,"each_with_index",wrap(lc_ary_each_with_index,1), 0)
         lc_add_internal(@@lc_array,"map_with_index", wrap(lc_ary_map_with_index,1),  0)
         lc_add_internal(@@lc_array,"map_with_index!",wrap(lc_ary_o_map_with_index,1),0)
         lc_add_internal(@@lc_array,"compact",        wrap(lc_ary_compact,1),         0)
         lc_add_internal(@@lc_array,"compact!",       wrap(lc_ary_o_compact,1),       0)
-
+        Exec.init
         lc_define_const(@@lc_kernel,"ARGV",define_argv)
     end
 end    

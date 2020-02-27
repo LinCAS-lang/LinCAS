@@ -30,8 +30,8 @@ module LinCAS::Internal
 
     class Matrix < BaseC
         @ptr  = Pointer( LcVal).null
-        @rows = 0.as(Intnum)
-        @cols = 0.as(Intnum)
+        @rows = 0.as(IntnumR)
+        @cols = 0.as(IntnumR)
         @rw_magnitude = true 
         property ptr, rows, cols, rw_magnitude
     end
@@ -105,7 +105,7 @@ module LinCAS::Internal
         set_matrix_index(matrix,i,j,value)
     end
 
-    def self.build_matrix(rws : Intnum, cls : Intnum)
+    def self.build_matrix(rws : IntnumR, cls : IntnumR)
         matrix = build_matrix 
         resize_matrix_capa(matrix,rws,cls)
         set_matrix_rws(matrix,rws)
@@ -141,9 +141,9 @@ module LinCAS::Internal
     # ```
 
     def self.lc_matrix_init(matrix :  LcVal, rows :  LcVal, cols :  LcVal)
-        r = lc_num_to_cr_i(rows)
+        r = lc_num_to_cr_i(rows,IntD).as(IntD)
         return Null unless r 
-        c = lc_num_to_cr_i(cols)
+        c = lc_num_to_cr_i(cols,IntD).as(IntD)
         return Null unless c
         if r < 0 || c < 0
             lc_raise(LcArgumentError,"Matrices must have a positive number of rows and columns")
@@ -216,7 +216,7 @@ module LinCAS::Internal
         cls     = matrix_cls(matrix)
         r_upper = rws - 1 if r_upper >= rws
         c_upper = cls - 1 if c_upper >= cls
-        tmp    = build_matrix(range_size(i),range_size(j))
+        tmp    = build_matrix(IntD.new(range_size(i)),IntD.new(range_size(j))) # TO FIX
         r_size = range_size(j)
         (r_lower..r_upper).each do |r|
             (c_lower..c_upper).each do |c|
@@ -253,7 +253,7 @@ module LinCAS::Internal
     def self.lc_matrix_index(matrix :  LcVal,i, j)
         if i.is_a? LcRange 
             cls     = matrix_cls(matrix)
-            c       = lc_num_to_cr_i(j)
+            c       = lc_num_to_cr_i(j,IntD).as(IntD)
             return Null unless c
             if (c < 0) || (c > cls)
                 lc_raise(LcIndexError,"(Index [#{i.to_s},#{c}] out of matrix)")
@@ -266,7 +266,7 @@ module LinCAS::Internal
             rws     = matrix_rws(matrix) - 1
             r_lower = 0 if r_lower < 0
             r_upper = rws if r_upper > rws
-            tmp = build_matrix(range_size(i),c)
+            tmp = build_matrix(range_size(i),1)
             (r_lower..r_upper).each do |r|
                 (matrix_ptr(tmp) + index(r - r_lower,0,1)).copy_from(
                     (matrix_ptr(matrix) + index(r,c,cls)), 1
@@ -288,7 +288,7 @@ module LinCAS::Internal
             c_upper -= 1 if !inclusive(j)
             c_lower = 0 if c_lower < 0
             c_upper = cls if c_upper > cls
-            tmp = build_matrix(1,range_size(j))
+            tmp = build_matrix(1,IntD.new(range_size(j))) # TO FIX
             (c_lower..c_upper).each do |c|
                 (matrix_ptr(tmp) + index(0,c - c_lower,range_size(j))).copy_from(
                     (matrix_ptr(matrix) + index(r,c,cls)), 1
@@ -774,7 +774,7 @@ module LinCAS::Internal
         puts
     end
 
-    private def self.matrix_id(size : Intnum)
+    private def self.matrix_id(size : IntnumR)
         tmp = build_matrix(size,size)
         size.times do |i|
             size.times do |j|
@@ -791,7 +791,7 @@ module LinCAS::Internal
     end
 
     def self.lc_matrix_id(klass,size :  LcVal)
-        rws = lc_num_to_cr_i(size)
+        rws = lc_num_to_cr_i(size, Int64).as(Int64)
         return Null unless rws 
         if rws < 0
             lc_raise(LcArgumentError,"(Negative matrix size)")

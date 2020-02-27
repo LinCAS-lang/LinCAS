@@ -102,10 +102,6 @@ module LinCAS::Internal
         return proc
     end
 
-    proc_allocator = LcProc.new do |args|
-        next lc_proc_allocate_0(*lc_cast(args,T1))
-    end
-
     def self.build_proc
         return lc_proc_allocate(@@lc_proc)
     end

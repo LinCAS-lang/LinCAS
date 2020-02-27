@@ -19,8 +19,8 @@ module LinCAS::Internal
 
     class String_buffer
         @buffer = Pointer(LibC::Char).null 
-        @size   = 0.as(Intnum)
-        @capa   = 0.as(Intnum)
+        @size   = 0.as(IntnumR)
+        @capa   = 0.as(IntnumR)
         property buffer,size,capa
     end
 

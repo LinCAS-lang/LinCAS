@@ -22,8 +22,7 @@ module Test {
             if @recycle.empty?() {
                 return new Context(klass)
             } else {
-                ctx := @context.pop()
-                ctx.type(type)
+                ctx := @recycle.pop()
                 ctx.klass(klass)
                 return ctx
             }

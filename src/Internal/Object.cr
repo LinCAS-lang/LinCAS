@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2019 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -217,7 +217,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_obj_hash(obj :  LcVal)
-       return num2int(obj.id.hash.to_i64)
+       return num2int(obj.id.hash.to_i64!)
     end
 
     @[AlwaysInline]
@@ -240,7 +240,7 @@ module LinCAS::Internal
 
         obj_ne = LcProc.new do |args|
             res = fast_compare(*args.as(T2))
-            next lc_bool_invert(res)
+            next val2bool(!res)
         end
 
         lc_add_internal(@@lc_object,"!=",obj_ne,           1)

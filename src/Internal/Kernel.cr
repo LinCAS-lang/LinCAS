@@ -28,7 +28,7 @@ module LinCAS::Internal
     ExitProcs = [] of  LcVal
     @@running = false
     @@version = load_version.as(String)
-    ExitArg   = Ary.new(1)
+    # ExitArg   = Ary.new(1)
 
     private def self.load_version : String
         if File.exists?(file = "/usr/local/lib/LinCAS/LinCAS/VERSION")
@@ -53,10 +53,11 @@ module LinCAS::Internal
     end
 
     def self.invoke_at_exit_procs(status = 0)
-        ExitArg[0] = num2int(status)
+        exitarg = Ary.new(1)
+        exitarg[0] = num2int(status)
         @@running = true 
         while proc = ExitProcs.pop?
-            Exec.call_proc(proc.as(LCProc),ExitArg)
+            Exec.call_proc(proc.as(LCProc),exitarg)
         end
         @@running = false
     end

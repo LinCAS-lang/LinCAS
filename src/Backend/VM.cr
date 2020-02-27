@@ -251,7 +251,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @to_replace : Bytecode?
     def initialize
-        @stack   = Ary[]
+        @stack   = uninitialized Ary
         @framev  = [] of LcFrame
         @sp      = 0                          # stack pointer
         @vm_fp   = 0                          # frame pointer
@@ -265,6 +265,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @handle_ret = false
 
         self.addListener(RuntimeListener.new)
+    end
+
+    def init()
+        @stack = Ary[]
     end
 
     @[AlwaysInline]
@@ -1260,7 +1264,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     protected def vm_mx_new(rws : Intnum, cls : Intnum)
         i = 0
         j = 0
-        mx = internal.build_matrix(rws,cls)
+        mx = internal.build_matrix(IntD.new(rws),IntD.new(cls)) # TO FIX
         while i < rws 
             while j < cls 
                 value = pop

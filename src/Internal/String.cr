@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2019 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -34,9 +34,10 @@ module LinCAS::Internal
     alias CHAR_PTR = Pointer(LibC::Char)
 
     class LcString < BaseC
+        @size : IntnumR
         def initialize
             @str_ptr = CHAR_PTR.malloc(1,0).as(CHAR_PTR)
-            @size    = 0.as(Intnum)
+            @size    = IntD.new(0)
         end
         property str_ptr, size
     end 
@@ -68,8 +69,9 @@ module LinCAS::Internal
             lc_raise(LcIndexError, "String size too big")
             return Null
         else
-            {{lcStr}}.as(LcString).str_ptr = pointer_of({{lcStr}}).realloc(final_size.to_i)
+            {{lcStr}}.as(LcString).str_ptr = pointer_of({{lcStr}}).realloc(final_size.to_i + 1)
             set_size({{lcStr}},final_size)
+            {{lcStr}}.as(LcString).str_ptr[final_size.to_i] = 0_u8
         end 
     end
 
@@ -288,14 +290,16 @@ module LinCAS::Internal
         # To implement: argument check
         lcStr = lcStr.as(LcString)
         if value.is_a? LcString
-            resize_str_capacity(lcStr,str_size(value))
-            pointer_of(lcStr).copy_from(value.str_ptr,str_size(value))
+            sz = str_size(value)
+            resize_str_capacity(lcStr,sz)
+            pointer_of(lcStr).copy_from(value.str_ptr,sz)
         elsif value.is_a? String
             sz = value.as(String).size
-            resize_str_capacity(lcStr,sz + 1)
+            resize_str_capacity(lcStr,sz)
+            set_size(lcStr,sz)
             ptr = pointer_of(lcStr)
             ptr.move_from(value.to_unsafe,sz)
-            ptr[sz] = 0_u8
+            #ptr[sz] = 0_u8
         else
             lc_raise(
                 LcTypeError,
@@ -375,7 +379,7 @@ module LinCAS::Internal
     def self.lc_str_multiply(lcStr :  LcVal, times :  LcVal)
         new_str = build_string("")
         strlen  = str_size(lcStr)
-        tms     = internal.lc_num_to_cr_i(times)
+        tms     = lc_num_to_cr_i(times, IntD).as(IntD)
         return Null unless tms.is_a? Number 
         resize_str_capacity(new_str,strlen * tms)
         set_size(new_str,strlen * tms)
@@ -1004,6 +1008,7 @@ module LinCAS::Internal
         lc_add_internal(@@lc_string,"split",   wrap(lc_str_split,2),     -1)
         lc_add_internal(@@lc_string,"to_i",    wrap(lc_str_to_i,1),       0)
         lc_add_internal(@@lc_string,"to_f",    wrap(lc_str_to_f,1),       0)
+        lc_add_internal(@@lc_string,"to_s",    wrap(lc_obj_self,1),       0)
         lc_add_internal(@@lc_string,"to_sym",  wrap(lc_str_to_symbol,1),  0)
         lc_add_internal(@@lc_string,"hash",    wrap(lc_str_hash,1),       0)
         lc_add_internal(@@lc_string,"each_char",wrap(lc_str_each_char,1), 0)
