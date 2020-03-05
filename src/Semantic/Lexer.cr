@@ -16,17 +16,16 @@ require "string_pool"
 
 module LinCAS
   class Lexer < Reader
-
-    LOWCASE_CHR   = /[a-z]/
-    UPPERCASE_CHR = /[A-Z]/
-    ID_CHAR       = /[a-zA-Z_]/
-    INT           = /[0-9]/
-    INT_NO_ZERO   = /[1-9]/
+    getter filename
 
     @stringpool : StringPool
 
-    def initialize(@reader : Char::Reader, stringpool : StringPool? = nil) 
-      @regex_enable   = true
+    def self.new(filename : String, code : String, stringpool : StringPool? = nil)
+      new(filename, Char::Reader.new(code), stringpool)
+    end
+
+    def initialize(@filename : String, @reader : Char::Reader, stringpool : StringPool? = nil) 
+      @regex_enabled  = true
       @line           = 1i64
       @col            = 1
       @stringpool     = stringpool || StringPool.new
@@ -42,181 +41,187 @@ module LinCAS
       
       start =   current_pos
       @token.location = current_location
-      
       case current_char
       when '\0'
-        @token.type = Tk::EOF
-      when '\n'
-        next_char_and_token Tk::EOL
-        @line += 1
-        @col   = 1
-      when ' '
-        next_char_and_token Tk::SPACE
+        @token.type = :EOF
+      when '\n' 
+        consume_newline
+      when ' ', '\t'
+        consume_space
       when ';'
-        next_char_and_token Tk::SEMICOLON
+        next_char_and_token :SEMICOLON
       when '('
-        next_char_and_token Tk::LPAR
+        next_char_and_token :"("
       when ')'
-        next_char_and_token Tk::RPAR
+        next_char_and_token :")"
       when '['
-        next_char_and_token Tk::LBRACKET
+        case next_char
+        when ']'
+          if next_char == '='
+            @token.type = :"[]="
+          else 
+            @token.type = :"[]"
+          end
+        else 
+          @token.type = :"["
+        end
       when ']'
-        next_char_and_token Tk::RBRAKET
+        next_char_and_token :"]"
       when '{'
-        @token.type = Tk::LBRACE 
+        @token.type = :"{"
         next_char
       when '}'
-        next_char_and_token Tk::RBRACE 
+        next_char_and_token :"}" 
       when '|'
         case next_char
         when '|'
           if next_char == '='
-            next_char_and_token Tk::OR_EQ
+            next_char_and_token :"||="
           else 
-            @token.type = Tk::OR 
+            @token.type = :"||" 
           end
         when '='
-          next_char_and_token Tk::B_OR_EQ
+          next_char_and_token :"|="
         else
-          @token.type = Tk::PIPE
+          @token.type = :|
         end
       when '"'
-        delimiter_t = Token::DelimiterType.new(Tk::QUOTES, current_char, true, true)
-        @token.type = Tk::QUOTES
+        delimiter_t = Token::DelimiterType.new(:"\"", current_char, true, true)
+        @token.type = :"\""
         @token.delimiter_t = delimiter_t
         next_char
       when '\''
-        delimiter_t = Token::DelimiterType.new(Tk::QUOTE, current_char, false, false)
-        @token.type = Tk::QUOTE
+        delimiter_t = Token::DelimiterType.new(:"'", current_char, false, false)
+        @token.type = :"'"
         @token.delimiter_t = delimiter_t
         next_char
       when ','
-        next_char_and_token Tk::COMMA
+        next_char_and_token :","
       when '.'
         case next_char
         when '.'
           case next_char
           when '.'
-            next_char_and_token Tk::DOT3 
+            next_char_and_token :"..."
           else
-            @token.type = Tk::DOT2
+            @token.type = :".."
           end
         else
-          @token.type = Tk::DOT 
+          @token.type = :"."
         end
       when '+'
         case next_char
         when '='
-          next_char_and_token Tk::PLUS_EQ
+          next_char_and_token :"+="
         else 
-          @token.type = Tk::PLUS 
+          @token.type = :"+"
         end
       when '-'
         case next_char
         when '='
-          next_char_and_token Tk::MINUS_EQ
+          next_char_and_token :"-="
         when '@'
-          next_char_and_token Tk::UMINUS
+          next_char_and_token :"-@"
         else 
-          @token.type = Tk::MINUS 
+          @token.type = :"-"
         end
       when '*'
         case next_char
         when '='
-          next_char_and_token Tk::STAR_EQ
+          next_char_and_token :"*="
         when '*'
           case next_char
           when '='
-            next_char_and_token Tk::STAR2_EQ
+            next_char_and_token :"**="
           else 
-            @token.type = Tk::STAR2 
+            @token.type = :"**"
           end 
         else 
-          @token.type = Tk::STAR 
+          @token.type = :"*"
         end
       when '/'
-        if @regex_enable
-          delimiter_t = Token::DelimiterType.new(Tk::REGEXP_D, current_char, false, true)
-          @token.type = Tk::REGEXP_D
+        if @regex_enabled
+          delimiter_t = Token::DelimiterType.new(:REGEXP_D, current_char, false, true)
+          @token.type = :REGEXP_D
           @token.delimiter_t = delimiter_t
           next_char
           return @token
         end
         case next_char
         when '='
-          next_char_and_token Tk::SLASH_EQ
+          next_char_and_token :"/="
         else 
-          @token.type = Tk::SLASH 
+          @token.type = :"/"
         end
       when '\\'
         case next_char
         when '='
-          next_char_and_token Tk::BSLASH_EQ 
+          next_char_and_token :"\\="
         else
-          @token.type = Tk::BSLASH 
+          @token.type = :"\\"
         end
       when '^'
         case next_char
         when '='
-          next_char_and_token Tk::B_XOR_EQ
+          next_char_and_token :"^="
         else 
-          @token.type = Tk::B_XOR
+          @token.type = :"^"
         end 
       when '>'
         case next_char
         when '='
-          next_char_and_token Tk::GREATER_EQ
+          next_char_and_token :">="
         when '>'
-          next_char_and_token Tk::R_SHIFT
+          next_char_and_token :">>"
         else 
-          @token.type = Tk::GREATER
+          @token.type = :">"
         end 
       when '<'
         case next_char
         when '='
-          next_char_and_token Tk::LESS_EQ
+          next_char_and_token :"<="
         when '<'
-          next_char_and_token Tk::L_SHIFT
+          next_char_and_token :"<<"
         else 
-          @token.type = Tk::LESS
+          @token.type = :"<"
         end 
       when '%'
         if next_char == '='
-          next_char_and_token Tk::MOD_EQ
+          next_char_and_token :"%="
         else 
-          @token.type = Tk::MOD
+          @token.type = :"%"
         end
       when '!'
         if next_char == '='
-          next_char_and_token Tk::NOT_EQ 
+          next_char_and_token :"!="
         else 
-          @token.type = Tk::NOT 
+          @token.type = :"!" 
         end
       when '='
         case next_char
         when '='
           if next_char == '='
-            next_char_and_token Tk::EQ3
+            next_char_and_token :"==="
           else 
-            @token.type = Tk::EQ2
+            @token.type = :"=="
           end 
         when '>'
-          next_char_and_token Tk::R_ARROW
+          next_char_and_token :"=>"
         else 
-          @token.type = Tk::EQ
+          @token.type = :"="
         end
       when '&'
         case next_char
         when '&'
           if next_char == '='
-            next_char_and_token Tk::AND_EQ
+            next_char_and_token :"&&="
           else
-            @token.type = Tk::AND 
+            @token.type = :"&&" 
           end
         when '='
-          next_char_and_token Tk::B_AND_EQ
+          next_char_and_token :"&="
         else 
-          @token.type = Tk::B_AND
+          @token.type = :"&"
         end
       when ':'
         case next_char
@@ -224,7 +229,7 @@ module LinCAS
           if next_char == '='
             next_char_and_symbol start
           else
-            @token.type = Tk::COLON_EQ
+            @token.type = :":="
           end
         when '+', '-', '^', '\\', '/', '&', '%', '|', '!'
           next_char_and_symbol start
@@ -235,7 +240,7 @@ module LinCAS
             symbol start
           end
         when ':'
-          next_char_and_token Tk::COLON2
+          next_char_and_token :"::"
         when '['
           case next_char
           when ']'
@@ -245,8 +250,8 @@ module LinCAS
               symbol start
             end 
           else 
-            @token.type = Tk::COLON
-               set_current_pos = start + 1 
+            @token.type = :":"
+            set_current_pos = start + 1 
           end
         when '<'
           char = next_char
@@ -263,7 +268,7 @@ module LinCAS
             symbol start
           end
         when '"'
-          next_char_and_token Tk::QUOTED_SYM_BEG
+          next_char_and_token :":\""
         else
           if ident_start? current_char
             while ident_part? next_char
@@ -272,21 +277,21 @@ module LinCAS
             if current_char == '?' || ((current_char == '!' || current_char == '=') && peek_char != '=')
               next_char
             end
-            @token.type  = Tk::SYMBOL
+            @token.type  = :SYMBOL
             @token.value = string_range_from_pool start + 1
             set_token_raw_from_start start
           else
-            @token.type = Tk::COLON 
+            @token.type = :":"
           end
         end
       when '$'
         if next_char == '!'
-          next_char_and_token Tk::ANS
+          next_char_and_token :"$!"
         else 
-          @token.type = Tk::DOLLAR
+          @token.type = :"$"
         end
       when '?'
-        next_char_and_token Tk::QMARK
+        next_char_and_token :"?"
       when '0'
         scan_zero_number start
       when '1', '2', '3', '4', '5', '6', '7', '8', '9'
@@ -297,7 +302,7 @@ module LinCAS
           while ident_part? next_char
             # do nothing 
           end
-          @token.type  = class_var ? Tk::CLASS_VAR : Tk::INSTANCE_VAR
+          @token.type  = class_var ? :CLASS_VAR : :INSTANCE_VAR
           @token.value = string_range_from_pool(start)
         else 
           raw = string_range(start)
@@ -308,7 +313,7 @@ module LinCAS
           while ident_part? next_char
             # do nothing 
           end 
-          @token.type  = Tk::CAPITAL_VAR 
+          @token.type  = :CAPITAL_VAR 
           @token.value = string_range_from_pool start
         elsif ident_start? current_char
           scan_kw_or_ident start 
@@ -329,7 +334,7 @@ module LinCAS
       if interpolation && (current_char == '#') && (peek_char == '{')
         next_char
         next_char
-        @token.type = Tk::INTERP_BEG
+        @token.type = :"\#{"
         return @token
       end 
       io = IO::Memory.new
@@ -394,6 +399,7 @@ module LinCAS
         end
         next_char
       end 
+      @token.type = :STRING
       @token.value = io.to_s 
       @token
     end
@@ -431,13 +437,13 @@ module LinCAS
     end
 
     def scan_number(start)
-      num_type       = :int
+      num_type       = :INT
       has_underscore = scan_digits
 
       case current_char
       when '.'
         if peek_char.ascii_number?
-          num_type = :float
+          num_type = :FLOAT
           has_underscore ||= scan_digits
         end
         case current_char
@@ -452,19 +458,19 @@ module LinCAS
             #lex_raise()
           end
           if (current_char == 'i') && !(ident_part? peek_char)
-            num_type = :complex
+            num_type = :COMPLEX
             next_char
           end
         when 'i'
           if !(ident_part? peek_char)
             next_char
-            num_type = :complex
+            num_type = :COMPLEX
           end
         end
       when 'i'
         if !(ident_part? peek_char)
           next_char
-          num_type = :complex
+          num_type = :COMPLEX
         end
       when 'e', 'E'
         char = current_char
@@ -472,7 +478,7 @@ module LinCAS
           next_char
         end 
         if peek_char.ascii_number?
-          num_type = :float
+          num_type = :FLOAT
           has_underscore ||= scan_digits
         else 
           #lex_raise()
@@ -486,13 +492,7 @@ module LinCAS
         value = string_range(start, end_pos)
       end 
       value = value.delete('_') if has_underscore
-      @token.type = case num_type
-      when :float then Tk::FLOAT
-      when :complex then Tk::COMPLEX 
-      else 
-        Tk::INT
-      end 
-
+      @token.type = num_type
       @token.value = value
       set_token_raw_from_start start
     end
@@ -501,7 +501,10 @@ module LinCAS
       while ident_part? current_char
         next_char
       end 
-      @token.type   = Tk::IDENT 
+      if (current_char == '?' || current_char == '!') &&  peek_char != '='
+        next_char 
+      end    
+      @token.type   = :IDENT 
       @token.value = string_range_from_pool start
     end
 
@@ -513,34 +516,34 @@ module LinCAS
           case next_char 
           when 's'
             if (next_char == 'e')
-              return check_kw start 
+              return check_kw start, :case 
             end 
           when 't'
             if (next_char == 'c') && (next_char == 'h')
-              return check_kw start  
+              return check_kw start, :catch 
             end 
           end 
         when 'l'
           if (next_char == 'a') && (next_char == 's') && (next_char == 's')
-            return check_kw start
+            return check_kw start, :class
           end 
         when 'o'
           if (next_char == 'n') && (next_char == 's') && (next_char == 't')
-            return check_kw start 
+            return check_kw start, :const 
           end
         end
       when 'd'
         if (next_char == 'o') && (next_char == 'w') && (next_char == 'n') && (next_char == 't') && (next_char == 'o')
-          return check_kw start 
+          return check_kw start, :downto 
         end
       when 'e'
         if (next_char == 'l') && (next_char == 's')
           case next_char
           when 'e'
-            return check_kw start 
+            return check_kw start, :else 
           when 'i'
             if next_char == 'f'
-              return check_kw start
+              return check_kw start, :elsif
             end            
           end
         end 
@@ -548,44 +551,44 @@ module LinCAS
         case next_char
         when 'o'
           if next_char == 'r'
-            return check_kw start 
+            return check_kw start, :for 
           end
         when 'a'
           if (next_char == 'l') && (next_char == 's') && (next_char == 'e')
-            return check_kw start 
+            return check_kw start, :false 
           end
         end
       when 'i'
         case next_char 
         when 'f'
-          return check_kw start
+          return check_kw start, :if
         when 'n'
           if (next_char == 'h') && (next_char == 'e') && (next_char == 'r') && (next_char == 'i') && (next_char == 't') && (next_char == 's')
-            return check_kw start 
+            return check_kw start, :inherits 
           end
         end
       when 'l'
         if (next_char == 'e') && (next_char == 't')
-          return check_kw start 
+          return check_kw start, :let 
         end
       when 'm'
         if (next_char == 'o') && (next_char == 'd') && (next_char == 'u') && (next_char == 'l') && (next_char == 'e')
-          return check_kw start 
+          return check_kw start, :module 
         end
       when 'n'
         case next_char 
         when 'e'
           case next_char
           when 'w'
-            return check_kw start 
+            return check_kw start, :new 
           when 'x'
             if next_char == 't'
-              return check_kw start 
+              return check_kw start, :next 
             end
           end
         when 'u'
           if (next_char == 'l') && (next_char == 'l')
-            return check_kw start 
+            return check_kw start, :null 
           end
         end 
       when 'p'
@@ -594,30 +597,30 @@ module LinCAS
           case next_char
           when 'i'
             if (next_char == 'v') && (next_char == 'a') && (next_char == 't') && (next_char == 'e')
-              return check_kw start
+              return check_kw start, :private
             end
           when 'o'
             if (next_char == 't') && (next_char == 'e') && (next_char == 'c') && (next_char == 't') && (next_char == 'e') && (next_char == 'd')
-              return check_kw start 
+              return check_kw start, :protected 
             end
           end
         when 'u'
           if (next_char == 'b') && (next_char == 'l') && (next_char == 'i') && (next_char == 'c')
-            return check_kw start 
+            return check_kw start, :public 
           end
         end  
       when 'r'
         if (next_char == 'e') && (next_char == 't') && (next_char == 'u') && (next_char == 'r') && (next_char == 'n')
-          return check_kw start 
+          return check_kw start, :return 
         end
       when 's'
         if (next_char == 'e') && (next_char == 'l')
           case next_char
           when 'f'
-            return check_kw start 
+            return check_kw start, :self 
           when 'e'
             if (next_char == 'c') && (next_char == 't')
-              return check_kw start 
+              return check_kw start, :select 
             end 
           end
         end
@@ -625,42 +628,42 @@ module LinCAS
         case next_char
         when 'h'
           if (next_char == 'e') && (next_char == 'n')
-            return check_kw start 
+            return check_kw start, :then 
           end
         when 'o'
-          return check_kw start
+          return check_kw start, :to
         when 'r'
           case next_char
           when 'y'
-            return check_kw start 
+            return check_kw start, :try 
           when 'u'
             if next_char == 'e'
-              return check_kw start 
+              return check_kw start, :true 
             end 
           end
         end
       when 'u'
         if (next_char == 'n') && (next_char == 't') && (next_char == 'i') && (next_char == 'l')
-          return check_kw start 
+          return check_kw start, :until 
         end 
       when 'w'
         if (next_char == 'h') && (next_char == 'i') && (next_char == 'l') && (next_char == 'e')
-          return check_kw start 
+          return check_kw start, :while 
         end
       when 'y'
         if (next_char == 'i') && (next_char == 'e') && (next_char == 'l') && (next_char == 'd')
-          return check_kw start 
+          return check_kw start, :yield 
         end
       when '_'
         if next_char == '_'
           case next_char
           when 'F'
             if (next_char == 'I') && (next_char == 'L') && (next_char == 'E') && (next_char == '_') && (next_char == '_')
-              return check_kw start 
+              return check_kw start, :__FILE__ 
             end
           when 'D'
             if (next_char == 'I') && (next_char == 'R') && (next_char == '_') && (next_char == '_')
-              return check_kw start 
+              return check_kw start, :__DIR__ 
             end
           end
         end
@@ -668,16 +671,51 @@ module LinCAS
       scan_ident start 
     end 
 
-    def check_kw(start)
+    def check_kw(start, kw)
       if ident_part? next_char
         scan_ident start 
       else
-        @token.type  = Tk::IDENT 
-        @token.value = string_range_from_pool start
+        @token.type  = :IDENT 
+        @token.value = kw
         @token.is_kw = true
       end
       @token
     end 
+
+    def next_token_skip_end
+      next_token
+      skip_end
+    end
+
+    def next_token_skip_space 
+      next_token
+      while @token.type == :SPACE
+        next_token
+      end 
+    end
+
+    def next_token_skip_space_or_newline
+      next_token
+      skip_space_or_newline
+    end
+
+    def skip_space_or_newline 
+      while (@token.type == :EOL) || (@token.type == :SPACE)
+        next_token
+      end
+    end
+
+    def skip_end 
+      while (@token.type == :EOL) || (@token.type == :SEMICOLON) || (@token.type == :SPACE)
+        next_token
+      end
+    end
+
+    def lex_restore_state(location : Location)
+      @col  = location.column
+      @line = location.line
+      set_current_pos = location.lex_pos
+    end  
 
     @[AlwaysInline]
     def set_current_pos=(pos)
@@ -710,8 +748,8 @@ module LinCAS
     end
 
     def symbol(start)
-      @token.type  = Tk::SYMBOL
-      end_pos      =   current_pos 
+      @token.type  = :SYMBOL
+      end_pos      = current_pos 
       @token.value = string_range(start + 1)
       set_token_raw_from_start(start)   
     end
@@ -741,6 +779,22 @@ module LinCAS
         next_char
       end
     end
+
+    def consume_space
+      while {' ', '\t'}.includes? next_char
+        # do nothing 
+      end 
+      @token.type = :SPACE
+    end
+
+    def consume_newline
+      while current_char == '\n'
+        @line += 1 
+        next_char
+      end 
+      @col = 1 
+      @token.type = :EOL
+    end 
 
     def string_range(start_pos)
       string_range(start_pos,   current_pos)
@@ -772,29 +826,34 @@ module LinCAS
 
     @[AlwaysInline]
     def current_location
-      Location.new(@line,@col)
+      Location.new(@line, @col, current_pos)
     end
         
     @[AlwaysInline]
     def enable_regex 
-      @enable_regex = true 
+      @regex_enabled = true 
     end
         
     @[AlwaysInline]
     def disable_regex 
-      @enable_regex = false 
+      @regex_enabled = false 
     end
 
     def lex_warn(msg)
       msg = String.build do |io|
         io << "Warning: " << msg << '\n'
-        io << "Line: " << @line << '\n'
-        io << "In: " << "" << '\n'
+        io << "Line: " << @line << ':' << @col << '\n'
+        io << "In: " << @filename << '\n'
       end
     end 
 
     def lex_raise(error, msg)
-      
+      body = String.build do |io|
+        io << msg << '\n'
+        io << "Line:" << @line << ':' << @col << '\n'
+        io << "In: " << @filename 
+      end 
+      Exec.lc_raise(error, body)
     end
 
    end
