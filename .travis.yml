@@ -57,7 +57,6 @@ script:
   - sudo cp ./VERSION /usr/local/lib/LinCAS/LinCAS/VERSION
   - sudo cp -r ./lib/test /usr/local/lib/LinCAS/lib
   - crystal spec
-  - lincas test/test.lc
 
 
 branches:
