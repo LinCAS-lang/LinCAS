@@ -1,2 +1,3 @@
 require "spec"
-require "../src/LinCAS"
+require "../src/Semantic/Semantic"
+include LinCAS
