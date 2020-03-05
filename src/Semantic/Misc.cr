@@ -22,8 +22,8 @@ module LinCAS
   end
 
   struct Location
-    getter line, column
-    def initialize(@line : Int64, @column : Int32)
+    getter line, column, lex_pos
+    def initialize(@line : Int64, @column : Int32, @lex_pos : Int32)
     end
   end
 
