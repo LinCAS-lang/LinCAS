@@ -19,7 +19,10 @@ module LinCAS
       
     def at(@location : Location?)
     end
-      
+
+    def ==(other)
+      self.class == other.class 
+    end  
   end
 
   class Program < Node
@@ -33,23 +36,25 @@ module LinCAS
   end
 
   class ClassNode < Node
-    property name : Node, superclass, body
+    property name, superclass, body, symtab
 
-    def initialize(@name : Const | Namespace, @superclass : Node, @body : Body)
+    def initialize(@name : Const | Namespace, @superclass : Node, @body : Body, @symtab : SymTable)
     end
+
+    def_equals name, superclass, body
   end
 
   class ModuleNode < Node
-    getter name, body
+    getter name, body, symtab
 
-    def initialize(@name : Const | Namespace, @body : Body)
+    def initialize(@name : Const | Namespace, @body : Body, @symtab : SymTable)
     end
   end
 
   class FunctionNode < Node
     getter visibility, receiver, name, params, body
 
-    def initialize(@visibility, @receiver, @name, @params, @body)
+    def initialize(@visibility, @receiver, @name, @params : Params, @body : Body, @symtab : SymTable)
     end
   end
 
@@ -60,14 +65,23 @@ module LinCAS
       @nodes = [] of Node 
     end
 
-    def add_node(node : Node)
+    def <<(node : Node)
       @nodes << node 
     end
+
+    def_equals nodes
   end
 
   class Block < Node
 
     def initialize(@params, @body)
+    end
+  end
+
+  class Params 
+    getter args, opt, splat, kwargs
+
+    def initialize(@args, @opt, @splat, @kwargs)
     end
   end
 
@@ -94,6 +108,9 @@ module LinCAS
   end 
 
   class Call < Node 
+    getter receiver, method, params 
+    def initialize(@receiver : Node, @method : String, @params : Params?)
+    end
   end 
 
   class BinOp < Node
@@ -103,6 +120,10 @@ module LinCAS
   end
 
   class Namespace < Node 
+    getter names, global 
+    def initialize(@names : Array(String), @global : Bool = false)
+    end
+    def_equals names, global
   end
 
   

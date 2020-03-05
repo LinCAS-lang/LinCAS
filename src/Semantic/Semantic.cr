@@ -20,6 +20,7 @@
     Reader
     Lexer
     Node
+    SymTable
     Parser
   |}}
 
@@ -29,11 +30,11 @@
 
 {% end %}
 
-file = File.read("../../test/Sintax/Token.lc")
-read = Char::Reader.new(file)
-lex = LinCAS::Lexer.new(read)
-
-while (tk = lex.next_token).type != LinCAS::Tk::EOF
-  loc = tk.location 
-  puts tk
-end
+# file = File.read("../../test/Sintax/Token.lc")
+# read = Char::Reader.new(file)
+# lex = LinCAS::Lexer.new("filaname", read)
+# 
+# while (tk = lex.next_token).type != :EOF
+#   loc = tk.location 
+#   puts tk
+# end
