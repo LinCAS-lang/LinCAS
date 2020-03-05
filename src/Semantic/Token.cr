@@ -14,94 +14,92 @@
 
 module LinCAS
 
-  enum Tk 
-    EOF 
-    EOL
-    SPACE
-    
-    # KwCASE
-    # KwCATCH
-    # KwCLASS
-    # KwMODULE
-    # KwLET
-    # KwRETURN
-    # KwNEXT
-
-    SEMICOLON
-    COMMA
-    LPAR
-    RPAR
-    LBRACKET
-    RBRAKET
-    LBRACE 
-    RBRACE 
-    PIPE
-    QUOTES
-    QUOTE
-    DOT
-    DOT2
-    DOT3
-    PLUS
-    PLUS_EQ
-    MINUS
-    UMINUS
-    MINUS_EQ
-    STAR
-    STAR_EQ
-    STAR2
-    STAR2_EQ
-    SLASH
-    SLASH_EQ
-    REGEXP_D
-    BSLASH
-    BSLASH_EQ
-    B_XOR
-    B_XOR_EQ
-    OR 
-    OR_EQ
-    B_OR_EQ
-    GREATER
-    R_SHIFT
-    GREATER_EQ
-    LESS 
-    L_SHIFT
-    LESS_EQ
-    COLON
-    COLON2 
-    COLON_EQ
-    MOD 
-    MOD_EQ
-    NOT 
-    NOT_EQ
-    EQ 
-    EQ2
-    EQ3
-    AND 
-    AND_EQ 
-    B_AND 
-    B_AND_EQ
-    
-    R_ARROW
-    QMARK
-    SYMBOL
-    QUOTED_SYM_BEG
-    ANS
-    DOLLAR
-    INT 
-    FLOAT
-    COMPLEX
-    CLASS_VAR 
-    INSTANCE_VAR
-    CAPITAL_VAR
-    IDENT
-    INTERP_BEG
-  end
+  # enum Tk 
+  #   EOF 
+  #   EOL
+  #   SPACE
+  #   # KwCASE
+  #   # KwCATCH
+  #   # KwCLASS
+  #   # KwMODULE
+  #   # KwLET
+  #   # KwRETURN
+  #   # KwNEXT
+  #   SEMICOLON
+  #   COMMA
+  #   LPAR
+  #   RPAR
+  #   LBRACKET
+  #   RBRAKET
+  #   LBRACE 
+  #   RBRACE 
+  #   PIPE
+  #   QUOTES
+  #   QUOTE
+  #   DOT
+  #   DOT2
+  #   DOT3
+  #   PLUS
+  #   PLUS_EQ
+  #   MINUS
+  #   UMINUS
+  #   MINUS_EQ
+  #   STAR
+  #   STAR_EQ
+  #   STAR2
+  #   STAR2_EQ
+  #   SLASH
+  #   SLASH_EQ
+  #   REGEXP_D
+  #   BSLASH
+  #   BSLASH_EQ
+  #   B_XOR
+  #   B_XOR_EQ
+  #   OR 
+  #   OR_EQ
+  #   B_OR_EQ
+  #   GREATER
+  #   R_SHIFT
+  #   GREATER_EQ
+  #   LESS 
+  #   L_SHIFT
+  #   LESS_EQ
+  #   COLON
+  #   COLON2 
+  #   COLON_EQ
+  #   MOD 
+  #   MOD_EQ
+  #   NOT 
+  #   NOT_EQ
+  #   EQ 
+  #   EQ2
+  #   EQ3
+  #   AND 
+  #   AND_EQ 
+  #   B_AND 
+  #   B_AND_EQ
+  #   
+  #   R_ARROW
+  #   QMARK
+  #   SYMBOL
+  #   QUOTED_SYM_BEG
+  #   ANS
+  #   DOLLAR
+  #   INT 
+  #   FLOAT
+  #   COMPLEX
+  #   CLASS_VAR 
+  #   INSTANCE_VAR
+  #   CAPITAL_VAR
+  #   IDENT
+  #   INTERP_BEG
+  # end
 
   class Token
 
     record DelimiterType,
-      type          : Tk,
-      delimiter     : String,
+      type          : Symbol,
+      delimiter     : Char,
       interpolation : Bool,
       escape        : Bool do 
     end
@@ -109,22 +107,24 @@ module LinCAS
     property location : Location
     property type, value, raw, is_kw, delimiter_t
     
+    @value : String | Symbol 
+
     def initialize
-      @location    = Location.new(0,0)
-      @type        = Tk::EOF
+      @location    = Location.new(0,0,0)
+      @type        = :EOF
       @value       = ""
       @raw         = ""
       @is_kw       = false
-      @delimiter_t = DelimiterType.new(false, false)
+      @delimiter_t = DelimiterType.new(:"\"", ',', false, false)
     end
 
     def reset
-      @location    = Location.new(0,0)
-      @type        = Tk::EOF
+      @location    = Location.new(0,0,0)
+      @type        = :EOF
       @value       = ""
       @raw         = ""
       @is_kw       = false
-      @delimiter_t = DelimiterType.new(false, false)
+      @delimiter_t = DelimiterType.new(:"\"", ',', false, false)
     end
 
     def copy_from(token)
