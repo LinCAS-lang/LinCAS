@@ -103,21 +103,32 @@ module LinCAS
       when '.'
         case next_char
         when '.'
-          case next_char
-          when '.'
-            next_char_and_token :"..."
-          else
-            @token.type = :".."
+          if peek_char != '*'
+            case next_char
+            when '.'
+              next_char_and_token :"..."
+            else
+              @token.type = :".."
+            end
+          else 
+            space_skipped = true 
+            @token.type = :"."
           end
         when '*'
           case peek_char 
-          when '='
-            next_char 
-            next_char :".*="
+          when '=' 
+            if @space_skipped
+              next_char
+              next_char :".*="
+            else 
+              space_skipped = true
+              @token.type = :"."
+            end
           else 
             if @space_skipped
               next_char :".*"
             else 
+              space_skipped = true
               @token.type = :"."
             end
           end
