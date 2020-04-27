@@ -44,6 +44,8 @@ def it_lexes(string, token_t, value, is_kw)
     lexer = Lexer.new __FILE__, string
     token = lexer.next_token
     token.type.should eq(token_t)
+    token.value.should eq(value)
+    token.is_kw.should eq(is_kw)
   end 
 end
 
