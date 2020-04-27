@@ -70,6 +70,8 @@ module LinCAS
       while @token.type != :EOF
         skip_end
         body << parse_expression
+        skip_space 
+        check :EOL, :";", :EOF
         next_token_skip_end
       end
       check :EOF
