@@ -155,7 +155,7 @@ module LinCAS
   class Call < Node 
     getter receiver, block 
     property args, named_args, block_param, name
-    def initialize(@receiver    : Node, 
+    def initialize(@receiver    : Node?, 
                    @name        : String, 
                    @args        : Array(Node)?     = nil,
                    @named_args  : Array(NamedArg)? = nil,
