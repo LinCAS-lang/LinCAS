@@ -390,16 +390,7 @@ module LinCAS
             unexpected_token
             Noop.new
           else 
-            is_capital = @token.type == :CAPITAL_VAR
-            name = @token.value.to_s 
-            if id_is?(name, ID::LOCAL_V)
-              type = ID::LOCAL_V
-            else 
-              type = ID::UNKNOWN 
-            end 
-            disable_regex
-            next_token 
-            Variable.new(name, type, is_capital)
+            parse_id_or_call
           end
         end
       when :INT, :FLOAT, :COMPLEX 
@@ -508,6 +499,87 @@ module LinCAS
       namespace.at location 
       return namespace
     end 
+
+    def parse_id_or_call
+      location   = @token.location
+      is_capital = @token.type == :CAPITAL_VAR
+      name       = @token.value.to_s 
+      disable_regex
+      is_var = id_is? name, ID::LOCAL_V
+      disable_regex 
+      next_token
+
+      call_args = preserve_stop_on_do(@stop_on_do) { parse_call_args stop_on_do_after_space: @stop_on_do }
+
+      if call_args
+        args            = call_args.args
+        named_args      = call_args.named_args
+        block_arg       = call_args.block_arg
+        block           = call_args.block
+        has_parenthesis = call_args.has_parenthesis
+      else
+        has_parenthesis = false
+      end
+
+      if call_args && call_args.stopped_on_do_after_space
+        # `do' block must be attached to the leftmost call. 
+        # This is just an argument
+        # bar a do {}
+        block = parse_curly_block(block)
+      elsif @stop_on_do && call_args && has_parenthesis
+        # `do' block must be attached to the leftmost call. This
+        # call is just an argument
+        # bar a(x) do {} 
+        block = parse_curly_block(block)
+      else 
+        block = parse_block(block, @stop_on_do)
+      end
+
+      if block || block_arg || named_args
+        node = Call.new(nil, name, args, named_args, block_arg, block, has_parenthesis)
+      else 
+        if args 
+          if args.size == 0 
+            node = new_var(name, is_capital)
+          elsif (args.size == 1)  &&  (arg = args[0]) && arg.is_a?(Call) && (arg.name == "-@" || arg.name == "+@")
+            var = new_var(name, is_capital)
+            receiver = arg.receiver 
+            name = @stringpool.get (arg.name.rstrip "@")
+            node = Call.new(var, name, [receiver.not_nil!] of Node)
+          else 
+            node = Call.new(nil, name, args, named_args, block_arg, block, has_parenthesis)
+          end 
+        else 
+          node = new_var(name, is_capital)          
+        end
+      end
+      
+      return node.at location
+    end
+
+    def new_var(name, is_capital)
+      if id_is?(name, ID::LOCAL_V)
+        type = ID::LOCAL_V
+      else 
+        type = ID::UNKNOWN 
+      end  
+      Variable.new(name, type, is_capital)
+    end
+
+    def new_call(name, call_args, location)
+      if call_args
+        args       = call_args.args 
+        named_args = call_args.named_args
+        block_arg  = call_args.block_arg
+        block      = call_args.block
+      else 
+        args = named_args = block_arg = block = nil 
+      end
+      if block_arg && block
+        parser_raise("Both block arg and actual block given", location) 
+      end
+      return Call.new(Noop.new, name, args, named_args, block_arg, block).at location
+    end
 
     def parse_atomic_post(atomic : Node, location)
       while true
