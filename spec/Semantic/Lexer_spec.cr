@@ -71,6 +71,7 @@ def it_lexes_symbols(symbols)
   end 
 end 
 
+
 describe "Lexer" do
   it_lexes "", :EOF
   it_lexes " ", :SPACE 
@@ -83,22 +84,37 @@ describe "Lexer" do
                      :__DIR__, :try, :catch, :true, :false, :null, :return, :next]
   it_lexes_idents ["ident", "other", "letting", "constant", "ident?", "ident!", "_ident"]
   it_lexes_idents ["ident_1", "id234", "let?", "class?", "module!"]
-  it_lexes_operators [:".", :"..", :"...", :"+", :"-", :"*", :"**", :"/", :"\\", :"+=",
-                      :"-=", :"*=", :"**=", :"/=", :"\\=", :"^", :"^=", :">", :">=", :"<",
+  it_lexes_operators [:".", :"..", :"...", :"+", :"-", :"*", :".*", :"**", :"/", :"\\", :"+=",
+                      :"-=", :"*=", :".*=", :"**=", :"/=", :"\\=", :"^", :"^=", :">", :">=", :"<",
                       :"<=", :"==", :"===", :"=", :":=", :"%", :"%=", :"!", :"!=", :"&", :"&=",
                       :"&&", :"&&=", :"|", :"||", :"|=", :"||=", :":", :"::", :",", :"<<",
                       :">>", :"(", :")", :"[", :"]", :"{",:"}", :"[]", :"[]=", :"\"", :"'",
                       :"$", :"$!", :"=>", :"-@"]
-  it_lexes ";", :SEMICOLON
+  it_lexes ";", :";"
   it_lexes "!@bar", :"!"
   it_lexes "+@bar", :"+"
-  it_lexes "-@bar", :"-@"
+  it_lexes "-@bar", :"-"
+  it_lexes "-@ bar", :"-@"
+  it_lexes "+@ bar", :"+@"
   it_lexes "&@baz", :"&"
   it_lexes "|@baz", :"|"
   it_lexes "Var", :CAPITAL_VAR
   it_lexes "@var", :INSTANCE_VAR
   it_lexes "@@var", :CLASS_VAR
+  it_lexes "_", :UNDERSCORE
   it_lexes_symbols [":<=", ":!", ":==", ":+", ":-", ":*", ":**", ":/", ":\\", ":^", ":&", ":%", 
                     ":[]", ":[]=", ":>", ":>=", ":>>", ":<<", ":foo", ":foo!", ":foo?", ":foo="]
   it_lexes ":\"", :":\""
+
+  it "lexes a string" do
+    lexer = Lexer.new __FILE__, "\"hello world\""
+    tk    = lexer.next_token
+    tk.type.should eq(:"\"")
+    delimiter_t = tk.delimiter_t
+    tk = lexer.next_string_token delimiter_t
+    tk.type.should eq(:STRING)
+    tk.value.should eq("hello world")
+    tk = lexer.next_string_token delimiter_t
+    tk.type.should eq(:"\"")
+  end
 end

@@ -30,6 +30,7 @@ module LinCAS
       @col            = 1
       @stringpool     = stringpool || StringPool.new
       @token          = Token.new
+      @space_skipped  = true
     end
 
     def next_token
@@ -40,6 +41,7 @@ module LinCAS
       end
       
       start =   current_pos
+      space_skipped = false
       @token.location = current_location
       case current_char
       when '\0'
@@ -48,8 +50,9 @@ module LinCAS
         consume_newline
       when ' ', '\t'
         consume_space
+        space_skipped = true
       when ';'
-        next_char_and_token :SEMICOLON
+        next_char_and_token :";"
       when '('
         next_char_and_token :"("
       when ')'
@@ -106,6 +109,18 @@ module LinCAS
           else
             @token.type = :".."
           end
+        when '*'
+          case peek_char 
+          when '='
+            next_char 
+            next_char :".*="
+          else 
+            if @space_skipped
+              next_char :".*"
+            else 
+              @token.type = :"."
+            end
+          end
         else
           @token.type = :"."
         end
@@ -113,6 +128,12 @@ module LinCAS
         case next_char
         when '='
           next_char_and_token :"+="
+        when '@'
+          if peek_char.ascii_whitespace? || peek_char == '\0'
+            next_char_and_token :"+@"
+          else 
+            @token.type = :"+"
+          end
         else 
           @token.type = :"+"
         end
@@ -121,7 +142,11 @@ module LinCAS
         when '='
           next_char_and_token :"-="
         when '@'
-          next_char_and_token :"-@"
+          if peek_char.ascii_whitespace? || peek_char == '\0'
+            next_char_and_token :"-@"
+          else 
+            @token.type = :"-"
+          end
         else 
           @token.type = :"-"
         end
@@ -251,7 +276,7 @@ module LinCAS
             end 
           else 
             @token.type = :":"
-            set_current_pos = start + 1 
+            self.set_current_pos = start + 1 
           end
         when '<'
           char = next_char
@@ -321,10 +346,11 @@ module LinCAS
           #lex_raise()
         end 
       end
+      @space_skipped = space_skipped
       @token
     end 
 
-    def next_string_token(delimiter, delimiter_t )
+    def next_string_token(delimiter_t )
       @token.reset
       interpolation   = delimiter_t.interpolation
       escape          = delimiter_t.escape
@@ -337,6 +363,10 @@ module LinCAS
         @token.type = :"\#{"
         return @token
       end 
+      if current_char == delimiter
+        @token.type = delimiter_t.type 
+        return @token
+      end
       io = IO::Memory.new
       loop do 
         case current_char
@@ -392,8 +422,7 @@ module LinCAS
             io <<  current_char
           end
         when delimiter
-          @token.type = delimiter_t.type
-          return @token 
+          break 
         else
           io << current_char
         end
@@ -415,7 +444,7 @@ module LinCAS
       when 'i'
         next_char
         if !(ident_part? next_char)
-          set_current_pos = start 
+          self.set_current_pos = start 
           scan_number start
         end
       end
@@ -504,8 +533,13 @@ module LinCAS
       if (current_char == '?' || current_char == '!') &&  peek_char != '='
         next_char 
       end    
-      @token.type   = :IDENT 
       @token.value = string_range_from_pool start
+      if @token.value == "_"
+        @token.type = :UNDERSCORE 
+      else 
+        @token.type   = :IDENT  
+      end 
+      @token
     end
 
     def scan_kw_or_ident(start)
@@ -699,6 +733,12 @@ module LinCAS
       skip_space_or_newline
     end
 
+    def skip_space 
+      while @token.type == :SPACE
+        next_token
+      end
+    end
+
     def skip_space_or_newline 
       while (@token.type == :EOL) || (@token.type == :SPACE)
         next_token
@@ -706,7 +746,7 @@ module LinCAS
     end
 
     def skip_end 
-      while (@token.type == :EOL) || (@token.type == :SEMICOLON) || (@token.type == :SPACE)
+      while (@token.type == :EOL) || (@token.type == :";") || (@token.type == :SPACE)
         next_token
       end
     end
@@ -714,7 +754,8 @@ module LinCAS
     def lex_restore_state(location : Location)
       @col  = location.column
       @line = location.line
-      set_current_pos = location.lex_pos
+      self.set_current_pos = location.lex_pos
+      next_token
     end  
 
     @[AlwaysInline]
@@ -734,6 +775,10 @@ module LinCAS
     def next_char 
       @col += 1
       @reader.next_char
+    end
+
+    def next_char_no_column_increment
+      @reader.next_char 
     end
 
     def next_char(token_t)
