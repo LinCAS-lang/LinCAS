@@ -76,6 +76,7 @@ describe Parser do
   it_parses_single "1 * -2", Call.new(1.int, "*", [-2.int] of Node)
   it_parses_single "1 * 2 + 3 * 4", Call.new(Call.new(1.int, "*", [2.int] of Node), "+", [Call.new(3.int, "*", [4.int] of Node)] of Node)
   it_parses_multiple2 ["1.* 2", "1 .* 2"], [Call.new(1.int, "*", [2.int] of Node), Call.new(1.int, ".*", [2.int] of Node)]
+  it_parses_multiple ["1..*(2)", "1..* 2"], Call.new(1.int, ".*", [2.int] of Node)
   it_parses_multiple ["1 / 2", "1/2"],  Call.new(1.int, "/", [2.int] of Node)
   it_parses_single "1 / -2", Call.new(1.int, "/", [-2.int] of Node)
   it_parses_single "1 / 2 + 3 / 4", Call.new(Call.new(1.int, "/", [2.int] of Node), "+", [Call.new(3.int, "/", [4.int] of Node)] of Node)
@@ -97,8 +98,23 @@ describe Parser do
   it_parses_single "class A inherits B {}", ClassNode.new(Namespace.new(["A"]), Namespace.new(["B"]), Body.new, SymTable.new)
   it_parses_single "class A inherits B::C {}", ClassNode.new(Namespace.new(["A"]), Namespace.new(["B", "C"]), Body.new, SymTable.new)
   it_parses_multiple ["module A {}", "module A; {}", "module A\n{}", "module A\n{\n\n}" ], ModuleNode.new(Namespace.new(["A"]), Body.new, SymTable.new)
-  it_parses_multiple ["class A {}.any_method()", "class A {}.any_method(\n)"], Call.new(ClassNode.new(Namespace.new(["A"]), Noop.new, Body.new, SymTable.new), "any_method", [] of Node)
-  it_parses_single "class A {}.any_method", Call.new(ClassNode.new(Namespace.new(["A"]), Noop.new, Body.new, SymTable.new), "any_method", nil)
+  it_parses_multiple ["class A {}.any_method", "class A {}.any_method()", "class A {}.any_method(\n)"], Call.new(ClassNode.new(Namespace.new(["A"]), Noop.new, Body.new, SymTable.new), "any_method")
   it_parses_single "true if false", If.new(FalseLiteral.new, Body.new << TrueLiteral.new)
+
+  it_parses_multiple ["foo(1,2)", "foo 1, 2"], Call.new(nil, "foo", [1.int, 2.int] of Node)
+  it_parses_single "foo bar", Call.new(nil, "foo", ["bar".variable] of Node)
+  it_parses_multiple ["foo[1,2]","foo.[](1,2)", "foo.[] 1, 2", "foo[1,\n2]", "foo.[](1,\n2)", "foo.[] 1,\n2"], 
+                         Call.new("foo".variable, "[]", [1.int, 2.int] of Node)
+  it_parses_single "foo[]", Call.new("foo".variable, "[]")
+  it_parses_multiple ["foo[1,2][3]", "foo.[](1,2)[3]", "foo.[](1,2).[](3)"], Call.new(Call.new("foo".variable, "[]", [1.int, 2.int] of Node), "[]", [3.int] of Node)
+  it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, -1, Body.new, SymTable.new))
+  it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo",  block_param: "block".variable)
+  it_parses_multiple ["foo(1, a: 10, &block)", "foo 1, a: 10, &block"], Call.new(nil, "foo", [1.int] of Node, [NamedArg.new("a", 10.int)], "block".variable)
+  it_parses_multiple ["foo a: 10, b: 9", "foo(a: 10, b: 9)"], Call.new(nil, "foo", named_args: [NamedArg.new("a", 10.int), NamedArg.new("b", 9.int)])
+  it_parses_single "foo -2", Call.new("foo".variable, "-", [2.int] of Node)
+  it_parses_single "foo +2", Call.new("foo".variable, "+", [2.int] of Node)
+  it_parses_single "foo a do {}", Call.new(nil, "foo", ["a".variable] of Node, block: Block.new(nil, -1, Body.new, SymTable.new))
+  it_parses_single "foo a {} do {}",  Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, -1, Body.new, SymTable.new))] of Node, block: Block.new(nil, -1, Body.new, SymTable.new))
+  it_parses_single "foo bar baz", Call.new(nil, "foo", [Call.new(nil, "bar", ["baz".variable] of Node)] of Node)
 
 end
