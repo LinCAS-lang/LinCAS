@@ -41,10 +41,20 @@ module LinCAS
     end
 
     def register_id(name, id_t)
-      entry = @symtable.last[name]? || SymTable::Entry.new 
+      entry = @symtable.last[name]? 
+      if !entry
+        entry = SymTable::Entry.new 
+        @symtable.last[name] = entry 
+      end
       entry << id_t 
       true 
     end
+
+    def id_is?(name, type)
+      entry = @symtable.last[name]?
+      return false unless entry 
+      return entry.includes? type
+    end 
 
     def parse
       enable_regex 
