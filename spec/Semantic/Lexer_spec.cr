@@ -92,6 +92,7 @@ describe "Lexer" do
                       :"&&", :"&&=", :"|", :"||", :"|=", :"||=", :":", :"::", :",", :"<<",
                       :">>", :"(", :")", :"[", :"]", :"{",:"}", :"[]", :"[]=", :"\"", :"'",
                       :"$", :"$!", :"=>", :"-@"]
+  it_lexes "..*", :"."
   it_lexes ";", :";"
   it_lexes "!@bar", :"!"
   it_lexes "+@bar", :"+"
@@ -118,5 +119,13 @@ describe "Lexer" do
     tk.value.should eq("hello world")
     tk = lexer.next_string_token delimiter_t
     tk.type.should eq(:"\"")
+  end
+
+  it "lexes sequence \"..*\"" do
+    lexer = Lexer.new __FILE__, "..*"
+    tk    = lexer.next_token
+    tk.type.should eq(:".")
+    tk    = lexer.next_token
+    tk.type.should eq(:".*")
   end
 end
