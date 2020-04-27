@@ -578,8 +578,15 @@ module LinCAS
           end
         end
       when 'd'
-        if (next_char == 'o') && (next_char == 'w') && (next_char == 'n') && (next_char == 't') && (next_char == 'o')
-          return check_kw start, :downto 
+        if (next_char == 'o') 
+          if peek_char == 'w'
+            next_char
+            if (next_char == 'n') && (next_char == 't') && (next_char == 'o')
+              return check_kw start, :downto 
+            end
+          else 
+            return check_kw start, :do 
+          end
         end
       when 'e'
         if (next_char == 'l') && (next_char == 's')
@@ -717,7 +724,7 @@ module LinCAS
     end 
 
     def check_kw(start, kw)
-      if ident_part? next_char
+      if ident_part?(next_char) || current_char == '?' || current_char == '!'
         scan_ident start 
       else
         @token.type  = :IDENT 
