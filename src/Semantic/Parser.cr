@@ -1142,7 +1142,7 @@ module LinCAS
 
         if !args.empty? 
           io << ", expecting: "
-          io << args.join(" or ")
+          io << args.join(", ")
         end
         io << '\n'
         io << "Line: " << @token.location.line << ':' << @token.location.column
