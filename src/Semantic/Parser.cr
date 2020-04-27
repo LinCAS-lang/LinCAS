@@ -706,9 +706,10 @@ module LinCAS
       named_args : Array(NamedArg)?,
       block_arg  : Node?,
       block      : Block?,
-      has_parenthesis : Bool = true
+      has_parenthesis : Bool = true,
+      stopped_on_do_after_space : Bool = false
 
-    def parse_call_args(allow_curly = false, control = false)
+    def parse_call_args(stop_on_do_after_space = false, allow_curly = false, control = false)
       case @token.type 
       when :"("
         enable_regex
@@ -720,10 +721,10 @@ module LinCAS
         next_token_skip_space_or_newline
         while @token.type != :")"
           if block_var_follows?
-            return parse_call_block_arg(args, check_par: true)
+            return parse_call_block_arg(args.empty? ? nil : args, check_par: true)
           end 
           if @token.type == :IDENT && current_char == ':'
-            return parse_named_call_args(args, allow_newline: true)
+            return parse_named_call_args(args.empty? ? nil : args, allow_newline: true)
           else 
             arg = parse_call_arg(double_splat)
             args << arg 
@@ -739,18 +740,18 @@ module LinCAS
         check :")"
         disable_regex
         next_token_skip_space
-        return CallArgs.new args, nil, nil, nil, false
+        return CallArgs.new args.empty? ? nil : args, nil, nil, nil, false
       when :SPACE 
         disable_regex
         next_token
-        if @stop_on_do && @token.keyword? :do 
-          return nil
+        if stop_on_do_after_space && @token.keyword? :do 
+          CallArgs.new nil, nil, nil, nil, false, true
         end 
 
         if control && @token.keyword? :do 
           unexpected_token
         end 
-        puts "parsing args space consumed"
+
         return parse_call_args_space_consumed(check_plus_minus: true, allow_curly: allow_curly, control: control) 
       else 
         nil
@@ -784,14 +785,15 @@ module LinCAS
       @stop_on_do = true unless control 
 
       double_splat = false 
-      while @token.type != :EOL && @token.type != :";" && @token.type != :EOF && @token.type != :":" && @token.type != end_tk
+
+      while @token.type != :EOL && @token.type != :";" && @token.type != :":" && @token.type != end_tk && !end_token?
         
         if block_var_follows?
-          return parse_call_block_arg(args, check_par: false)
+          return parse_call_block_arg(args.empty? ? nil : args , check_par: false)
         end 
         
         if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && current_char == ':'
-          return parse_named_call_args(args, allow_newline: false)
+          return parse_named_call_args(args.empty? ? nil : args, allow_newline: false)
         else 
           arg = parse_call_arg(double_splat)
           args << arg 
@@ -809,7 +811,7 @@ module LinCAS
           break 
         end
       end 
-      return CallArgs.new args, nil, nil, nil, false
+      return CallArgs.new args.empty? ? nil : args, nil, nil, nil, false
     end
 
     def parse_named_call_args(args, allow_newline = true)
@@ -853,7 +855,7 @@ module LinCAS
       check :")" if allow_newline
 
       if allow_newline
-        skip_space_or_newline
+        next_token_skip_space_or_newline
       else 
         skip_space
       end 
@@ -1041,6 +1043,24 @@ module LinCAS
       @token.type == :"&" && !current_char.ascii_whitespace?
     end
 
+    def end_token?
+      case @token.type
+      when :"}", :"]", :EOF
+        return true 
+      end 
+
+      if @token.type == :IDENT
+        case @token.value
+        when :do#, :then # :else, :elsif
+          if next_comes_colon_space?
+            return false
+          end
+          return true
+        end
+      end
+      return false
+    end 
+
     def preserve_stop_on_do(val = false)
       stop_on_do = @stop_on_do
       @stop_on_do = val 
@@ -1076,6 +1096,7 @@ module LinCAS
         :"+",
         :"-",
         :"*",
+        :".*",
         :"**",
         :"/",
         :"\\",
@@ -1094,7 +1115,8 @@ module LinCAS
         :"<<",
         :">>",
         :"%",
-        :"!"
+        :"!",
+        :"[]"
       } 
       unless @token.type == :IDENT || names.includes? @token.type
         unexpected_token :IDENT, *names 
