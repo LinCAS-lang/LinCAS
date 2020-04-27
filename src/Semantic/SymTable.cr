@@ -34,6 +34,10 @@ module LinCAS
       def <<(id_t : ID)
         @types << id_t
       end
+
+      def includes?(type : ID)
+        @types.includes? type 
+      end
     end
 
     def initialize

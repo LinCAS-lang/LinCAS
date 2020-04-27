@@ -137,10 +137,14 @@ module LinCAS
     end
 
     def to_s(io)
-      io << @type << ' ' << @value << ' ' 
-      io << @raw << ' ' << @location.line 
+      io << @type << ' ' << @value.inspect << ' ' 
+      io << @raw.inspect << ' ' << @location.line 
       io << ':' << @location.column
       io << (is_kw ? " kw" : " no-kw")
     end
+
+    def keyword?(kw)
+      return @is_kw && @value == kw
+    end 
   end
 end
