@@ -281,5 +281,8 @@ module LinCAS
 
     def_equals name 
   end
+
+  class Self < Node 
+  end
   
 end
