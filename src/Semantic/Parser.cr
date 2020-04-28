@@ -89,6 +89,8 @@ module LinCAS
       when Call 
         !node.has_parenthesis? && ( node.name == "[]" ||
           (node.name.ends_with?("=")) ) 
+      when Variable 
+        true
       else 
         false 
       end
@@ -214,7 +216,7 @@ module LinCAS
             value  = parse_op_assign
             atomic = Assign.new(atomic, value).at location   
           end  
-        when :"+=", :"-=", :"*=", :".*=", :"**=", :"/=", :"\\=", :"%=", :"&&=", :"||=", :"&=", :"|="
+        when :"+=", :"-=", :"*=", :".*=", :"**=", :"/=", :"\\=", :"%=", :"&&=", :"||=", :"&=", :"|=", :"^="
           
           location = @token.location
           unexpected_token unless allow_ops
@@ -319,11 +321,10 @@ module LinCAS
       location = @token.location
       left = parse_prefix 
       while true 
-        case @token
+        case @token.type
         when :SPACE
           next_token 
         when :"**"
-          
           check_void_value left, location
           location = @token.location
           method   = @stringpool.get @token.type.to_s
@@ -378,7 +379,8 @@ module LinCAS
         # when :do
         # when :for
         # when :select
-        # when :const
+        when :const
+          parse_const
         when :true 
           disable_regex
           next_token
@@ -387,6 +389,10 @@ module LinCAS
           disable_regex
           next_token 
           FalseLiteral.new
+        when :self 
+          disable_regex
+          next_token
+          Self.new
         else
           if @token.is_kw
             unexpected_token
@@ -407,6 +413,8 @@ module LinCAS
         disable_regex
         next_token
         SymbolLiteral.new(value)
+      #when :"{"
+      #when :"["
       else
         unexpected_token
         Noop.new
@@ -501,6 +509,38 @@ module LinCAS
       namespace.at location 
       return namespace
     end 
+
+    def parse_let 
+    end
+
+    def parse_try 
+    end
+
+    def parse_if 
+    end
+
+    def parse_loop
+    end
+
+    def parse_for 
+    end
+
+    def parse_select 
+    end
+
+    def parse_const 
+      location = @token.location 
+      disable_regex
+      next_token_skip_space_or_newline
+      check :IDENT, :CAPITAL_VAR
+      name = @token.value.to_s 
+      next_token_skip_space
+      check :":="
+      enable_regex
+      next_token_skip_space_or_newline
+      value = parse_or
+      return ConstDef.new(name, value).at location
+    end
 
     def parse_id_or_call
       location   = @token.location
