@@ -58,7 +58,8 @@ describe Parser do
   it_parses_single "true", true.bool 
   it_parses_single "false", false.bool
   it_parses_single "foo", "foo".variable
-  it_parses_single "Foo", "Foo".variable 
+  it_parses_single "Foo", "Foo".variable
+  it_parses_single "self", Self.new 
 
   [":foo", ":foo!", ":foo?", ":かたな", ":+", ":-", ":*", ":/", ":==", ":<", ":<=", ":>",
     ":>=", ":!",  ":&", ":|", ":^",  ":**", ":>>", ":<<", ":%", ":[]", ":[]=",
@@ -83,12 +84,21 @@ describe Parser do
   it_parses_multiple ["1 \\ 2", "1\\2"],  Call.new(1.int, "\\", [2.int] of Node)
   it_parses_single "1 / -2", Call.new(1.int, "/", [-2.int] of Node)
   it_parses_single "1 \\ 2 + 3 \\ 4", Call.new(Call.new(1.int, "\\", [2.int] of Node), "+", [Call.new(3.int, "\\", [4.int] of Node)] of Node)
-
+  it_parses_single "1 ** 2", Call.new(1.int, "**", [2.int] of Node)
+  it_parses_single "1 ** 2 ** 3", Call.new(1.int, "**", [Call.new(2.int, "**", [3.int] of Node)] of Node)
+  it_parses_single "1 * 2 ** 3", Call.new(1.int, "*", [Call.new(2.int, "**", [3.int] of Node)] of Node)
+  it_parses_single "1 + 2 ** 2 / 3", Call.new(1.int, "+", [Call.new(Call.new(2.int, "**", [2.int] of Node), "/", [3.int] of Node)] of Node)
+  
   it_parses_multiple ["!true", "! true"], Call.new(true.bool, "!")
   it_parses_single "- 1", Call.new(1.int, "-@")
   it_parses_single "+ 1", Call.new(1.int, "+@")
+  it_parses_single "!x", Call.new("x".variable, "!")
   it_parses_single "1 && 2", And.new(1.int, 2.int)
   it_parses_single "1 || 2", Or.new(1.int, 2.int)
+  it_parses_single "a || b && c", Or.new("a".variable, And.new("b".variable, "c".variable))
+  it_parses_single "a && b || c", Or.new(And.new("a".variable, "b".variable), "c".variable,)
+  it_parses_single "a + b || c", Or.new(Call.new("a".variable, "+", ["b".variable] of Node), "c".variable)
+  it_parses_single "a || !b", Or.new("a".variable, Call.new("b".variable, "!"))
 
   
   it_parses_multiple ["class A {}", "class A; {}", "class A \n {}", "class A\n{\n\n}"],
@@ -108,13 +118,37 @@ describe Parser do
   it_parses_single "foo[]", Call.new("foo".variable, "[]")
   it_parses_multiple ["foo[1,2][3]", "foo.[](1,2)[3]", "foo.[](1,2).[](3)"], Call.new(Call.new("foo".variable, "[]", [1.int, 2.int] of Node), "[]", [3.int] of Node)
   it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, -1, Body.new, SymTable.new))
-  it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo",  block_param: "block".variable)
   it_parses_multiple ["foo(1, a: 10, &block)", "foo 1, a: 10, &block"], Call.new(nil, "foo", [1.int] of Node, [NamedArg.new("a", 10.int)], "block".variable)
   it_parses_multiple ["foo a: 10, b: 9", "foo(a: 10, b: 9)"], Call.new(nil, "foo", named_args: [NamedArg.new("a", 10.int), NamedArg.new("b", 9.int)])
   it_parses_single "foo -2", Call.new("foo".variable, "-", [2.int] of Node)
   it_parses_single "foo +2", Call.new("foo".variable, "+", [2.int] of Node)
+  it_parses_single "foo +b", Call.new("foo".variable, "+", ["b".variable] of Node)
+  it_parses_single "foo -b", Call.new("foo".variable, "-", ["b".variable] of Node)
+  it_parses_single "foo !b", Call.new(nil, "foo", [Call.new("b".variable, "!")] of Node)
   it_parses_single "foo a do {}", Call.new(nil, "foo", ["a".variable] of Node, block: Block.new(nil, -1, Body.new, SymTable.new))
   it_parses_single "foo a {} do {}",  Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, -1, Body.new, SymTable.new))] of Node, block: Block.new(nil, -1, Body.new, SymTable.new))
   it_parses_single "foo bar baz", Call.new(nil, "foo", [Call.new(nil, "bar", ["baz".variable] of Node)] of Node)
+  it_parses_single "foo\n.bar\n.baz", Call.new(Call.new("foo".variable, "bar"), "baz")
+  
+  it_parses_multiple ["foo(&:to_s)","foo &:to_s"], Call.new(nil, "foo", block_param: Block.new(["__temp1".variable] of Node, -1, Body.new << Call.new("__temp1".variable, "to_s"), SymTable.new))
+  it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo",  block_param: "block".variable)
+
+  it_parses_single "a := 12", Assign.new("a".variable, 12.int)
+  it_parses_single "a := b := 1", Assign.new("a".variable, Assign.new("b".variable, 1.int))
+  it_parses_single "a += b", OpAssign.new("a".variable, "+", "b".variable)
+  it_parses_single "a -= b", OpAssign.new("a".variable, "-", "b".variable)
+  it_parses_single "a *= b", OpAssign.new("a".variable, "*", "b".variable)
+  it_parses_single "a .*= b", OpAssign.new("a".variable, ".*", "b".variable)
+  it_parses_single "a /= b", OpAssign.new("a".variable, "/", "b".variable)
+  it_parses_single "a \\= b", OpAssign.new("a".variable, "\\", "b".variable)
+  it_parses_single "a **= b", OpAssign.new("a".variable, "**", "b".variable)
+  it_parses_single "a ^= b", OpAssign.new("a".variable, "^", "b".variable)
+  it_parses_single "a |= b", OpAssign.new("a".variable, "|", "b".variable)
+  it_parses_single "a &= b", OpAssign.new("a".variable, "&", "b".variable)
+  it_parses_single "a ||= b", OpAssign.new("a".variable, "||", "b".variable)
+  it_parses_single "a &&= b", OpAssign.new("a".variable, "&&", "b".variable)
+  it_parses_single "a := b|= c", Assign.new("a".variable, OpAssign.new("b".variable, "|", "b".variable))
+  it_parses_single "const A := 10", ConstDef.new("A", 10.int)
+  it_parses_single "const A := b + 2", ConstDef.new("A", Call.new("b".variable, "+", [2.int] of Node))
 
 end
