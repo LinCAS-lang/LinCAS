@@ -13,7 +13,6 @@
 # limitations under the License.
 
 module LinCAS
-
   enum LinCAS::FuncVisib
     PUBLIC
     PROTECTED
@@ -23,8 +22,8 @@ module LinCAS
 
   struct Location
     getter line, column, lex_pos
+
     def initialize(@line : Int64, @column : Int32, @lex_pos : Int32)
     end
   end
-
 end

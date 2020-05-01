@@ -15,14 +15,14 @@
 {% begin %}
   
   {{list = %w|
-    Misc
-    Token
-    Reader
-    Lexer
-    Node
-    SymTable
-    Parser
-  |}}
+      Misc
+      Token
+      Reader
+      Lexer
+      Node
+      SymTable
+      Parser
+    |}}
 
   {% for name in list %}
     require "./#{{{name}}}"
@@ -33,8 +33,8 @@
 # file = File.read("../../test/Sintax/Token.lc")
 # read = Char::Reader.new(file)
 # lex = LinCAS::Lexer.new("filaname", read)
-# 
+#
 # while (tk = lex.next_token).type != :EOF
-#   loc = tk.location 
+#   loc = tk.location
 #   puts tk
 # end

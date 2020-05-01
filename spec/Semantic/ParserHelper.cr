@@ -13,46 +13,46 @@
 # limitations under the License.
 
 class String
-  def call 
+  def call
     return Call.new(Noop.new, self)
-  end 
+  end
 
-  def int 
+  def int
     NumberLiteral.new(self, :INT)
-  end 
+  end
 
-  def float 
+  def float
     NumberLiteral.new(self, :FLOAT)
-  end 
+  end
 
-  def complex 
+  def complex
     NumberLiteral.new(self, :COMPLEX)
   end
 
-  def variable 
+  def variable
     Variable.new(self, ID::UNKNOWN, self[0].ascii_uppercase?)
   end
 
-  def symbol 
+  def symbol
     SymbolLiteral.new(self.lstrip(":"))
   end
 end
 
 struct Bool
-  def bool 
-    self ? TrueLiteral.new : FalseLiteral.new 
-  end 
+  def bool
+    self ? TrueLiteral.new : FalseLiteral.new
+  end
 end
 
-struct Int 
-  def int 
-    integer = self.abs.to_s.int 
+struct Int
+  def int
+    integer = self.abs.to_s.int
     self < 0 ? Call.new(integer, "-@") : integer
-  end 
+  end
 end
 
-struct Float 
-  def float 
-    self.to_s.float 
-  end 
+struct Float
+  def float
+    self.to_s.float
+  end
 end
