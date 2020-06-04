@@ -62,7 +62,7 @@ class Object
     end
 
     def lincas_exit(status = 0)
-        Internal.invoke_at_exit_procs status
+        LinCAS::Internal.invoke_at_exit_procs status
         exit status
     end
 
