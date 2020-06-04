@@ -68,6 +68,11 @@ module LinCAS::Internal
         return tmp 
     end
 
+    def self.complex_new(real : Floatnum, complex : Floatnum)
+        cpx = LibComplex.gsl_complex_rect(real,complex)
+        return build_complex(cpx)
+    end
+
     def self.lc_complex_rect(klass :  LcVal, real :  LcVal, img :  LcVal)
         nums = float2cr(real,img)
         return Null unless nums 
