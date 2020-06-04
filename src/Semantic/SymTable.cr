@@ -15,41 +15,30 @@
 require "set"
 
 module LinCAS
-
-  enum ID 
+  enum ID
     LOCAL_V
-    CONST 
+    CONST
     METHOD
     UNKNOWN
-  end 
-
-  class SymTable
-    class Entry
-      getter types 
-      
-      def initialize
-        @types = Set(ID).new(1)
-      end
-
-      def <<(id_t : ID)
-        @types << id_t
-      end
-
-      def includes?(type : ID)
-        @types.includes? type 
-      end
-    end
-
-    def initialize
-      @entries = {} of String => Entry 
-    end 
-
-    def []=(name,entry)
-    end 
-
-    def []?(name)
-      @entries[name]?
-    end
   end
 
+  enum SymType
+    PROGRAM
+    CLASS
+    METHOD
+    BLOCK
+  end
+
+  class SymTable < Array(String)
+    getter type
+    property previous 
+
+    def initialize(@type : SymType, @previous : SymTable? = nil)
+      super()
+    end
+
+    def <<(name : String)
+      super(name) unless self.includes? name
+    end
+  end
 end
