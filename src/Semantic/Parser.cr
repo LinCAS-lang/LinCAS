@@ -29,40 +29,48 @@ module LinCAS
       super(filename, reader, stringpool)
       @method_nesting = 0
       @block_nesting  = 0
-      @symtable       = [SymTable.new]
+      @symtable       = [] of SymTable
       @stop_on_do     = false
       @temp_serial    = 0
     end
 
-    def push_symtab
-      @symtable.push SymTable.new 
+    def push_symtab(type : SymType)
+      s_table = SymTable.new type
+      if type.block? 
+        s_table.previous = @symtable.last 
+      end
+      @symtable.push s_table
     end 
 
     def pop_symtab
       @symtable.pop 
     end
 
-    def register_id(name, id_t)
-      entry = @symtable.last[name]? 
-      if !entry
-        entry = SymTable::Entry.new 
-        @symtable.last[name] = entry 
-      end
-      entry << id_t 
-      true 
+    def register_id(name)
+      @symtable.last << name
     end
 
-    def id_is?(name, type)
-      entry = @symtable.last[name]?
-      return false unless entry 
-      return entry.includes? type
+    def var?(name)
+      depth   = -1
+      counter = 0
+      @symtable.reverse_each do |s_tab|
+        if s_tab.includes? name 
+          depth = counter 
+          break 
+        end 
+        break unless s_tab.type == SymType::BLOCK 
+        counter += 1
+      end
+      return depth
     end 
 
     def parse
       enable_regex 
       next_token_skip_end
+      push_symtab SymType::PROGRAM
       stmts = parse_statements
-      return Program.new(filename, stmts) 
+      program = Program.new(filename, stmts, pop_symtab)
+      return program 
     end
 
     def parse_statements
@@ -80,16 +88,16 @@ module LinCAS
 
     def is_assignable?(node)
       case node 
-      when Assign 
-        if is_assignable? node.right 
-          true 
-        else 
-          false 
-        end
+      #when Assign 
+      #  if is_assignable? node.right 
+      #    true 
+      #  else 
+      #    false 
+      #  end
       when Call 
         !node.has_parenthesis? && ( node.name == "[]" ||
-          (node.name.ends_with?("=")) ) 
-      when Variable 
+          (!node.name.ends_with?("=")) ) 
+      when Variable, ClassVar, InstanceVar 
         true
       else 
         false 
@@ -129,9 +137,9 @@ module LinCAS
       return exp
     end
 
-    def parse_expression(node = nil)
+    def parse_expression(node = nil, in_if = false)
       location = @token.location
-      exp = parse_op_assign
+      exp = parse_op_assign is_condition: in_if
       parse_expression_suffix(exp, location) 
     end
 
@@ -169,16 +177,16 @@ module LinCAS
       return exp
     end
 
-    def parse_op_assign(allow_ops = true, allow_suffix = true)
+    def parse_op_assign(allow_ops = true, allow_suffix = true, is_condition = false)
       location = @token.location 
-
-      atomic = parse_ternary_if 
       
+      atomic = parse_ternary_if 
       while true 
         case @token.type 
         when :SPACE 
           next_token
         when :IDENT 
+          break if is_condition && (@token.keyword?(:then) || @token.keyword?(:else))
           unexpected_token unless allow_suffix
           break
         when :":="
@@ -199,15 +207,12 @@ module LinCAS
           else 
             if atomic.is_a? ConstDef 
               # lc_bug("ConstDef node should never be reached")
-            end 
-
-            if atomic.is_a?(Variable) && atomic.name == "self"
-              parser_raise("Can't change value of self", location)
             end  
 
             if atomic.is_a?(Variable) && atomic.type.unknown?
-              register_id atomic.name, ID::LOCAL_V
-              atomic.type = ID::LOCAL_V
+              register_id atomic.name
+              atomic.type  = ID::LOCAL_V
+              atomic.depth = 0
             end
 
             location = @token.location
@@ -365,6 +370,7 @@ module LinCAS
     end 
 
     def parse_atomic
+      location = @token.location
       case @token.type 
       when :IDENT, :CAPITAL_VAR
         case @token.value 
@@ -374,9 +380,11 @@ module LinCAS
           parse_module
         # when :public, :protected, :private, :let
         # when :try
-        # when :if
+        when :if
+          parse_if
         # when :while
-        # when :do
+        when :do, :while
+          parse_loop
         # when :for
         # when :select
         when :const
@@ -404,7 +412,6 @@ module LinCAS
       when :INT, :FLOAT, :COMPLEX 
         type      = @token.type 
         value     = @token.value.to_s
-        location  = @token.location
         disable_regex
         next_token
         NumberLiteral.new(value, type).at location
@@ -415,6 +422,16 @@ module LinCAS
         SymbolLiteral.new(value)
       #when :"{"
       #when :"["
+      when :CLASS_VAR
+        name = @token.value.to_s
+        disable_regex
+        next_token
+        ClassVar.new(name).at location
+      when :INSTANCE_VAR
+        name = @token.value.to_s
+        disable_regex
+        next_token
+        InstanceVar.new(name).at location
       else
         unexpected_token
         Noop.new
@@ -424,10 +441,17 @@ module LinCAS
     # Disables lexing of regexp delimiter after finishing
     def parse_stmts_delimited(token_t : Symbol)
       body = Body.new
+      skip_end
+      
       while @token.type != :EOF &&  @token.type != token_t
-        skip_end
         body << parse_assign
+        
+        unless @token.type == token_t && !(@token.type == :EOF)
+          check :EOL, :";"
+          next_token_skip_end
+        end
       end
+      
       check token_t
       disable_regex
       next_token
@@ -450,7 +474,7 @@ module LinCAS
         end 
       end 
       skip_end 
-      push_symtab
+      push_symtab SymType::CLASS
       if @token.type == :"{"
         next_token_skip_end
         body = parse_stmts_delimited :"}"
@@ -469,7 +493,7 @@ module LinCAS
       name = parse_ident
       body = nil 
       skip_end 
-      push_symtab
+      push_symtab SymType::CLASS
       if @token.type == :"{"
         next_token_skip_end
         body = parse_stmts_delimited :"}"
@@ -504,7 +528,6 @@ module LinCAS
         next_token
       end 
 
-      register_id names.last, ID::CONST 
       namespace = Namespace.new(names, global)
       namespace.at location 
       return namespace
@@ -517,9 +540,82 @@ module LinCAS
     end
 
     def parse_if 
+      location = @token.location
+      enable_regex
+      next_token_skip_space_or_newline
+      condition = parse_op_assign allow_suffix: false, is_condition: true 
+      enable_regex
+      skip_space 
+      if @token.keyword? :then 
+        next_token_skip_space_or_newline
+      else 
+        skip_space_or_newline
+      end
+      then_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
+      
+      unless @token.type == :EOF
+        enable_regex
+        restore_pt = @token.location 
+        skip_space_or_newline
+        case @token
+        when .keyword? :elsif 
+          else_branch = parse_if
+        when .keyword? :else
+          next_token_skip_space_or_newline
+          else_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
+        else 
+          lex_restore_state restore_pt
+        end 
+      end
+      If.new(condition, then_branch, else_branch).at location
     end
 
+    def parse_body 
+      next_token_skip_space_or_newline
+      return parse_stmts_delimited :"}"
+    end 
+
     def parse_loop
+      location = @token.location
+      is_while = false 
+      case @token 
+      when .keyword? :while 
+        is_while = true 
+        enable_regex
+        next_token_skip_space_or_newline
+      when .keyword? :do 
+        enable_regex
+        next_token_skip_space
+        if @token.keyword? :while 
+          is_while = true 
+          next_token_skip_space_or_newline
+        else 
+          skip_space_or_newline
+        end  
+      else
+        # nothing 
+      end 
+
+      if is_while 
+        condition = parse_op_assign allow_suffix: false
+        skip_space 
+        unless @token.type == :"{"
+          check :EOL, :";"
+          next_token_skip_end
+        end 
+        body = @token.type == :"{" ? parse_body : parse_expression 
+        return While.new(condition, body).at location
+      else 
+        check :"{"
+        next_token_skip_space_or_newline
+        body      = parse_stmts_delimited :"}"
+        skip_space_or_newline
+        check :until, kw: true 
+        enable_regex
+        next_token_skip_space_or_newline
+        condition = parse_op_assign
+        return Until.new(condition, body).at location
+      end
     end
 
     def parse_for 
@@ -538,6 +634,7 @@ module LinCAS
       check :":="
       enable_regex
       next_token_skip_space_or_newline
+      puts "After const: #{@token.type}"
       value = parse_or
       return ConstDef.new(name, value).at location
     end
@@ -547,8 +644,6 @@ module LinCAS
       is_capital = @token.type == :CAPITAL_VAR
       name       = @token.value.to_s 
       disable_regex
-      is_var = id_is? name, ID::LOCAL_V
-      disable_regex 
       next_token
 
       call_args = preserve_stop_on_do(@stop_on_do) { parse_call_args stop_on_do_after_space: @stop_on_do }
@@ -600,12 +695,12 @@ module LinCAS
     end
 
     def new_var(name, is_capital)
-      if id_is?(name, ID::LOCAL_V)
+      if (depth = var? name) >= 0
         type = ID::LOCAL_V
       else 
         type = ID::UNKNOWN 
       end  
-      Variable.new(name, type, is_capital)
+      Variable.new(name, type, is_capital, depth)
     end
 
     def new_call(name, call_args, location)
@@ -817,7 +912,7 @@ module LinCAS
       end
 
       case @token.value
-      when :if, :while, :until
+      when :if, :while, :until, :then, :else
         return nil unless next_comes_colon_space?
       end 
 
@@ -943,7 +1038,7 @@ module LinCAS
         name = @token.value.to_s.lstrip(":")
         next_token
         call = Call.new(obj, name)
-        obj = Block.new([obj] of Node, -1, Body.new << call, SymTable.new)
+        obj = Block.new([obj] of Node, -1, Body.new << call, SymTable.new(SymType::BLOCK))
       elsif @token.type == :IDENT || @token.type == :CAPITAL_VAR
         obj = parse_op_assign
       else 
@@ -990,7 +1085,7 @@ module LinCAS
       elsif @token.type != :"{"
         return nil 
       end
-      push_symtab
+      push_symtab SymType::BLOCK
       @block_nesting += 1
       location = @token.location
       enable_regex
@@ -1025,8 +1120,8 @@ module LinCAS
             unexpected_token :IDENT, :CAPITAL_VAR
             arg_name = ""
           end
-          register_id arg_name, ID::LOCAL_V
-          var = Variable.new(arg_name, ID::LOCAL_V)
+          register_id arg_name
+          var = Variable.new(arg_name, ID::LOCAL_V, depth: 0)
           next_token_skip_space
 
           if @token.type == :":="
@@ -1052,13 +1147,7 @@ module LinCAS
         next_token_skip_end
       end 
 
-      body = Body.new 
-
-      while @token.type != :"}" && @token.type != :EOF 
-        body << parse_expression
-      end 
-      check :"}"
-      next_token
+      body = parse_stmts_delimited :"}"
       @block_nesting -= 1
       return Block.new(block_arg, splat_index || -1, body, pop_symtab).at location
     end
@@ -1091,7 +1180,7 @@ module LinCAS
 
       if @token.type == :IDENT
         case @token.value
-        when :do#, :then # :else, :elsif
+        when :do, :then, :else, :elsif, :until
           if next_comes_colon_space?
             return false
           end
@@ -1110,8 +1199,12 @@ module LinCAS
     end 
 
     def check(*token_t, kw = false)
-      if !token_t.includes?(@token.type) || @token.is_kw != kw
-        unexpected_token
+      if kw
+        token_t.each do |t|
+          unexpected_token(*token_t) unless @token.keyword? t 
+        end
+      elsif !token_t.includes?(@token.type)
+        unexpected_token(*token_t)
       end 
     end
 

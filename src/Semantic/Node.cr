@@ -27,9 +27,9 @@ module LinCAS
   end
 
   class Program < Node
-    getter filename : String, body : Body
+    getter filename, body, symtab
 
-    def initialize(@filename : String, @body : Body)
+    def initialize(@filename : String, @body : Body, @symtab : SymTable)
     end 
   end
 
@@ -39,7 +39,7 @@ module LinCAS
   class ClassNode < Node
     property name, superclass, body, symtab
 
-    def initialize(@name : Variable | Namespace, @superclass : Node, @body : Body, @symtab : SymTable)
+    def initialize(@name : Namespace, @superclass : Node, @body : Body, @symtab : SymTable)
     end
 
     def_equals name, superclass, body
@@ -49,7 +49,7 @@ module LinCAS
   class ModuleNode < Node
     getter name, body, symtab
 
-    def initialize(@name : Variable | Namespace, @body : Body, @symtab : SymTable)
+    def initialize(@name : Namespace, @body : Body, @symtab : SymTable)
     end
   end
 
@@ -80,6 +80,8 @@ module LinCAS
 
     def initialize(@left : Node, @right : Node)
     end
+
+    def_equals left, right
   end 
 
   class Block < Node
@@ -119,34 +121,23 @@ module LinCAS
   end
 
   class Loop < Node
+    getter condition, body
+
+    @body : Body
+    def initialize(@condition : Node, body : Node)
+      if !body.is_a?(Body)
+        body = Body.new << body 
+      end 
+      @body = body.as(Body) 
+    end
+
+    def_equals condition, body
   end
 
-  class While < Node
-    getter condition, body
-
-    @body : Body
-    def initialize(@condition : Node, body : Node)
-      if !body.is_a?(Body)
-        body = Body.new << body 
-      end 
-      @body = body.as(Body) 
-    end
-
-    def_equals condition, body
+  class While < Loop
   end 
   
-  class Until < Node 
-    getter condition, body
-
-    @body : Body
-    def initialize(@condition : Node, body : Node)
-      if !body.is_a?(Body)
-        body = Body.new << body 
-      end 
-      @body = body.as(Body) 
-    end
-
-    def_equals condition, body
+  class Until < Loop 
   end 
 
   class For < Node 
@@ -160,7 +151,7 @@ module LinCAS
                    @args        : Array(Node)?     = nil,
                    @named_args  : Array(NamedArg)? = nil,
                    @block_param : Node?            = nil, 
-                   @block       : Node?            = nil, #change to block
+                   @block       : Block?            = nil, #change to block
                    @has_parenthesis                = true) 
     end
 
@@ -259,10 +250,26 @@ module LinCAS
   end
 
   class Variable < Node
-    getter name
-    property type
-    def initialize(@name : String, @type : ID, @is_capital = false)
+    getter name, is_capital
+    property type, depth
+    def initialize(@name : String, @type : ID, @is_capital = false, @depth = -1)
     end
+
+    def_equals name
+  end
+
+  class InstanceVar < Node 
+    getter name
+    def initialize(@name : String)
+    end 
+
+    def_equals name
+  end
+
+  class ClassVar < Node 
+    getter name
+    def initialize(@name : String)
+    end 
 
     def_equals name
   end

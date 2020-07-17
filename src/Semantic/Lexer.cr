@@ -15,7 +15,7 @@
 require "string_pool"
 
 module LinCAS
-  class Lexer < Reader
+  class Lexer #< Reader
     getter filename
 
     @stringpool : StringPool
@@ -458,6 +458,8 @@ module LinCAS
           self.set_current_pos = start 
           scan_number start
         end
+      else 
+        scan_number start
       end
     end
 
