@@ -63,7 +63,7 @@ module LinCAS::Internal
             return float2py(float2num(obj))
         elsif obj.is_a? LcString
             return str2py(obj)
-        elsif obj.is_a? Structure
+        elsif obj.is_a? LcClass
             if is_pyembedded(obj)
                 return obj.symTab.as(HybridSymT).pyObj 
             else
@@ -135,8 +135,8 @@ module LinCAS::Internal
 
     def self.lc_obj_to_s(obj :  LcVal, io)
         io << '<'
-        if obj.is_a? Structure 
-            klass = obj.as(Structure)
+        if obj.is_a? LcClass 
+            klass = obj.as(LcClass)
             path  = klass.path
             if !path.empty?
                 io << path.to_s
@@ -165,7 +165,7 @@ module LinCAS::Internal
 
     def self.lc_obj_eq(obj1 :  LcVal, obj2 :  LcVal)
         return lcfalse unless obj1.class == obj2.class
-        if obj1.is_a? Structure
+        if obj1.is_a? LcClass
             return lc_class_eq(obj1,obj2)
         else
             return lctrue if obj1.id == obj2.id

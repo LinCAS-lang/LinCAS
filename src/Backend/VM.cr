@@ -104,7 +104,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         @last_is : Bytecode?   = nil
         @handled_ret           = false
         
-        def initialize(@me :  LcVal,@context : Structure,@argc : IntnumR,@type : FrameType)  
+        def initialize(@me :  LcVal,@context : LcClass,@argc : IntnumR,@type : FrameType)  
         end
 
         property fp,argc,pc,scp,me,context,catch_t,type,last_is, handled_ret
@@ -223,8 +223,8 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     private def class_of(obj :  LcVal)
-        if obj.is_a? Structure 
-            #if internal.struct_type(obj.as(Structure),SType::CLASS)
+        if obj.is_a? LcClass 
+            #if internal.struct_type(obj.as(LcClass),SType::CLASS)
             #    return obj.klass 
             #end
             return obj 
@@ -317,7 +317,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def new_frame(self_ref :  LcVal, context : Structure,argc : IntnumR,type : FrameType)
+    protected def new_frame(self_ref :  LcVal, context : LcClass,argc : IntnumR,type : FrameType)
         if @vm_fp >= @framev.size
             return LcFrame.new(self_ref,context,argc,type)
         else 
@@ -333,7 +333,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc = 0,type = FrameType::CALL_FRAME )
+    protected def vm_push_new_frame(self_ref :  LcVal, context : LcClass,argc = 0,type = FrameType::CALL_FRAME )
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
@@ -343,7 +343,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_push_new_frame(self_ref :  LcVal, context : Structure,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
+    protected def vm_push_new_frame(self_ref :  LcVal, context : LcClass,argc, scpr : Scope,type = FrameType::BLOCK_FRAME)
         fm           = new_frame(self_ref,context,argc,type)
         fm.fp        = @sp 
         scp          = Scope.new(scope_type_for(type))
@@ -354,7 +354,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def push_shared_frame
         fm      = current_frame
-        tmp     = new_frame(fm.me.as( LcVal),fm.context.as(Structure),fm.argc.as(Int32),fm.type)
+        tmp     = new_frame(fm.me.as( LcVal),fm.context.as(LcClass),fm.argc.as(Int32),fm.type)
         tmp.pc  = fm.pc 
         tmp.fp  = fm.fp
         tmp.scp = fm.scp
@@ -687,7 +687,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_handle_instance_method_exception(code : Intnum,owner : Structure)
+    protected def vm_handle_instance_method_exception(code : Intnum,owner : LcClass)
         case code
             when 0
                 lc_raise(LcNoMethodError,convert(:no_method) % owner.name)
@@ -699,13 +699,13 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_handle_static_method_exception(owner : Structure)
+    protected def vm_handle_static_method_exception(owner : LcClass)
         s_type = (owner.type == SType::CLASS) ? "Class" : "Module"
         lc_raise(LcNoMethodError,convert(:no_s_method) % {owner.name,s_type})
     end
 
     @[AlwaysInline]
-    protected def vm_fetch_instance_method(obj_class : Structure,name : String)
+    protected def vm_fetch_instance_method(obj_class : LcClass,name : String)
         method = internal.seek_method(obj_class,name)
         if !(method.is_a? LcMethod)
             vm_handle_instance_method_exception(method.as(Intnum),obj_class)
@@ -715,7 +715,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_fetch_instance_method_with_context(obj_class : Structure,name : String)
+    protected def vm_fetch_instance_method_with_context(obj_class : LcClass,name : String)
         context = get_context
         method  = internal.seek_method(context,name,true)
         if !(method.is_a? LcMethod)
@@ -726,7 +726,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     @[AlwaysInline]
-    protected def vm_fetch_static_method(receiver : Structure,name : String)
+    protected def vm_fetch_static_method(receiver : LcClass,name : String)
         method = internal.seek_static_method(receiver,name)
         if !(method.is_a? LcMethod)
             vm_handle_static_method_exception(receiver)
@@ -737,7 +737,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_call_method(receiver :  LcVal, name : String)
-        if receiver.is_a? Structure
+        if receiver.is_a? LcClass
             return vm_fetch_static_method(receiver,name)
         else
             return vm_fetch_instance_method_with_context(class_of(receiver),name)
@@ -746,7 +746,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     @[AlwaysInline]
     protected def fetch_method(receiver :  LcVal, name : String)
-        if receiver.is_a? Structure
+        if receiver.is_a? LcClass
             return vm_fetch_static_method(receiver,name)
         else
             return vm_fetch_instance_method(class_of(receiver),name)
@@ -797,7 +797,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         selfr  = vm_get_receiver(argc)
         method = fetch_call_method(selfr,name)
         if method
-            vm_push_new_frame(selfr,method.owner.as(Structure),argc)
+            vm_push_new_frame(selfr,method.owner.as(LcClass),argc)
             vm_call_method(method,argc)
         end
     end
@@ -810,7 +810,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         receiver  = vm_get_receiver(argc)
         method    = fetch_method(receiver,name)
         if method
-            vm_push_new_frame(receiver,method.owner.as(Structure),argc)
+            vm_push_new_frame(receiver,method.owner.as(LcClass),argc)
             vm_call_method(method,argc)
         end
     end
@@ -1040,10 +1040,10 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_load_c(name : String)
         selfr = pop
-        if !(selfr.is_a? Structure)
+        if !(selfr.is_a? LcClass)
             klass = class_of(selfr)
         else
-            klass = selfr.as(Structure)
+            klass = selfr.as(LcClass)
         end
         const = internal.lc_seek_const(klass,name)
         if const
@@ -1068,12 +1068,12 @@ class LinCAS::VM < LinCAS::MsgGenerator
 
     protected def vm_get_c(name : String)
         prev = pop
-        if !(prev.is_a? Structure)
+        if !(prev.is_a? LcClass)
             lc_raise_1(LcNameError,convert(:not_a_struct) % name)
             push(Null)
             return nil
         end
-        prev = prev.as(Structure)
+        prev = prev.as(LcClass)
         const = internal.lc_seek_const(prev,name)
         if const 
             push(const.as( LcVal))
@@ -1095,7 +1095,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
        end
     end
 
-    protected def vm_create_class(name : String,parent :  LcVal,scope : Structure)
+    protected def vm_create_class(name : String,parent :  LcVal,scope : LcClass)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcClass
             if has_flag p_def, FROZEN
@@ -1117,7 +1117,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
     end
 
     protected def vm_set_parent(klass : LcClass,parent :  LcVal)
-        if !(parent.is_a? Structure) && parent != Null
+        if !(parent.is_a? LcClass) && parent != Null
             lc_raise_1(LcTypeError,convert(:no_parent) % internal.lc_typeof(parent))
             push(klass)
             return nil
@@ -1145,7 +1145,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         end
     end
 
-    protected def vm_create_module(name : String, scope : Structure)
+    protected def vm_create_module(name : String, scope : LcClass)
         p_def = internal.lc_seek_const(scope,name)
         if p_def.is_a? LcModule
             if has_flag p_def, FROZEN
@@ -1399,7 +1399,7 @@ class LinCAS::VM < LinCAS::MsgGenerator
         push(rec)
         vm_push_args(argv)
         CallTracker.push_track(filename,line,m.name)
-        vm_push_new_frame(rec,m.owner.as(Structure),argv.size)
+        vm_push_new_frame(rec,m.owner.as(LcClass),argv.size)
         vm_call_method(m,m.arity)
         if @internal
             return pop

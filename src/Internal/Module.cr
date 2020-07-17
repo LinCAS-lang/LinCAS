@@ -16,105 +16,105 @@
 module LinCAS::Internal
 
     macro module_initializer(mod,type)
-        {{mod}}.type      = {{type}}
-        {{mod}}.klass     = @@lc_module
-        {{mod}}.parent    = @@lc_object
-        {{mod}}.allocator = Allocator::UNDEF
+      {{mod}}.type      = {{type}}
+      {{mod}}.klass     = @@lc_module
+      {{mod}}.parent    = @@lc_object
+      {{mod}}.allocator = Allocator::UNDEF
     end
 
     def self.module_init(mod : LcModule)
-       module_initializer(mod,SType::MODULE)
+      module_initializer(mod,SType::MODULE)
     end
 
     def self.pymodule_init(mod : LcModule)
-        module_initializer(mod,SType::PyMODULE)
+      module_initializer(mod,SType::PyMODULE)
     end
 
     def self.pymodule_init(mod : LcModule)
-        module_initializer(mod,SType::PyMODULE)
+      module_initializer(mod,SType::PyMODULE)
     end
     
     def self.lc_build_module(name : String)
-        mod = LcModule.new(name)
-        module_init(mod)
-        return mod
+      mod = LcModule.new(name)
+      module_init(mod)
+      return mod
     end
 
     def self.lc_build_module(name : String, path : Path)
-        mod = LcModule.new(name,path)
-        module_init(mod)
-        return mod
+      mod = LcModule.new(name,path)
+      module_init(mod)
+      return mod
     end
 
     def self.lc_build_internal_module(name : String)
-        mod               = lc_build_module(name)
-        mod.symTab.parent = @@main_class.symTab
-        @@main_class.symTab.addEntry(name,mod)
-        return mod
+      mod               = lc_build_module(name)
+      mod.symTab.parent = @@main_class.symTab
+      @@main_class.symTab.addEntry(name,mod)
+      return mod
     end
 
     def self.lc_build_unregistered_pymodule(name : String,obj : PyObject)
-        gc_ref = PyGC.track(obj)
-        stab  = HybridSymT.new(obj)
-        smtab = HybridSymT.new(obj)
-        mtab  = HybridSymT.new(obj)
-        tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
-        pymodule_init(tmp)
-        tmp.gc_ref = gc_ref
-        return tmp
+      gc_ref = PyGC.track(obj)
+      stab  = HybridSymT.new(obj)
+      smtab = HybridSymT.new(obj)
+      mtab  = HybridSymT.new(obj)
+      tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
+      pymodule_init(tmp)
+      tmp.gc_ref = gc_ref
+      return tmp
     end
 
     def self.lc_build_pymodule(name : String,obj : PyObject)
-        tmp = lc_build_unregistered_pymodule(name,obj)
-        tmp.symTab.parent = @@main_class.symTab
-        @@main_class.symTab.addEntry(name,tmp)
-        tmp.flags |= ObjectFlags::REG_CLASS
-        return tmp
+      tmp = lc_build_unregistered_pymodule(name,obj)
+      tmp.symTab.parent = @@main_class.symTab
+      @@main_class.symTab.addEntry(name,tmp)
+      tmp.flags |= ObjectFlags::REG_CLASS
+      return tmp
     end
 
-    def self.lc_build_internal_module_in(name : String,nest : Structure)
-        mod = lc_build_module(name)
-        mod.symTab.parent = nest.symTab
-        nest.symTab.addEntry(name,mod)
-        return mod
+    def self.lc_build_internal_module_in(name : String,nest : LcClass)
+      mod = lc_build_module(name)
+      mod.symTab.parent = nest.symTab
+      nest.symTab.addEntry(name,mod)
+      return mod
     end
 
     @[AlwaysInline]
     def self.lc_make_shared_module(mod : LcModule)
-        symTab = lc_make_shared_sym_tab(mod.symTab)
-        tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
-        if mod.type == SType::PyMODULE
-            pymodule_init(tmp)
-        else
-            module_init(tmp)
-        end
-        tmp.allocator = nil
-        return tmp
+      symTab = lc_make_shared_sym_tab(mod.symTab)
+      tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
+      if mod.type == SType::PyMODULE
+        pymodule_init(tmp)
+      else
+        module_init(tmp)
+      end
+      tmp.allocator = nil
+      return tmp
     end
 
-    def self.lc_include_module(receiver : Structure, mod : LcModule)
-        if mod.included.includes? receiver.id
-            lc_warn("Module already included")
-        else
-            mod.included << receiver.id
-            s_mod                  = lc_make_shared_module(mod)
-            parent                 = receiver.parent 
-            if parent
-                s_mod.symTab.parent    = parent.symTab
-                s_mod.parent           = parent
-            end
-            receiver.symTab.parent = s_mod.symTab
-            receiver.parent        = s_mod 
+    def self.lc_include_module(receiver : LcClass, mod : LcModule)
+      if mod.included.includes? receiver.id
+        lc_warn("Module already included")
+      else
+        mod.included << receiver.id
+        s_mod                  = lc_make_shared_module(mod)
+        parent                 = receiver.parent 
+        if parent
+            s_mod.symTab.parent    = parent.symTab
+            s_mod.parent           = parent
         end
+        receiver.symTab.parent = s_mod.symTab
+        receiver.parent        = s_mod 
+      end
     end
 
     def self.lc_module_add_internal(mod : LcModule, name : String, method : LcProc, arity : Int32)
-        internal.lc_add_internal(mod,name,method,arity)
-        internal.lc_add_static(mod,name,method,arity)
+      internal.lc_add_internal(mod,name,method,arity)
+      internal.lc_add_static(mod,name,method,arity)
     end
 
     def self.init_module
-        @@lc_module = internal.lc_build_internal_class("Module")
+      @@lc_module = internal.lc_build_internal_class("Module")
     end
 
 end

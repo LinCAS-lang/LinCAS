@@ -16,195 +16,196 @@
 module LinCAS::Internal
 
     macro global(exp)
-        module ::LinCAS
-            {{exp}}
-        end
+      module ::LinCAS
+        {{exp}}
+      end
     end 
 
     macro wrap(name,argc)
-        LcProc.new do |args|
-            next {{name.id}}(*args.as(T{{argc.id}}))
-        end
+      LcProc.new do |args|
+        next {{name.id}}(*args.as(T{{argc.id}}))
+      end
     end
 
     macro add_method(klass,name,f_name,argc)
-        lc_add_internal(
-            {{klass}},
-            {{name}},
-            LcProc.new do |args|
-                {% if argc >= 0 %}
-                    {{ tmp = argc + 1}}
-                    {{f_name}}(*args.as(T{{tmp}}))
-                {% else %}
-                    {{f_name}}(*args.as(T2))
-                {% end %}
-            end,
-            {{argc}}
-        )
+      lc_add_internal(
+        {{klass}},
+        {{name}},
+        LcProc.new do |args|
+          {% if argc >= 0 %}
+            {{ tmp = argc + 1}}
+            {{f_name}}(*args.as(T{{tmp}}))
+          {% else %}
+            {{f_name}}(*args.as(T2))
+          {% end %}
+        end,
+        {{argc}}
+      )
     end
 
     macro add_static_method(klass,name,f_name,argc)
-        lc_add_static(
-            {{klass}},
-            {{name}},
-            LcProc.new do |args|
-                {% if argc >= 0 %}
-                    {% tmp = argc + 1%}
-                    {{f_name}}(*args.as(T{{tmp}}))
-                {% else %}
-                    {{f_name}}(*args.as(T2))
-                {% end %}
-            end,
-            {{argc}}
-        )
+      lc_add_static(
+        {{klass}},
+        {{name}},
+        LcProc.new do |args|
+          {% if argc >= 0 %}
+            {% tmp = argc + 1%}
+            {{f_name}}(*args.as(T{{tmp}}))
+          {% else %}
+            {{f_name}}(*args.as(T2))
+          {% end %}
+        end,
+        {{argc}}
+      )
     end
 
     macro define_allocator(klass, f_name)
-        lc_set_allocator(
-            {{klass}},
-            LcProc.new do |args|
-                {{f_name}}(*args.as(T1))
-            end
-        )
+      lc_set_allocator(
+        {{klass}},
+        LcProc.new do |args|
+          {{f_name}}(*args.as(T1))
+        end
+      )
     end
 
     global(
-        enum ObjectFlags
-            NONE      = 0
-            FROZEN    = 1 << 0
-            FAKE      = 1 << 1
-            SHARED    = 1 << 2
-            REG_CLASS = 1 << 3
-        end
-
+      enum ObjectFlags
+        NONE      = 0
+        FROZEN    = 1 << 0
+        FAKE      = 1 << 1
+        SHARED    = 1 << 2
+        REG_CLASS = 1 << 3
+      end
     )
 
     abstract struct BaseS
-        @klass  = uninitialized LcClass
-        @data   = uninitialized Data
-        @id     = 0_u64
-        @flags  : ObjectFlags = ObjectFlags::NONE
-        property klass, data, id, flags
+      @klass  = uninitialized LcClass
+      @data   = uninitialized Data
+      @id     = 0_u64
+      @flags  : ObjectFlags = ObjectFlags::NONE
+      property klass, data, id, flags
     end
 
     abstract class BaseC
-        @klass  = uninitialized LcClass
-        @data   = uninitialized Data
-        @id     = 0_u64
-        @flags  = uninitialized ObjectFlags
-        property klass, data, id, flags
+      @klass  = uninitialized LcClass
+      @data   = uninitialized Data
+      @id     = 0_u64
+      @flags  = uninitialized ObjectFlags
+      property klass, data, id, flags
     end
 
-    global alias  LcVal  = Internal::BaseS | Internal::BaseC | Structure
+    global alias  LcVal  = Internal::BaseS | Internal::BaseC | LcClass
     global alias  LcValR = Internal::BaseS | Internal::BaseC
     
     macro internal 
-        self 
+      self 
     end
 
     macro lcfalse
-        LcFalse
+      LcFalse
     end
 
     macro lctrue
-        LcTrue
+      LcTrue
     end
 
     macro libc 
-        LibC
+      LibC
     end
 
     macro convert(name)
-        VM.convert({{name}})
+      VM.convert({{name}})
     end
 
     macro lc_cast(obj,type)
-        {{obj}}.as({{type}})
+      {{obj}}.as({{type}})
     end
 
     macro current_filedir
-        Exec.get_current_filedir 
+      Exec.get_current_filedir 
     end
 
     macro current_file 
-        Exec.get_current_filename 
+      Exec.get_current_filename 
     end
 
     macro current_call_line
-        Exec.get_current_call_line
+      Exec.get_current_call_line
     end
 
-    def self.lincas_obj_alloc_fake(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
-        tmp = lincas_obj_alloc(type,klass,*args,**opt)
-        set_flag tmp, FAKE
-        return tmp
+    def self.lincas_obj_alloc_fake(type : (BaseC.class | BaseS.class),klass : LcClass,*args,**opt)
+      tmp = lincas_obj_alloc(type,klass,*args,**opt)
+      set_flag tmp, FAKE
+      return tmp
     end
 
-    def self.lincas_obj_alloc(type : (BaseC.class | BaseS.class),klass : Structure,*args,**opt)
-        tmp       = type.new(*args)
-        tmp.klass = klass
-        if id = opt[:id]?
-            tmp.id = id.as(UInt64) 
-        end
-        if data = opt[:data]?
-            tmp.data = data 
-        end
-        return tmp
+    def self.lincas_obj_alloc(type : (BaseC.class | BaseS.class),klass : LcClass,*args,**opt)
+      tmp       = type.new(*args)
+      tmp.klass = klass
+      if id = opt[:id]?
+        tmp.id = id.as(UInt64) 
+      end
+      if data = opt[:data]?
+        tmp.data = data 
+      end
+      return tmp
     end
 
     def self.test(object :  LcVal)
-        if object == Null || object == LcFalse
-            return false 
-        end 
-        return true 
+      if object == Null || object == LcFalse
+        return false 
+      end 
+      return true 
     end
 
     @[AlwaysInline]
-    def self.struct_type(klass : Structure,type : SType)
-        klass.type == type
+    def self.struct_type(klass : LcClass,type : SType)
+      klass.type == type
     end
 
     def self.coerce(v1 :  LcVal, v2 :  LcVal)
-        if internal.lc_obj_responds_to? v2,"coerce"
-            return Exec.lc_call_fun(v2,"coerce",v1)
-        else 
-            lc_raise(LcTypeError,convert(:no_coerce) % {lc_typeof(v2),lc_typeof(v1)})
-            return Null
-        end 
+      if internal.lc_obj_responds_to? v2,"coerce"
+        return Exec.lc_call_fun(v2,"coerce",v1)
+      else 
+        lc_raise(LcTypeError,convert(:no_coerce) % {lc_typeof(v2),lc_typeof(v1)})
+        return Null
+      end 
     end 
 
     def self.lc_typeof(v :  LcVal)
-        if v.is_a? Structure 
-            if struct_type(v,SType::MODULE)
-                return "#{v.as(LcModule).name} : Module"
-            else 
-                return "#{v.as(LcClass).name} : Class"
-            end 
+      if v.is_a? LcClass 
+        if struct_type(v,SType::MODULE)
+            return "#{v.as(LcModule).name} : Module"
         else 
-            return v.as( LcValR).klass.name
+            return "#{v.as(LcClass).name} : Class"
         end 
-        # Should never get here
-        ""
+      else 
+        return v.as( LcValR).klass.name
+      end 
+      # Should never get here
+      ""
     end
 
     def self.clone_val(obj)
-        if obj.is_a? LcString
-            return internal.lc_str_clone(obj)
-        else
-            return obj
-        end
+      if obj.is_a? LcString
+        return internal.lc_str_clone(obj)
+      else
+        return obj
+      end
     end
 
-    def self.lc_make_shared_sym_tab(symTab : SymTab_t)
-        if symTab.is_a? HybridSymT
-            return HybridSymT.new(symTab.sym_tab,symTab.pyObj)
-        end
-        return SymTab.new(symTab.sym_tab)
+    @[AlwaysInline]
+    def self.lc_make_shared_sym_tab(lc_table : LookUpTable)
+      # if symTab.is_a? HybridSymT
+      #   return HybridSymT.new(symTab.sym_tab,symTab.pyObj)
+      # end
+      # return SymTab.new(symTab.sym_tab)
+      lc_table.clone
     end
 
     def self.init_lazy_const(const : LcVal*,klass : LcClass)
-        const.value.klass = klass 
-        const.value.data  = klass.data.clone
+      const.value.klass = klass 
+      const.value.data  = klass.data.clone
     end
 
 

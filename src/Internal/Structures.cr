@@ -195,6 +195,12 @@ module LinCAS
         getter body
     end
 
+    # struct LcBlock
+    #   def initialize(@iseq : ISeq, @me : LcVal, @env : VM::Environment)
+    #   end
+    #   getter iseq, me, env
+    # end
+
     struct CatchTable
         def initialize(@code : Bytecode, @var_name : String?)
             @buff = [LibC::JmpBuf.new]

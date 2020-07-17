@@ -16,7 +16,7 @@
 module LinCAS::Internal
 
 
-    private def self.lc_undef_method(name,owner : Structure)
+    private def self.lc_undef_method(name,owner : LcClass)
         m       = LinCAS::LcMethod.new(name.as(String),FuncVisib::UNDEFINED)
         m.code  = nil
         m.arity = 0
@@ -40,7 +40,7 @@ module LinCAS::Internal
              ({{strucure}}.type == SType::PyCLASS)
     end
 
-    def self.pymethod_new(name : String,pyobj : PyObject,owner : Structure? = nil,temp = true)
+    def self.pymethod_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = true)
         m         = new_lc_method(name,FuncVisib::PUBLIC)
         m.type    = LcMethodT::PYTHON
         m.pyobj   = pyobj 
@@ -49,7 +49,7 @@ module LinCAS::Internal
         return m
     end
 
-    def self.pystatic_method_new(name : String,pyobj : PyObject,owner : Structure? = nil,temp = false)
+    def self.pystatic_method_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = false)
         m        = pymethod_new(name,pyobj,owner,temp)
         m.static = true
         return m 
@@ -72,41 +72,41 @@ module LinCAS::Internal
         return m 
     end
 
-    def self.lc_define_internal_method(name, owner : LinCAS::Structure, code, arity : Intnum)
+    def self.lc_define_internal_method(name, owner : LinCAS::LcClass, code, arity : Intnum)
         m          = new_lc_method(name, FuncVisib::PUBLIC)
         set_default(m,owner,code,arity)
         return m
     end
 
-    def self.lc_define_protected_internal_method(name : String, owner : Structure, code, arity)
+    def self.lc_define_protected_internal_method(name : String, owner : LcClass, code, arity)
         m = new_lc_method(name,FuncVisib::PROTECTED)
         set_default(m,owner,code,arity)
         return m
     end
 
-    def self.lc_define_internal_static_method(name, owner : LinCAS::Structure, code, arity)
+    def self.lc_define_internal_static_method(name, owner : LinCAS::LcClass, code, arity)
         m        = self.lc_define_internal_method(name,owner,code,arity)
         m.static = true
         return m
     end
 
-    def self.lc_undef_usr_method(name,owner : Structure)
+    def self.lc_undef_usr_method(name,owner : LcClass)
         return lc_undef_method(name,owner)
     end
 
-    def self.lc_undef_usr_static_method(name,owner : Structure)
+    def self.lc_undef_usr_static_method(name,owner : LcClass)
         m = lc_undef_usr_method(name,owner)
         m.static = true 
         return m 
     end
 
-    def self.lc_undef_internal_method(name,owner : LinCAS::Structure)
+    def self.lc_undef_internal_method(name,owner : LinCAS::LcClass)
         m = lc_undef_method(name,owner)
         m.type = LcMethodT::INTERNAL 
         return m
     end 
 
-    def self.lc_undef_internal_static(name,owner : Structure)
+    def self.lc_undef_internal_static(name,owner : LcClass)
         m = lc_undef_internal_method(name,owner)
         m.static = true 
         return m
@@ -139,7 +139,7 @@ module LinCAS::Internal
     end 
 
 
-    def self.seek_method(receiver : Structure, name,protctd = false)
+    def self.seek_method(receiver : LcClass, name,protctd = false)
         method = seek_instance_method(receiver,name,!protctd)
         return 0 if method == 3
         if method != 0
@@ -156,7 +156,7 @@ module LinCAS::Internal
         return method
     end
 
-    def self.seek_instance_method(receiver : Structure,name,check = true,protctd = false)
+    def self.seek_instance_method(receiver : LcClass,name,check = true,protctd = false)
         if is_pyembedded(receiver)
             return seek_instance_method_emb(receiver,name)
         end
@@ -181,7 +181,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.seek_static_method(receiver : Structure, name)
+    def self.seek_static_method(receiver : LcClass, name)
         method    = seek_static_method2(receiver,name)
         return 0 if method == 1
         if method.is_a? LcMethod
@@ -198,7 +198,7 @@ module LinCAS::Internal
         return 0
     end
     
-    def self.seek_static_method2(receiver : Structure, name : String)
+    def self.seek_static_method2(receiver : LcClass, name : String)
         if is_pyembedded(receiver)
             return seek_static_method_emb(receiver,name)
         end
@@ -212,7 +212,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.seek_instance_method_emb(receiver : Structure, name : String)
+    def self.seek_instance_method_emb(receiver : LcClass, name : String)
         method = receiver.methods.as(HybridSymT).lookUp(name)
         if method == nil
             return 0
@@ -237,7 +237,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.seek_static_method_emb(receiver : Structure, name : String)
+    def self.seek_static_method_emb(receiver : LcClass, name : String)
         method = receiver.statics.as(HybridSymT).lookUp(name)
         if method == nil
             return 0
@@ -263,21 +263,21 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_responds_to?(obj :  LcVal,method : String,default = true)
-        if obj.is_a? Structure && default
-            m = internal.seek_static_method(obj.as(Structure),method)
+        if obj.is_a? LcClass && default
+            m = internal.seek_static_method(obj.as(LcClass),method)
         else 
-            if obj.is_a? Structure 
+            if obj.is_a? LcClass 
                 klass = obj 
             else 
                 klass = class_of(obj)
             end
-            m = internal.seek_method(klass.as(Structure),method)
+            m = internal.seek_method(klass.as(LcClass),method)
         end
         return m.is_a? LcMethod
     end
 
     def self.lc_obj_has_internal_m?(obj :  LcVal,name : String)
-        if obj.is_a? Structure
+        if obj.is_a? LcClass
             method = seek_static_method(obj,name)
         else
             method = seek_instance_method(class_of(obj),name)

@@ -38,7 +38,7 @@ module LinCAS::Internal
         @@pystring  = pydict_get1(dict,"str")
         @@pystatic_m = pydict_get1(dict,"staticmethod")
         @@pynone    = Python.Py_BuildValue("")
-        @@types_m   = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),Structure).gc_ref)
+        @@types_m   = PyGC.get_tracked(lc_cast(pyimport("types","PyTypes"),LcClass).gc_ref)
     end
 
     macro pyobj_incref(obj)
