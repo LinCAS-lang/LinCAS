@@ -23,8 +23,8 @@ module LinCAS::Internal
         @init = false
         @me   = uninitialized  LcVal
         @args = uninitialized FuncArgSet
-        @code = uninitialized Bytecode
-        @scp  = uninitialized VM::Scope
+        @code = uninitialized ISeq
+        @scp  = uninitialized VM::Environment
         @part = [] of  LcVal
         property init, me, args, code, scp
         getter part
