@@ -32,10 +32,10 @@ module LinCAS::Internal
         end
     end
 
-    abstract struct LcNum < BaseS
+    abstract class LcNum < BaseC
     end
 
-    struct Num_ < LcNum
+    class Num_ < LcNum
         @val = 0.as(Num)
         property val 
     end
