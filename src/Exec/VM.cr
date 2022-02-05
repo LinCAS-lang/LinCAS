@@ -198,7 +198,7 @@ module LinCAS
         when .jumpf_and_pop?
         when .make_range?
         when .leave?
-          if vm_pop_frame
+          if vm_pop_control_frame
             return topn(0)
           else 
             value = topn(0)
