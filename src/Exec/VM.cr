@@ -215,7 +215,7 @@ module LinCAS
 
     @[AlwaysInline]
     def vm_get_block
-      return @current_frame.env.block_handler
+      return @current_frame.env.block_handler # To adjust for nested blocks (Yeld?)
     end
 
     private enum VmFrame : UInt32
