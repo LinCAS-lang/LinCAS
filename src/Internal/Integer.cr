@@ -16,7 +16,7 @@
 
 module LinCAS::Internal
 
-    struct LcInt < LcNum
+    class LcInt < LcNum
         @val : Intnum
         def initialize(@val)
         end
