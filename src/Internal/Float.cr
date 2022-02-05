@@ -38,7 +38,7 @@ module LinCAS::Internal
     end
 
     
-    struct LcFloat < LcNum
+    class LcFloat < LcNum
         @val : Floatnum
         def initialize(@val)
         end
