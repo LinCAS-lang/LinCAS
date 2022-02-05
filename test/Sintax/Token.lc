@@ -1,0 +1,46 @@
+# comment
+()[ ] {} | |= || ||=
+[] []=
+. .. ...
++ +=
+/**
+ * multi
+ * line
+ * comment 
+**/
+
+* ** *= **=
+/ /=
+\ \=
+^ ^=
+> >= >>
+< <= <<
+% %=
+& && &= &&=
+:<= :! := :==
+:+ :- :* :** :/ :\ :^
+:& :% :: :[] :[]= 
+:> :>= :" "
+:>> :<< ' '
+=> $ $!
+
+1 2 3 1232 1.234 1e12 1.3e12 8i 4.6i
+4.5e1i
+@ivar @@cvar 
+Var var case catch class cave const
+do downto else elsif doll
+for false forall falling
+if inherits ifnot inheritsn
+let length
+module modality
+new next null never nun
+public private protected pull price practice promise
+return render rustic
+self select sell selenium
+then to true try tax toy trax
+until unique
+while which
+yield yodel
+__FILE__ __DIR__ __other__
+
+is_a? div! is_a? :=
