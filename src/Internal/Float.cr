@@ -67,7 +67,7 @@ module LinCAS::Internal
     end
 
     def self.build_float(num : Floatnum)
-        flo       = lincas_obj_alloc LcFloat,@@lc_float, num, data: @@lc_float.data.clone
+        flo       = lincas_obj_alloc LcFloat,@@lc_float, num
         return lc_obj_freeze(flo)
     end
 

@@ -41,7 +41,7 @@ module LinCAS::Internal
     end
 
     def self.build_true
-        lcTrue = lincas_obj_alloc LcBTrue, @@lc_boolean, data: @@lc_boolean.data.clone
+        lcTrue = lincas_obj_alloc LcBTrue, @@lc_boolean
         set_flag lcTrue, FROZEN
         return lcTrue.as( LcVal)
     end
@@ -53,7 +53,7 @@ module LinCAS::Internal
     end
 
     def self.build_false
-        lcFalse = lincas_obj_alloc LcBFalse, @@lc_boolean, data: @@lc_boolean.data.clone
+        lcFalse = lincas_obj_alloc LcBFalse, @@lc_boolean
         set_flag lcFalse, FROZEN
         return lcFalse.as( LcVal)
     end

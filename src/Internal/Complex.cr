@@ -56,7 +56,7 @@ module LinCAS::Internal
     end
 
     def self.complex_allocate
-        cmx        = lincas_obj_alloc LcCmx, @@lc_complex, data: @@lc_complex.data.clone 
+        cmx        = lincas_obj_alloc LcCmx, @@lc_complex 
         cmx.id     = pointerof(cmx).hash
         lc_obj_freeze(cmx)
         return lc_cast(cmx, LcVal)

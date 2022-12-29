@@ -79,7 +79,7 @@ module LinCAS::Internal
     end
 
     def self.range_new
-        range = lincas_obj_alloc LcRange, @@lc_range, data: @@lc_range.data.clone
+        range = lincas_obj_alloc LcRange, @@lc_range
         return range 
     end
 
