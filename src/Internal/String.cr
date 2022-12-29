@@ -159,7 +159,7 @@ module LinCAS::Internal
         str = lincas_obj_alloc(
             LcString, 
             @@lc_string, 
-            data: @@lc_string.data.clone)
+            data: IvarTable.new)
         # str   = LcString.new
         # str.klass = @@lc_string
         # str.data  = @@lc_string.data.clone
