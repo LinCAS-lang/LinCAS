@@ -33,7 +33,7 @@ module LinCAS::Internal
     END_CHR        = '\u{0}'.ord.to_u8
     alias CHAR_PTR = Pointer(LibC::Char)
 
-    class LcString < BaseC
+    class LcString < LcVal
         @size : IntnumR
         def initialize
             @str_ptr = CHAR_PTR.malloc(1,0).as(CHAR_PTR)

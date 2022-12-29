@@ -19,7 +19,7 @@ module LinCAS::Internal
 
     #$C Proc
         
-    class LCProc < BaseC
+    class LCProc < LcVal
         @init = false
         @me   = uninitialized  LcVal
         @args = uninitialized FuncArgSet

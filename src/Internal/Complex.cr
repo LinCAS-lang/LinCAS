@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    class LcCmx < BaseC
+    class LcCmx < LcVal
         @cmx   = uninitialized LibComplex::Gsl_cpx
         @alloc = false
         property cmx, alloc 

@@ -68,7 +68,7 @@ module LinCAS::Internal
 
     alias  Entries = Pointer(Entry?)
 
-    class LcHash < BaseC
+    class LcHash < LcVal
         @size       = 0.as(IntnumR)
         @capa       = 0.as(IntnumR)
         @buckets    = Entries.null

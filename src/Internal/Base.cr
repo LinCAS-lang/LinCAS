@@ -70,7 +70,7 @@ module LinCAS
   alias MethodTable = LookUpTable(String, LcMethod)
   alias NameTable = LookUpTable(String, LcVal)
 
-  abstract class BaseC
+  abstract class LcVal
     @klass  = uninitialized LcClass
     @id     = 0_u64
     @data   = uninitialized IvarTable
@@ -79,7 +79,7 @@ module LinCAS
     property klass, data, id, flags, gc_ref
   end
 
-  class LcClass < BaseC
+  class LcClass < LcVal
     @methods   : MethodTable
     @namespace : NameTable
     @type      : SType

@@ -15,10 +15,14 @@
 
 module LinCAS::Internal
 
-    class LcPyObject < BaseC
+    class LcPyObject < LcVal
         @pyObj  = PyObject.null
         @gc_ref : PyGC::Ref? = nil
         property pyObj,gc_ref
+
+        def initialize(@pyObj : PyObject)
+        end
+
         def finalize
             PyGC.dispose(@gc_ref)
         end

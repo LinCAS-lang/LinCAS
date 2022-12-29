@@ -18,7 +18,7 @@ module LinCAS::Internal
     MAX_ARY_CAPA = 10000
     MIN_ARY_CAPA = 5
 
-    class LcArray < BaseC
+    class LcArray < LcVal
         @total_size : IntnumR
         @size       : IntnumR
         def initialize

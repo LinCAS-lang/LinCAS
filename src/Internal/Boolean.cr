@@ -15,13 +15,13 @@
 
 module LinCAS::Internal
 
-    class LcBTrue  < BaseC
+    class LcBTrue  < LcVal
         def to_s 
             return "true"
         end
     end
 
-    class LcBFalse  < BaseC 
+    class LcBFalse  < LcVal 
         def to_s 
             return "false"
         end

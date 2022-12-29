@@ -18,7 +18,7 @@ module LinCAS::Internal
     MATCH_DATA_HEADER = "#<MatchData:"
     MATCH_DATA_TAIL   = '>'
 
-    class LcMatchData < BaseC
+    class LcMatchData < LcVal
         def initialize(
             @regexp   :  LcVal,
             @captured : LibPCRE::Pcre,

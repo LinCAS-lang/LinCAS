@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    class LcNull < BaseC
+    class LcNull < LcVal
     end
 
     def self.lc_build_null

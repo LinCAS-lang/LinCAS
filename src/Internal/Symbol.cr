@@ -18,7 +18,7 @@ module LinCAS::Internal
     SYM_REGISTER = {} of String => LcSymbol
     Q_SYM_BEG    = ":\""
 
-    class LcSymbol < BaseC
+    class LcSymbol < LcVal
         def initialize(@origin : String)
         end
         @hash_   : UInt64 = 0.to_u64
