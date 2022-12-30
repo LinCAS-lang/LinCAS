@@ -191,14 +191,14 @@ module LinCAS::Internal
     def self.lc_seek_const(str : LcClass, name : String)
       const = seek_const_in_scope(str.namespace,name)
       return const if const
-      parent = parent_of(str)
+      parent = str.parent
       while parent
         const = parent.namespace.find(name, const: true)
         if const
           check_pystructs(parent,const)
           return const
         end
-        parent = parent_of(parent)
+        parent = parent.parent
       end
       return nil
     end
@@ -206,11 +206,11 @@ module LinCAS::Internal
     def self.lc_find_allocator(klass : LcClass)
       alloc = klass.allocator 
       return alloc if alloc
-      klass = parent_of(klass)
+      klass = klass.parent
       while klass
         alloc = klass.allocator 
         return alloc if alloc
-        klass = parent_of(klass)
+        klass = klass.parent
       end 
       return nil 
     end
@@ -242,18 +242,13 @@ module LinCAS::Internal
       objClass = class_of(obj)
       while objClass
           return lctrue if lc_class_compare(objClass,lcType) == lctrue
-          objClass = parent_of(objClass)
+          objClass = objClass.parent
       end
       return lcfalse
     end
 
     def self.lc_class_real(klass : LcVal)
-      # TODO: class check tp avoid cast crash
-      klass = lc_cast(klass, LcClass)
-      while klass.type.metaclass?
-        klass = class_of(klass)
-      end 
-      return klass
+      return class_of(klass)
     end
 
     #@[AlwaysInline]
@@ -379,13 +374,13 @@ module LinCAS::Internal
       ary = build_ary_new
       while klass 
         lc_ary_push(ary,klass)
-        klass = parent_of(klass)
+        klass = lc_cast(klass, LcClass).parent
       end
       return ary 
     end
 
     def self.lc_class_parent(klass :  LcVal)
-      s_klass = parent_of(klass)
+      s_klass = lc_cast(klass, LcClass).parent
       return s_klass if s_klass
       return Null 
     end
