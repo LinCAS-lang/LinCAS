@@ -411,33 +411,11 @@ module LinCAS::Internal
       end
     end
 
-    def self.lc_get_static_method(str : LcClass,name : String)
-      method = seek_static_method(str,name)
-      return nil unless method.is_a? LcMethod
-      if method.type == LcMethodT::PYTHON
-        method.needs_gc = false 
-      end
-      return method
-    end
-
-    def self.lc_get_instance_method(str : LcClass,name : String)
-      method = seek_method(str,name)
-      return nil unless method.is_a? LcMethod 
-      if method.type == LcMethodT::PYTHON
-        method.needs_gc = false 
-      end
-      return method
-    end
-
     def self.lc_get_method(obj :  LcVal,name :  LcVal)
       name = id2string(name)
       return Null unless name 
-      if obj.is_a? LcClass
-        method = lc_get_static_method(obj,name)
-      else
-        method = lc_get_instance_method(class_of(obj),name)
-      end
-      unless method 
+      cc = seek_method(obj.klass,name, explicit: false, ignore_visib: true)
+      unless cc.method 
         lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(obj)}")
         return Null 
       end
@@ -447,8 +425,8 @@ module LinCAS::Internal
     def self.lc_instance_method(klass :  LcVal, name :  LcVal)
       name   = id2string(name)
       return Null unless name
-      method = lc_get_instance_method(lc_cast(klass,LcClass),name)
-      unless method
+      cc = seek_method(klass.klass, name, explicit: false, ignore_visib: true)
+      unless cc.method
         lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(klass)}")
         return Null 
       end
