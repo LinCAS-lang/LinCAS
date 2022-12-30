@@ -454,7 +454,7 @@ module LinCAS::Internal
         add_static_method(@@lc_class,"ancestors", lc_class_ancestors,                      0)
 
         lc_class_add_method(@@lc_class,"is_a?", wrap(lc_is_a,2),                           1)
-        lc_class_add_method(@@lc_class,"class",wrap(lc_class_class,1),                     0)
+        lc_class_add_method(@@lc_class,"class",wrap(lc_class_real,1),                      0)
         lc_class_add_method(@@lc_class,"remove_method",wrap(lc_class_rm_method,2),         1)
         lc_class_add_method(@@lc_class,"delete_method",wrap(lc_class_delete_method,2),     1)
         lc_class_add_method(@@lc_class,"alias",wrap(lc_alias_method,3),                    2)
