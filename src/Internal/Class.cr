@@ -280,7 +280,7 @@ module LinCAS::Internal
     def self.lc_class_eq(klass :  LcVal, other :  LcVal)
       return val2bool(klass.class == other.class &&
                       type_of(klass) == type_of(other) &&
-                      lc_class_compare(klass,other))
+                      (lc_class_compare(klass,other) == lctrue))
     end
 
     def self.lc_class_ne(klass :  LcVal, other)
