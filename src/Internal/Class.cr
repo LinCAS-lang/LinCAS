@@ -122,9 +122,13 @@ module LinCAS::Internal
       klass.parent = parent
     end
 
+    ##
+    # It adds a method to an object.
+    # Usage example:
+    #   lc_add_method(obj.klass, "my_method", method)
     @[AlwaysInline]
-    def self.lc_add_method(receiver : LcClass, name : String, method : LcMethod)
-      receiver.methods[name] = method
+    def self.lc_add_method(klass : LcClass, name : String, method : LcMethod)
+      klass.methods[name] = method
     end
 
     # @[AlwaysInline]
@@ -132,8 +136,8 @@ module LinCAS::Internal
     #     receiver.methods.addEntry(name,method)
     # end
 
-    def self.lc_add_internal(receiver : LcClass,name : String,proc : LcProc,arity : Intnum)
-      m = define_method(name,receiver,proc,arity)
+    def self.lc_add_internal(receiver : LcClass, name : String, proc : LcProc, arity : Intnum)
+      m = define_method(name, receiver, proc, arity)
       receiver.methods[name] = m
     end
 
@@ -147,23 +151,30 @@ module LinCAS::Internal
       receiver.methods[name] = m
     end
 
+    ##
+    # Defines an internal static method  in the given class. No check is performed
+    # to see if the method is defined
     def self.lc_add_static(receiver : LcClass, name : String, proc : LcProc,arity : Intnum)
       m = define_static(name,receiver,proc,arity)
-      class_of(receiver).methods[name] = m
+      metaclass_of(receiver).methods[name] = m
     end
 
+    ##
+    # Removes an internal static method in the given class. No check is performed
+    # to see if the method is defined
     def self.lc_remove_static(receiver : LcClass,name : String)
       m = undef_static(name,receiver)
-      class_of(receiver).methods[name] = m
+      metaclass_of(receiver).methods[name] = m
     end
 
+    
     def self.lc_class_add_method(receiver : LcClass,name : String,proc : LcProc,arity : Intnum)
       lc_add_internal(receiver,name,proc,arity)
       lc_add_static(receiver,name,proc,arity)
     end
 
-    def self.lc_define_const(str : LcClass, name : String, const :  LcVal)
-      str.namespace[name] = const
+    def self.lc_define_const(klass : LcClass, name : String, const :  LcVal)
+      klass.namespace[name] = const
     end
 
     @[AlwaysInline]
@@ -176,6 +187,8 @@ module LinCAS::Internal
       klass.allocator = Allocator::UNDEF 
     end
 
+    ##
+    # Not to be used directly
     def self.seek_const_in_scope(scp : NameTable,name : String) :  LcVal?
       while scp 
         const = scp.find(name, const: true)
@@ -225,7 +238,13 @@ module LinCAS::Internal
       return tmp.as(LcClass)
     end
 
-    #########
+    ######################################
+    #  ____ _____ ____    _     _ _      #
+    # / ___|_   _|  _ \  | |   (_) |__   #
+    # \___ \ | | | | | | | |   | | '_ \  #
+    #  ___) || | | |_| | | |___| | |_) | #
+    # |____/ |_| |____/  |_____|_|_.__/  #
+    ######################################
 
     @[AlwaysInline]
     def self.lc_class_compare(klass1 :  LcVal, klass2 :  LcVal)
