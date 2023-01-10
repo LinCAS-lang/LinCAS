@@ -331,7 +331,7 @@ module LinCAS::Internal
         super_id_table = id_table.parent 
         if super_id_table
           super_id_table.each do |k, v|
-            if v.namespace.object_id == id_table.object_id
+            if v.is_a?(LcClass) && v.namespace.object_id == id_table.object_id
               path << v.name
               break
             end
