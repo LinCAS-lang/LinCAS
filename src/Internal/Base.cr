@@ -17,31 +17,33 @@ module LinCAS
 
   class LookUpTable(T, V) < Hash(T, V)
     @parent : LookUpTable(T, V)? = nil 
-    property parent, sym_tab
+    property parent
     getter   py_obj
 
     def initialize(@py_obj : Python::PyObject? = nil)
       super()
     end
 
-    def find(name : String, const = false)
-      if tmp = self[name]?
-        return tmp 
-      elsif @py_obj
-        if !(tmp = Python.PyObject_GetAttrString(@pyObj,name)).null?
-          if const
-            if Internal.is_pycallable(tmp) && !Internal.is_pytype(tmp)
+    def find(name : String, const = false) : V?
+      tmp = self[name]? 
+      if !tmp && @py_obj
+        if !(tmp = Python.PyObject_GetAttrString(@py_obj.not_nil!,name)).null?
+          if Internal.is_pycallable(tmp) && !Internal.is_pytype(tmp)
+            {% if V == LcMethod %}
+              tmp = Internal.pymethod_new(name, @py_obj.not_nil!, nil, false)
+            {% else %}
               Internal.pyobj_decref(tmp)
-              return nil 
-            end
-            return Internal.build_pyobj(tmp)
+              tmp = nil 
+            {% end %}
           end
-          return tmp 
+          {% if V != LcMethod %}
+            tmp = Internal.build_pyobj(tmp)
+          {% end %}
         else
           Python.PyErr_Clear
         end 
       end
-      nil
+      return tmp.as(V?)
     end
 
     def clone 
