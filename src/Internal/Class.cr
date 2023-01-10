@@ -15,95 +15,126 @@
 
 module LinCAS::Internal
 
-    macro parent_of(klass)
-       {{klass}}.as(LcClass).parent
-    end
-
-    macro class_of(obj)
-        {{obj}}.klass 
-    end
-
-    macro path_of(obj)
-        {{obj}}.as(LcClass).path 
-    end
-
     macro type_of(obj)
-        {{obj}}.as(LcClass).type
+      {{obj}}.as(LcClass).type
     end
 
     macro class_name(klass)
-        {{klass}}.as(LcClass).name 
+      {{klass}}.as(LcClass).name 
     end
 
     macro check_pystructs(scp,str)
-        if {{str}}.is_a? LcClass && 
-            ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
-                                            ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-            {{str}}.namespace.parent = {{scp}}.symTab
-            {{scp}}.namespace.[{{str}}.name] = {{str}}
-            {{str}}.flags |= ObjectFlags::REG_CLASS
-        end
+      if {{str}}.is_a? LcClass && 
+        ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
+                                        ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
+        {{str}}.namespace.parent = {{scp}}.symTab
+        {{scp}}.namespace.[{{str}}.name] = {{str}}
+        {{str}}.flags |= ObjectFlags::REG_CLASS
+      end
     end
 
     macro check_pystructs2(klass,str)
-        if {{str}}.is_a? LcClass && 
-            ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
-                                            ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-            {{str}}.namespace.parent = {{namespace}}
-            {{klass}}[({{str}}.name] = {{str}}
-            {{str}}.flags |= ObjectFlags::REG_CLASS
-        end
-    end
-    
-    @[AlwaysInline]
-    def self.lc_build_class(name : String)
-      klass      = LcClass.new(SType::CLASS, name)
-      return klass
+      if {{str}}.is_a? LcClass && 
+        ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
+                                        ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
+        {{str}}.namespace.parent = {{namespace}}
+        {{klass}}[({{str}}.name] = {{str}}
+        {{str}}.flags |= ObjectFlags::REG_CLASS
+      end
     end
 
-    def self.lc_build_metaclass
-      klass = LcClass.new(SType::METACLASS, "Class", @@lc_module)
-      klass.klass = @@lc_class
+    def self.metaclass_of(klass : LcClass)
+      m_klass = klass.klass 
+      if !type_of(m_class).metaclass?
+        return lc_attach_metaclass(klass).klass
+      end 
+      return m_klass
+    end
+
+    def self.class_of(obj : LcVal)
+      klass = obj.klass
+      while klass && type_of(klass).metaclass?
+        klass = klass.parent
+      end
+      return klass.not_nil!
+    end 
+    
+    # @[AlwaysInline]
+    # def self.lc_build_class(name : String)
+    #   klass      = LcClass.new(SType::CLASS, name)
+    #   return klass
+    # end
+
+    @[AlwaysInline]
+    def self.lc_build_metaclass(klass : LcClass, parent : LcClass?)
+      return LcClass.new(SType::METACLASS, "#<Class:#{klass.name}>", parent)
+    end
+
+    ##
+    # This method attaches a metaclass to a class `k`.
+    # The class of the metaclass is `Class`, and its
+    # superclass is the class of superclass of `k`
+    def self.lc_attach_metaclass(klass : LcClass)
+      # This is a temporary solution. There must be
+      # a check that ensures consistency between metaclasses
+      if parent = klass.parent # klass.parent is not nil
+        parent = parent.klass
+      else
+        parent = @@lc_class 
+      end
+      metaclass       = lc_build_metaclass(klass, parent)
+      metaclass.klass = @@lc_class
+      klass.klass     = metaclass
       return klass
     end
 
     @[AlwaysInline]
     def self.lc_build_class(name : String,parent : LcClass)
-      klass       = LcClass.new(SType::CLASS, name, parent)
-      klass.klass = @@lc_class
-      return klass
+      klass = LcClass.new(SType::CLASS, name, parent)
+      return lc_attach_metaclass(klass)
     end
 
-    @[AlwaysInline]
-    def self.lc_build_internal_class(name : String,parent : LcClass = @@lc_object)
-      klass = lc_build_class(name, parent)
-      # klass.namespace.parent = @@main_class.namespace
-      # @@main_class.namespace[name] = klass
-      lc_set_parent_class(klass,parent)
-      return klass
-    end
-
+    ##
+    # Used only to create the instance of `Class`
+    # in its initialiser
     def self.lc_build_class_class
-      klass     = LcClass.new(SType::CLASS, "Class", @@lc_module)
-      metaclass = LcClass.new(SType::METACLASS, "Class", @@lc_module)
+      klass     = LcClass.new(SType::CLASS, "Class", nil)
+      metaclass = LcClass.new(SType::METACLASS, "#<Class:Class>", nil)
+      metaclass.klass = klass
       klass.klass = metaclass
       return klass
     end
 
-    def self.lc_build_unregistered_pyclass(name : String,obj : PyObject,parent : LcClass)
+    @[AlwaysInline]
+    def self.lc_build_user_class(name : String, namespace : NameTable, parent : LcClass = @@lc_object)
+      klass = lc_build_class(name, parent)
+      klass.namespace.parent = namespace
+      namespace[name] = klass
+      lc_set_parent_class(klass,parent)
+      return klass
+    end
+
+    def self.lc_build_internal_class(name, parent : LcClass = @@lc_object)
+      return lc_build_user_class(name, @@lc_object.namespace, parent)
+    end
+
+    def self.lc_build_unregistered_pyclass(name : String,obj : PyObject, parent : LcClass)
       gc_ref    = PyGC.track(obj)
       namespace = NameTable.new(obj)
       methods   = MethodTable.new(obj)
       klass     = LcClass.new(SType::PyCLASS, name, parent, methods, namespace)
       klass.gc_ref = gc_ref
-      klass.klass  = @@lc_class
+      lc_attach_metaclass(klass)
       return klass
     end
 
-    def self.lc_build_pyclass(name : String,obj : PyObject)
-      klass               = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
-      klass.namespace.parent = @@main_class.namespace
-      @@main_class.namespace[name] = klass
+    ##
+    # It creates a python class embedding it with the definition of
+    # a LinCAS class
+    def self.lc_build_pyclass(name : String,obj : PyObject, namespace : NameTable)
+      klass = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
+      klass.namespace.parent = namespace
+      namespace[name]        = klass
       klass.flags |= ObjectFlags::REG_CLASS
       return klass
     end
