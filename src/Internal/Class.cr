@@ -437,7 +437,6 @@ module LinCAS::Internal
     def self.init_class
         # @@main_class     = lc_build_class("BaseClass")
         @@lc_class        = lc_build_class_class
-        @@lc_module.klass = @@lc_class
         add_static_method(@@lc_class,"==",   lc_class_eq,         1)
         add_static_method(@@lc_class,"!=",   lc_class_ne,         1)
         add_static_method(@@lc_class,"to_s", lc_class_to_s,       0)
