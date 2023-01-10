@@ -289,7 +289,7 @@ module LinCAS::Internal
     end
 
     def self.lc_class_to_s(klass : LcVal)
-        klass = klass.as(LcClass)
+        klass = lc_cast(klass,LcClass)
         name = class_path(klass)
         return build_string(name)
     end
