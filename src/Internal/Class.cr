@@ -323,9 +323,25 @@ module LinCAS::Internal
       return klass 
     end 
 
-    # TODO
-    def self.class_path(klass)
-      return klass.name
+    # TO BE TESTED
+    def self.class_path(klass : LcClass)
+      path     = [klass.name] of String
+      id_table = klass.namespace.parent
+      while id_table 
+        super_id_table = id_table.parent 
+        if super_id_table
+          super_id_table.each do |k, v|
+            if v.namespace.object_id == id_table.object_id
+              path << v.name
+              break
+            end
+          end
+        else 
+          break # We reached the top level scope
+        end
+        id_table = super_id_table
+      end 
+      return path.reverse!.join("::")
     end
 
     def self.lc_class_inspect(klass : LcVal)
