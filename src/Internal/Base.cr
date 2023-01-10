@@ -154,7 +154,7 @@ module LinCAS
     @gc_ref    : Internal::PyGC::Ref? = nil
     @args      = uninitialized FuncArgSet
 
-    def initialize(@name : String,@visib : FuncVisib)
+    def initialize(@name : String, @visib : FuncVisib)
         @code = nil
     end
 
