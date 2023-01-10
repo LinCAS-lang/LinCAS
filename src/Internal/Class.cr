@@ -358,7 +358,7 @@ module LinCAS::Internal
     # end 
 
     def self.lc_class_delete_method(obj :  LcVal,name :  LcVal)
-      isname = id2string(name)
+      sname = id2string(name)
       return lcfalse unless sname
       klass = class_of(obj)
       if klass.methods.find(sname)
