@@ -322,11 +322,11 @@ module LinCAS::Internal
     def self.lc_class_rm_method(obj :  LcVal,name :  LcVal)
       sname = id2string(name)
       return lcfalse unless sname
-      unless lc_obj_responds_to? klass,sname,false
-        lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
+      unless lc_obj_responds_to? obj, sname
+        lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
         return lcfalse 
       else 
-        lc_remove_internal(klass.as(LcClass),sname)
+        lc_remove_internal(obj.klass,sname)
         return lctrue  
       end
     end
