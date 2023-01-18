@@ -22,7 +22,6 @@ module LinCAS::Internal
     class LCProc < LcVal
         @init = false
         @me   = uninitialized  LcVal
-        @args = uninitialized FuncArgSet
         @code = uninitialized ISeq
         @scp  = uninitialized VM::Environment
         @part = [] of  LcVal
@@ -40,10 +39,6 @@ module LinCAS::Internal
 
     macro set_proc_args(proc,args)
         {{proc}}.as(LCProc).args = {{args}}
-    end
-
-    macro get_proc_args(proc)
-        {{proc}}.as(LCProc).args
     end
 
     macro set_proc_code(proc,code)
@@ -86,16 +81,20 @@ module LinCAS::Internal
 
     def self.lc_proc_allocate_0(klass :  LcVal)
         klass = klass.as(LcClass)
-        proc  = lincas_obj_alloc LCProc, klass, data: klass.data.clone
+        proc  = lincas_obj_alloc LCProc, klass
         proc.id    = proc.object_id
         return proc.as( LcVal)
     end
 
     def self.lc_proc_allocate(klass :  LcVal)
+        block = Exec.get_block
         proc = lc_proc_allocate_0(klass)
-        block      = Exec.get_block
-        if block 
-            proc_init(proc,block)
+        if block
+            if block.is_a? LCProc 
+                return lc_cast(block, LcVal)
+            else 
+                proc_init(proc,lc_cast(block, LcBlock))
+            end
         else
             lc_raise(LcArgumentError,"Tried to create a proc without a block")
         end
@@ -112,18 +111,24 @@ module LinCAS::Internal
         return proc
     end
 
+    @[AlwaysInline]
+    def self.lincas_block_to_proc(block : LCProc)
+      return lc_cast(block, LcVal)
+    end 
+
     private def self.proc_init(proc :  LcVal,block : LcBlock)
         set_proc_self(proc, block.me)
-        set_proc_args(proc, block.args)
-        set_proc_code(proc, block.body)
-        set_proc_scope(proc,block.scp.as(VM::Scope))
+        set_proc_code(proc, block.iseq)
+        set_proc_scope(proc,block.env)
         set_proc_as_init(proc)
     end
 
     def self.lc_proc_init(proc :  LcVal)
         block      = Exec.get_block
-        if block 
+        if block.is_a? LcBlock 
             proc_init(proc,block)
+        elsif block.is_a? LCProc 
+            # Do nothing. It is the same object
         else
             lc_raise(LcArgumentError,"Tried to create a proc without a block")
         end
@@ -148,7 +153,8 @@ module LinCAS::Internal
         tmp
     end
 
-    
+    ##
+    # TODO: Revamp 
     def self.lc_proc_partial(proc :  LcVal, argv : An)
         proc_arity = get_proc_args(proc).size
         if argv.size >= proc_arity
@@ -176,7 +182,6 @@ module LinCAS::Internal
     def self.lc_proc_clone(proc :  LcVal)
         new_proc = build_proc
         set_proc_self(new_proc, get_proc_self(proc))
-        set_proc_args(new_proc, get_proc_args(proc))
         set_proc_code(new_proc, get_proc_code(proc))
         set_proc_scope(new_proc,get_proc_scope(proc))
         p_part = get_proc_part(proc)
