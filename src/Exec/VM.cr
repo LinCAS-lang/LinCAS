@@ -51,17 +51,16 @@ module LinCAS
 
     def setup_iseq(iseq : ISeq)
       if !@initialized
-        # lc_bug("Uninitialized VM")
+        lc_bug("Uninitialized VM")
       end
       obj = Internal.boot_main_object
-      env = Environment.new(iseq.symtab.size, nil)
-      push_control_frame(obj, iseq, env, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
+      vm_push_control_frame(obj, iseq, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
     end
 
     @[AlwaysInline]
-    protected def restore_regs(previous_state)
+    protected def restore_regs
       if @control_frames.empty?
-        # lc_bug("(No frame found)")
+        lc_bug("(No frame found)")
       end
       @current_frame = @control_frames.last
       @sp = @current_frame.sp
