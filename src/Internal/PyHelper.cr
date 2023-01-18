@@ -294,7 +294,7 @@ module LinCAS::Internal
     end
 
     macro is_pytype(obj)
-        pytype_fast_subclass({{obj}},Py_TPFLAGS_TYPE_SUBCLASS)
+        Internal.pytype_fast_subclass({{obj}},Internal::Py_TPFLAGS_TYPE_SUBCLASS)
     end
 
     @[AlwaysInline]
@@ -306,7 +306,7 @@ module LinCAS::Internal
     end
 
     macro is_pystring(obj)
-        pytype_fast_subclass({{obj}},Py_TPFLAGS_UNICODE_SUBCLASS)
+        Internal.pytype_fast_subclass({{obj}},Internal::Py_TPFLAGS_UNICODE_SUBCLASS)
     end
 
     @[AlwaysInline]
@@ -359,7 +359,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.is_pyclass_method(obj)
+    def self.is_pyclass_method(obj : PyObject)
         res = !Python.PyMethod_Self(obj).null?
         pyerr_clear
         res
