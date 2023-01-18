@@ -188,7 +188,7 @@ module LinCAS::Internal
         name   = id2string(argv[0])
         argv   = argv.shifted_copy
         return Null unless name
-        method = seek_method(obj.klass,name)
+        method = seek_method(obj.klass, name, explicit: true)
         if method.is_a? LcMethod && method.type == LcMethodT::PYTHON
             return lc_call_python(method,argv)
         else
