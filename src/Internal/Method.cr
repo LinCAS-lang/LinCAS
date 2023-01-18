@@ -138,152 +138,57 @@ module LinCAS::Internal
         internal.lc_undef_internal_static({{name}},{{owner}})
     end 
 
-
-    def self.seek_method(receiver : LcClass, name,protctd = false)
-        method = seek_instance_method(receiver,name,!protctd)
-        return 0 if method == 3
-        if method != 0
-            return method 
-        else 
-            parent = parent_of(receiver) 
-            while parent 
-                method = seek_instance_method(parent,name,true,protctd)
-                return 0 if method == 3
-                return method if method != 0
-                parent = parent_of(parent)
+    def self.seek_method(receiver : LcClass, name : String, explicit : Bool, ignore_visib = false)
+        klass = receiver
+        i = 0
+        # when reason = 0 -> undefined
+        # when reason = 1 -> protected method called
+        # when reason = 2 -> private method called
+        m_missing_reason = 0
+        while klass && (i += 1)
+            method = klass.methods.find(name)
+            if method
+                if method.is_a? PyObject # TO Fix
+                    if method.null?
+                      pyerr_clear
+                      method = nil
+                      m_missing_reason = 0 
+                    elsif type_of(receiver).metaclass? && is_pycallable(method) && !is_pytype(method) &&
+                        (is_pyclass_method(method) || !is_pyimethod(method))
+                        method = pystatic_method_new(name,method,receiver)
+                    else
+                        pyobj_decref(method)
+                        m_missing_reason = 0
+                    end
+                else
+                    case method.visib
+                    when FuncVisib::PROTECTED
+                        method = ignore_visib ? method : (!explicit ? method : nil)
+                        m_missing_reason = 1
+                    when FuncVisib::PRIVATE 
+                        method = ignore_visib ? method : ((!explicit && i == 1) ? method : nil)
+                        m_missing_reason = 2
+                    when FuncVisib::UNDEFINED 
+                        method = nil 
+                        m_missing_reason = 0
+                    end 
+                end
+                break
             end
+            klass = klass.parent
         end
-        return method
+        return VM::CallCache.new(method, m_missing_reason)
     end
 
-    def self.seek_instance_method(receiver : LcClass,name,check = true,protctd = false)
-        if is_pyembedded(receiver)
-            return seek_instance_method_emb(receiver,name)
-        end
-        method = receiver.methods.as(SymTab).lookUp(name)
-        if method.is_a? LcMethod
-            return 3 if method.visib == FuncVisib::UNDEFINED
-            return method unless check
-            method = method.as(LcMethod)
-            case method.visib 
-                when FuncVisib::PUBLIC
-                    return method
-                when FuncVisib::PROTECTED
-                    return method if protctd
-                    return 1
-                when FuncVisib::PRIVATE 
-                    return 2
-                when FuncVisib::UNDEFINED 
-                    return 3
-            end
-        else
-            return 0
-        end
-    end
-
-    def self.seek_static_method(receiver : LcClass, name)
-        method    = seek_static_method2(receiver,name)
-        return 0 if method == 1
-        if method.is_a? LcMethod
-            return method
-        else
-            parent = parent_of(receiver)
-            while parent 
-                method = seek_static_method2(parent,name)
-                return 0 if method == 1
-                return method if method.is_a? LcMethod
-                parent = parent_of(parent) 
-            end
-        end
-        return 0
-    end
-    
-    def self.seek_static_method2(receiver : LcClass, name : String)
-        if is_pyembedded(receiver)
-            return seek_static_method_emb(receiver,name)
-        end
-        method = receiver.statics.as(SymTab).lookUp(name)
-        if !method.nil?
-            method = method.as(LcMethod)
-            return 1 if method.visib == FuncVisib::UNDEFINED
-            return method
-        else
-            return 0
-        end
-    end
-
-    def self.seek_instance_method_emb(receiver : LcClass, name : String)
-        method = receiver.methods.as(HybridSymT).lookUp(name)
-        if method == nil
-            return 0
-        elsif method.is_a? LcMethod
-            return 1 if method.visib == FuncVisib::UNDEFINED
-            return method
-        elsif method.is_a? PyObject
-            if method.null?
-                pyerr_clear
-                return 0 
-            end
-            if is_pycallable(method) && !is_pytype_abs(method) && 
-                                     !is_pystatic_method(method) && !is_pyclass_method(method)
-                return pymethod_new(name,method,receiver)
-            else
-                pyobj_decref(method)
-                return 0
-            end
-        else
-            lc_bug("Invalid method type received")
-            return 0
-        end
-    end
-
-    def self.seek_static_method_emb(receiver : LcClass, name : String)
-        method = receiver.statics.as(HybridSymT).lookUp(name)
-        if method == nil
-            return 0
-        elsif method.is_a? LcMethod
-            return 1 if method.visib == FuncVisib::UNDEFINED
-            return method
-        elsif method.is_a? PyObject
-            if method.null?
-                pyerr_clear
-                return 0 
-            end
-            if is_pycallable(method) && !is_pytype(method) &&
-                    (is_pyclass_method(method) || !is_pyimethod(method))
-                return pystatic_method_new(name,method,receiver)
-            else
-                pyobj_decref(method)
-                return 0
-            end
-        else
-            lc_bug("Invalid method type received")
-            return 0
-        end
-    end
-
-    def self.lc_obj_responds_to?(obj :  LcVal,method : String,default = true)
-        if obj.is_a? LcClass && default
-            m = internal.seek_static_method(obj.as(LcClass),method)
-        else 
-            if obj.is_a? LcClass 
-                klass = obj 
-            else 
-                klass = class_of(obj)
-            end
-            m = internal.seek_method(klass.as(LcClass),method)
-        end
+    def self.lc_obj_responds_to?(obj :  LcVal, name : String)
+        m = internal.seek_method(obj.klass, name, true) # Method call is of explicit type
         return m.is_a? LcMethod
     end
 
     def self.lc_obj_has_internal_m?(obj :  LcVal,name : String)
-        if obj.is_a? LcClass
-            method = seek_static_method(obj,name)
-        else
-            method = seek_instance_method(class_of(obj),name)
-        end 
-        return -1 unless method.is_a? LcMethod
-        return 0 if method.type == LcMethodT::INTERNAL 
+        cc = internal.seek_method(obj.klass, name, explicit: false, ignore_visib: true)
+        return -1 unless cc.method
+        return 0 if cc.method.not_nil!.type == LcMethodT::INTERNAL 
         return 1
     end
 
