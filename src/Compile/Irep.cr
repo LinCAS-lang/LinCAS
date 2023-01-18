@@ -81,20 +81,27 @@ module LinCAS
   class CallInfo
     getter argc, kwarg, name
     property explicit, block
-    def initialize(@name : String, @argc : Int32, @kwarg : Array(String)?, @explicit : Bool = true, @block : ISeq? = nil) 
+    def initialize(@name : String, 
+                   @argc : Int32, 
+                   @kwarg : Array(String)?, 
+                   @explicit : Bool = true, 
+                   @block : ISeq? = nil
+                  ) 
     end
   end
 
   class ISeq
     getter type, encoded, symtab, filename, line, catchtables, object, jump_iseq, call_info, names
-    property args, named_args, block_arg, stack_size
+    property args, opt_args, named_args, block_arg, stack_size
 
     @args : Array(String)?
+    @opt_args : Array(Int32)?
     @named_args : Array(Tuple(String, Int32))?
     @block_arg : String?
 
     def initialize(@type : ISType, @filename : String, @symtab : SymTable)
       @args       = nil
+      @opt_args   = nil
       @named_args = nil
       @block_arg  = nil
 
