@@ -33,7 +33,7 @@ module LinCAS
     end 
 
     macro topn(x)
-      @stack[@sp - (x) - 1]
+      @stack[@sp - ({{x}}) - 1]
     end
 
     def initialize
