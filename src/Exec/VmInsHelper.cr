@@ -123,10 +123,74 @@ module LinCAS
       return LcBlock.new(block, @current_frame.me, @current_frame.env)
     end
 
-    protected def vm_call(ci : CallInfo, calling : CallingInfo)
+    private def vm_no_method_found(ci : CallInfo, calling : VM::CallingInfo, cc : VM::CallCache)
+      raise  "No method found"
+      case cc.m_missing_status
+      when 0
+      when 1
+      when 2
+      end
+    end
+
+    ##
+    # Performs the actual call of a method
+    protected def vm_call(ci : CallInfo, calling : VM::CallingInfo)
+      cc = Internal.seek_method(calling.me.klass, ci.name, ci.explicit)
+      vm_no_method_found(ci, calling, cc) if cc.method.nil?
+      method = cc.method.not_nil!
+      
+      # We already have the arguments on the stack that
+      # are already available. Local variables are not 
+      # kept on stack, therefore it will be the specialized
+      # call-handler function's responsability to copy them
+      # to the environment context.
+      #
+      # Since we need to clear the arg part after the call.
+      # Therefore we need to remember what is the actual stack
+      # pointer before the call args (and before pushing a new frame)
+      set_stack_consistency_trace(ci.argc) # TO FIX: consider Kw args
+
+      return case method.type 
+      when .internal?
+        vm_call_internal(method, ci, calling) # Missing: fixing args on stack
+      # when .user?
+      # when .python?
+      # when .proc?
+      else
+        lc_bug("Invalid method type received")
+        Null
+      end
     end 
 
-    protected def vm_call_no_block(ci : CallInfo, calling : CallingInfo)
+    private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      vm_push_control_frame(calling.me, VM::VmFrame::ICALL_FRAME)
+      vm_check_arity(method.arity, ci.argc) if method.arity > 0
+      argv = vm_collect_args(method.arity, ci)
+      val = call_internal_special(method, argv)
+      push val
+      vm_pop_control_frame
+    end
+
+    private def call_internal_special(method : LcMethod, argv)
+      case method.arity
+      when 0
+        method.code.as(LcProc).call(argv[0])
+      when 2
+        argv = argv.as(T3)
+        method.code.as(LcProc).call(argv[0], argv[1], argv[2])
+      when 3
+        argv = argv.as(T4)
+        method.code.as(LcProc).call(argv[0], argv[1], argv[2], argv[3])
+      else
+        argv = argv.as(T2)
+        method.code.as(LcProc).call(argv[0], argv[1])
+      end
+    end
+
+    private def vm_call_user()
+    end 
+
+    private def vm_call_python()
     end
 
     protected def vm_putclass(me : LcVal, name : String, parent : LcVal, iseq : ISeq)
