@@ -189,7 +189,7 @@ module LinCAS
       when Variable  
         name  = node.name
         depth = node.depth 
-        # lc_bug("Negative depth") if depth < 0
+        lc_bug("Negative depth") if depth < 0
         is = case depth 
         when 0 
           IS::SETLOCAL_0
@@ -217,7 +217,7 @@ module LinCAS
         index = get_var_offset iseq.symtab, name
         encoded << (IS::SETCLASS_V | IS.new(index.to_u64))
       else 
-        # lc_bug("Unhandled node #{node.class}") 
+        lc_bug("Unhandled node #{node.class}") 
       end
       set_line(iseq, node)
     end
@@ -484,7 +484,7 @@ module LinCAS
         compile_call(iseq, call)
         compile_store_local(iseq, left)
       else 
-        # lc_bug("Unhandled OpAssign case")
+        lc_bug("Unhandled OpAssign case")
       end     
     end
 
@@ -495,7 +495,7 @@ module LinCAS
       else
         stack_increase 
         level = node.depth
-        # lc_bug("Negative ldepth") if level < 0
+        lc_bug("Negative ldepth") if level < 0
         is = case level
         when 0
           IS::GETLOCAL_0
@@ -562,7 +562,7 @@ module LinCAS
     protected def get_index_of(symtab, name)
       index = symtab.index(name)
       return index.to_u64 if index 
-      # lc_bug("Variable offset not found") 
+      lc_bug("Variable offset not found") 
       0u64
     end
 
@@ -572,7 +572,7 @@ module LinCAS
         return index.to_u64 if index
         symtab = symtab.previous
       end 
-      # lc_bug("Variable offset not found") 
+      lc_bug("Variable offset not found") 
       0u64
     end 
 
