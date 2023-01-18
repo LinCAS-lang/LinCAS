@@ -65,7 +65,7 @@ module LinCAS::Internal
             return str2py(obj)
         elsif obj.is_a? LcClass
             if is_pyembedded(obj)
-                return obj.symTab.as(HybridSymT).pyObj 
+                return obj.namespace.py_obj.not_nil! 
             else
                 lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
                 return nil
@@ -140,18 +140,13 @@ module LinCAS::Internal
 
     def self.lc_obj_to_s(obj :  LcVal, io)
         io << '<'
-        if obj.is_a? LcClass 
-            klass = obj.as(LcClass)
-            path  = klass.path
-            if !path.empty?
-                io << path.to_s
-            else
-                io << klass.name 
-            end
-            io << (struct_type(klass,SType::CLASS) ? " : class" : " : module")
+        if obj.is_a? LcClass # Missing Metaclass case (?)
+            # klass = obj.as(LcClass)
+            io << class_path(obj)
+            io << (struct_type(obj,SType::CLASS) ? " : class" : " : module")
         else
             klass = class_of(obj)
-            path  = klass.path
+            path  = class_path(klass)
             if !path.empty?
                 io << path.to_s 
             else
@@ -159,7 +154,7 @@ module LinCAS::Internal
             end
         end
         io << ":@0x"
-        obj.id.to_s(16,io)
+        obj.id.to_s(io, 16)
         io << '>'
     end
 
