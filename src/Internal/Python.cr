@@ -77,10 +77,11 @@ module LinCAS::Internal
         p_module = pyimport0(p_name)
         pyobj_decref(p_name)
         if !p_module.null?
+            namespace = @@lc_object.namespace
             if is_pymodule(p_module)
-                import = lc_build_pymodule(import_name,p_module)
+                import = lc_build_pymodule(import_name,p_module, namespace)
             elsif is_pytype(p_module)
-                import = lc_build_pyclass(import_name,p_module)
+                import = lc_build_pyclass(import_name,p_module, namespace)
             else
                 lc_raise(LcPyImportError,"Invalid import object")
                 pyobj_decref(p_module)
