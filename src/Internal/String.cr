@@ -267,11 +267,7 @@ module LinCAS::Internal
     end
 
     def self.lc_string_allocate(klass :  LcVal)
-        klass     = klass.as(LcClass)
-        str       = LcString.new
-        str.klass = klass
-        str.data  = klass.data.clone
-        return  str
+        return  lincas_obj_alloc LcString, lc_cast(klass, LcClass)
     end
     
     #$I init

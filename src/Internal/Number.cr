@@ -55,9 +55,7 @@ module LinCAS::Internal
 
     def self.build_number(klass :  LcVal)
         klass      = klass.as(LcClass)
-        num        = Num_.new
-        num.klass  = klass
-        num.data   = klass.data.clone 
+        num = lincas_obj_alloc Num_, lc_cast(klass, LcClass)
         num.flags |= ObjectFlags::FROZEN 
         return num.as( LcVal)
     end
