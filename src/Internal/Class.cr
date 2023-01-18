@@ -485,7 +485,7 @@ module LinCAS::Internal
         lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(obj)}")
         return Null 
       end
-      return build_method(obj,method)
+      return build_method(obj,cc.method.not_nil!)
     end
 
     def self.lc_instance_method(klass :  LcVal, name :  LcVal)
@@ -496,7 +496,7 @@ module LinCAS::Internal
         lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(klass)}")
         return Null 
       end
-      return build_unbound_method(method)
+      return build_unbound_method(cc.method.not_nil!)
     end
 
 

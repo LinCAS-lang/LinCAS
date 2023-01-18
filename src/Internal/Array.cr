@@ -136,7 +136,7 @@ module LinCAS::Internal
         pyary = pyary_new(size)
         size.times do |i|
             item = ary_at_index(ary,i)
-            res  = pyary_set_item(pyary,i,obj2py(item, ref: true))
+            res  = pyary_set_item(pyary,i,obj2py(item, ref: true).not_nil!)
             if res != 0 || pyerr_occurred
                 lc_raise_py_error
                 return PyObject.null 
