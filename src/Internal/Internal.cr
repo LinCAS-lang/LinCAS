@@ -78,25 +78,22 @@ module LinCAS::Internal
       end
     )
 
-    abstract struct BaseS
-      @klass  = uninitialized LcClass
-      @data   = uninitialized Data
-      @id     = 0_u64
-      @flags  : ObjectFlags = ObjectFlags::NONE
-      property klass, data, id, flags
-    end
+    # abstract struct BaseS
+    #   @klass  = uninitialized LcClass
+    #   @data   = uninitialized Data
+    #   @id     = 0_u64
+    #   @flags  : ObjectFlags = ObjectFlags::NONE
+    #   property klass, data, id, flags
+    # end
 
-    abstract class BaseC
-      @klass  = uninitialized LcClass
-      @data   = uninitialized Data
-      @id     = 0_u64
-      @flags  = uninitialized ObjectFlags
-      property klass, data, id, flags
-    end
+    # abstract class LcVal
+    #   @klass  = uninitialized LcClass
+    #   @data   = uninitialized Data
+    #   @id     = 0_u64
+    #   @flags  = uninitialized ObjectFlags
+    #   property klass, data, id, flags
+    # end
 
-    global alias  LcVal  = Internal::BaseS | Internal::BaseC | LcClass
-    global alias  LcValR = Internal::BaseS | Internal::BaseC
-    
     macro internal 
       self 
     end
