@@ -264,7 +264,7 @@ module LinCAS::Internal
         lc_module_add_internal(@@lc_kernel,"exit",wrap(lc_exit,2),             -1)
         lc_module_add_internal(@@lc_kernel,"at_exit",wrap(lc_at_exit,1),        0)
     
-        lc_include_module(@@lc_class,@@lc_kernel)
+        lc_include_module(@@lc_object,@@lc_kernel)
     end
 
     
