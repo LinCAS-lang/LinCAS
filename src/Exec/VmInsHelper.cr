@@ -14,6 +14,28 @@
 
 module LinCAS
   module VmInsHelper
+    include VmArgs
+
+    macro set_stack_consistency_trace(offset)
+      @current_frame.sp = @sp - {{offset}}
+      @current_frame.real_sp = @sp
+    end
+
+    def vm_consistency_check
+      if !@control_frames.empty?
+        diff = @sp - @control_frames.last.real_sp
+        if diff != 0
+          lc_bug("Inconsistent VM stack. Cleaning difference: [%i]" % diff)
+        end
+      end
+    end
+
+    @[AlwaysInline]
+    def vm_pc_consistency_check
+      if !@current_frame.consistent_pc?
+        lc_bug("Inconsistent program counter detected")
+      end
+    end
 
     protected def vm_setlocal(offset, level, value : LcVal)
       env = @current_frame.env
