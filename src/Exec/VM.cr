@@ -72,14 +72,34 @@ module LinCAS
     end
 
     protected def vm_push_control_frame(me, iseq, env, flags)
-      frame = new_frame(me, iseq, env, flags)
+      frame = vm_new_frame(me, iseq, env, flags)
       @control_frames << frame
-      restore_regs
+      @current_frame = @control_frames.last
+      debug("Pushing cf #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+    end
+
+    protected def vm_push_control_frame(me, iseq, flags)
+      env = Environment.new(iseq.symtab.size, flags)
+      vm_push_control_frame(me, iseq, env, flags)
+    end
+
+    protected def vm_push_control_frame(me, flags)
+      env = Environment.new(0, flags)
+      iseq = uninitialized ISeq # Unsafe code
+      vm_push_control_frame(me, iseq, env, flags)
     end
 
     protected def vm_pop_control_frame
+      debug("Popping cf: #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+      r_value = pop
       flags = @current_frame.flags 
       @control_frames.pop 
+      vm_consistency_check
+      unless flags.includes? VmFrame::MAIN_FRAME
+        restore_regs
+        debug("Current frame: #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+      end
+      push r_value
       return flags.includes? VmFrame::FLAG_FINISH
     end
 
