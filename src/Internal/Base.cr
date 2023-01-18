@@ -106,20 +106,21 @@ module LinCAS
     end
   end
 
-  struct LcBlock
-    @scp  : VM::Environment? = nil
-    def initialize(@body : Bytecode, @args : FuncArgSet)
-      @me = Null.as( LcVal)
-    end
-    property args,scp,me
-    getter body
-  end
-
   # struct LcBlock
-  #   def initialize(@iseq : ISeq, @me : LcVal, @env : VM::Environment)
+  #   @scp  : VM::Environment? = nil
+  #   def initialize(@body : ISeq, @args : FuncArgSet)
+  #     @me = Null.as( LcVal)
   #   end
-  #   getter iseq, me, env
+  #   
+  #   property args,scp,me
+  #   getter body
   # end
+
+  struct LcBlock
+    def initialize(@iseq : ISeq, @me : LcVal, @env : VM::Environment)
+    end
+    getter iseq, me, env
+  end
 
   struct OptArg
     def initialize(@name : String, @optcode : Bytecode)
