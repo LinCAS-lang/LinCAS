@@ -224,13 +224,37 @@ module LinCAS
     end
 
     def lc_raise(code,msg)
+      Null
     end
 
     def lc_raise(error :  LcVal)
+      Null
     end 
 
     def get_block 
       vm_get_block
+    end
+
+    def get_current_namespace : NameTable
+      main_namespace = @stack[0].klass.namespace
+      @control_frames.reverse_each do |frame|
+        if frame.flags.includes?(VM::VmFrame::MAIN_FRAME) 
+          return main_namespace 
+        elsif frame.flags.includes?(VM::VmFrame::CLASS_FRAME)
+          obj = topn(frame.real_sp)
+          if !obj.is_a? LcClass
+            break
+          end 
+          return obj.as(LcClass).namespace
+        end
+      end
+      lc_bug("VM failed to retrieve current namespace")
+      return main_namespace # Unreachable. Just for inference purposes
+    end
+
+    def error?
+      lc_bug("Deprecated error handling used")
+      false 
     end
     
   end 
