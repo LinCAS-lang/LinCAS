@@ -44,11 +44,11 @@ module LinCAS::Internal
     end
 
     def self.metaclass_of(klass : LcClass)
-      m_klass = klass.klass 
+      m_class = klass.klass 
       if !type_of(m_class).metaclass?
         return lc_attach_metaclass(klass).klass
       end 
-      return m_klass
+      return m_class
     end
 
     def self.class_of(obj : LcVal)
