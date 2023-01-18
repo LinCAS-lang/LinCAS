@@ -116,21 +116,30 @@ module LinCAS
     @[AlwaysInline]
     protected def pop 
       if @sp < 0
-        # lc_bug"(VM ran in stack underflow)"
+        lc_bug("VM ran in stack underflow")
       end 
       @sp -= 1
       return @stack[@sp]
     end 
+
+    @[AlwaysInline]
+    def next_is
+      value = @current_frame.pc.value 
+      @current_frame.pc += 1
+      vm_pc_consistency_check
+      return value
+    end
     
     def exec
-      LibC.setjmp(@current_frame.buff)
-      while !(ins = @current_frame.pc.next).is_a?(Iterator::Stop)
+      #LibC.setjmp(@current_frame.jump_buff.to_unsafe)
+      while true
+        ins = next_is
         is, op = get_is_and_operand(ins)
         debug("executing instruction #{is}:#{op}")
         case is 
         when .noop?
         when .setlocal?
-          offset = @current_frame.pc.next.value
+          offset = next_is.value
           vm_setlocal(offset, op, topn(0))
         when .setlocal_0?
           vm_setlocal_0(op, topn(0))
@@ -139,14 +148,18 @@ module LinCAS
         when .setlocal_2?
           vm_setlocal_2(op, topn(0))
         when .getlocal?
-          offset = @current_frame.pc.next.value
-          vm_getlocal(offset, op)
+          offset = next_is.value
+          value = vm_getlocal(offset, op)
+          push(value)
         when .getlocal_0?
-          vm_getlocal_0(op)
+          value = vm_getlocal_0(op)
+          push(value)
         when .getlocal_1?
-          vm_getlocal_1(op)
+          value = vm_getlocal_1(op)
+          push(value)
         when .getlocal_2?
-          vm_getlocal_2(op)
+          value = vm_getlocal_2(op)
+          push(value)
         when .setinstance_v?
           name = @current_frame.names[op]
           value = pop 
@@ -157,30 +170,30 @@ module LinCAS
           name = @current_frame.names[op]
           me   = pop
           value = vm_getinstance_v(name, me)
-          push(value)
+          # push(value)
         when .setclass_v?
           name  = @current_frame.names[op]
           value = pop 
           me    = pop
           vm_setclass_v(name, me, value)
-          push(value)
+          # push(value)
         when .getclass_v?
           name = @current_frame.names[op]
           me   = pop
           value = vm_getinstance_v(name, me)
-          push(value)
+          # push(value)
         when .storeconst?
           name  = @current_frame.names[op]
           value = pop 
           me    = pop
           vm_storeconst(name, me, value)
-          push(value)
+          # push(value)
         when .getconst?
           name  = @current_frame.names[op]
           me    = pop
-          vm_getreconst(name, me)
-          push(value)
-        when .pop
+          vm_getconst(name, me)
+          # push(value)
+        when .pop?
           pop
         when .pushobj?
           push(@current_frame.objects[op])
@@ -200,18 +213,18 @@ module LinCAS
         when .call_no_block?
           ci           = @current_frame.call_info[op]
           calling_info = CallingInfo.new(topn(ci.argc), nil)
-          vm_call_no_block(ci, calling_info)
-        when .putclass?
+          vm_call(ci, calling_info)
+        when .put_class?
           parent = pop 
           me     = pop
           name   = @current_frame.names[op]
-          p2     = @current_frame.pc.next
+          op2     = next_is
           iseq   = @current_frame.iseq.jump_iseq[op2.value]
           vm_putclass(me, name, parent, iseq)
-        when .putmodule?
+        when .put_module?
           me   = pop
           name = @current_frame.names[op]
-          op2  = @current_frame.pc.next
+          op2  = next_is
           iseq = @current_frame.iseq.jump_iseq[op2.value]
           vm_putmodule(me, name, iseq)
         when .jumpt?
@@ -221,64 +234,104 @@ module LinCAS
         when .make_range?
         when .leave?
           if vm_pop_control_frame
-            return topn(0)
-          else 
-            value = topn(0)
-            restore_regs
-            push(value)
+            return pop
           end
         else
-          # lc_bug("Invalid instruction received (#{is})")
+          lc_bug("Invalid instruction received (#{is})")
         end
       end 
       # Unreachable
-      # lc_bug("VM ran out of loop")
+      lc_bug("VM ran out of loop")
     end
 
     @[AlwaysInline]
     def vm_get_block
-      return @current_frame.env.block_handler # To adjust for nested blocks (Yeld?)
+      env = @current_frame.env
+      while env && env.frame_type.includes? VmFrame::BLOCK_FRAME
+        env = env.previous 
+      end
+      return env ? env.block_handler : nil
     end
 
-    private enum VmFrame : UInt32
+    @[AlwaysInline]
+    def block_given?
+      return !!vm_get_block 
+    end
+
+    enum VmFrame : UInt32
       MAIN_FRAME  = 1 << 6
-      CLASS_FRAME = 2 << 6
-      BLOCK_FRAME = 3 << 6
-      PROC_FRAME  = 4 << 6
-      CALL_FRAME  = 5 << 6
+      CLASS_FRAME = 1 << 7
+      BLOCK_FRAME = 1 << 8
+      PROC_FRAME  = 1 << 9
+      ICALL_FRAME = 1 << 10
+      PCALL_FRAME = 1 << 11
+      UCALL_FRAME = 1 << 12
 
       FLAG_FINISH = 1
     end
 
     private class ExecFrame
-      getter me, iseq, env, flags, pc, local_var, names, objects, call_info, jump_buff
-      property sp
+      getter me, iseq, env, flags, local_var, names, objects, call_info, jump_buff
+      property sp, pc, real_sp
+
+      @pc        : IS*
+      @pc_top    : IS*
+      @names     : Array(String)
+      @objects   : Array(LcVal)
+      @call_info : Array(CallInfo)
+      @jump_buff : StaticArray(LibC::JmpBuf, 1)
+
       def initialize(@me : LcVal, @iseq : ISeq, @env : Environment, @flags : VmFrame)
-        @pc        = iseq.encoded.each
+        # Program counter.
+        @pc        = iseq.encoded.to_unsafe
+        # Pc boundaries for consistency check
+        @pc_bottom = @pc
+        @pc_top    = @pc + iseq.encoded.size
+        # Saves the stack size before the call args
         @sp        = 0
+        # Saves the actual stack pointer. 
+        # This is for consistency check
+        @real_sp   = 0
         @local_var = Array(LcVal).new(iseq.symtab.size)
         @names     = iseq.names
         @objects   = iseq.object
         @call_info = iseq.call_info
         @jump_buff = StaticArray[LibC::JmpBuf.new]
       end
+
+      def consistent_pc?
+        return @pc_bottom <= @pc <= @pc_top
+      end
     end
 
     class Environment < Array(LcVal)
-      @prevuous : Environment?
-      @block_handler : BlockHandler? 
-      def initialize(size, @prevuous = nil)
-        super(size)
+      @previous      : Environment?
+      @block_handler : BlockHandler?
+      @frame_type    : VmFrame
+      def initialize(size, @frame_type, @previous = nil)
+        super(size, Null)
         @block_handler = nil
       end
 
-      getter prevuous
-      setter block_handler
+      getter previous, frame_type
+      property block_handler
     end
 
     protected record CallingInfo, 
       me : LcVal,
       block : BlockHandler?
+
+    class CallCache
+      ##
+      # if @method is nil, @m_missing_status:
+      #  * 0: undefined
+      #  * 1: protected method called (explicit call)
+      #  * 2: private method called
+      def initialize(@method : LcMethod?, @m_missing_status : Int32)
+      end
+
+      getter method, m_missing_status
+    end
 
 
   end
