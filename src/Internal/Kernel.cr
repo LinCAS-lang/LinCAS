@@ -186,7 +186,7 @@ module LinCAS::Internal
             if !klass.is_a? LcClass
                 klass = class_of(klass)
             end
-            internal.lc_include_module(klass.as(LcClass),mod.as(LcModule))
+            internal.lc_include_module(klass.as(LcClass),mod.as(LcClass))
             return lctrue
         end
         return lcfalse
