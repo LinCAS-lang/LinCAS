@@ -130,21 +130,19 @@ module LinCAS::Internal
       Exec.get_current_call_line
     end
 
-    def self.lincas_obj_alloc_fake(type : (BaseC.class | BaseS.class),klass : LcClass,*args,**opt)
+    def self.lincas_obj_alloc_fake(type : LcVal.class,klass : LcClass,*args,**opt)
       tmp = lincas_obj_alloc(type,klass,*args,**opt)
       set_flag tmp, FAKE
       return tmp
     end
 
-    def self.lincas_obj_alloc(type : (BaseC.class | BaseS.class),klass : LcClass,*args,**opt)
+    def self.lincas_obj_alloc(type : LcVal.class,klass : LcClass, *args, **opt)
       tmp       = type.new(*args)
       tmp.klass = klass
       if id = opt[:id]?
         tmp.id = id.as(UInt64) 
       end
-      if data = opt[:data]?
-        tmp.data = data 
-      end
+      tmp.data = opt[:data]? || IvarTable.new
       return tmp
     end
 
@@ -171,13 +169,13 @@ module LinCAS::Internal
 
     def self.lc_typeof(v :  LcVal)
       if v.is_a? LcClass 
-        if struct_type(v,SType::MODULE)
-            return "#{v.as(LcModule).name} : Module"
+        if type_of(v).module?
+          return "#{v.as(LcClass).name} : Module"
         else 
-            return "#{v.as(LcClass).name} : Class"
+          return "#{v.as(LcClass).name} : Class"
         end 
       else 
-        return v.as( LcValR).klass.name
+        return class_of(v).name
       end 
       # Should never get here
       ""
@@ -202,7 +200,7 @@ module LinCAS::Internal
 
     def self.init_lazy_const(const : LcVal*,klass : LcClass)
       const.value.klass = klass 
-      const.value.data  = klass.data.clone
+      const.value.data  = IvarTable.new
     end
 
 
