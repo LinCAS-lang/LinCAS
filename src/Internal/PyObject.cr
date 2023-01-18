@@ -136,11 +136,9 @@ module LinCAS::Internal
     end
 
     def self.build_pyobj(klass : LcClass,obj : PyObject)
-        pyobj = LcPyObject.new 
-        pyobj_set_obj(pyobj,obj)
-        pyobj.klass = klass 
-        pyobj.data  = klass.data.clone 
-        pyobj.id    = pyobj.object_id
+        # pyobj = LcPyObject.new 
+        pyobj    = lincas_obj_alloc(LcPyObject, klass, obj)
+        pyobj.id = pyobj.object_id
         return pyobj.as( LcVal)
     end
 
