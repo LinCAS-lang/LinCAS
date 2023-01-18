@@ -17,7 +17,10 @@ module LinCAS
     include Internal
     include VmInsHelper
 
-    alias BlockHandler = LcBlock | LcProc
+    alias BlockHandler = LcBlock | LCProc
+    macro convert(err)
+      LinCAS.convert_error({{err}})
+    end
 
     macro get_is_and_operand(ins)
       { {{ins}} & IS::IS_MASK, ({{ins}} & IS::OP_MASK).value }
