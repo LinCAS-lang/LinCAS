@@ -88,6 +88,11 @@ module LinCAS::Internal
         end
     end
 
+    def self.lc_build_object_class
+        klass = LcClass.new(SType::CLASS, "Object", nil)
+        return lc_attach_metaclass(klass)
+    end
+
     def self.lc_new_object(klass :  LcVal)
         klass = klass.as(LcClass)
         if klass.type == SType::PyCLASS
@@ -231,10 +236,21 @@ module LinCAS::Internal
         end
     end
 
+    def self.init_chain
+      @@lc_class.parent  = @@lc_module
+      @@lc_class.klass.parent = @@lc_module.klass
+      @@lc_module.parent = @@lc_object
+      @@lc_module.klass.parent = @@lc_object.klass
+      @@lc_object.klass.parent = @@lc_class
+    end
+
     def self.init_object
-        @@lc_object = internal.lc_build_internal_class("Object",@@lc_class)
+        @@lc_object = lc_build_object_class
         define_allocator(@@lc_object,lc_obj_allocate)
 
+        # Initialising the inheritance chain of objects
+        init_chain
+        
         add_method(@@lc_object,"init",lc_obj_init,     0)
         add_method(@@lc_object,"==",lc_obj_eq,         1)
 
