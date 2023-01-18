@@ -206,7 +206,7 @@ module LinCAS
             atomic.args.not_nil! <<  parse_op_assign 
           else 
             if atomic.is_a? ConstDef 
-              # lc_bug("ConstDef node should never be reached")
+              lc_bug("ConstDef node should never be reached")
             end  
 
             if atomic.is_a?(Variable) && atomic.type.unknown?
