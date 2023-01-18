@@ -337,19 +337,11 @@ module LinCAS::Internal
     end
 
     private def self.method_new
-        m       = Method.new
-        m.klass = @@lc_method
-        m.data  = @@lc_method.data.clone 
-        m.id    = m.object_id 
-        return m
+        return lincas_obj_alloc(Method, @@lc_method)
     end
 
     private def self.unbound_method_new
-        m       = UnboundMethod.new
-        m.klass = @@lc_unbound_method
-        m.data  = @@lc_unbound_method.data.clone 
-        m.id    = m.object_id 
-        return m
+        return lincas_obj_alloc(UnboundMethod, @@lc_unbound_method)
     end
 
     def self.build_method(receiver :  LcVal,method : LcMethod)
