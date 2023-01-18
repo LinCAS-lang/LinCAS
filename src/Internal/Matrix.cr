@@ -120,7 +120,7 @@ module LinCAS::Internal
 
     def self.lc_matrix_allocate(klass :  LcVal)
         klass  = klass.as(LcClass)
-        matrix = lincas_obj_alloc Matrix, klass, data: klass.data.clone 
+        matrix = lincas_obj_alloc Matrix, klass
         return matrix.as( LcVal)
     end 
     

@@ -74,7 +74,7 @@ module LinCAS::Internal
 
     def self.lc_range_allocate(klass :  LcVal)
         klass = klass.as(LcClass)
-        range = lincas_obj_alloc LcRange, klass, data: klass.data.clone 
+        range = lincas_obj_alloc LcRange, klass
         return range.as( LcVal)
     end
 

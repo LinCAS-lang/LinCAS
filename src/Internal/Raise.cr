@@ -84,7 +84,7 @@ module LinCAS
 
         def self.lc_err_new(klass :  LcVal)
             klass = klass.as(LcClass)
-            err   = lincas_obj_alloc LcError, klass, data: klass.data.clone
+            err   = lincas_obj_alloc LcError, klass
             return err.as( LcVal)
         end
 

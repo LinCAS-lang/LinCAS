@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2023 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -114,7 +114,7 @@ module LinCAS::Internal
 
     def self.lc_regex_allocate(klass :  LcVal)
         klass = klass.as(LcClass)
-        reg   = lincas_obj_alloc LcRegexp, klass, data: klass.data.clone 
+        reg   = lincas_obj_alloc LcRegexp, klass
         return reg.as( LcVal)
     end
 

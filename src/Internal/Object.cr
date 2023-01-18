@@ -107,7 +107,7 @@ module LinCAS::Internal
 
     def self.lc_obj_allocate(klass :  LcVal)
         klass  = klass.as(LcClass)
-        obj    = lincas_obj_alloc(LcObject,klass, data: klass.data.clone)
+        obj    = lincas_obj_alloc(LcObject,klass)
         obj.id = pointerof(obj).address
         return obj.as( LcVal) 
     end

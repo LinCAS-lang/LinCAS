@@ -74,8 +74,7 @@ module LinCAS::Internal
         g_size   : Int32)
 
         data = lincas_obj_alloc(LcMatchData, @@lc_match_data,
-                regexp,captured,string,position,ary,g_size,
-                data: @@lc_match_data.data.clone)
+                regexp,captured,string,position,ary,g_size)
         data.id = data.object_id
         return data.as(LcVal)
     end
