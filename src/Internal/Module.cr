@@ -15,74 +15,85 @@
 
 module LinCAS::Internal
 
-    macro module_initializer(mod,type)
-      {{mod}}.type      = {{type}}
-      {{mod}}.klass     = @@lc_module
-      {{mod}}.parent    = @@lc_object
+    macro module_initializer(mod)
+      {{mod}}.klass     = lc_build_metaclass(mod, @@lc_module)
       {{mod}}.allocator = Allocator::UNDEF
     end
 
-    def self.module_init(mod : LcModule)
-      module_initializer(mod,SType::MODULE)
+    @[AlwaysInline]
+    def self.module_init(mod : LcClass)
+      module_initializer(mod)
     end
 
-    def self.pymodule_init(mod : LcModule)
-      module_initializer(mod,SType::PyMODULE)
+    @[AlwaysInline]
+    def self.pymodule_init(mod : LcClass)
+      module_init(mod)
     end
 
-    def self.pymodule_init(mod : LcModule)
-      module_initializer(mod,SType::PyMODULE)
+    def module_included()
+      
+    end
+
+    ##
+    # This method is called only by the `module` initializer.
+    # This is a special one as it does not set the parent
+    # of the class (that will be sed in `Object`) and it does not
+    # create a module, but the class `Module` instead
+    def self.lc_build_module_class
+      mod = LcClass.new(SType::CLASS, "Module")
+      mod.klass = lc_build_metaclass(mod, nil)
+      return mod
     end
     
     def self.lc_build_module(name : String)
-      mod = LcModule.new(name)
+      mod = LcClass.new(SType::MODULE, name)
       module_init(mod)
       return mod
     end
 
-    def self.lc_build_module(name : String, path : Path)
-      mod = LcModule.new(name,path)
-      module_init(mod)
+    def self.lc_module_allocate(klass : LcVal)
+      klass = klass.as(LcClass)
+      # :::
+    end
+
+    # def self.lc_build_module(name : String, path : Path)
+    #   mod = LcModule.new(name,path)
+    #   module_init(mod)
+    #   return mod
+    # end
+
+    def self.lc_build_user_module(name : String, namespace : NameTable)
+      mod = lc_build_module(name)
+      mod.namespace.parent = namespace 
+      namespace[name] = mod
       return mod
     end
 
     def self.lc_build_internal_module(name : String)
-      mod               = lc_build_module(name)
-      mod.symTab.parent = @@main_class.symTab
-      @@main_class.symTab.addEntry(name,mod)
-      return mod
+      return lc_build_user_module(name, @@lc_object.namespace)
     end
 
     def self.lc_build_unregistered_pymodule(name : String,obj : PyObject)
       gc_ref = PyGC.track(obj)
-      stab  = HybridSymT.new(obj)
-      smtab = HybridSymT.new(obj)
-      mtab  = HybridSymT.new(obj)
-      tmp   = LcModule.new(name,stab,Data.new,mtab,smtab)
-      pymodule_init(tmp)
-      tmp.gc_ref = gc_ref
-      return tmp
+      namespace = NameTable.new(obj)
+      methods   = MethodTable.new(obj)
+      mod       = LcClass.new(SType::PyMODULE, name, nil, methods, namespace)
+      pymodule_init(mod)
+      mod.gc_ref = gc_ref
+      return mod
     end
 
-    def self.lc_build_pymodule(name : String,obj : PyObject)
+    def self.lc_build_pymodule(name : String,obj : PyObject, namespace : NameTable)
       tmp = lc_build_unregistered_pymodule(name,obj)
-      tmp.symTab.parent = @@main_class.symTab
-      @@main_class.symTab.addEntry(name,tmp)
+      tmp.namespace.parent = namespace
+      namespace[name] = tmp
       tmp.flags |= ObjectFlags::REG_CLASS
       return tmp
     end
 
-    def self.lc_build_internal_module_in(name : String,nest : LcClass)
-      mod = lc_build_module(name)
-      mod.symTab.parent = nest.symTab
-      nest.symTab.addEntry(name,mod)
-      return mod
-    end
-
     @[AlwaysInline]
-    def self.lc_make_shared_module(mod : LcModule)
-      symTab = lc_make_shared_sym_tab(mod.symTab)
-      tmp    = LcModule.new(mod.name,symTab,mod.data,mod.methods,mod.statics,mod.path)
+    def self.lc_make_shared_module(mod : LcClass)
+      tmp = LcClass.new(mod.type, mod.name, nil, mod.methods, mod.namespace, mod.data)
       if mod.type == SType::PyMODULE
         pymodule_init(tmp)
       else
@@ -92,29 +103,26 @@ module LinCAS::Internal
       return tmp
     end
 
-    def self.lc_include_module(receiver : LcClass, mod : LcModule)
-      if mod.included.includes? receiver.id
-        lc_warn("Module already included")
+    def self.lc_include_module(receiver : LcClass, mod : LcClass)
+      if receiver.methods.object_id == mod.methods.object_id
+        lc_raise(LcArgumentError, "Cyclic include detected")
       else
-        mod.included << receiver.id
-        s_mod                  = lc_make_shared_module(mod)
-        parent                 = receiver.parent 
+        s_mod  = lc_make_shared_module(mod)
+        parent = receiver.parent 
         if parent
-            s_mod.symTab.parent    = parent.symTab
-            s_mod.parent           = parent
+          s_mod.parent = parent
         end
-        receiver.symTab.parent = s_mod.symTab
-        receiver.parent        = s_mod 
+        receiver.parent = s_mod 
       end
     end
 
-    def self.lc_module_add_internal(mod : LcModule, name : String, method : LcProc, arity : Int32)
+    def self.lc_module_add_internal(mod : LcClass, name : String, method : LcProc, arity : Int32)
       internal.lc_add_internal(mod,name,method,arity)
       internal.lc_add_static(mod,name,method,arity)
     end
 
     def self.init_module
-      @@lc_module = internal.lc_build_internal_class("Module")
+      @@lc_module = lc_build_module_class
     end
 
 end
