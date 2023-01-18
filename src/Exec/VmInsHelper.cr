@@ -76,12 +76,12 @@ module LinCAS
 
     @[AlwaysInline]
     protected def vm_getlocal_1(offset)
-      @control_framesenv.previous.not_nil![offset]
+      @current_frame.env.previous.not_nil![offset]
     end
 
     @[AlwaysInline]
     protected def vm_getlocal_2(offset)
-      env = @control_framesenv.previous.not_nil!.previous.not_nil!
+      env = @current_frame.env.previous.not_nil!.previous.not_nil!
       env[offset]
     end
 
