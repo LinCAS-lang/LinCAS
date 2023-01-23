@@ -140,7 +140,7 @@ module LinCAS
         when '='
           next_char_and_token :"+="
         when '@'
-          if peek_char.ascii_whitespace? || peek_char == '\0'
+          if !ident_start? peek_char
             next_char_and_token :"+@"
           else 
             @token.type = :"+"
@@ -153,7 +153,7 @@ module LinCAS
         when '='
           next_char_and_token :"-="
         when '@'
-          if peek_char.ascii_whitespace? || peek_char == '\0'
+          if !ident_start? peek_char
             next_char_and_token :"-@"
           else 
             @token.type = :"-"
