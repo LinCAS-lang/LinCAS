@@ -939,7 +939,7 @@ module LinCAS
             next_token
 
             if @token.type == :"("
-              if current_char == "*" 
+              if current_char == '*' 
                 next_token_skip_space 
                 arg = parse_call_arg 
                 skip_space_or_newline 
