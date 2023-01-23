@@ -39,6 +39,7 @@ module LinCAS
 
     def <<(name : String)
       super(name) unless self.includes? name
+      self
     end
     
   end

@@ -141,6 +141,7 @@ describe Parser do
   it_parses_single "foo bar", Call.new(nil, "foo", ["bar".variable] of Node)
   it_parses_multiple ["foo[1,2]", "foo.[](1,2)", "foo.[] 1, 2", "foo[1,\n2]", "foo.[](1,\n2)", "foo.[] 1,\n2"],
     Call.new("foo".variable, "[]", [1.int, 2.int] of Node)
+  it_parses_multiple ["foo[1] := 2", "foo.[]= 1, 2", "foo.[]=(1, 2)"], Call.new("foo".variable, "[]=", [1.int, 2.int] of Node)
   it_parses_single "foo[]", Call.new("foo".variable, "[]")
   it_parses_multiple ["foo[1,2][3]", "foo.[](1,2)[3]", "foo.[](1,2).[](3)"], Call.new(Call.new("foo".variable, "[]", [1.int, 2.int] of Node), "[]", [3.int] of Node)
   it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))

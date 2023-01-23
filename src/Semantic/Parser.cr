@@ -202,7 +202,7 @@ module LinCAS
           
           if atomic.is_a? Call 
             if atomic.name == "[]"
-              atomic.name == @stringpool.get "[]="
+              atomic.name = @stringpool.get "[]="
             else 
               atomic.name = "#{atomic.name}="
             end  
@@ -1011,7 +1011,7 @@ module LinCAS
             parser_raise("Both block arg and actual block given", location)
           end 
           name = @stringpool.get "[]"
-          atomic = Call.new(atomic, name, (args || [] of Node), named_args, block_arg,  block).at location
+          atomic = Call.new(atomic, name, (args || [] of Node), named_args, block_arg,  block, false).at location
         else 
           break
         end  
