@@ -1438,7 +1438,7 @@ module LinCAS
         :"[]="
       } 
       unless @token.type == :IDENT || @token.type == :CAPITAL_VAR || names.includes? @token.type
-        unexpected_token :IDENT, *names 
+        unexpected_token :IDENT, :CAPITAL_VAR , *names 
       end 
     end
 
@@ -1470,8 +1470,8 @@ module LinCAS
         :"[]",
         :"[]="
       } 
-      unless @token.type == :IDENT || names.includes? @token.type
-        unexpected_token :IDENT, *names 
+      unless @token.type == :IDENT || @token.type == :CAPITAL_VAR || names.includes? @token.type
+        unexpected_token :IDENT, :CAPITAL_VAR, *names 
       end 
     end 
 
