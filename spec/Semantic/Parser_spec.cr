@@ -249,10 +249,11 @@ describe Parser do
   it_parses_single "let A::B.func?() {}", FunctionNode.new(FuncVisib::PUBLIC, Namespace.new(["A", "B"]), "func?", Params.new([] of Arg), Body.new, symtab(SymType::METHOD))
   it_parses_single "let func? {}", FunctionNode.new(FuncVisib::PUBLIC, nil, "func?", nil, Body.new, symtab(SymType::METHOD))
   it_parses_single "let func! {}", FunctionNode.new(FuncVisib::PUBLIC, nil, "func!", nil, Body.new, symtab(SymType::METHOD))
-  {"+@", "-@", "*", ".*", "**", "/", "\\", "|", "||", "&", "&&", "^", ">", ">=", "<", "<=", "=", "==", "===", "<<", ">>", "%", "!", "[]", "[]="
+  {"+@", "-@", "+", "-", "*", ".*", "**", "/", "\\", "|", "||", "&", "&&", "^", ">", ">=", "<", "<=", "=", "==", "===", "<<", ">>", "%", "!", "[]", "[]="
   }.each do |name|
     it_parses_multiple ["let #{name} {}", "let #{name}\n{}"], FunctionNode.new(FuncVisib::PUBLIC, nil, name, nil, Body.new, symtab(SymType::METHOD))
     it_parses_single "let #{name}() {}", FunctionNode.new(FuncVisib::PUBLIC, nil, name, Params.new([] of Arg), Body.new, symtab(SymType::METHOD))
+    it_parses_single "let self.#{name} {}", FunctionNode.new(FuncVisib::PUBLIC, "self".variable , name, nil, Body.new, symtab(SymType::METHOD))
     assert_syntax_error "let #{name}.wrong {}", "Unexpected token '.'"
   end 
 

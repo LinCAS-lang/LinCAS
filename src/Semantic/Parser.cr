@@ -601,8 +601,8 @@ module LinCAS
             skip_space 
           end
         else
-          check_callable_name
-          name = @token.type.to_s
+          check_let_name
+          name = @stringpool.get @token.type.to_s
           next_token_skip_space
         end
       else
@@ -972,7 +972,7 @@ module LinCAS
               block_arg  = call_args.block_arg 
               has_parenthesis = call_args.has_parenthesis
             else 
-              args = named_args = block = block_arg = nil 
+              args = named_args = block = block_arg = has_parenthesis = nil
             end 
           end
 
@@ -980,7 +980,7 @@ module LinCAS
           if block && block_arg
             parser_raise("Both block arg and actual block given", location)
           end 
-          has_parenthesis = 
+          
           atomic = Call.new(atomic, name, args, named_args, block_arg, block, !!has_parenthesis).at location
         when :"[]"
           check_void_value atomic, location
@@ -1409,8 +1409,10 @@ module LinCAS
 
     def check_let_name
       names = {
-        :"@+",
-        :"@-",
+        :"+@",
+        :"-@",
+        :"+",
+        :"-",
         :"*",
         :".*",
         :"**",
@@ -1465,7 +1467,8 @@ module LinCAS
         :">>",
         :"%",
         :"!",
-        :"[]"
+        :"[]",
+        :"[]="
       } 
       unless @token.type == :IDENT || names.includes? @token.type
         unexpected_token :IDENT, *names 
