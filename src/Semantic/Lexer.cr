@@ -61,7 +61,7 @@ module LinCAS
         case next_char
         when ']'
           if next_char == '='
-            @token.type = :"[]="
+            next_char_and_token :"[]="
           else 
             @token.type = :"[]"
           end
