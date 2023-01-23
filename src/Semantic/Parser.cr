@@ -1,4 +1,4 @@
-# Copyright (c) 2020 Massimiliano Dal Mas
+# Copyright (c) 2020-2023 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,6 +14,8 @@
 
 module LinCAS
   class Parser < Lexer
+
+    class SyntaxException < Exception; end
      
     def self.new(filename : String, stringpool : StringPool? = nil)
       reader = Char::Reader.new(File.read(filename))
@@ -32,6 +34,11 @@ module LinCAS
       @symtable       = [] of SymTable
       @stop_on_do     = false
       @temp_serial    = 0
+      @spec_mode      = false
+    end
+
+    def spec_mode
+      @spec_mode = true
     end
 
     def push_symtab(type : SymType)
@@ -378,11 +385,11 @@ module LinCAS
           parse_class
         when :module
           parse_module
-        # when :public, :protected, :private, :let
+        when :public, :protected, :private, :let
+          parse_let
         # when :try
         when :if
           parse_if
-        # when :while
         when :do, :while
           parse_loop
         # when :for
@@ -534,6 +541,182 @@ module LinCAS
     end 
 
     def parse_let 
+      visib = case @token
+      when .keyword?(:protected)
+        next_token_skip_space_or_newline
+        FuncVisib::PROTECTED 
+      when .keyword?(:private)  
+        next_token_skip_space_or_newline
+        FuncVisib::PRIVATE
+      else 
+        next_token_skip_space_or_newline unless @token.keyword? :let
+        FuncVisib::PUBLIC
+      end
+      
+      check :let, kw: true
+      location = @token.location 
+      disable_regex
+      next_token_skip_space_or_newline
+      push_symtab SymType::METHOD
+
+      receiver = nil
+      name = nil
+      allows_dot = true
+
+      if @token.type == :IDENT || @token.type == :CAPITAL_VAR
+        if current_char == ':' # Assuming A::B::...
+          receiver = parse_ident
+        elsif current_char == '.'
+          receiver = parse_id_or_call # self is treated as variable. Compiler must handle it
+        else
+          check_let_name
+          name = @token.value.to_s
+          next_token
+          if @token.type == :"="
+            name = "#{name}="
+            allows_dot = false
+            next_token_skip_space
+          else 
+            skip_space 
+          end
+        end
+      else 
+        name = @token.type.to_s
+        next_token_skip_space
+        allows_dot = false
+      end
+
+      if @token.type == :"."
+        unexpected_token unless allows_dot
+        next_token_skip_space
+
+        if @token.type == :IDENT || @token.type == :CAPITAL_VAR
+          check_let_name
+          name = @token.value.to_s
+          next_token
+          if @token.type == :"="
+            name = "#{name}="
+            next_token_skip_space
+          else 
+            skip_space 
+          end
+        else
+          check_callable_name
+          name = @token.type.to_s
+          next_token_skip_space
+        end
+      else
+        lc_bug("Failed to parse function name") unless name 
+        name = name.not_nil!
+      end
+
+      args = nil
+      case @token.type
+      when :"("
+        next_token_skip_space_or_newline
+        args = parse_let_args :")"
+        check :")"
+        next_token
+      when :IDENT, :CAPITAL_VAR, :"*", :"**", :"&"
+        args = parse_let_args :"{"
+      when :EOL
+        # nothing
+      end
+      skip_space_or_newline
+      check :"{"
+      enable_regex
+      @method_nesting += 1
+      body = parse_body
+      @method_nesting -= 1
+      symt = pop_symtab
+      return FunctionNode.new(visib, receiver, name, args, body, symt).at location
+    end
+
+    def parse_let_args(end_tk)
+      args = [] of Arg
+      optc = 0
+      splat = false
+      splat_index = -1
+      kwargc = 0
+      double_splat = false
+      dbl_splat_index = -1
+      blockarg = false
+
+
+      while @token.type != end_tk
+        arg_name = nil
+        default_value = nil
+        location = @token.location
+        case @token.type 
+        when :IDENT, :CAPITAL_VAR
+          arg_name = @token.value.to_s
+          args.each do |arg|
+            if arg.name == arg_name
+              parser_raise "Duplicate argument name", location
+            end
+          end
+          next_token
+          if @token.type == :":"
+            unexpected_token end_tk if double_splat
+            enable_regex
+            next_token_skip_space_or_newline
+            default_value = parse_op_assign false, false
+            disable_regex
+            kwargc += 1
+          else
+            skip_space
+            if @token.type == :"="
+              unexpected_token(end_tk) if splat || kwargc > 0 || double_splat
+              enable_regex
+              next_token_skip_space_or_newline
+              default_value = parse_op_assign false, false
+              disable_regex
+              optc += 1
+              skip_space
+            elsif optc > 0 || splat || kwargc > 0 || double_splat
+              parser_raise "Unexpected local variable #{arg_name}", location
+            end
+          end
+        when :"*"
+          parser_raise "Splat or double splat already defined", location if splat || double_splat
+          splat = true
+          splat_index = args.size
+          next_token
+          check :IDENT, :CAPITAL_VAR
+          arg_name = @token.value.to_s
+          next_token_skip_space
+        when :"**"
+          parser_raise "Double splat already defined", location if double_splat
+          double_splat = false
+          dbl_splat_index = args.size
+          next_token
+          check :IDENT, :CAPITAL_VAR
+          arg_name = @token.value.to_s
+          next_token_skip_space
+        when :"&"
+          next_token
+          check :IDENT, :CAPITAL_VAR
+          blockarg = true
+          arg_name = @token.value.to_s
+          next_token_skip_space_or_newline
+        else
+          unexpected_token
+        end
+
+        lc_bug("Failed to get arg name") unless arg_name 
+
+        register_id arg_name
+        args << Arg.new(arg_name, default_value).at(location)
+
+        break if blockarg || @token.type == :EOL || @token.type == :EOF
+        if @token.type != end_tk 
+          check :","
+          next_token_skip_space_or_newline
+        end
+      end
+      skip_space_or_newline
+      check end_tk
+      return Params.new(args, optc, splat_index, kwargc, dbl_splat_index, blockarg)
     end
 
     def parse_try 
@@ -1224,6 +1407,39 @@ module LinCAS
       end
     end 
 
+    def check_let_name
+      names = {
+        :"@+",
+        :"@-",
+        :"*",
+        :".*",
+        :"**",
+        :"/",
+        :"\\",
+        :"|",
+        :"||",
+        :"&",
+        :"&&",
+        :"^",
+        :">",
+        :">=",
+        :"<",
+        :"<=",
+        :"=",
+        :"==",
+        :"===",
+        :"<<",
+        :">>",
+        :"%",
+        :"!",
+        :"[]",
+        :"[]="
+      } 
+      unless @token.type == :IDENT || @token.type == :CAPITAL_VAR || names.includes? @token.type
+        unexpected_token :IDENT, *names 
+      end 
+    end
+
     def check_callable_name
       names = {
         :"+",
@@ -1265,12 +1481,13 @@ module LinCAS
         io << "Unexpected "
         if @token.is_kw
           io << "keyword "
-          io << @token.value.to_s 
+          io << @token.value.inspect 
         elsif @token.type == :EOF 
           io << "end of file"
         else 
-          io << "token "
-          io << @token.type.to_s
+          io << "token '"
+          io << @token.type
+          io << "'"
         end 
 
         if !args.empty? 
@@ -1283,11 +1500,15 @@ module LinCAS
         io << "In: " << @filename
       end 
       # Exec.lc_raise(LcSyntaxError, msg)
-      raise Exception.new msg
+      if @spec_mode
+        raise SyntaxException.new msg
+      end
     end
 
     def parser_raise(msg, location)
-      puts "Syntax error detected"
+      if @spec_mode
+        raise SyntaxException.new msg
+      end
     end
 
   end

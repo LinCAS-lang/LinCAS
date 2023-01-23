@@ -36,6 +36,10 @@ class String
   def symbol
     SymbolLiteral.new(self.lstrip(":"))
   end
+
+  def arg(value = nil)
+    Arg.new(self, value)
+  end
 end
 
 struct Bool
@@ -54,5 +58,11 @@ end
 struct Float
   def float
     self.to_s.float
+  end
+end
+
+class LinCAS::Parser
+  def lc_bug(msg)
+    raise "Bug: #{msg}"
   end
 end

@@ -54,10 +54,12 @@ module LinCAS
   end
 
   class FunctionNode < Node
-    getter visibility, receiver, name, params, body
+    getter visibility, receiver, name, params, body, symtab
 
-    def initialize(@visibility, @receiver, @name, @params : Params, @body : Body, @symtab : SymTable)
+    def initialize(@visibility : FuncVisib, @receiver : Node?, @name : String, @params : Params?, @body : Body, @symtab : SymTable)
     end
+
+    def_equals visibility, receiver, name, params, body, symtab
   end
 
   class Body < Node
@@ -91,9 +93,23 @@ module LinCAS
   end
 
   class Params 
-    getter args, opt, splat, kwargs
+    getter args, optc, splat_index, kwargc, double_splat_index, blockarg
 
-    def initialize(@args, @opt, @splat, @kwargs)
+    @args : Array(Arg)
+    @optc : Int32
+    @splat_index : Int32
+    @kwargc : Int32
+    @double_splat_index : Int32
+    @blockarg : Bool
+    def initialize(@args, @optc = 0, @splat_index = -1, @kwargc = 0, @double_splat_index = -1, @blockarg = false)
+    end
+
+    def_equals args, optc, splat_index, kwargc, double_splat_index, blockarg
+  end
+
+  class Arg < Node
+    getter name, default_value
+    def initialize(@name : String, @default_value : Node?)
     end
   end
 
