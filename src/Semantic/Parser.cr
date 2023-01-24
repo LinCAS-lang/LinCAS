@@ -82,6 +82,9 @@ module LinCAS
 
     def parse_statements
       body = Body.new
+      if @token.type == :EOF
+        return body.at(@token.location)
+      end
       while @token.type != :EOF
         skip_end
         body << parse_expression
@@ -103,7 +106,8 @@ module LinCAS
       #  end
       when Call 
         !node.has_parenthesis? && ( node.name == "[]" ||
-          (!node.name.ends_with?("=")) ) 
+          !(node.name.ends_with?("=") || node.name.ends_with?("?") || 
+            node.name.ends_with? "!") ) 
       when Variable, ClassVar, InstanceVar 
         true
       else 
@@ -875,7 +879,9 @@ module LinCAS
           else 
             node = Call.new(nil, name, args, named_args, block_arg, block, has_parenthesis)
           end 
-        else 
+        elsif name.ends_with?("?") || name.ends_with? "!" 
+          node = Call.new(nil, name, has_parenthesis: false)
+        else
           node = new_var(name, is_capital)          
         end
       end

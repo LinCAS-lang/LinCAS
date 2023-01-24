@@ -156,6 +156,8 @@ describe Parser do
   it_parses_single "foo a {} do {}", Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))] of Node, block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))
   it_parses_single "foo bar baz", Call.new(nil, "foo", [Call.new(nil, "bar", ["baz".variable] of Node)] of Node)
   it_parses_single "foo\n.bar\n.baz", Call.new(Call.new("foo".variable, "bar"), "baz")
+  it_parses_single "foo?", Call.new(nil, "foo?", has_parenthesis: false)
+  it_parses_single "foo!", Call.new(nil, "foo!", has_parenthesis: false)
 
   it_parses_multiple ["foo(&:to_s)", "foo &:to_s"], Call.new(nil, "foo", block_param: Block.new(["__temp1".variable] of Node, -1, Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK)))
   it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo", block_param: "block".variable)
