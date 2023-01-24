@@ -161,7 +161,7 @@ module LinCAS
       encoded = iseq.encoded
       nodes = node.nodes
       if nodes.empty?
-        set_line(iseq, node)
+        set_line(iseq, node.location)
         encoded << IS::PUSH_NULL
         return
       end
