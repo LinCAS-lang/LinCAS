@@ -467,6 +467,9 @@ module LinCAS
 
     def parse_class
       location = @token.location
+      if @method_nesting > 0
+        parser_raise "Cannot declare a class inside a method", location
+      end
       next_token_skip_space 
       name   = parse_ident
       parent = nil 
@@ -496,6 +499,9 @@ module LinCAS
 
     def parse_module
       location = @token.location
+      if @method_nesting > 0
+        parser_raise "Cannot declare a module inside a method", location
+      end
       next_token_skip_space 
       name = parse_ident
       body = nil 
