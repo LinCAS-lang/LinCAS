@@ -25,20 +25,20 @@ module LinCAS::Internal
 
     macro check_pystructs(scp,str)
       if {{str}}.is_a? LcClass && 
-        ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
+        ({{str}}.type.py_class? || {{str}}.type.py_module?) &&
                                         ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-        {{str}}.namespace.parent = {{scp}}.symTab
+        {{str}}.namespace.parent = {{scp}}.namespace
         {{scp}}.namespace.[{{str}}.name] = {{str}}
         {{str}}.flags |= ObjectFlags::REG_CLASS
       end
     end
 
-    macro check_pystructs2(klass,str)
+    macro check_pystructs2(scp,str)
       if {{str}}.is_a? LcClass && 
-        ({{str}}.type.pyclass? || {{str}}.type.pymodule?) &&
+        ({{str}}.type.py_class? || {{str}}.type.py_module?) &&
                                         ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-        {{str}}.namespace.parent = {{namespace}}
-        {{klass}}[({{str}}.name] = {{str}}
+        {{str}}.namespace.parent = {{scp}}
+        {{scp}}[{{str}}.name] = {{str}}
         {{str}}.flags |= ObjectFlags::REG_CLASS
       end
     end
