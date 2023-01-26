@@ -221,7 +221,20 @@ module LinCAS
       vm_push_control_frame(c_def.not_nil!, iseq, VM::VmFrame::CLASS_FRAME)
     end
 
-    protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)6
+    protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)
+      context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
+      m_def = Internal.lc_seek_const context, name
+      if m_def.is_a?(LcClass) && m_def.is_module?
+        if has_flag m_def, FROZEN
+          lc_raise(LcFrozenError, "Can't reopen a frozen module")
+        end
+      elsif m_def.nil?
+        m_def = Internal.lc_build_user_module(name, context.namespace)
+      else
+        lc_raise LcTypeError, "'#{name}' is not a module"
+      end
+      set_stack_consistency_trace 0
+      vm_push_control_frame(m_def.not_nil!, iseq, VM::VmFrame::CLASS_FRAME)
     end
 
     protected def vm_define_method(visibility : Int32, receiver : LcVal?, name : String, iseq : ISeq, singleton : Bool)
