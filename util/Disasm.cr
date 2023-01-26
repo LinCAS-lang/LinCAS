@@ -66,8 +66,7 @@ module LinCAS
              .getlocal_0?, .getlocal_1?, .getlocal_2?, .getconst?, .storeconst?
           pattern % {i, ins, @iseq.symtab[op.value], line}
         when .setlocal?, .getlocal?
-          @sp += 1
-          op2 = encoded[@sp].value
+          op2 = encoded[i += 1].value
           pattern % {i, ins, "#{op2} #{@iseq.symtab[op.value]}", line}
         when .jump?, .jumpf?, .jumpt?, .jumpf_and_pop?
           pattern % {i, ins, op, line}
@@ -76,12 +75,20 @@ module LinCAS
           pattern % {i, ins, obj, line}
         when .put_class?, .put_module?
           offset = encoded[i += 1].value
-          pattern % {i, ins, "#{@iseq.symtab[op.value]} at #{offset}", line}
+          name = @iseq.names[op.value]
+          @stack << {@iseq.jump_iseq[offset], name } 
+          pattern % {i, ins, "#{name} at #{offset}", line}
         when .call?, .call_no_block?
           ci = @iseq.call_info[op.value]
           block = ci.block || "null"
           ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg, ci.explicit, block}
           pattern % {i, ins, ci_str, line}
+        when .define_method?, .define_smethod?
+          op2, op3 = get_is_and_op(encoded[i += 1])
+          name = @iseq.names[op2.value >> 32]
+          @stack << {@iseq.jump_iseq[op3], name}
+          mid = "#{name}:#{FuncVisib.new(op.value.to_i32)} at #{op3}"
+          pattern % {i, ins, mid, line}
         else
           pattern % {i, ins, op, line}
         end

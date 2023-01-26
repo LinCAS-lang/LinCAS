@@ -52,11 +52,14 @@ module LinCAS
 
       PUT_CLASS 
       PUT_MODULE
+      DEFINE_METHOD
+      DEFINE_SMETHOD
 
       JUMPT
       JUMPF
       JUMP
       JUMPF_AND_POP
+      CHECK_KW
 
       MAKE_RANGE
 
@@ -92,18 +95,14 @@ module LinCAS
 
   class ISeq
     getter type, encoded, symtab, filename, line, catchtables, object, jump_iseq, call_info, names
-    property args, opt_args, named_args, block_arg, stack_size
+    property arg_info, stack_size
 
-    @args : Array(String)?
-    @opt_args : Array(Int32)?
-    @named_args : Array(Tuple(String, Int32))?
-    @block_arg : String?
-
+    ##
+    # @symtab should never be modified during compile time.
+    # It must contain only local variable names
     def initialize(@type : ISType, @filename : String, @symtab : SymTable)
-      @args       = nil
-      @opt_args   = nil
-      @named_args = nil
-      @block_arg  = nil
+      # The real object is allocated only for method or block iseq
+      @arg_info = uninitialized ArgInfo
 
       @encoded     = [] of IS
       @catchtables = [] of CatchT
@@ -111,8 +110,44 @@ module LinCAS
       @object      = [] of LcVal
       @jump_iseq   = [] of ISeq
       @call_info   = [] of CallInfo
-      @names       = [] of String
+      
+      # Internal symbol table for storing names such as
+      # class names, method names to be defined. It should
+      # contain a unique definition of a name.
+      # use 'set_uniq_name' when compiling
+      @names       = Array(String).new
       @stack_size  = 10
+    end
+
+    class ArgInfo
+
+      @argc       : Int32
+      @optc       : Int32 
+      @splat      : Int32 
+      @kwargc     : Int32
+      @dbl_splat  : Int32
+      @block_arg  : Int32
+      
+      def initialize(
+            @argc       , # counts only mandatory arguments
+            @optc       , # if 0 avoids allocation of opt_table
+            @splat      , # index
+            @kwargc     ,
+            @dbl_splat  , # index
+            @block_arg    # index in the symbol table
+          )
+        # Opt table is organized like this:
+        # sym table : [ lead ][ optional ][ splat ][ kwarg ][ dbl splat ][ blokarg ]
+        # opt_table           [jump index][skip]
+        # In which jump index points to the start of the instruction
+        # to set the default value. Skip is the start of the instruction
+        # to jump all the default value settings.
+        # opt_table has an offset of '-lead' wrt the sym table 
+        @opt_table  = uninitialized  Array(Int32)
+        @named_args = uninitialized Hash(String, Tuple(UInt64, Bool))
+      end
+
+      property argc, optc, opt_table, splat, kwargc, named_args, dbl_splat, block_arg
     end
 
     struct Location 

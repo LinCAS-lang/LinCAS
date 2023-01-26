@@ -155,6 +155,131 @@ module LinCAS
     end
 
     def compile_function(iseq, node : FunctionNode)
+      # Function instructions are emitted in 2 separated
+      # instrucions:
+      # > DEFINE_INS | Visibility
+      # > Name Index | Jump Index
+
+      encoded  = iseq.encoded
+      names = iseq.names
+
+      visibility = node.visibility
+      receiver   = node.receiver
+      name       = node.name
+
+      set_line(iseq, node.location)
+
+      if receiver 
+        if receiver.is_a?(Variable) && receiver.name == "self"
+          encoded << IS::PUSH_SELF
+          stack_increase
+        else
+          compile_each(iseq, receiver)
+        end
+      end
+      set_uniq_name names, name
+      index = get_index_of(names, name)
+      is    = receiver ? IS::DEFINE_SMETHOD : IS::DEFINE_METHOD
+      encoded << (is | IS.new(visibility.value.to_u64))
+
+      method = ISeq.new(ISType::METHOD, @filename, node.symtab)
+      if params = node.params
+        compile_method_params(method, params)
+      else
+        method.arg_info = ISeq::ArgInfo.new(0,0,-1,0,-1,-1)
+      end
+      compile_body(method, node.body)
+      method.encoded << IS::LEAVE
+
+      if index > UInt32::MAX || iseq.jump_iseq.size > UInt32::MAX
+        # It is very unlikely the jump instructions or the name table size
+        # are greater than UInt32::MAX
+        lc_bug("Unsupported indexing greater than 32 bits")
+      end
+      encoded << (IS.new(index << 32) | IS.new(iseq.jump_iseq.size.to_u64))
+      iseq.jump_iseq << method
+
+      # VM may put on stack True or False according to the
+      # success of the instruction. So no need to put another
+      # object on stack
+      #
+      # encoded << IS::PUSH_OBJ | (iseq.object.size.to_u64)
+      # iseq.object << Internal.build_symbol(name)
+    end
+
+    def compile_method_params(method : ISeq, params : Params)
+      argv = params.args
+      argc = argv.size - 
+             params.optc -
+             (params.splat_index >= 0 ? 1 : 0) -
+             params.kwargc -
+             (params.double_splat_index >= 0 ? 1 : 0) -
+             (params.blockarg ? 1 : 0)
+
+      block_index = params.blockarg ? params.args.size - 1 : -1
+
+      arg_info = ISeq::ArgInfo.new(
+        argc, 
+        params.optc, 
+        params.splat_index, 
+        params.kwargc, 
+        params.double_splat_index, 
+        block_index
+      )
+
+      encoded  = method.encoded
+      symtable = method.symtab
+
+      # compile optional parameters
+      if (optc = params.optc) > 0
+        opt_table = [] of Int32
+        count = argc + optc
+        (argc...count).each do |i|
+          arg     = argv[i]
+          name    = arg.name
+          default = arg.default_value.not_nil!
+          opt_table << encoded.size
+          compile_each(method, default)
+          index =  get_index_of symtable, name
+          encoded << (IS::SETLOCAL_0 | IS.new(index))
+          # It's ok to pop the value from stack. If the
+          # method body is empty there will be Null to
+          # return
+          encoded << IS::POP
+        end
+        opt_table << encoded.size # Jump all opt instructions
+        arg_info.opt_table = opt_table
+      end
+
+      # compile kw args
+      if (kwargc = params.kwargc) > 0
+        start = argc + optc + (params.splat_index >= 0 ? 1 : 0)
+        count = start + kwargc
+        kw_table = Hash(String, Tuple(UInt64,Bool)).new
+        (start...count).each do |i|
+          arg     = argv[i]
+          name    = arg.name
+          default = arg.default_value
+          index = get_index_of symtable, name
+          if default
+            kw_table[name] = {index, false}
+            # Emit check if kw arg has been given by user
+            # If so, jump the instructions
+            set_line(method, arg.location)
+            encoded << (IS::CHECK_KW | IS.new((i - start).to_u64))
+            jump_index = encoded.size
+            encoded << IS::JUMPF
+            compile_each(method, default)
+            encoded << (IS::SETLOCAL_0 | IS.new(index))
+            # Jump to end of instructions
+            encoded[jump_index] |= IS.new(encoded.size.to_u64)
+          else
+            kw_table[name] = {index, true}
+          end
+        end
+        arg_info.named_args = kw_table
+      end
+      method.arg_info = arg_info
     end
 
     def compile_body(iseq, node : Body)

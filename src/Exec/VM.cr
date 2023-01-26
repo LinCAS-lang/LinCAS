@@ -227,6 +227,8 @@ module LinCAS
           op2  = next_is
           iseq = @current_frame.iseq.jump_iseq[op2.value]
           vm_putmodule(me, name, iseq)
+        when .define_method?
+        when .define_smethod?
         when .jumpt?
         when .jumpf?
         when .jump?

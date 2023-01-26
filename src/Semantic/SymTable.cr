@@ -29,6 +29,13 @@ module LinCAS
     BLOCK
   end
 
+  ##
+  # Symbol table. It's structure can be:
+  # [a1, a2, a3,...]
+  # <- local vars ->
+  # 
+  # [p1, p2, p3, p4, ..., a1, a2, a3, ...]
+  # <- method params -->| <- local vars ->
   class SymTable < Array(String)
     getter type
     property previous 
