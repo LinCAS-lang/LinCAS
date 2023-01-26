@@ -33,7 +33,7 @@ module LinCAS
               tmp = Internal.pymethod_new(name, @py_obj.not_nil!, nil, false)
             {% else %}
               Internal.pyobj_decref(tmp)
-              tmp = nil 
+              return nil 
             {% end %}
           end
           {% if V != LcMethod %}
