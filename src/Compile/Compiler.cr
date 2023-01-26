@@ -87,7 +87,7 @@ module LinCAS
 
     def compile_class(iseq, node : ClassNode)
       encoded      = iseq.encoded
-      symtab       = iseq.symtab
+      names        = iseq.names
       namespace    = node.name
       superclass   = node.superclass 
       body         = node.body 
@@ -109,8 +109,8 @@ module LinCAS
       else 
         compile_namespace(iseq, superclass.as(Namespace))
       end
-      symtab << name
-      index = get_var_offset(symtab, name)
+      set_uniq_name names, name
+      index = get_index_of names, name
       encoded << (IS::PUT_CLASS | IS.new(index))
 
       # Compile class body
@@ -125,7 +125,7 @@ module LinCAS
     
     def compile_module(iseq, node : ModuleNode)
       encoded      = iseq.encoded
-      symtab       = iseq.symtab
+      names        = iseq.names
       namespace    = node.name
       body         = node.body 
       set_line(iseq,node.location)
@@ -139,8 +139,8 @@ module LinCAS
         encoded << IS::PUSH_SELF
       end
 
-      symtab << name
-      index = get_var_offset(symtab, name)
+      set_uniq_name names, name
+      index = get_index_of names, name 
       stack_decrease
       encoded << (IS::PUT_MODULE | IS.new(index))
 
@@ -335,11 +335,13 @@ module LinCAS
         end
       when InstanceVar
         name  = node.name
-        index = get_var_offset iseq.symtab, name
+        set_uniq_name iseq.names, name
+        index = get_index_of iseq.names, name
         encoded << (IS::SETINSTANCE_V | IS.new(index.to_u64))
       when ClassVar 
         name  = node.name
-        index = get_var_offset iseq.symtab, name
+        set_uniq_name iseq.names, name
+        index = get_index_of iseq.names, name
         encoded << (IS::SETCLASS_V | IS.new(index.to_u64))
       else 
         lc_bug("Unhandled node #{node.class}") 
@@ -534,7 +536,7 @@ module LinCAS
       name   = node.name
       compile_each(iseq, node.exp)
       set_line(iseq,node)
-      names << name
+      set_uniq_name names, name
       index = get_index_of names, name
       is = IS::STORECONST | IS.new(index) 
       iseq.encoded << is
@@ -542,7 +544,7 @@ module LinCAS
 
     def compile_namespace(iseq, node : Namespace, last = true)
       encoded = iseq.encoded
-      symtab  = iseq.symtab
+      symtab  = iseq.names # We don't want the local var table
       names   = node.names
       if !last && names.size == 1
         # Nothing
@@ -553,8 +555,8 @@ module LinCAS
         encoded << IS::PUSH_SELF
         names.each_with_index do |name, i|
           break if !last && i == size 
-          symtab << name 
-          index = get_var_offset(symtab, name)
+          set_uniq_name symtab, name 
+          index = get_index_of symtab, name
           encoded << (IS::GETCONST | IS.new(index))
         end
       end
@@ -684,6 +686,13 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    def set_uniq_name(array, name)
+      unless array.includes? name
+        array << name
+      end
+    end
+
+    @[AlwaysInline]
     protected def get_index_of(symtab, name)
       index = symtab.index(name)
       return index.to_u64 if index 
@@ -691,7 +700,7 @@ module LinCAS
       0u64
     end
 
-    protected def get_var_offset(symtab, name)
+    protected def get_var_offset(symtab : SymTable, name : String)
       while symtab 
         index = symtab.index(name)
         return index.to_u64 if index
