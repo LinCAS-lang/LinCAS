@@ -313,10 +313,11 @@ module LinCAS
       def initialize(size, @frame_type, @previous = nil)
         super(size, Null)
         @block_handler = nil
+        @kw_bit = 0u64 # used in kw args
       end
 
       getter previous, frame_type
-      property block_handler
+      property block_handler, kw_bit
     end
 
     protected record CallingInfo, 
