@@ -13,6 +13,7 @@
 # limitations under the License.
 
 module LinCAS
+  @[Flags]
   enum LinCAS::FuncVisib
     PUBLIC
     PROTECTED
