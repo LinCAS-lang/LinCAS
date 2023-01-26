@@ -63,6 +63,7 @@ module LinCAS
         lc_bug("(No frame found)")
       end
       @current_frame = @control_frames.last
+      debug "Restoring sp at #{@current_frame.sp} [current: #{@sp}]"
       @sp = @current_frame.sp
     end
 
@@ -71,33 +72,46 @@ module LinCAS
       ExecFrame.new(me, iseq, env, flags)
     end
 
-    protected def vm_push_control_frame(me, iseq, env, flags)
-      frame = vm_new_frame(me, iseq, env, flags)
-      @control_frames << frame
-      @current_frame = @control_frames.last
-      debug("Pushing cf #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+    @[AlwaysInline]
+    protected def vm_new_frame(me, env, flags)
+      ExecFrame.new(me, env, flags)
     end
 
+    @[AlwaysInline]
+    protected def push_control_frame(frame)
+      @control_frames << frame
+      @current_frame = @control_frames.last
+      debug("Pushing cf #{@current_frame.flags} [fc: #{@control_frames.size}] [ss: #{@sp}]")
+    end
+
+    @[AlwaysInline]
+    protected def vm_push_control_frame(me, iseq, env, flags)
+      frame = vm_new_frame(me, iseq, env, flags)
+      push_control_frame frame
+    end
+
+    @[AlwaysInline]
     protected def vm_push_control_frame(me, iseq, flags)
       env = Environment.new(iseq.symtab.size, flags)
       vm_push_control_frame(me, iseq, env, flags)
     end
 
+    @[AlwaysInline]
     protected def vm_push_control_frame(me, flags)
       env = Environment.new(0, flags)
-      iseq = uninitialized ISeq # Unsafe code
-      vm_push_control_frame(me, iseq, env, flags)
+      frame = vm_new_frame(me, env, flags)
+      push_control_frame frame
     end
 
     protected def vm_pop_control_frame
-      debug("Popping cf: #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+      debug("Popping cf: #{@current_frame.flags} [fc: #{@control_frames.size}] [ss: #{@sp}]")
       r_value = pop
       flags = @current_frame.flags 
       @control_frames.pop 
       vm_consistency_check
       unless flags.includes? VmFrame::MAIN_FRAME
         restore_regs
-        debug("Current frame: #{@current_frame.flags}. [fc: #{@control_frames.size}]")
+        debug("Current frame: #{@current_frame.flags}. [fc: #{@control_frames.size}] [ss: #{@sp}]")
       end
       push r_value
       return flags.includes? VmFrame::FLAG_FINISH
@@ -300,6 +314,20 @@ module LinCAS
         @names     = iseq.names
         @objects   = iseq.object
         @call_info = iseq.call_info
+        @jump_buff = StaticArray[LibC::JmpBuf.new]
+      end
+
+      ##
+      # This is an unsaf initializer. It is used only on calls
+      # with internal method reference 
+      def initialize(@me : LcVal, @env : Environment, @flags : VmFrame)
+        @iseq = uninitialized ISeq
+        @pc = @pc_bottom = @pc_top = Pointer(IS).null
+        @sp = @real_sp = 0
+        @local_var = Array(LcVal).new(0)
+        @names     = uninitialized Array(String)
+        @objects   = uninitialized Array(LcVal)
+        @call_info = uninitialized Array(CallInfo)
         @jump_buff = StaticArray[LibC::JmpBuf.new]
       end
 
