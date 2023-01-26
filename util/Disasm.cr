@@ -18,7 +18,7 @@ module LinCAS
 
     @last_line : Int32 | Int64
     def initialize(@iseq : ISeq)
-      @stack = [] of ISeq
+      @stack = [{@iseq, ""}]
       @line_index = 0
       @lc         = -1
       @last_line  = -1
@@ -26,16 +26,37 @@ module LinCAS
     end
 
     def disasm
-      type     = @iseq.type.to_s
-      filename = @iseq.filename
-      symtab   = @iseq.symtab 
-      puts "#{type}>#{"="* (79 - type.size)}",
-           "file: #{filename}",
-           "local table: (size: %s, args: %s, named_args: %s, block_arg: %s)" %
-           [symtab.size, @iseq.args || 0, @iseq.named_args || 0, @iseq.block_arg || -1]
-           
-      print_symtable(@iseq.symtab)
-      print_encoded(@iseq.encoded)
+      while !@stack.empty?
+        @iseq, name = @stack.shift
+        reset_line
+        type     = @iseq.type.to_s
+        filename = @iseq.filename
+        iseq_name = name == "" ? "#{type}" : "#{type}:#{name}"
+        puts "#{iseq_name}>#{"="* (79 - type.size)}",
+             "file: #{filename}",
+             "local table: (size: %s, argc: %s, [opt: %s splat: %s, kw: %s, kwsplat: %s, block: %s])" %
+             format_arg_info(@iseq)
+  
+        print_symtable(@iseq.symtab)
+        print_encoded(@iseq.encoded)
+        puts nil
+      end
+    end
+
+    def format_arg_info(iseq)
+      size = iseq.symtab.size
+      argc = opt = kw = 0
+      splat = kwsplat = block = -1
+      if iseq.type == ISType::METHOD
+        args = iseq.arg_info
+        argc = args.argc
+        opt = args.optc
+        splat = args.splat
+        kw = args.kwargc
+        kwsplat = args.dbl_splat
+        block = args.block_arg
+      end
+      return [size, argc, opt, splat, kw, kwsplat, block]
     end
 
     def print_symtable(symtab)
@@ -105,7 +126,14 @@ module LinCAS
       end
     end 
 
+    def reset_line
+      @line_index = 0
+      @lc         = -1
+      @last_line  = -1
+    end
+
     private def get_line(i)
+      return nil if @iseq.line.empty?
       line_ref = @iseq.line[@lc + 1]?
       if line_ref && line_ref.sp <= i 
         @lc += 1
@@ -113,7 +141,7 @@ module LinCAS
       else 
         line = @iseq.line[@lc].line
       end
-      if @last_line == -1 || @last_line != line 
+      if line_ref && (@last_line == -1 || @last_line != line)
         @last_line = line 
         return line 
       end
@@ -126,6 +154,10 @@ module LinCAS
 
     private def get_operand(op_code)
       return op_code & IS::OP_MASK
+    end
+
+    private def get_is_and_op(is)
+      return {get_instruction(is), get_operand(is).value}
     end
 
   end
