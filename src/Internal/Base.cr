@@ -104,6 +104,14 @@ module LinCAS
 
     def initialize(@type, @name, @parent, @methods, @namespace, @ivar : IvarTable)
     end
+
+    def is_class?
+      !is_module?
+    end
+
+    def is_module?
+      @type.module? || @type.py_module?
+    end
   end
 
   # struct LcBlock

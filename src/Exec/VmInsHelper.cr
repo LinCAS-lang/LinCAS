@@ -194,9 +194,37 @@ module LinCAS
     end
 
     protected def vm_putclass(me : LcVal, name : String, parent : LcVal, iseq : ISeq)
-    end 
+      context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
 
-    protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)
+      if !(parent.is_a?(LcClass) && parent.is_class?) && parent != Null
+        lc_raise(LcTypeError, "Parent must be a class (#{Internal.lc_typeof(parent)} given)")
+      end
+
+      c_def = Internal.lc_seek_const context, name
+      if c_def.is_a?(LcClass) && c_def.is_class?
+        if has_flag c_def, FROZEN
+          lc_raise(LcFrozenError, "Can't reopen a frozen class")
+        end
+        unless parent == Null
+          lc_raise LcTypeError, "Superclass missmatch for #{name}"
+        end
+      elsif c_def.nil?
+        if parent.is_a?(LcClass)
+          c_def = Internal.lc_build_user_class(name, context.namespace, parent)
+        else
+          c_def = Internal.lc_build_user_class(name, context.namespace)
+        end
+      else
+        lc_raise LcTypeError, "'#{name}' is not a class"
+      end
+      set_stack_consistency_trace 0
+      vm_push_control_frame(c_def.not_nil!, iseq, VM::VmFrame::CLASS_FRAME)
+    end
+
+    protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)6
+    end
+
+    protected def vm_define_method(visibility : Int32, receiver : LcVal?, name : String, iseq : ISeq, singleton : Bool)
     end
 
     #######################################
