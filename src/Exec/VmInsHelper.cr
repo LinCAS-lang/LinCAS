@@ -148,7 +148,7 @@ module LinCAS
       # Since we need to clear the arg part after the call.
       # Therefore we need to remember what is the actual stack
       # pointer before the call args (and before pushing a new frame)
-      set_stack_consistency_trace(ci.argc) # TO FIX: consider Kw args
+      set_stack_consistency_trace(ci.argc + 1) # TO FIX: consider Kw args
 
       return case method.type 
       when .internal?
