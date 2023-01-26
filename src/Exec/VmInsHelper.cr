@@ -17,7 +17,9 @@ module LinCAS
     include VmArgs
 
     macro set_stack_consistency_trace(offset)
-      @current_frame.sp = @sp - {{offset}}
+      %sp = @sp - ({{offset}})
+      puts "Setting trace: [sp: #{%sp}] [rsp: #{@sp}}]"
+      @current_frame.sp = %sp
       @current_frame.real_sp = @sp
     end
 

@@ -111,6 +111,7 @@ module LinCAS
         @stack[@sp] = object 
       end  
       @sp += 1
+      debug("Push on stack [ss: #{@sp}]")
     end
 
     @[AlwaysInline]
@@ -119,6 +120,7 @@ module LinCAS
         lc_bug("VM ran in stack underflow")
       end 
       @sp -= 1
+      debug("Pop from stack [ss: #{@sp}]")
       return @stack[@sp]
     end 
 
