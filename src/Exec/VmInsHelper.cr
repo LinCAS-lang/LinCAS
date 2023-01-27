@@ -173,10 +173,14 @@ module LinCAS
     end 
 
     private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
-      vm_push_control_frame(calling.me, VM::VmFrame::ICALL_FRAME)
-      vm_check_arity(method.arity, ci.argc) if method.arity > 0
-      argv = vm_collect_args(method.arity, ci)
+      vm_setup_args_internal_or_python(ci, calling)
+      vm_check_arity(method.arity, calling.argc)
+      argv = vm_collect_args(method.arity, calling)
+
+      set_stack_consistency_trace(calling.argc + 1)
+      vm_push_control_frame(calling.me, calling.block, VM::VmFrame::ICALL_FRAME)
       val = call_internal_special(method, argv)
+
       push val
       vm_pop_control_frame
     end
