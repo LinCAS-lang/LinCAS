@@ -140,9 +140,9 @@ module LinCAS
 
     @[AlwaysInline]
     def next_is
+      vm_pc_consistency_check
       value = @current_frame.pc.value 
       @current_frame.pc += 1
-      vm_pc_consistency_check
       return value
     end
     
