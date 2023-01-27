@@ -94,11 +94,11 @@ module LinCAS::Internal
         return lc_undef_method(name,owner)
     end
 
-    def self.lc_undef_usr_static_method(name,owner : LcClass)
-        m = lc_undef_usr_method(name,owner)
-        m.static = true 
-        return m 
-    end
+    # def self.lc_undef_usr_static_method(name,owner : LcClass)
+    #     m = lc_undef_usr_method(name,owner)
+    #     m.static = true 
+    #     return m 
+    # end
 
     def self.lc_undef_internal_method(name,owner : LinCAS::LcClass)
         m = lc_undef_method(name,owner)
@@ -106,11 +106,11 @@ module LinCAS::Internal
         return m
     end 
 
-    def self.lc_undef_internal_static(name,owner : LcClass)
-        m = lc_undef_internal_method(name,owner)
-        m.static = true 
-        return m
-    end
+    # def self.lc_undef_internal_static(name,owner : LcClass)
+    #     m = lc_undef_internal_method(name,owner)
+    #     m.static = true 
+    #     return m
+    # end
 
     macro define_method(name,owner,code,arity)
         internal.lc_define_internal_method(
@@ -134,9 +134,9 @@ module LinCAS::Internal
         )
     end
 
-    macro undef_static(name,owner)
-        internal.lc_undef_internal_static({{name}},{{owner}})
-    end 
+    # macro undef_static(name,owner)
+    #     internal.lc_undef_internal_static({{name}},{{owner}})
+    # end 
 
     def self.seek_method(receiver : LcClass, name : String, explicit : Bool, ignore_visib = false)
         klass = receiver

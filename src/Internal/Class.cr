@@ -199,10 +199,10 @@ module LinCAS::Internal
     ##
     # Removes an internal static method in the given class. No check is performed
     # to see if the method is defined
-    def self.lc_remove_static(receiver : LcClass,name : String)
-      m = undef_static(name,receiver)
-      metaclass_of(receiver).methods[name] = m
-    end
+    # def self.lc_remove_static(receiver : LcClass,name : String)
+    #   m = undef_static(name,receiver)
+    #   metaclass_of(receiver).methods[name] = m
+    # end
 
     
     def self.lc_class_add_method(receiver : LcClass,name : String,proc : LcProc,arity : Intnum)
