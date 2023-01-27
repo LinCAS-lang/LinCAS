@@ -289,7 +289,7 @@ module LinCAS
     end
 
     private class ExecFrame
-      getter me, iseq, env, flags, local_var, names, objects, call_info, jump_buff
+      getter me, iseq, env, flags, names, objects, call_info, jump_buff
       property sp, pc, real_sp
 
       @pc        : IS*
@@ -310,7 +310,6 @@ module LinCAS
         # Saves the actual stack pointer. 
         # This is for consistency check
         @real_sp   = 0
-        @local_var = Array(LcVal).new(iseq.symtab.size)
         @names     = iseq.names
         @objects   = iseq.object
         @call_info = iseq.call_info
@@ -324,7 +323,6 @@ module LinCAS
         @iseq = uninitialized ISeq
         @pc = @pc_bottom = @pc_top = Pointer(IS).null
         @sp = @real_sp = 0
-        @local_var = Array(LcVal).new(0)
         @names     = uninitialized Array(String)
         @objects   = uninitialized Array(LcVal)
         @call_info = uninitialized Array(CallInfo)
