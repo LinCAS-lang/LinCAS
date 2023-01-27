@@ -52,6 +52,11 @@ module LinCAS
       end
     end
 
+    @[AlwaysInline]
+    private def vm_new_env(iseq : ISeq, calling : VM::CallingInfo, flags)
+      return VM::Environment.new(iseq.symtab.size, flags, calling.block)
+    end
+
     protected def vm_setlocal(offset, level, value : LcVal)
       env = @current_frame.env
       level.times do
@@ -192,7 +197,13 @@ module LinCAS
       end
     end
 
-    private def vm_call_user()
+    private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      iseq = method.code.as(ISeq)
+      env = vm_new_env(iseq, calling, VM::VmFrame::UCALL_FRAME)
+      vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
+      
+      set_stack_consistency_trace(calling.argc + 1)
+      vm_push_control_frame(calling.me, iseq, env, VM::VmFrame::UCALL_FRAME)
     end 
 
     private def vm_call_python()
