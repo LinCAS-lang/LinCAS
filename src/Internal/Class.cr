@@ -162,6 +162,12 @@ module LinCAS::Internal
       klass.methods[name] = method
     end
 
+    @[AlwaysInline]
+    def self.lc_add_method_with_owner(klass : LcClass, name : String, method : LcMethod)
+      method.owner = klass
+      lc_add_method(klass, name, method)
+    end
+
     # @[AlwaysInline]
     # def self.lc_add_undef_method(receiver : LcClass,name : String,method : LcMethod)
     #     receiver.methods.addEntry(name,method)
