@@ -244,7 +244,20 @@ module LinCAS
           iseq = @current_frame.iseq.jump_iseq[op2.value]
           vm_putmodule(me, name, iseq)
         when .define_method?
+          oo = next_is
+          index, jmp_iseq = get_is_and_operand oo
+          index = index.value >> 32
+          name = @current_frame.names[index]
+          iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
+          vm_define_method(op.to_i32, nil, name, iseq, false)
         when .define_smethod?
+          receiver = pop
+          oo = next_is
+          index, jmp_iseq = get_is_and_operand oo
+          index = index.value >> 32
+          name = @current_frame.names[index]
+          iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
+          vm_define_method(op.to_i32, receiver, name, iseq, true)
         when .jumpt?
         when .jumpf?
         when .jump?

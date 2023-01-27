@@ -240,6 +240,18 @@ module LinCAS
     end
 
     protected def vm_define_method(visibility : Int32, receiver : LcVal?, name : String, iseq : ISeq, singleton : Bool)
+      visibility = FuncVisib.from_value visibility # raises exception if incorrect
+      
+      if !singleton
+        me = @current_frame.me
+        receiver = me.is_a?(LcClass) ? me : me.klass
+      else
+        receiver = receiver.not_nil!.klass # Todo: ensure not frozen class
+      end
+      
+      method = Internal.lc_def_method(name, iseq, visibility)
+      Internal.lc_add_method_with_owner(receiver, name, method)
+      push LcTrue
     end
 
     #######################################
