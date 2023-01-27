@@ -98,7 +98,8 @@ module LinCAS
           offset = encoded[i += 1].value
           name = @iseq.names[op.value]
           @stack << {@iseq.jump_iseq[offset], name } 
-          pattern % {i, ins, "#{name} at #{offset}", line}
+          # Counter i is adjusted to the real instruction count
+          pattern % {i - 1, ins, "#{name} at #{offset}", line}
         when .call?, .call_no_block?
           ci = @iseq.call_info[op.value]
           block = ci.block || "null"
@@ -109,7 +110,8 @@ module LinCAS
           name = @iseq.names[op2.value >> 32]
           @stack << {@iseq.jump_iseq[op3], name}
           mid = "#{name}:#{FuncVisib.new(op.value.to_i32)} at #{op3}"
-          pattern % {i, ins, mid, line}
+          # Counter i is adjusted to the real instruction count
+          pattern % {i - 1, ins, mid, line}
         else
           pattern % {i, ins, op, line}
         end
