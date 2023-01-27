@@ -137,14 +137,6 @@ module LinCAS
     property optcode
   end
 
-  class FuncArgSet
-    @arg = [] of String
-    @opt = [] of OptArg
-    @block = ""
-    getter arg, opt
-    property block
-  end
-
   enum LcMethodT
     INTERNAL
     USER
@@ -153,22 +145,24 @@ module LinCAS
   end
 
   class LcMethod
-    @code      : ISeq | LcProc   | ::Nil
+    @code      : ISeq | LcProc | ::Nil
     @owner     : LcClass? = nil
-    @arity     : IntnumR                     = 0
+    @arity     : IntnumR  = 0 # used for internal methods
     @pyobj     : Python::PyObject = Python::PyObject.null
     @static    = false
     @type      : LcMethodT = LcMethodT::INTERNAL
     @needs_gc  = false
     @gc_ref    : Internal::PyGC::Ref? = nil
-    @args      = uninitialized FuncArgSet
 
     def initialize(@name : String, @visib : FuncVisib)
-        @code = nil
+      @code = nil
+    end
+
+    def initialize(@name : String, @visib : FuncVisib, @code : ISeq)
     end
 
     def finalize 
-        Internal::PyGC.dispose(@gc_ref)
+      Internal::PyGC.dispose(@gc_ref)
     end
 
     property name, args, code, owner, arity, pyobj
