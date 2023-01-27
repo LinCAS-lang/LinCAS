@@ -85,20 +85,22 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_push_control_frame(me, iseq, env, flags)
+    protected def vm_push_control_frame(me : LcVal, iseq : ISeq, env : Environment, flags)
       frame = vm_new_frame(me, iseq, env, flags)
       push_control_frame frame
     end
 
     @[AlwaysInline]
-    protected def vm_push_control_frame(me, iseq, flags)
+    protected def vm_push_control_frame(me : LcVal, iseq : ISeq, flags)
       env = Environment.new(iseq.symtab.size, flags)
       vm_push_control_frame(me, iseq, env, flags)
     end
 
+    ##
+    # Used for calls to internal methods only
     @[AlwaysInline]
-    protected def vm_push_control_frame(me, flags)
-      env = Environment.new(0, flags)
+    protected def vm_push_control_frame(me : LcVal, block : BlockHandler?, flags)
+      env = Environment.new(0, flags, block)
       frame = vm_new_frame(me, env, flags)
       push_control_frame frame
     end
@@ -224,11 +226,11 @@ module LinCAS
         when .call?
           ci           = @current_frame.call_info[op]
           bh           = vm_capture_block(ci)
-          calling_info = CallingInfo.new(topn(ci.argc), bh)
+          calling_info = CallingInfo.new(topn(ci.argc), ci.argc, bh)
           vm_call(ci, calling_info)
         when .call_no_block?
           ci           = @current_frame.call_info[op]
-          calling_info = CallingInfo.new(topn(ci.argc), nil)
+          calling_info = CallingInfo.new(topn(ci.argc), ci.argc, nil)
           vm_call(ci, calling_info)
         when .put_class?
           parent = pop 
@@ -348,12 +350,15 @@ module LinCAS
     end
 
     class Environment < Array(LcVal)
-      @previous      : Environment?
       @block_handler : BlockHandler?
-      @frame_type    : VmFrame
-      def initialize(size, @frame_type, @previous = nil)
+      def initialize(size, @frame_type : VmFrame, @previous : Environment? = nil)
         super(size, Null)
         @block_handler = nil
+        @kw_bit = 0u64 # used in kw args
+      end
+
+      def initialize(size, @frame_type : VmFrame, @block_handler : BlockHandler?, @previous : Environment? = nil)
+        super(size, Null)
         @kw_bit = 0u64 # used in kw args
       end
 
@@ -361,9 +366,13 @@ module LinCAS
       property block_handler, kw_bit
     end
 
-    protected record CallingInfo, 
-      me : LcVal,
-      block : BlockHandler?
+    class CallingInfo
+      def initialize(@me : LcVal, @argc : Int32, @block : BlockHandler? = nil)
+      end
+
+      getter me, block
+      property argc
+    end
 
     class CallCache
       ##

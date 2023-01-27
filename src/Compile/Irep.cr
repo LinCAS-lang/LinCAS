@@ -81,15 +81,25 @@ module LinCAS
   class CatchT
   end
 
+  ##
+  # This is immutable. Its definition 
+  # happens at compile time
   class CallInfo
     getter argc, kwarg, name
-    property explicit, block
+    property explicit, block, splat, dbl_splat
     def initialize(@name : String, 
                    @argc : Int32, 
                    @kwarg : Array(String)?, 
                    @explicit : Bool = true, 
                    @block : ISeq? = nil
-                  ) 
+                  )
+      @splat = false
+      @dbl_splat = false 
+    end
+
+    @[AlwaysInline]
+    def has_kwargs?
+      return @kwarg && !@kwarg.not_nil!.empty?
     end
   end
 
@@ -148,6 +158,14 @@ module LinCAS
       end
 
       property argc, optc, opt_table, splat, kwargc, named_args, dbl_splat, block_arg
+
+      def arg_simple?
+        return @optc == 0 && 
+        @splat == -1 && 
+        @kwargc == 0 &&
+        @dbl_splat == -1 &&
+        @block_arg == -1
+      end
     end
 
     struct Location 
