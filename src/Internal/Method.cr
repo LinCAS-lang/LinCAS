@@ -55,22 +55,18 @@ module LinCAS::Internal
         return m 
     end
 
-    def self.lc_def_method(name : String, args : FuncArgSet,
-                           arity : Intnum, code : Bytecode, visib : FuncVisib = FuncVisib::PUBLIC)
-        m         = new_lc_method(name,visib)
+    def self.lc_def_method(name : String, code : ISeq, visib : FuncVisib = FuncVisib::PUBLIC)
+        m         = LcMethod.new(name,visib, code)
         m.type    = LcMethodT::USER
-        m.args    = args 
-        m.code    = code 
-        m.arity   = arity
         return m
     end
 
-    def self.lc_def_static_method(name : String, args : FuncArgSet, 
-                                  arity : Intnum,code : Bytecode,visib : FuncVisib = FuncVisib::PUBLIC)
-        m        = lc_def_method(name,args,arity,code,visib)
-        m.static = true
-        return m 
-    end
+    # def self.lc_def_static_method(name : String, args : FuncArgSet, 
+    #                               arity : Intnum,code : Bytecode,visib : FuncVisib = FuncVisib::PUBLIC)
+    #     m        = lc_def_method(name,args,arity,code,visib)
+    #     m.static = true
+    #     return m 
+    # end
 
     def self.lc_define_internal_method(name, owner : LinCAS::LcClass, code, arity : Intnum)
         m          = new_lc_method(name, FuncVisib::PUBLIC)
