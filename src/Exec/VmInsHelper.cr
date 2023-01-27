@@ -16,6 +16,19 @@ module LinCAS
   module VmInsHelper
     include VmArgs
 
+    macro vm_ensure_type(obj, type)
+      lc_bug("VM expected #{{{type}}}, but got #{{{obj}}.class}") unless {{obj}}.is_a? {{type}}
+    end
+
+    # We already have call arguments on the stack that
+    # are already available. Local variables are not 
+    # kept on stack, therefore it will be the specialized
+    # call-handler function's responsability to copy them
+    # to the environment context.
+    #
+    # Since we need to clear the arg part after the call.
+    # Therefore we need to remember what is the actual stack
+    # pointer before the call args (and before pushing a new frame)
     macro set_stack_consistency_trace(offset)
       %sp = @sp - ({{offset}})
       puts "Setting trace: [sp: #{%sp}] [rsp: #{@sp}}]"
@@ -140,22 +153,12 @@ module LinCAS
       cc = Internal.seek_method(calling.me.klass, ci.name, ci.explicit)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
-      
-      # We already have the arguments on the stack that
-      # are already available. Local variables are not 
-      # kept on stack, therefore it will be the specialized
-      # call-handler function's responsability to copy them
-      # to the environment context.
-      #
-      # Since we need to clear the arg part after the call.
-      # Therefore we need to remember what is the actual stack
-      # pointer before the call args (and before pushing a new frame)
-      set_stack_consistency_trace(ci.argc + 1) # TO FIX: consider Kw args
 
       return case method.type 
       when .internal?
-        vm_call_internal(method, ci, calling) # Missing: fixing args on stack
-      # when .user?
+        vm_call_internal(method, ci, calling)
+      when .user?
+        vm_call_user(method, ci, calling)
       # when .python?
       # when .proc?
       else
