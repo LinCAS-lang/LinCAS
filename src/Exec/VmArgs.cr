@@ -44,22 +44,18 @@ module LinCAS
     ##
     # Used to prepare args on stack for internal or python calls
     def vm_setup_args_internal_or_python(ci : CallInfo, calling : VM::CallingInfo)
-      if !ci.dbl_splat
+      if !ci.dbl_splat || !ci.has_kwargs?
         vm_setup_args_fast_track(ci, calling)
       elsif ci.has_kwargs? && ci.dbl_splat
-        kwsplat = pop
         vm_set_up_kwargs(ci, calling)
-        hash = topn(0)
-        Internal.lc_hash_o_merge(hash, kwsplat) # Check if kwsplat is a hash is done here
+        vm_merge_kw
         calling.argc -= 1
-      elsif ci.dbl_splat
-        hash = Internal.lc_hash_clone(topn(0))
-        @stack[@sp - 1] = hash
+        vm_set_up_splat(ci, calling) if ci.splat
       end
     end
 
     def vm_setup_iseq_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
-      if arg_info.arg_simple? && !ci.dbl_splat
+      if arg_info.arg_simple? && (!ci.dbl_splat || !ci.has_kwargs?)
         vm_setup_args_fast_track(ci, calling)
         vm_check_arity(arg_info.argc, calling.argc)
         vm_migrate_args(env, calling)
@@ -70,9 +66,9 @@ module LinCAS
     end
 
     ##
-    # Assumes max a hash after splat argument
+    # Assumes max a hash after splat argument.
     private def vm_set_up_splat(ci : CallInfo, calling : VM::CallingInfo)
-      if ci.has_kwargs?
+      if !ci.dbl_splat || !ci.has_kwargs?
         debug("Preserving kw args while setting up splat")
         kwargs = pop
       end
