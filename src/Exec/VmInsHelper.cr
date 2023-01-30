@@ -204,10 +204,11 @@ module LinCAS
     private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       iseq = method.code.as(ISeq)
       env = vm_new_env(iseq, calling, VM::VmFrame::UCALL_FRAME)
-      vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
+      offset = vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
       
       set_stack_consistency_trace(calling.argc + 1)
       vm_push_control_frame(calling.me, iseq, env, VM::VmFrame::UCALL_FRAME)
+      @current_frame.sp += offset
     end 
 
     private def vm_call_python()
