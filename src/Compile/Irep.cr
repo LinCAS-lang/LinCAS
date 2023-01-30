@@ -61,6 +61,12 @@ module LinCAS
       JUMPF_AND_POP
       CHECK_KW
 
+      SPLAT_ARRAY
+      CONCAT_ARRAY
+      ARRAY_APPEND
+      MERGE_KW
+      DUP_HASH
+
       MAKE_RANGE
 
       LEAVE

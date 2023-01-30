@@ -349,7 +349,7 @@ module LinCAS
       set_line(iseq, node)
     end
 
-    def compile_block(node : Block, ci : CallInfo)
+    def compile_block(node : Block)
     end 
 
     def compile_if(iseq, node : If)
@@ -451,26 +451,31 @@ module LinCAS
         stack_increase
         encoded << IS::PUSH_SELF
       end
-      compile_call_args(iseq, node.args)
+      argc, splat, dblsplat = compile_call_args(iseq, node.args)
       n_args = compile_named_args(iseq, node.named_args)
       
-      argc = node.args ? node.args.not_nil!.size : 0
-      call_info = CallInfo.new(call_name, argc, n_args, !!receiver)
       block_param = node.block_param
+      block = nil
+      block_p = false
       case block_param
       when Block 
-        compile_block(block_param, call_info)
+        block = compile_block(block_param)
       else
         if block_param.nil?
-          if block = node.block
-            compile_block(block, call_info) 
+          if tmp = node.block
+            block = compile_block(tmp) 
           end
         else
           compile_each(iseq, block_param)
+          block_p = true
         end
       end
+
+      lc_bug("Both block and block param found at compile time") if block && block_p
+
+      call_info = CallInfo.new(call_name, argc, splat, dblsplat, n_args, !!receiver, block, block_p)
       index = set_call_info(iseq, call_info)
-      call_with_block = !!(block_param || node.block)
+      call_with_block = !!(block || block_p)
       is = case node.name
       # when "+"
       # when "-"
@@ -488,10 +493,44 @@ module LinCAS
 
     @[AlwaysInline]
     def compile_call_args(iseq, args)
-      return unless args
-      args.each do |arg|
-        compile_each(iseq, arg)
+      argc = 0
+      splat_found = dblsplat_found = false
+      unless args.nil?
+        encoded = iseq.encoded
+        args.each do |arg|
+          case arg
+          when Splat
+            compile_each(iseq, arg.exp)
+            if splat_found
+              encoded << IS::CONCAT_ARRAY
+            else
+              encoded << IS::SPLAT_ARRAY
+              splat_found = true
+              argc += 1
+            end
+          when DoubleSplat
+            compile_each(iseq, arg.exp)
+            if dblsplat_found
+              encoded << IS::MERGE_KW
+            else
+              encoded << IS::DUP_HASH
+              dblsplat_found = true
+              argc += 1
+            end 
+          else
+            compile_each(iseq, arg)
+            if splat_found && !dblsplat_found
+              encoded << IS::ARRAY_APPEND
+            elsif dblsplat_found
+              lc_bug("Parser failed to prevent positional arguments after double splat")
+            else
+              # Just positional argument
+              argc += 1
+            end
+          end
+        end
       end
+      return {argc, splat_found, dblsplat_found}
     end 
 
     @[AlwaysInline]
