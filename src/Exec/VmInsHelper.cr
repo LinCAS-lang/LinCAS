@@ -273,6 +273,13 @@ module LinCAS
       push LcTrue
     end
 
+    @[AlwaysInline]
+    protected def vm_merge_kw
+      hash2 = pop 
+      hash1 = topn(0)
+      Internal.lc_hash_o_merge(hash1, hash2) # Check if kwsplat is a hash is done here
+    end
+
     #######################################
     # __     ____  __      _    ____ ___  #
     # \ \   / /  \/  |    / \  |  _ \_ _| #
