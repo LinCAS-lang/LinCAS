@@ -31,7 +31,7 @@ module LinCAS
     # pointer before the call args (and before pushing a new frame)
     macro set_stack_consistency_trace(offset)
       %sp = @sp - ({{offset}})
-      puts "Setting trace: [sp: #{%sp}] [rsp: #{@sp}}]"
+      debug "Setting trace: [sp: #{%sp}] [rsp: #{@sp}}]"
       @current_frame.sp = %sp
       @current_frame.real_sp = @sp
     end
