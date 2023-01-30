@@ -85,21 +85,32 @@ module LinCAS
   # This is immutable. Its definition 
   # happens at compile time
   class CallInfo
-    getter argc, kwarg, name
-    property explicit, block, splat, dbl_splat
+    getter argc, kwarg, name, explicit, block, splat, dbl_splat, block_param
     def initialize(@name : String, 
                    @argc : Int32, 
                    @kwarg : Array(String)?, 
                    @explicit : Bool = true, 
-                   @block : ISeq? = nil
+                   @block : ISeq? = nil,
+                   @block_param = false
                   )
       @splat = false
       @dbl_splat = false 
     end
 
+    def initialize(@name : String, 
+      @argc : Int32, 
+      @splat : Bool,
+      @dbl_splat : Bool, 
+      @kwarg : Array(String)?, 
+      @explicit : Bool = true, 
+      @block : ISeq? = nil,
+      @block_param = false
+     )
+    end
+
     @[AlwaysInline]
     def has_kwargs?
-      return @kwarg && !@kwarg.not_nil!.empty?
+      return !!@kwarg && !@kwarg.not_nil!.empty?
     end
   end
 
