@@ -1210,7 +1210,11 @@ module LinCAS
         end 
       end 
 
-      arg = parse_op_assign 
+      arg = parse_op_assign
+      
+      if double_splat && splat != :double
+        parser_raise "Argument not allowed after double splat", arg.location
+      end
 
       case splat
       when :single 

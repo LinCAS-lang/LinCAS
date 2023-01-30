@@ -161,6 +161,9 @@ describe Parser do
 
   it_parses_multiple ["foo(&:to_s)", "foo &:to_s"], Call.new(nil, "foo", block_param: Block.new(["__temp1".variable] of Node, -1, Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK)))
   it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo", block_param: "block".variable)
+  it_parses_multiple ["foo(1, *splat, **dblsplat, a: 10, &block)", "foo 1, *splat, **dblsplat, a: 10, &block"], Call.new(nil, "foo", [1.int, Splat.new("splat".variable), DoubleSplat.new("dblsplat".variable)] of Node, [NamedArg.new("a", 10.int)], "block".variable)
+  assert_syntax_error "foo **splat, 12", "Argument not allowed after double splat"
+  assert_syntax_error "foo **splat, *other", "Splat not allowed after double splat"
 
   it_parses_single "a := 12", Assign.new("a".variable, 12.int)
   it_parses_single "a := b := 1", Assign.new("a".variable, Assign.new("b".variable, 1.int))
