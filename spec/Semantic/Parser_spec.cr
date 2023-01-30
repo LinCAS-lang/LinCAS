@@ -215,26 +215,26 @@ describe Parser do
                       "let func(a, \nb) {}",
                       "let func(\na, \nb) {}",
                       "let func(\na, \nb\n) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg]), Body.new, symtab(SymType::METHOD) << "a" << "b")
-  it_parses_multiple ["let func a, b=1 {}",
-                      "let func(a, b=1) {}",
-                      "let func a, \nb=\n1 {}",
-                      "let func(a, \nb=\n1) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int)], 1), Body.new, symtab(SymType::METHOD) << "a" << "b")
-  it_parses_multiple ["let func a, b=1, *splat {}",
-                      "let func(a, b=1, *splat) {}",
-                      "let func(a, \nb=\n1, \n*splat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg], 1, 2), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat")
-  it_parses_multiple ["let func a, b=1, *splat, k: 2 {}",
-                      "let func a, b=1, *splat, k: \n2 {}",
-                      "let func(a, b=1, *splat, k: 2) {}",
-                      "let func(a, b=1, *splat, k: \n2) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int)], 1, 2, 1), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k")
-  it_parses_multiple ["let func a, b=1, *splat, k: 2, **dblsplat {}",
-                      "let func a, b=1, *splat, k: 2, \n **dblsplat {}",
-                      "let func(a, b=1, *splat, k: 2, **dblsplat) {}",
-                      "let func(a, b=1, *splat, k: 2, \n **dblsplat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int), "dblsplat".arg], 1, 2, 1, 4), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k" << "dblsplat")
-  it_parses_multiple ["let func a, b=1, *splat, k: 2, **dblsplat, &block {}",
-                      "let func a, b=1, *splat, k: 2, **dblsplat, \n &block {}",
-                      "let func(a, b=1, *splat, k: 2, **dblsplat, &block) {}",
-                      "let func(a, b=1, *splat, k: 2, **dblsplat, \n&block) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int), "dblsplat".arg, "block".arg], 1, 2, 1, 4, true), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k" << "dblsplat" << "block")
-  it_parses_multiple ["let func a = 1 {}", "let func(a=1) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg("1".int)], 1), Body.new, symtab(SymType::METHOD) << "a")
+  it_parses_multiple ["let func a, b:=1 {}",
+                      "let func(a, b:=1) {}",
+                      "let func a, \nb:=\n1 {}",
+                      "let func(a, \nb:=\n1) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int)], 1), Body.new, symtab(SymType::METHOD) << "a" << "b")
+  it_parses_multiple ["let func a, b:=1, *splat {}",
+                      "let func(a, b:=1, *splat) {}",
+                      "let func(a, \nb:=\n1, \n*splat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg], 1, 2), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat")
+  it_parses_multiple ["let func a, b:=1, *splat, k: 2 {}",
+                      "let func a, b:=1, *splat, k: \n2 {}",
+                      "let func(a, b:=1, *splat, k: 2) {}",
+                      "let func(a, b:=1, *splat, k: \n2) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int)], 1, 2, 1), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k")
+  it_parses_multiple ["let func a, b:=1, *splat, k: 2, **dblsplat {}",
+                      "let func a, b:=1, *splat, k: 2, \n **dblsplat {}",
+                      "let func(a, b:=1, *splat, k: 2, **dblsplat) {}",
+                      "let func(a, b:=1, *splat, k: 2, \n **dblsplat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int), "dblsplat".arg], 1, 2, 1, 4), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k" << "dblsplat")
+  it_parses_multiple ["let func a, b:=1, *splat, k: 2, **dblsplat, &block {}",
+                      "let func a, b:=1, *splat, k: 2, **dblsplat, \n &block {}",
+                      "let func(a, b:=1, *splat, k: 2, **dblsplat, &block) {}",
+                      "let func(a, b:=1, *splat, k: 2, **dblsplat, \n&block) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg, "b".arg("1".int), "splat".arg, "k".arg("2".int), "dblsplat".arg, "block".arg], 1, 2, 1, 4, true), Body.new, symtab(SymType::METHOD) << "a" << "b" << "splat" << "k" << "dblsplat" << "block")
+  it_parses_multiple ["let func a := 1 {}", "let func(a:=1) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["a".arg("1".int)], 1), Body.new, symtab(SymType::METHOD) << "a")
   it_parses_multiple ["let func k: 1 {}","let func(k: 1) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["k".arg("1".int)], kwargc: 1), Body.new, symtab(SymType::METHOD) << "k")
   it_parses_multiple ["let func *splat {}","let func(*splat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["splat".arg], splat_index: 0), Body.new, symtab(SymType::METHOD) << "splat")
   it_parses_multiple ["let func **splat {}","let func(**splat) {}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "func", Params.new(["splat".arg], double_splat_index: 0), Body.new, symtab(SymType::METHOD) << "splat")
@@ -263,9 +263,9 @@ describe Parser do
   assert_syntax_error "let func **splat, *splat2 {}", "Splat or double splat already defined"
   assert_syntax_error "let func **splat, **splat2 {}", "Double splat already defined"
   assert_syntax_error "let func *splat, a {}", "Unexpected local variable a"
-  assert_syntax_error "let func a = 0, b {}", "Unexpected local variable b"
+  assert_syntax_error "let func a := 0, b {}", "Unexpected local variable b"
   assert_syntax_error "let func a: 0, b {}", "Unexpected local variable b"
   assert_syntax_error "let func **splat, b: 1 {}", "Unexpected token ':'"
-  assert_syntax_error "let func **splat, b = 1 {}", "Unexpected token '='"
+  assert_syntax_error "let func **splat, b := 1 {}", "Unexpected token ':='"
   assert_syntax_error "let func=.wrong {}", "Unexpected token '.'"
 end

@@ -675,7 +675,7 @@ module LinCAS
             kwargc += 1
           else
             skip_space
-            if @token.type == :"="
+            if @token.type == :":="
               unexpected_token(end_tk) if splat || kwargc > 0 || double_splat
               enable_regex
               next_token_skip_space_or_newline
