@@ -156,6 +156,7 @@ module LinCAS
         debug("executing instruction #{is}:#{op}")
         case is 
         when .noop?
+          # nothing to do
         when .setlocal?
           offset = next_is.value
           vm_setlocal(offset, op, topn(0))
