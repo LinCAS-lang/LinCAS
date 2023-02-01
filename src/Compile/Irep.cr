@@ -118,6 +118,16 @@ module LinCAS
     def has_kwargs?
       return !!@kwarg && !@kwarg.not_nil!.empty?
     end
+
+    @[AlwaysInline]
+    def args_on_stack
+      return @argc + (has_kwargs? ? @kwarg.not_nil!.size : 0)
+    end
+
+    @[AlwaysInline]
+    def argc_before_splat
+      return @argc - (@splat ? 1:0) - (@dbl_splat ? 1:0)
+    end
   end
 
   class ISeq
@@ -182,6 +192,21 @@ module LinCAS
         @kwargc == 0 &&
         @dbl_splat == -1 &&
         @block_arg == -1
+      end
+
+      @[AlwaysInline]
+      def splat?
+        @splat >= 0
+      end
+
+      @[AlwaysInline]
+      def dbl_splat?
+        @dbl_splat >= 0
+      end
+
+      @[AlwaysInline]
+      def kwargs?
+        @kwargc > 0
       end
     end
 

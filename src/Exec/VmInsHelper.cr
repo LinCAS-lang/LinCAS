@@ -277,7 +277,16 @@ module LinCAS
     protected def vm_merge_kw
       hash2 = pop 
       hash1 = topn(0)
+      vm_ensure_type hash1, Internal::LcHash
       Internal.lc_hash_o_merge(hash1, hash2) # Check if kwsplat is a hash is done here
+    end
+
+    protected def vm_array_append
+      elem = pop 
+      array = topn(0)
+      vm_ensure_type array, Internal::LcArray
+      array = array.as(Ary)
+      array << elem
     end
 
     #######################################

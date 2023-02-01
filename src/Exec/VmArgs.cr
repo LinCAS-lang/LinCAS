@@ -20,7 +20,24 @@ module LinCAS
       vm_set_up_splat({{ci}}, {{calling}}) if {{ci}}.splat
     end
 
-    def vm_check_arity(expected, given)
+    macro migrate_args_from_splat(env, from, rest, splat, offset = 0)
+      {{rest}}.times do |i|
+        {{env}}[{{from}} + i] = {{splat}}[{{offset}} + i]
+      end
+    end
+
+    @[AlwaysInline]
+    private def get_splat(index)
+      splat = topn(index)
+      vm_ensure_type splat, Internal::LcArray
+      return splat.as(Ary)
+    end
+
+    def vm_check_arity(min, max, given)
+      debug "Arg check: min:#{min}, max:#{max}, given: #{given}"
+      unless min <= given <= max
+        raise "Wrong number of arguments (given #{given}, expected #{max == Float32::INFINITY ? "#{min}+" : min..max})"
+      end
     end
 
     ##
@@ -52,15 +69,18 @@ module LinCAS
         calling.argc -= 1
         vm_set_up_splat(ci, calling) if ci.splat
       end
+      # MISSING : arity check
     end
 
     def vm_setup_iseq_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
       if arg_info.arg_simple? && (!ci.dbl_splat || !ci.has_kwargs?)
+        debug "Setting up arg simple"
         vm_setup_args_fast_track(ci, calling)
-        vm_check_arity(arg_info.argc, calling.argc)
+        vm_check_arity(arg_info.argc, arg_info.argc, calling.argc)
         vm_migrate_args(env, calling)
         return 0
       else
+        debug "Setting up arg complex"
         return vm_setup_arg_complex(env, arg_info, ci, calling)
       end
     end
@@ -100,15 +120,145 @@ module LinCAS
       calling.argc -= (kwtable.size - 1)
     end
 
-    def vm_setup_arg_complex(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
-      # Argument migration to env is done directly here, stack is left unchanged
+    struct Args
+      def initialize(
+        @orig_argc : Int32, # relative start of args
+        @argc : Int32, # number of args befpre splat
+        @splat : Bool = false,
+        @kwsplat : Bool = false,
+        @kwarg : Bool = false,
+        @splat_index = 0
+      ) 
+        @_splat = nil.as(Ary?)
+      end
+      property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat
     end
 
+
+    def vm_setup_arg_complex(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
+      min_argc = arg_info.argc
+      max_argc = arg_info.splat? ? Float32::INFINITY : min_argc + arg_info.optc
+      iseq_offset = 0
+
+      args = Args.new(calling.argc, ci.argc_before_splat, ci.splat, ci.dbl_splat, ci.has_kwargs?)
+      
+      # If the method has no kwsplat or kwarguments, then we treat everything
+      # as a positional argument of type hash, or inserted in splat, if present
+      if !(arg_info.kwargs? && arg_info.dbl_splat?)
+        if ci.has_kwargs?
+          vm_set_up_kwargs(ci, calling)
+          if ci.dbl_splat
+            vm_merge_kw # To check hash dupped
+            calling.argc -= 1
+          end
+          args.kwarg = false
+        end
+        if ci.splat && (ci.dbl_splat || ci.has_kwargs?)
+          vm_array_append # Splat array is always dupped
+          calling.argc -= 1
+          args.kwsplat = false
+        elsif ci.dbl_splat || ci.has_kwargs?
+          args.argc += 1 # kwargs or kwsplat are countes as a positional argument
+        end
+        args.orig_argc = calling.argc
+      end
+
+      given_argc = args.argc # splat and double splat not counted yet
+
+      if ci.splat
+        index = calling.argc - args.argc - 1
+        splat = get_splat index
+        given_argc += splat.size - 1 # removing the splat in the counting
+        args._splat = splat
+      end
+
+      vm_check_arity(min_argc, max_argc, given_argc)
+
+      if arg_info.argc > 0
+        args = args_setup_positional(env, arg_info, args)
+      end
+      if arg_info.optc > 0
+        iseq_offset, args = args_setup_opt(env, arg_info, args)
+      end
+
+      puts "Iseq offset #{iseq_offset}"
+      return iseq_offset
+    end
+
+    private def args_setup_positional(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
+      elem_p = @sp - args.orig_argc
+      offset = 0
+      if arg_info.argc <= args.argc
+        vm_migrate_args env, elem_p, offset, arg_info.argc
+        args.orig_argc -= arg_info.argc
+        args.argc -= arg_info.argc
+      else
+        lc_bug "Failed to detect missing arguments" unless args.splat
+        vm_migrate_args env, elem_p, offset, args.argc
+        splat = args._splat.not_nil!
+        from = args.argc
+        args.splat_index = rest = arg_info.argc - from
+        migrate_args_from_splat(env, from, rest, splat)
+        args.orig_argc -= args.argc
+        args.argc = 0
+      end
+      return args
+    end
+
+    private def args_setup_opt(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
+      elem_p = @sp - args.orig_argc 
+      offset = arg_info.argc # opt start in env
+      optc = arg_info.optc
+      if optc <= args.argc
+        # All the opt args are already on stack
+        puts "Migrating #{optc} args"
+        vm_migrate_args(env, elem_p, offset, optc)
+        args.orig_argc -= optc
+        args.argc      -= optc
+        iseq_offset     = arg_info.opt_table[optc]
+      else
+        # we have some opt arg on stack, maybe a splat too
+        vm_migrate_args(env, elem_p, offset, args.argc)
+        if args.splat
+          # partial or zero opt args are on stack, but we have a splat
+          splat       = args._splat.not_nil!
+          splat_index = args.splat_index
+          from        = arg_info.argc + args.argc
+          if splat.size - splat_index >= optc - args.argc
+            # splat has all the opt_args (we don't care if splat has more)
+            migrate_args_from_splat(env, from, optc, splat, splat_index)
+            args.splat_index += optc
+            iseq_offset       = arg_info.opt_table[optc]
+          else
+            # Splat has only partial opt args
+            rest = splat.size - splat_index
+            migrate_args_from_splat(env, from, rest, splat, splat_index)
+            iseq_offset = arg_info.opt_table[rest]
+          end
+        else
+          iseq_offset = arg_info.opt_table[args.argc]
+        end
+        args.orig_argc -= args.argc
+        args.argc = 0 
+      end
+      puts iseq_offset
+      return {iseq_offset, args}
+    end
+
+    @[AlwaysInline]
     private def vm_migrate_args(env : VM::Environment, calling : VM::CallingInfo)
-      elem_p = offset = @sp - calling.argc
-      while elem_p < @sp
-        env[elem_p - offset] = @stack[elem_p]
-        elem_p += 1
+      vm_migrate_args env, (@sp - calling.argc), 0, calling.argc
+    end
+
+    @[AlwaysInline]
+    private def vm_migrate_args(env : VM::Environment, elem_p, offset, count)
+      # Unsafe code!
+      env_p = env.to_unsafe + offset
+      stack_p = @stack.ptr + elem_p
+      count.times do
+        env_p.value = stack_p.value
+        env_p += 1
+        stack_p += 1
       end
     end
   end
