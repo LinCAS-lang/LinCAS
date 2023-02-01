@@ -181,7 +181,6 @@ module LinCAS
         iseq_offset, args = args_setup_opt(env, arg_info, args)
       end
 
-      puts "Iseq offset #{iseq_offset}"
       return iseq_offset
     end
 
@@ -211,7 +210,6 @@ module LinCAS
       optc = arg_info.optc
       if optc <= args.argc
         # All the opt args are already on stack
-        puts "Migrating #{optc} args"
         vm_migrate_args(env, elem_p, offset, optc)
         args.orig_argc -= optc
         args.argc      -= optc
@@ -241,7 +239,6 @@ module LinCAS
         args.orig_argc -= args.argc
         args.argc = 0 
       end
-      puts iseq_offset
       return {iseq_offset, args}
     end
 
