@@ -171,7 +171,8 @@ module LinCAS
           args.kwarg = false
         end
         if ci.splat && (ci.dbl_splat || ci.has_kwargs?)
-          vm_array_append # Splat array is always dupped
+          value = pop
+          vm_array_append(topn(0), value) # Splat array is always dupped
           calling.argc -= 1
           args.kwsplat = false
         elsif ci.dbl_splat || ci.has_kwargs?
