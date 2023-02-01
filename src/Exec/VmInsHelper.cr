@@ -277,17 +277,24 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_merge_kw(hash1, hash2)
+    protected def vm_merge_kw(hash1 : LcVal, hash2 : LcVal)
       vm_ensure_type hash1, Internal::LcHash
       Internal.lc_hash_o_merge(hash1, hash2) # Check if kwsplat is a hash is done here
     end
 
-    protected def vm_array_append
-      elem = pop 
-      array = topn(0)
+    protected def vm_splat_array(value : LcVal)
+      if value.is_a? Internal::LcArray
+        return Internal.lc_ary_clone(value)
+      else
+        # TODO: check if value implements to_a
+        return Internal.build_ary(1, value)
+      end
+    end
+
+    protected def vm_array_append(array : LcVal, value : LcVal)
       vm_ensure_type array, Internal::LcArray
-      array = array.as(Ary)
-      array << elem
+      array = lc_recast(array, Ary)
+      array << value
     end
 
     #######################################

@@ -265,10 +265,20 @@ module LinCAS
         when .jumpf?
         when .jump?
         when .jumpf_and_pop?
+        when .check_kw?
+        when .splat_array?
+          ary = pop
+          obj = vm_splat_array(ary)
+          push(obj)
+        when .concat_array?
+        when .array_append?
+          value = pop
+          vm_array_append(topn(0), value)
         when .merge_kw?
           hash2 = pop 
           hash1 = topn(0)
           vm_merge_kw(hash1, hash1)
+        when .dup_hash?
         when .make_range?
         when .leave?
           if vm_pop_control_frame
