@@ -367,6 +367,9 @@ module LinCAS
     end
 
     class CallingInfo
+      # me: self
+      # argc: number of args on stack
+      # block: block handler
       def initialize(@me : LcVal, @argc : Int32, @block : BlockHandler? = nil)
       end
 
