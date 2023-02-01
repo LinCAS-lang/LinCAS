@@ -105,10 +105,14 @@ module LinCAS
       env[offset]
     end
 
+    @[AlwaysInline]
     protected def vm_setinstance_v(name : String, me : LcVal, value : LcVal)
+      me.data[name] = value
     end
 
+    @[AlwaysInline]
     protected def vm_getinstance_v(name : String, me : LcVal)
+      return (value = me.data[name]?) ? value : Null
     end
 
     protected def vm_setclass_v(name : String, me : LcVal, value : LcVal)

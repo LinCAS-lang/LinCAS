@@ -188,7 +188,7 @@ module LinCAS
           name = @current_frame.names[op]
           me   = pop
           value = vm_getinstance_v(name, me)
-          # push(value)
+          push(value)
         when .setclass_v?
           name  = @current_frame.names[op]
           value = pop 
