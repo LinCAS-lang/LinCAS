@@ -865,7 +865,7 @@ module LinCAS
         block = parse_block(block, @stop_on_do)
       end
 
-      if block || block_arg || named_args
+      if block || block_arg || named_args || has_parenthesis
         node = Call.new(nil, name, args, named_args, block_arg, block, has_parenthesis)
       else 
         if args 
@@ -1070,7 +1070,7 @@ module LinCAS
         check :")"
         disable_regex
         next_token_skip_space
-        return CallArgs.new args.empty? ? nil : args, nil, nil, nil, false
+        return CallArgs.new args.empty? ? nil : args, nil, nil, nil, true, false
       when :SPACE 
         disable_regex
         next_token
