@@ -30,7 +30,7 @@ module LinCAS
     private def get_splat(index)
       splat = topn(index)
       vm_ensure_type splat, Internal::LcArray
-      return splat.as(Ary)
+      return lc_recast(splat, Ary) # Force casting to Ary
     end
 
     def vm_check_arity(min, max, given)

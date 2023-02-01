@@ -118,6 +118,14 @@ module LinCAS::Internal
       {{obj}}.as({{type}})
     end
 
+    ##
+    # It forces the casting of an object.
+    # Mainly used to cast LcArray to its wrapper Ary.
+    # This is very unsafe. Use carefully
+    macro lc_recast(obj, type)
+      Pointer(Void).new({{obj}}.object_id).as({{type}})
+    end
+
     macro current_filedir
       Exec.get_current_filedir 
     end
