@@ -65,7 +65,8 @@ module LinCAS
         vm_setup_args_fast_track(ci, calling)
       elsif ci.has_kwargs? && ci.dbl_splat
         vm_set_up_kwargs(ci, calling)
-        vm_merge_kw
+        hash = pop
+        vm_merge_kw(topn(0), hash)
         calling.argc -= 1
         vm_set_up_splat(ci, calling) if ci.splat
       end
@@ -163,7 +164,8 @@ module LinCAS
         if ci.has_kwargs?
           vm_set_up_kwargs(ci, calling)
           if ci.dbl_splat
-            vm_merge_kw # To check hash dupped
+            hash = pop
+            vm_merge_kw(topn(0), hash) # To check if hash1 dupped
             calling.argc -= 1
           end
           args.kwarg = false

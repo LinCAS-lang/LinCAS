@@ -277,9 +277,7 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_merge_kw
-      hash2 = pop 
-      hash1 = topn(0)
+    protected def vm_merge_kw(hash1, hash2)
       vm_ensure_type hash1, Internal::LcHash
       Internal.lc_hash_o_merge(hash1, hash2) # Check if kwsplat is a hash is done here
     end
