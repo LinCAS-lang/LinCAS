@@ -195,7 +195,7 @@ module LinCAS
           value = pop 
           me    = pop
           vm_setclass_v(name, me, value)
-          # push(value)
+          push(value)
         when .getclass_v?
           name = @current_frame.names[op]
           me   = pop
@@ -206,7 +206,7 @@ module LinCAS
           value = pop 
           me    = pop
           vm_storeconst(name, me, value)
-          # push(value)
+          push(value)
         when .getconst?
           name  = @current_frame.names[op]
           me    = pop
