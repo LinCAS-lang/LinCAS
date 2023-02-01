@@ -120,16 +120,27 @@ module LinCAS
       calling.argc -= (kwtable.size - 1)
     end
 
+    ##
+    # Keeps the info of the args on stack.
+    # the abstraction is:
+    # [positional][splat][kwsplat][kw values]
+    # <-- argc -->
+    # ^ orig_argc
+    # Everytime positional arguments are consumed,
+    # orig_argc and argc are adjusted to point to the
+    # remaining ones (if any).
+    # if argc == 0, then orig_argc points to one of
+    # the following elements, if provided by the call.
     struct Args
       def initialize(
         @orig_argc : Int32, # relative start of args
-        @argc : Int32, # number of args befpre splat
+        @argc : Int32, # number of args before splat
         @splat : Bool = false,
         @kwsplat : Bool = false,
         @kwarg : Bool = false,
         @splat_index = 0
       ) 
-        @_splat = nil.as(Ary?)
+        @_splat = nil.as(Ary?) # Caches splat
       end
       property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat
     end
@@ -143,7 +154,11 @@ module LinCAS
       args = Args.new(calling.argc, ci.argc_before_splat, ci.splat, ci.dbl_splat, ci.has_kwargs?)
       
       # If the method has no kwsplat or kwarguments, then we treat everything
-      # as a positional argument of type hash, or inserted in splat, if present
+      # as a positional argument of type hash, or inserted in splat, if present.
+      # the idea is to organise things like this on stack:
+      # [positional][splat]
+      # <-- argc -->      ^ @sp
+      # ^ orig_argc
       if !(arg_info.kwargs? && arg_info.dbl_splat?)
         if ci.has_kwargs?
           vm_set_up_kwargs(ci, calling)
@@ -158,7 +173,7 @@ module LinCAS
           calling.argc -= 1
           args.kwsplat = false
         elsif ci.dbl_splat || ci.has_kwargs?
-          args.argc += 1 # kwargs or kwsplat are countes as a positional argument
+          args.argc += 1 # kwargs or kwsplat are counted as a positional argument
         end
         args.orig_argc = calling.argc
       end
@@ -188,10 +203,12 @@ module LinCAS
       elem_p = @sp - args.orig_argc
       offset = 0
       if arg_info.argc <= args.argc
+        # All positional arguments are already in args.argc
         vm_migrate_args env, elem_p, offset, arg_info.argc
         args.orig_argc -= arg_info.argc
         args.argc -= arg_info.argc
       else
+        # Positional arguments are partially in args.argc and splat
         lc_bug "Failed to detect missing arguments" unless args.splat
         vm_migrate_args env, elem_p, offset, args.argc
         splat = args._splat.not_nil!
