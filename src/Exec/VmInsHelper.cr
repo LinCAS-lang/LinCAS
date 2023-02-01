@@ -174,7 +174,6 @@ module LinCAS
 
     private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       vm_setup_args_internal_or_python(ci, calling)
-      vm_check_arity(method.arity, calling.argc)
       argv = vm_collect_args(method.arity, calling)
 
       set_stack_consistency_trace(calling.argc + 1)
