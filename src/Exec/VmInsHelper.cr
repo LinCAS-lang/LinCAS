@@ -208,7 +208,7 @@ module LinCAS
       
       set_stack_consistency_trace(calling.argc + 1)
       vm_push_control_frame(calling.me, iseq, env, VM::VmFrame::UCALL_FRAME)
-      @current_frame.sp += offset
+      @current_frame.pc += offset
     end 
 
     private def vm_call_python()
