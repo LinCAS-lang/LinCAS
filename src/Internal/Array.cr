@@ -228,6 +228,14 @@ module LinCAS::Internal
         end 
     end
 
+    def self.build_ary(size : IntnumR, *args : LcVal)
+        ary = build_ary size
+        args.each do |arg|
+            lc_ary_push(ary, arg)
+        end
+        return ary
+    end
+
     @[AlwaysInline]
     def self.build_ary_new
         ary = new_ary
