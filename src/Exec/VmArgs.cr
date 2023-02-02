@@ -21,7 +21,7 @@ module LinCAS
     end
 
     macro migrate_args_from_splat(env, from, rest, splat, offset = 0)
-      {{rest}}.times do |i|
+      ({{rest}}).times do |i|
         {{env}}[{{from}} + i] = {{splat}}[{{offset}} + i]
       end
     end
@@ -191,12 +191,14 @@ module LinCAS
       end
 
       vm_check_arity(min_argc, max_argc, given_argc)
-
       if arg_info.argc > 0
         args = args_setup_positional(env, arg_info, args)
       end
       if arg_info.optc > 0
         iseq_offset, args = args_setup_opt(env, arg_info, args)
+      end
+      if arg_info.splat?
+        args_setup_splat(env, arg_info, args)
       end
 
       return iseq_offset
@@ -244,13 +246,14 @@ module LinCAS
           from        = arg_info.argc + args.argc
           if splat.size - splat_index >= optc - args.argc
             # splat has all the opt_args (we don't care if splat has more)
-            migrate_args_from_splat(env, from, optc, splat, splat_index)
-            args.splat_index += optc
+            migrate_args_from_splat(env, from, optc - args.argc, splat, splat_index)
+            args.splat_index += optc - args.argc
             iseq_offset       = arg_info.opt_table[optc]
           else
             # Splat has only partial opt args
             rest = splat.size - splat_index
             migrate_args_from_splat(env, from, rest, splat, splat_index)
+            args.splat_index = splat.size.to_i32
             iseq_offset = arg_info.opt_table[rest]
           end
         else
@@ -260,6 +263,55 @@ module LinCAS
         args.argc = 0 
       end
       return {iseq_offset, args}
+    end
+
+    private def args_setup_splat(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
+      argc = args.argc
+      if args.splat
+        ary = splat = args._splat.not_nil!
+        if argc == 0
+          if args.splat_index == 0
+            # Splat is just the given splat
+
+            # nothing to do here
+            debug "Setting up splat = given splat"
+          else
+            # splat is just partial. Shift the remaining values to the left
+            # unsafe code below
+            debug "Setting up remaining splat"
+            size = splat.size - args.splat_index
+            splat.ptr.move_from(splat.ptr + args.splat_index, size)
+            splat.size = size
+          end
+        else
+          debug "Setting up splat stack + splat"
+          # we have some arg left on stack + splat
+          # unsafe code below
+          new_capa = splat.size + argc
+          if new_capa > splat.total_size
+            splat.ptr = splat.ptr.realloc(new_capa)
+            splat.total_size = new_capa
+          end
+          tmp = splat.ptr + argc
+          tmp.move_from(splat.ptr, splat.size)
+          tmp -= argc
+          tmp.copy_from(@stack.ptr + (@sp - args.orig_argc), argc)
+          splat.size = new_capa
+        end
+      elsif argc > 0
+        # we have no splat given, but we have args left on stack
+        debug "Setting up splat from stack"
+        ary = Ary.new argc
+        orig_argc = args.orig_argc
+        argc.times do |i|
+          ary[i] = topn(orig_argc - i - 1) # Slower code, but safe
+        end
+      else
+        # splat is just an empty array
+        debug "Setting up empty splat"
+        ary = Internal.build_ary_new
+      end
+      env[arg_info.splat] = ary
     end
 
     @[AlwaysInline]
