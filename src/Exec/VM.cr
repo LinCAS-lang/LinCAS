@@ -266,6 +266,8 @@ module LinCAS
         when .jump?
         when .jumpf_and_pop?
         when .check_kw?
+          value = vm_check_kw(op)
+          push(value)
         when .splat_array?
           ary = pop
           obj = vm_splat_array(ary)

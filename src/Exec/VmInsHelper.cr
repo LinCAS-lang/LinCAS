@@ -297,6 +297,11 @@ module LinCAS
       array << value
     end
 
+    @[AlwaysInline]
+    protected def vm_check_kw(index : UInt64)
+      return (@current_frame.env.kw_bit & (1 << index)).zero? ? LcFalse : LcTrue
+    end
+
     #######################################
     # __     ____  __      _    ____ ___  #
     # \ \   / /  \/  |    / \  |  _ \_ _| #
