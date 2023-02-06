@@ -232,6 +232,7 @@ module LinCAS
       optc = arg_info.optc
       if optc <= args.argc
         # All the opt args are already on stack
+        debug("Setting up opt args from stack")
         vm_migrate_args(env, elem_p, offset, optc)
         args.orig_argc -= optc
         args.argc      -= optc
@@ -241,16 +242,19 @@ module LinCAS
         vm_migrate_args(env, elem_p, offset, args.argc)
         if args.splat
           # partial or zero opt args are on stack, but we have a splat
+          debug("Setting up opt args from stack + splat")
           splat       = args._splat.not_nil!
           splat_index = args.splat_index
           from        = arg_info.argc + args.argc
           if splat.size - splat_index >= optc - args.argc
             # splat has all the opt_args (we don't care if splat has more)
+            debug("Setting up opt args from splat (complete)")
             migrate_args_from_splat(env, from, optc - args.argc, splat, splat_index)
             args.splat_index += optc - args.argc
             iseq_offset       = arg_info.opt_table[optc]
           else
             # Splat has only partial opt args
+            debug("Setting up opt args from splat (partial)")
             rest = splat.size - splat_index
             migrate_args_from_splat(env, from, rest, splat, splat_index)
             args.splat_index = splat.size.to_i32
