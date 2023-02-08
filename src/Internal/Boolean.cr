@@ -15,19 +15,20 @@
 
 module LinCAS::Internal
 
-    class LcBTrue  < LcVal
+    abstract class LcBool < LcVal
+    end
+
+    class LcBTrue  < LcBool
         def to_s 
             return "true"
         end
     end
 
-    class LcBFalse  < LcVal 
+    class LcBFalse  < LcBool 
         def to_s 
             return "false"
         end
     end
-
-    alias LcBool = LcBTrue | LcBFalse
 
     @[AlwaysInline]
     def self.val2bool(value : Bool)
