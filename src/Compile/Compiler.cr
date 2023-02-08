@@ -268,9 +268,10 @@ module LinCAS
             set_line(method, arg.location)
             encoded << (IS::CHECK_KW | IS.new((i - start).to_u64))
             jump_index = encoded.size
-            encoded << IS::JUMPF
+            encoded << IS::JUMPT
             compile_each(method, default)
             encoded << (IS::SETLOCAL_0 | IS.new(index))
+            encoded << IS::POP
             # Jump to end of instructions
             encoded[jump_index] |= IS.new(encoded.size.to_u64)
           else
