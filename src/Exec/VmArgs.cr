@@ -33,11 +33,23 @@ module LinCAS
       return lc_recast(splat, Ary) # Force casting to Ary
     end
 
+    @[AlwaysInline]
+    private def get_kwsplat(index)
+      kwsplat = topn(index)
+      vm_ensure_type kwsplat, Internal::LcHash
+      return lc_cast(kwsplat, Internal::LcHash)
+    end
+
     def vm_check_arity(min, max, given)
       debug "Arg check: min:#{min}, max:#{max}, given: #{given}"
       unless min <= given <= max
         raise "Wrong number of arguments (given #{given}, expected #{max == Float32::INFINITY ? "#{min}+" : min..max})"
       end
+    end
+
+    def argument_kwerror(reason : String, kws : Array(String))
+      error = "#{reason} keyword(s) #{kws}"
+      raise error
     end
 
     ##
@@ -141,9 +153,10 @@ module LinCAS
         @kwarg : Bool = false,
         @splat_index = 0
       ) 
+        @_kwsplat = nil.as(Internal::LcHash?) # Caches double splat
         @_splat = nil.as(Ary?) # Caches splat
       end
-      property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat
+      property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat, _kwsplat
     end
 
 
@@ -160,7 +173,8 @@ module LinCAS
       # [positional][splat]
       # <-- argc -->      ^ @sp
       # ^ orig_argc
-      if !(arg_info.kwargs? && arg_info.dbl_splat?)
+      if !arg_info.kwargs? && !arg_info.dbl_splat?
+        debug("Simplifying stack for simple call args")
         if ci.has_kwargs?
           vm_set_up_kwargs(ci, calling)
           if ci.dbl_splat
@@ -190,6 +204,11 @@ module LinCAS
         args._splat = splat
       end
 
+      if ci.dbl_splat
+        # we just cache the double splat for later use
+        args._kwsplat = get_kwsplat (ci.kwarg ? ci.kwarg.not_nil!.size : 0)
+      end
+
       vm_check_arity(min_argc, max_argc, given_argc)
       if arg_info.argc > 0
         args = args_setup_positional(env, arg_info, args)
@@ -200,6 +219,23 @@ module LinCAS
       if arg_info.splat?
         args_setup_splat(env, arg_info, args)
       end
+
+      # We may not have kw args from the call (ci.kwarg)
+      # so we pass an empty static array instead. This is
+      # a small memory optimization
+      tmp = uninitialized String[0]
+      if arg_info.kwargc > 0
+        args_setup_kw(env, arg_info, args, ci.kwarg || tmp)
+      end
+
+      # At this point we have consumed all the arguments before splat
+      # and the splat itself. We are also sure that all the explicit
+      # keywords are set. We just miss to set up a double splat if existing.
+      # In case the method doesn't we have to throw an error on every extra
+      # keyword argument provided.
+      # The following method behaves differently then the previous ones and
+      # it is delegated to raise the error
+      args_setup_kwsplat(env, arg_info, args, ci.kwarg || tmp)
 
       return iseq_offset
     end
@@ -316,6 +352,88 @@ module LinCAS
         ary = Internal.build_ary_new
       end
       env[arg_info.splat] = ary
+    end
+
+    # kw is an array of strings or an empty static array. 
+    # We leave the compiler infer the type
+    private def args_setup_kw(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args, kw)
+      debug("Setting up keyword arguments")
+      kw_bit = 0u64
+      kw_relative_start = kw.size - 1
+      kwsplat = args._kwsplat # get from cached object. Could be nil...
+      env_relative_start = arg_info.argc + arg_info.optc + (arg_info.splat? ? 1:0)
+
+      vm_ensure_type kwsplat, Internal::LcHash if kwsplat
+      missing = nil
+      kwrest  = nil
+
+      arg_info.named_args.each do |name, (index, mandatory)|
+        if kw.includes? name
+          kw_index = kw.index! name
+          env[index] = topn(kw_relative_start - kw_index)
+          kw_bit |= 0x01 << (index - env_relative_start)
+        elsif kwsplat
+          sym = Internal.string2sym(name)
+          if Internal.hash_has_key(kwsplat, sym)
+            value = Internal.lc_hash_fetch(kwsplat, Internal.string2sym(name))
+            env[index] = value
+            kw_bit |= 0x01 << (index - env_relative_start)
+          else
+            missing = [] of String unless missing
+            missing << name if mandatory
+          end
+        elsif mandatory
+          missing = [] of String unless missing
+          missing << name
+        else
+          # do nothing
+        end
+      end
+      argument_kwerror "Missing", missing if missing && !missing.empty?
+      env.kw_bit = kw_bit
+    end
+
+    private def args_setup_kwsplat(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args, kw)
+      kwsplat = args._kwsplat
+      allowed_kw = arg_info.kwargs? ? arg_info.named_args : NamedTuple.new
+      total_kw = kw.size + (kwsplat ? kwsplat.size:0) - env.kw_bit.popcount # total kw passed - total kw matched
+      if total_kw == 0
+        env[arg_info.dbl_splat] = Internal.build_hash if arg_info.dbl_splat?
+        # otherwise do nothing
+      elsif !arg_info.dbl_splat?
+        # we have unknown keywords
+        unknown = [] of String
+        kw.each do |name|
+          unknown << name unless allowed_kw.has_key? name
+        end
+        if kwsplat
+          Internal.hash_each_key(kwsplat) do |key|
+            name = Internal.sym2string(key) # Temporary solution. Should call obj_any2string
+            unknown << name unless allowed_kw.has_key? name
+          end
+        end
+        argument_kwerror "Unknown", unknown if !unknown.empty? # this if condition is somehow redundant
+      else
+        # We have a splat to put all the missing keywords
+        new_kwsplat = Internal.build_hash
+        kwbeg = kw.size - 1 # where kw values start on stack
+        # We push the remaining passed keywords
+        kw.each_with_index do |name, i|
+          unless allowed_kw.has_key? name
+            key = Internal.string2sym(name)
+            value = topn(kwbeg - i)
+            Internal.lc_hash_set_index(new_kwsplat, key, value)
+          end
+        end
+        # We push the remaining keywords from the passed double splat
+        if kwsplat
+          Internal.hash_iterate(kwsplat) do |entry|
+            name = Internal.sym2string(entry.key) # Temporary. Key could be anything
+            Internal.lc_hash_set_index(new_kwsplat, entry.key, entry.value) unless allowed_kw.has_key? name
+          end
+        end
+        env[arg_info.dbl_splat] = new_kwsplat
+      end
     end
 
     @[AlwaysInline]
