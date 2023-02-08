@@ -371,7 +371,7 @@ module LinCAS::Internal
         return hash_fetch(hash,key,Null)
     end 
 
-    private def self.hash_iterate(hash :  LcVal)
+    def self.hash_iterate(hash :  LcVal)
         current = hash_first(hash)
         while current 
             ret = yield(current)
@@ -389,7 +389,7 @@ module LinCAS::Internal
         end
     end
 
-    private def self.hash_each_key(hash :  LcVal)
+    def self.hash_each_key(hash :  LcVal)
         hash_iterate(hash) do |entry|
             yield(entry.key)
         end
@@ -442,7 +442,7 @@ module LinCAS::Internal
         return Null
     end
 
-    private def self.hash_has_key(hash :  LcVal, key :  LcVal)
+    def self.hash_has_key(hash :  LcVal, key :  LcVal)
         return false if hash_empty?(hash)
         buckets = hash_buckets(hash)
         capa    = hash_capa(hash)
