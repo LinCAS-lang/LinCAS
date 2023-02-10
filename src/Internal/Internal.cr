@@ -206,9 +206,9 @@ module LinCAS::Internal
       lc_table.clone
     end
 
-    def self.init_lazy_const(const : LcVal*,klass : LcClass)
-      const.value.klass = klass 
-      const.value.data  = IvarTable.new
+    def self.init_lazy_const(const : LcVal,klass : LcClass)
+      const.klass = klass 
+      const.data  = IvarTable.new
     end
 
 

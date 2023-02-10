@@ -127,8 +127,8 @@ module LinCAS::Internal
         add_method(@@lc_boolean,"&&",lc_bool_and,   1)
         add_method(@@lc_boolean,"||",lc_bool_or,    1)
 
-        init_lazy_const(pointerof(LcTrue),@@lc_boolean)
-        init_lazy_const(pointerof(LcFalse),@@lc_boolean)
+        init_lazy_const(LcTrue,@@lc_boolean)
+        init_lazy_const(LcFalse,@@lc_boolean)
     end
 
     global LcTrue  = Internal.lazy_build_true
