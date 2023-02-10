@@ -321,14 +321,15 @@ module LinCAS
     end
 
     private class ExecFrame
-      getter me, iseq, env, flags, names, objects, call_info, jump_buff
+      getter me, env, flags, jump_buff, pc_bottom
       property sp, pc, real_sp
+      property! names, objects, call_info, iseq
 
       @pc        : IS*
       @pc_top    : IS*
-      @names     : Array(String)
-      @objects   : Array(LcVal)
-      @call_info : Array(CallInfo)
+      @names     : Array(String)?
+      @objects   : Array(LcVal)?
+      @call_info : Array(CallInfo)?
       @jump_buff : StaticArray(LibC::JmpBuf, 1)
 
       def initialize(@me : LcVal, @iseq : ISeq, @env : Environment, @flags : VmFrame)
@@ -352,12 +353,12 @@ module LinCAS
       # This is an unsaf initializer. It is used only on calls
       # with internal method reference 
       def initialize(@me : LcVal, @env : Environment, @flags : VmFrame)
-        @iseq = uninitialized ISeq
+        @iseq = nil.as ISeq?
         @pc = @pc_bottom = @pc_top = Pointer(IS).null
         @sp = @real_sp = 0
-        @names     = uninitialized Array(String)
-        @objects   = uninitialized Array(LcVal)
-        @call_info = uninitialized Array(CallInfo)
+        @names     = nil.as Array(String)?
+        @objects   = nil.as Array(LcVal)?
+        @call_info = nil.as Array(CallInfo)?
         @jump_buff = StaticArray[LibC::JmpBuf.new]
       end
 

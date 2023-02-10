@@ -170,11 +170,12 @@ module LinCAS
         # to set the default value. Skip is the start of the instruction
         # to jump all the default value settings.
         # opt_table has an offset of '-lead' wrt the sym table 
-        @opt_table  = uninitialized  Array(Int32)
-        @named_args = uninitialized Hash(String, Tuple(UInt64, Bool))
+        @opt_table  = nil.as Array(Int32)?
+        @named_args = nil.as Hash(String, Tuple(UInt64, Bool))?
       end
 
-      property argc, optc, opt_table, splat, kwargc, named_args, dbl_splat, block_arg
+      property argc, optc, splat, kwargc, dbl_splat, block_arg
+      property! opt_table, named_args
 
       def arg_simple?
         return @optc == 0 && 
