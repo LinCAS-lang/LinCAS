@@ -262,7 +262,9 @@ module LinCAS
           iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
           vm_define_method(op.to_i32, receiver, name, iseq, true)
         when .jumpt?
+          vm_jumpt(pop, op)
         when .jumpf?
+          vm_jumpf(pop, op)
         when .jump?
         when .jumpf_and_pop?
         when .check_kw?
