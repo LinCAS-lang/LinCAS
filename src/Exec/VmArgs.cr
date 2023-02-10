@@ -72,7 +72,7 @@ module LinCAS
 
     ##
     # Used to prepare args on stack for internal or python calls
-    def vm_setup_args_internal_or_python(ci : CallInfo, calling : VM::CallingInfo)
+    def vm_setup_args_internal_or_python(ci : CallInfo, calling : VM::CallingInfo, argc)
       if !ci.dbl_splat || !ci.has_kwargs?
         vm_setup_args_fast_track(ci, calling)
       elsif ci.has_kwargs? && ci.dbl_splat
@@ -82,7 +82,13 @@ module LinCAS
         calling.argc -= 1
         vm_set_up_splat(ci, calling) if ci.splat
       end
-      # MISSING : arity check
+      if argc >= 0 # Likely
+        min_argc = max_argc = argc
+      else
+        min_argc = argc.abs - 1
+        max_argc = Float32::INFINITY
+      end
+      vm_check_arity(min_argc, max_argc, calling.argc)
     end
 
     def vm_setup_iseq_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
