@@ -59,7 +59,7 @@ module LinCAS
 
     @[AlwaysInline]
     def vm_check_frozen_object(obj : LcVal, msg : String)
-      if has_flag c_def, FROZEN
+      if has_flag obj, FROZEN
         lc_raise(LcFrozenError, msg)
       end
     end
@@ -240,7 +240,7 @@ module LinCAS
 
       c_def = Internal.lc_seek_const context, name
       if c_def.is_a?(LcClass) && c_def.is_class?
-        vm_check_frozen_obj c_def, "Can't reopen a frozen class")
+        vm_check_frozen_object c_def, "Can't reopen a frozen class"
         unless parent == Null
           lc_raise LcTypeError, "Superclass missmatch for #{name}"
         end
@@ -261,7 +261,7 @@ module LinCAS
       context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
       m_def = Internal.lc_seek_const context, name
       if m_def.is_a?(LcClass) && m_def.is_module?
-        vm_check_frozen_obj m_def, "Can't reopen a frozen module")
+        vm_check_frozen_object m_def, "Can't reopen a frozen module"
       elsif m_def.nil?
         m_def = Internal.lc_build_user_module(name, context.namespace)
       else
@@ -330,7 +330,7 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_ary_concat(a1 : LcArray, a2 : LcArray)
+    protected def vm_ary_concat(a1 : LcVal, a2 : LcVal)
       # This instruction is mostry used for internal operations,
       # so we must be sure the compiler instructions place a real
       # array as first argument
