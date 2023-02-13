@@ -159,6 +159,7 @@ module LinCAS
     ##
     # Performs the actual call of a method
     protected def vm_call(ci : CallInfo, calling : VM::CallingInfo)
+      debug("Seeking method '#{ci.name}' in #{calling.me.klass.name}")
       cc = Internal.seek_method(calling.me.klass, ci.name, ci.explicit)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
@@ -270,7 +271,7 @@ module LinCAS
       else
         receiver = receiver.not_nil!.klass # Todo: ensure not frozen class
       end
-      
+      debug("Defining method '#{name}' in #{receiver.name}")
       method = Internal.lc_def_method(name, iseq, visibility)
       Internal.lc_add_method_with_owner(receiver, name, method)
       push LcTrue
