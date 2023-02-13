@@ -53,6 +53,18 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    def vm_check_frozen_object(obj : LcVal)
+      vm_check_frozen_object obj, "Can't modify frozen #{Internal.lc_typeof(obj)}"
+    end
+
+    @[AlwaysInline]
+    def vm_check_frozen_object(obj : LcVal, msg : String)
+      if has_flag c_def, FROZEN
+        lc_raise(LcFrozenError, msg)
+      end
+    end
+
+    @[AlwaysInline]
     private def vm_new_env(iseq : ISeq, calling : VM::CallingInfo, flags)
       return VM::Environment.new(iseq.symtab.size, flags, calling.block)
     end
@@ -107,6 +119,7 @@ module LinCAS
 
     @[AlwaysInline]
     protected def vm_setinstance_v(name : String, me : LcVal, value : LcVal)
+      vm_check_frozen_object me
       me.data[name] = value
     end
 
@@ -227,9 +240,7 @@ module LinCAS
 
       c_def = Internal.lc_seek_const context, name
       if c_def.is_a?(LcClass) && c_def.is_class?
-        if has_flag c_def, FROZEN
-          lc_raise(LcFrozenError, "Can't reopen a frozen class")
-        end
+        vm_check_frozen_obj c_def, "Can't reopen a frozen class")
         unless parent == Null
           lc_raise LcTypeError, "Superclass missmatch for #{name}"
         end
@@ -250,9 +261,7 @@ module LinCAS
       context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
       m_def = Internal.lc_seek_const context, name
       if m_def.is_a?(LcClass) && m_def.is_module?
-        if has_flag m_def, FROZEN
-          lc_raise(LcFrozenError, "Can't reopen a frozen module")
-        end
+        vm_check_frozen_obj m_def, "Can't reopen a frozen module")
       elsif m_def.nil?
         m_def = Internal.lc_build_user_module(name, context.namespace)
       else
