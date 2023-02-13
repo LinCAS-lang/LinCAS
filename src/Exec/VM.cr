@@ -266,6 +266,7 @@ module LinCAS
         when .jumpf?
           vm_jumpf(pop, op)
         when .jump?
+          vm_jump(op)
         when .jumpf_and_pop?
         when .check_kw?
           value = vm_check_kw(op)

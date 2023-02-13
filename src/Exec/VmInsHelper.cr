@@ -291,6 +291,11 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    protected def vm_jump(offset : UInt64)
+      @current_frame.pc = @current_frame.pc_bottom + offset
+    end
+
+    @[AlwaysInline]
     protected def vm_merge_kw(hash1 : LcVal, hash2 : LcVal)
       vm_ensure_type hash1, Internal::LcHash
       Internal.lc_hash_o_merge(hash1, hash2) # Check if kwsplat is a hash is done here
