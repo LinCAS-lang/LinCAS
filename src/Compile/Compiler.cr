@@ -396,12 +396,15 @@ module LinCAS
       # Compile body with state. At the end set the jump
       # to the condition evaluation
       state = with_state(State::Loop) { compile_body(iseq, body) }
+      encoded << IS::POP # popping last expression's value on stack
       start_loop_jump = IS.new(start_offset)
       encoded << (IS::JUMP | start_loop_jump)
 
       end_loop_jump = IS.new(encoded.size.to_u64)
       encoded[jumpf_offset] |= end_loop_jump
       stack_decrease
+
+      encoded << IS::PUSH_NULL # While statement leaves null on stack
 
       state.breaks.each do |offset|
         ensure_is(encoded[offset], IS::JUMP)
