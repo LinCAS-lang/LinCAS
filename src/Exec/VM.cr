@@ -431,17 +431,14 @@ module LinCAS
       property argc
     end
 
-    class CallCache
-      ##
-      # if @method is nil, @m_missing_status:
-      #  * 0: undefined
-      #  * 1: protected method called (explicit call)
-      #  * 2: private method called
-      def initialize(@method : LcMethod?, @m_missing_status : Int32)
-      end
-
-      getter method, m_missing_status
-    end
+    ##
+    # if @method is nil, @m_missing_status:
+    #  * 0: undefined
+    #  * 1: protected method called (explicit call)
+    #  * 2: private method called
+    record CallCache,
+      method : LcMethod?,
+      m_missing_status : Int32
 
 
   end
