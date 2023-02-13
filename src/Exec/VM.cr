@@ -40,6 +40,7 @@ module LinCAS
       @control_frames = [] of ExecFrame
       @stack          = uninitialized Ary
       @current_frame  = uninitialized ExecFrame
+      @pc             = Pointer(IS).null
       @sp = 0
       @initialized = false
     end
@@ -55,16 +56,27 @@ module LinCAS
       end
       obj = Internal.boot_main_object
       vm_push_control_frame(obj, iseq, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
+      @pc = @current_frame.pc
     end
 
+    # This routine is used when popping control frames
     @[AlwaysInline]
     protected def restore_regs
       if @control_frames.empty?
         lc_bug("(No frame found)")
       end
-      @current_frame = @control_frames.last
+      restore_cfp_and_pc
       debug "Restoring sp at #{@current_frame.sp} [current: #{@sp}]"
       @sp = @current_frame.sp
+    end
+
+    # This routine is used when pushing control frames
+    # or popping them. It doesn't restore the stack pointer
+    # (It is not necessary when pushing a new cf)
+    @[AlwaysInline]
+    protected def restore_cfp_and_pc
+      @current_frame = @control_frames.last
+      @pc = @current_frame.pc
     end
 
     @[AlwaysInline]
@@ -79,8 +91,12 @@ module LinCAS
 
     @[AlwaysInline]
     protected def push_control_frame(frame)
+      # We need to save the current frame updating it with the current pc
+      @control_frames[-1] = @current_frame.copy_with pc: @pc unless @control_frames.empty?
+
+      # now we can push the new frame
       @control_frames << frame
-      @current_frame = @control_frames.last
+      restore_cfp_and_pc
       debug("Pushing cf #{@current_frame.flags} [fc: #{@control_frames.size}] [ss: #{@sp}]")
     end
 
@@ -143,8 +159,8 @@ module LinCAS
     @[AlwaysInline]
     def next_is
       vm_pc_consistency_check
-      value = @current_frame.pc.value 
-      @current_frame.pc += 1
+      value = @pc.value 
+      @pc += 1
       return value
     end
     
@@ -332,7 +348,7 @@ module LinCAS
       FLAG_FINISH = 1
     end
 
-    private class ExecFrame
+    private struct ExecFrame
       getter me, env, flags, jump_buff, pc_bottom
       property sp, pc, real_sp
       getter! names, objects, call_info, iseq
@@ -362,7 +378,7 @@ module LinCAS
       end
 
       ##
-      # This is an unsaf initializer. It is used only on calls
+      # This initializer is used only on calls
       # with internal method reference 
       def initialize(@me : LcVal, @env : Environment, @flags : VmFrame)
         @iseq = nil.as ISeq?
@@ -374,8 +390,16 @@ module LinCAS
         @jump_buff = StaticArray[LibC::JmpBuf.new]
       end
 
-      def consistent_pc?
-        return @pc_bottom <= @pc <= @pc_top
+      def copy_with(pc _pc = @pc, sp _sp = @sp, real_sp _real_sp = @real_sp)
+        copy = self.dup
+        copy.pc = _pc
+        copy.sp = _sp
+        copy.real_sp = _real_sp
+        return copy
+      end
+
+      def consistent_pc?(pc)
+        return @pc_bottom <= pc <= @pc_top
       end
     end
 

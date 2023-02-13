@@ -47,7 +47,7 @@ module LinCAS
 
     @[AlwaysInline]
     def vm_pc_consistency_check
-      if !@current_frame.consistent_pc?
+      if !@current_frame.consistent_pc? @pc
         lc_bug("Inconsistent program counter detected")
       end
     end
@@ -289,7 +289,7 @@ module LinCAS
     @[AlwaysInline]
     protected def vm_jumpt(condition : LcVal, offset : UInt64)
       if !{LcFalse, Null}.includes? condition
-        @current_frame.pc = @current_frame.pc_bottom + offset
+        @pc = @current_frame.pc_bottom + offset
         return true
       end
       return false
@@ -298,7 +298,7 @@ module LinCAS
     @[AlwaysInline]
     protected def vm_jumpf(condition : LcVal, offset : UInt64)
       if {LcFalse, Null}.includes? condition
-        @current_frame.pc = @current_frame.pc_bottom + offset
+        @pc = @current_frame.pc_bottom + offset
         return true
       end
       return false
@@ -306,7 +306,7 @@ module LinCAS
 
     @[AlwaysInline]
     protected def vm_jump(offset : UInt64)
-      @current_frame.pc = @current_frame.pc_bottom + offset
+      @pc = @current_frame.pc_bottom + offset
     end
 
     @[AlwaysInline]
