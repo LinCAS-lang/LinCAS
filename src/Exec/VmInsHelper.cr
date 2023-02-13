@@ -290,19 +290,28 @@ module LinCAS
     protected def vm_jumpt(condition : LcVal, offset : UInt64)
       if !{LcFalse, Null}.includes? condition
         @current_frame.pc = @current_frame.pc_bottom + offset
+        return true
       end
+      return false
     end
     
     @[AlwaysInline]
     protected def vm_jumpf(condition : LcVal, offset : UInt64)
       if {LcFalse, Null}.includes? condition
         @current_frame.pc = @current_frame.pc_bottom + offset
+        return true
       end
+      return false
     end
 
     @[AlwaysInline]
     protected def vm_jump(offset : UInt64)
       @current_frame.pc = @current_frame.pc_bottom + offset
+    end
+
+    @[AlwaysInline]
+    protected def vm_jumpf_and_pop(condition : LcVal, offset : UInt64)
+      pop if vm_jumpf(condition, offset)
     end
 
     @[AlwaysInline]
@@ -320,6 +329,15 @@ module LinCAS
       end
     end
 
+    @[AlwaysInline]
+    protected def vm_ary_concat(a1 : LcArray, a2 : LcArray)
+      # This instruction is mostry used for internal operations,
+      # so we must be sure the compiler instructions place a real
+      # array as first argument
+      vm_ensure_type a1, Internal::LcArray
+      lc_bug "Missing implementation of Array#concat!" # TODO
+    end
+
     protected def vm_array_append(array : LcVal, value : LcVal)
       vm_ensure_type array, Internal::LcArray
       array = lc_recast(array, Ary)
@@ -329,6 +347,19 @@ module LinCAS
     @[AlwaysInline]
     protected def vm_check_kw(index : UInt64)
       return (@current_frame.env.kw_bit & (1 << index)).zero? ? LcFalse : LcTrue
+    end
+
+    @[AlwaysInline]
+    protected def vm_dup_hash(hash : LcVal)
+      # Same thing as vm_ary_concat
+      vm_ensure_type hash, Internal::LcHash
+      return Internal.lc_hash_clone hash
+    end
+
+    @[AlwaysInline]
+    protected def vm_make_range(v1 : LcVal, v2 : LcVal, inclusive : UInt64)
+      inc = !(inclusive & 0x01).zero?
+      return Internal.build_range(v1, v2, inc)
     end
 
     #######################################
