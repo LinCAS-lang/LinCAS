@@ -454,6 +454,10 @@ module LinCAS
       end
       argc, splat, dblsplat = compile_call_args(iseq, node.args)
       n_args = compile_named_args(iseq, node.named_args)
+
+      if n_args
+        argc += n_args.size
+      end
       
       block_param = node.block_param
       block = nil

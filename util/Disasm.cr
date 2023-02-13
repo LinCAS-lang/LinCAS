@@ -103,7 +103,7 @@ module LinCAS
         when .call?, .call_no_block?
           ci = @iseq.call_info[op.value]
           block = ci.block || "null"
-          ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg, ci.explicit, block}
+          ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg?, ci.explicit, block}
           pattern % {i, ins, ci_str, line}
         when .define_method?, .define_smethod?
           op2, op3 = get_is_and_op(encoded[i += 1])

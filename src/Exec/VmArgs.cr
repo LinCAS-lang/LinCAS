@@ -126,8 +126,10 @@ module LinCAS
 
     ##
     # Assumes no other argument on stack after hash value
+    # Any check to assert that ci.kwarg is not nil has to be done before
+    # calling this function
     private def vm_set_up_kwargs(ci : CallInfo, calling : VM::CallingInfo)
-      kwtable = ci.kwarg.not_nil!
+      kwtable = ci.kwarg
       hash = Internal.build_hash
       debug("Creating hash table for kw args")
       kwtable.reverse_each do |name|
@@ -212,7 +214,7 @@ module LinCAS
 
       if ci.dbl_splat
         # we just cache the double splat for later use
-        args._kwsplat = get_kwsplat (ci.kwarg ? ci.kwarg.not_nil!.size : 0)
+        args._kwsplat = get_kwsplat (ci.kwarg? ? ci.kwarg.size : 0)
       end
 
       vm_check_arity(min_argc, max_argc, given_argc)
@@ -231,7 +233,7 @@ module LinCAS
       # a small memory optimization
       tmp = uninitialized String[0]
       if arg_info.kwargc > 0
-        args_setup_kw(env, arg_info, args, ci.kwarg || tmp)
+        args_setup_kw(env, arg_info, args, ci.kwarg? || tmp)
       end
 
       # At this point we have consumed all the arguments before splat
@@ -241,7 +243,7 @@ module LinCAS
       # keyword argument provided.
       # The following method behaves differently then the previous ones and
       # it is delegated to raise the error
-      args_setup_kwsplat(env, arg_info, args, ci.kwarg || tmp)
+      args_setup_kwsplat(env, arg_info, args, ci.kwarg? || tmp)
 
       return iseq_offset
     end
