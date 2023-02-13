@@ -325,7 +325,7 @@ module LinCAS
     private class ExecFrame
       getter me, env, flags, jump_buff, pc_bottom
       property sp, pc, real_sp
-      property! names, objects, call_info, iseq
+      getter! names, objects, call_info, iseq
 
       @pc        : IS*
       @pc_top    : IS*
