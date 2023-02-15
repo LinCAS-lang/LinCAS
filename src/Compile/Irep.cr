@@ -48,7 +48,8 @@ module LinCAS
       PUSH_SELF
       PUSH_NULL
       CALL
-      CALL_NO_BLOCK 
+      CALL_NO_BLOCK
+      INVOKE_BLOCK 
 
       PUT_CLASS 
       PUT_MODULE

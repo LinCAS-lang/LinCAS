@@ -100,10 +100,11 @@ module LinCAS
           @stack << {@iseq.jump_iseq[offset], name } 
           # Counter i is adjusted to the real instruction count
           pattern % {i - 1, ins, "#{name} at #{offset}", line}
-        when .call?, .call_no_block?
+        when .call?, .call_no_block?, .invoke_block?
           ci = @iseq.call_info[op.value]
           block = ci.block || "null"
           ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg?, ci.explicit, block}
+          @stack << {block, "block"} if !block.is_a? String
           pattern % {i, ins, ci_str, line}
         when .define_method?, .define_smethod?
           op2, op3 = get_is_and_op(encoded[i += 1])

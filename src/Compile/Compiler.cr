@@ -68,6 +68,7 @@ module LinCAS
         compile_range(iseq, node)
       when ControlExpression
       when OpAssign
+        compile_opassign(iseq, node)
       when Variable 
         compile_variable(iseq, node)
       when ClassVar, InstanceVar
@@ -77,6 +78,8 @@ module LinCAS
       when SymbolLiteral
       when Self
         compile_self(iseq, node)
+      when Yield
+        compile_yield(iseq, node)
       else
       end
     end
@@ -351,6 +354,12 @@ module LinCAS
     end
 
     def compile_block(node : Block)
+      block_iseq = ISeq.new(ISType::BLOCK, @filename, node.symtab)
+      params = node.params
+      compile_method_params(block_iseq, params) if params
+      compile_body(block_iseq, node.body)
+      block_iseq.encoded << IS::LEAVE
+      return block_iseq
     end 
 
     def compile_if(iseq, node : If)
@@ -729,7 +738,24 @@ module LinCAS
       iseq.encoded << IS::PUSH_SELF
     end
 
+    def compile_yield(iseq, node : Yield)
+      argc, splat_found, dblsplat_found = compile_call_args(iseq, node.args)
+      kwargs = compile_named_args(iseq, node.named_args)
+      ci = CallInfo.new(
+        name: "",
+        argc: argc, 
+        splat: splat_found,
+        dbl_splat: dblsplat_found, 
+        kwarg: kwargs 
+      )
+      ci_index = iseq.call_info.size.to_u64
+      iseq.call_info << ci
+      set_line iseq, node.location
+      iseq.encoded << (IS::INVOKE_BLOCK | IS.new(ci_index))
+    end
+
     def compile(iseq, node)
+      lc_bug "Unhandled compiling of #{node.class}"
     end
 
     @[AlwaysInline]
