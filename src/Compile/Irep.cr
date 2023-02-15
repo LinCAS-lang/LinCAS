@@ -129,14 +129,15 @@ module LinCAS
 
   class ISeq
     getter type, encoded, symtab, filename, line, catchtables, object, jump_iseq, call_info, names
-    property arg_info, stack_size
+    property stack_size
+    property! arg_info
 
     ##
     # @symtab should never be modified during compile time.
     # It must contain only local variable names
     def initialize(@type : ISType, @filename : String, @symtab : SymTable)
       # The real object is allocated only for method or block iseq
-      @arg_info = uninitialized ArgInfo
+      @arg_info = nil.as ArgInfo?
 
       @encoded     = [] of IS
       @catchtables = [] of CatchT
