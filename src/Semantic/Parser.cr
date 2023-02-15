@@ -412,6 +412,8 @@ module LinCAS
           disable_regex
           next_token
           Self.new
+        when :yield
+          parse_yield
         else
           if @token.is_kw
             unexpected_token
@@ -1347,7 +1349,35 @@ module LinCAS
 
       body = parse_stmts_delimited :"}"
       @block_nesting -= 1
-      return Block.new(block_arg, splat_index || -1, body, pop_symtab).at location
+      params = nil
+      if block_arg && !block_arg.empty?
+        params = Params.new(block_arg, splat_index: splat_index.not_nil!)
+      end
+      return Block.new(params, body, pop_symtab).at location
+    end
+
+    def parse_yield        
+      location = @token.location
+      if @method_nesting.zero?
+        parser_raise "Invalid yield", location
+      end
+
+      next_token
+      call_args = preserve_stop_on_do { parse_call_args control: true}
+
+      if call_args
+        args = call_args.args
+        named_args = call_args.named_args
+        has_parenthesis = call_args.has_parenthesis
+        if block = call_args.block
+          parser_raise "Block should not be given", block.location
+        end
+        if block_arg = call_args.block_arg
+          parser_raise "Block argument should not be given", block_arg.location
+        end
+      end
+
+      return Yield.new(args, named_args, !!has_parenthesis).at location
     end
 
     def named_args_start?

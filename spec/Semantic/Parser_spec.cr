@@ -144,7 +144,7 @@ describe Parser do
   it_parses_multiple ["foo[1] := 2", "foo.[]= 1, 2", "foo.[]=(1, 2)"], Call.new("foo".variable, "[]=", [1.int, 2.int] of Node)
   it_parses_single "foo[]", Call.new("foo".variable, "[]")
   it_parses_multiple ["foo[1,2][3]", "foo.[](1,2)[3]", "foo.[](1,2).[](3)"], Call.new(Call.new("foo".variable, "[]", [1.int, 2.int] of Node), "[]", [3.int] of Node)
-  it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))
+  it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
   it_parses_multiple ["foo(1, a: 10, &block)", "foo 1, a: 10, &block"], Call.new(nil, "foo", [1.int] of Node, [NamedArg.new("a", 10.int)], "block".variable)
   it_parses_multiple ["foo a: 10, b: 9", "foo(a: 10, b: 9)"], Call.new(nil, "foo", named_args: [NamedArg.new("a", 10.int), NamedArg.new("b", 9.int)])
   it_parses_single "foo -2", Call.new("foo".variable, "-", [2.int] of Node)
@@ -152,14 +152,14 @@ describe Parser do
   it_parses_single "foo +b", Call.new("foo".variable, "+", ["b".variable] of Node)
   it_parses_single "foo -b", Call.new("foo".variable, "-", ["b".variable] of Node)
   it_parses_single "foo !b", Call.new(nil, "foo", [Call.new("b".variable, "!")] of Node)
-  it_parses_single "foo a do {}", Call.new(nil, "foo", ["a".variable] of Node, block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))
-  it_parses_single "foo a {} do {}", Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))] of Node, block: Block.new(nil, -1, Body.new, symtab(SymType::BLOCK)))
+  it_parses_single "foo a do {}", Call.new(nil, "foo", ["a".variable] of Node, block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
+  it_parses_single "foo a {} do {}", Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))] of Node, block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
   it_parses_single "foo bar baz", Call.new(nil, "foo", [Call.new(nil, "bar", ["baz".variable] of Node)] of Node)
   it_parses_single "foo\n.bar\n.baz", Call.new(Call.new("foo".variable, "bar"), "baz")
   it_parses_single "foo?", Call.new(nil, "foo?", has_parenthesis: false)
   it_parses_single "foo!", Call.new(nil, "foo!", has_parenthesis: false)
 
-  it_parses_multiple ["foo(&:to_s)", "foo &:to_s"], Call.new(nil, "foo", block_param: Block.new(["__temp1".variable] of Node, -1, Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK)))
+  it_parses_multiple ["foo(&:to_s)", "foo &:to_s"], Call.new(nil, "foo", block: Block.new(Params.new([Arg.new("__temp1", nil)]), Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK) << "__temp1"))
   it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo", block_param: "block".variable)
   it_parses_multiple ["foo(1, *splat, **dblsplat, a: 10, &block)", "foo 1, *splat, **dblsplat, a: 10, &block"], Call.new(nil, "foo", [1.int, Splat.new("splat".variable), DoubleSplat.new("dblsplat".variable)] of Node, [NamedArg.new("a", 10.int)], "block".variable)
   assert_syntax_error "foo **splat, 12", "Argument not allowed after double splat"
@@ -261,6 +261,10 @@ describe Parser do
     it_parses_single "let self.#{name} {}", FunctionNode.new(FuncVisib::PUBLIC, "self".variable , name, nil, Body.new, symtab(SymType::METHOD))
     assert_syntax_error "let #{name}.wrong {}", "Unexpected token '.'"
   end 
+  
+  it_parses_multiple ["let foo{\nyield\n}", "let foo{\nyield()\n}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "foo", nil, Body.new << Yield.new, symtab(SymType::METHOD))
+  it_parses_multiple ["let foo{\nyield 1, b: 2\n}", "let foo{\nyield(1, b: 2)\n}"], FunctionNode.new(FuncVisib::PUBLIC, nil, "foo", nil, Body.new << Yield.new([1.int], [NamedArg.new("b", 2.int)]), symtab(SymType::METHOD))
+
 
   assert_syntax_error "let func *splat, *splat2 {}", "Splat or double splat already defined"
   assert_syntax_error "let func **splat, *splat2 {}", "Splat or double splat already defined"
@@ -271,4 +275,7 @@ describe Parser do
   assert_syntax_error "let func **splat, b: 1 {}", "Unexpected token ':'"
   assert_syntax_error "let func **splat, b := 1 {}", "Unexpected token ':='"
   assert_syntax_error "let func=.wrong {}", "Unexpected token '.'"
+  assert_syntax_error "yield", "Invalid yield"
+  assert_syntax_error "let foo {yield &block}", "Block argument should not be given"
+  assert_syntax_error "let foo {yield &:to_s}", "Block should not be given"
 end

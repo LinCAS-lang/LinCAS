@@ -307,5 +307,17 @@ module LinCAS
 
   class Self < Node 
   end
+
+  class Yield < Node
+    getter args, named_args, has_parenthesis
+    def initialize(
+      @args        : Array(Node)?     = nil,
+      @named_args  : Array(NamedArg)? = nil,
+      @has_parenthesis                = true
+    )
+    end
+
+    def_equals args, named_args
+  end
   
 end
