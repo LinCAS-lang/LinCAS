@@ -1289,9 +1289,9 @@ module LinCAS
       next_token_skip_space_or_newline
 
       if @token.type == :"|"
-        block_arg   = [] of Node 
+        block_arg   = [] of Arg 
         arg_names   = [] of String 
-        splat_index = nil
+        splat_index = -1
         index       = 0
         
         next_token_skip_space_or_newline
@@ -1306,19 +1306,18 @@ module LinCAS
           
           case @token.type
           when :IDENT, :CAPITAL_VAR
-            arg_name = @token.value.to_s 
+            arg_name = @stringpool.get @token.value.to_s 
             if arg_names.includes? arg_name
               parser_raise "Duplicated block argument `#{arg_name}'", @token.location
             end 
             arg_names << arg_name
           when :UNDERSCORE 
-            arg_name = "_"
+            arg_name = @stringpool.get "_"
           else 
             unexpected_token :IDENT, :CAPITAL_VAR
             arg_name = ""
           end
           register_id arg_name
-          var = Variable.new(arg_name, ID::LOCAL_V, depth: 0)
           next_token_skip_space
 
           if @token.type == :":="
@@ -1328,11 +1327,13 @@ module LinCAS
             loc = @token.location
             next_token_skip_space_or_newline
             value = parse_or 
-            var = Assign.new(var, value).at loc 
+            arg = Arg.new(arg_name, value).at loc 
             skip_space
+          else
+            arg = Arg.new(arg_name, nil)
           end
           
-          block_arg << var 
+          block_arg << arg 
 
           if @token.type == :","
             next_token_skip_space_or_newline

@@ -87,8 +87,8 @@ module LinCAS
   end 
 
   class Block < Node
-    getter args, splat_index, body, symtab
-    def initialize(@args : Array(Node)?, @splat_index : Int32, @body : Body, @symtab : SymTable)
+    getter params, body, symtab
+    def initialize(@params : Params?, @body : Body, @symtab : SymTable)
     end
   end
 
