@@ -356,7 +356,11 @@ module LinCAS
     def compile_block(node : Block)
       block_iseq = ISeq.new(ISType::BLOCK, @filename, node.symtab)
       params = node.params
-      compile_method_params(block_iseq, params) if params
+      if params = node.params
+        compile_method_params(block_iseq, params)
+      else
+        block_iseq.arg_info = ISeq::ArgInfo.new(0,0,-1,0,-1,-1)
+      end
       compile_body(block_iseq, node.body)
       block_iseq.encoded << IS::LEAVE
       return block_iseq
