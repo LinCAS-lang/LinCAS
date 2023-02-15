@@ -1228,21 +1228,19 @@ module LinCAS
 
     def parse_call_block_arg(args, check_par, named_args = nil)
       location = @token.location 
-      
-      block_arg_name = next_temp_var
-      obj = Variable.new(block_arg_name, ID::LOCAL_V)
 
       next_token_skip_space
       if @token.type == :SYMBOL
+        block_arg_name = next_temp_var
+        obj = Variable.new(block_arg_name, ID::LOCAL_V)
         name = @token.value.to_s.lstrip(":")
         next_token
-        call = Call.new(obj, name)
-        obj = Block.new([obj] of Node, -1, Body.new << call, SymTable.new(SymType::BLOCK))
+        call = Call.new(obj, name).at location
+        block = Block.new(Params.new([Arg.new(block_arg_name, nil)]), Body.new << call, SymTable.new(SymType::BLOCK) << block_arg_name).at location
       elsif @token.type == :IDENT || @token.type == :CAPITAL_VAR
-        obj = parse_op_assign
+        block_arg = parse_op_assign
       else 
         unexpected_token :SYMBOL, :IDENT, :CAPITAL_VAR
-        obj = nil
       end 
 
       if check_par
@@ -1252,7 +1250,7 @@ module LinCAS
       else 
         skip_space
       end
-      return CallArgs.new args, named_args, obj, nil, check_par
+      return CallArgs.new args, named_args, block_arg, block, check_par
     end 
 
     def parse_block(block, stop_on_do) 
