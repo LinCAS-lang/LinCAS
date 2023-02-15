@@ -69,6 +69,11 @@ module LinCAS
       return VM::Environment.new(iseq.symtab.size, flags, calling.block)
     end
 
+    @[AlwaysInline]
+    private def vm_new_env(iseq : ISeq, calling : VM::CallingInfo, previous : VM::Environment, flags)
+      return VM::Environment.new(iseq.symtab.size, flags, calling.block, previous)
+    end
+
     protected def vm_setlocal(offset, level, value : LcVal)
       env = @current_frame.env
       level.times do
@@ -225,10 +230,31 @@ module LinCAS
       
       set_stack_consistency_trace(calling.argc + 1)
       vm_push_control_frame(calling.me, iseq, env, VM::VmFrame::UCALL_FRAME)
-      @current_frame.pc += offset
+      # no need to update sp in the frame. When another call happens, 
+      # it will be saved automatically
+      @pc += offset
     end 
 
     private def vm_call_python()
+    end
+
+    protected def vm_invoke_block(ci : CallInfo, calling : VM::CallingInfo)
+      block = vm_get_block
+      if block
+        env = vm_new_env(block.iseq, calling, block.env, VM::VmFrame::BLOCK_FRAME)
+        iseq_offset = vm_setup_arg_complex(env, block.iseq.arg_info, ci, calling)
+        
+        set_stack_consistency_trace(calling.argc)
+        vm_push_control_frame(
+          block.me,
+          block.iseq,
+          env,
+          env.frame_type
+        )
+        @pc += iseq_offset
+      else
+        lc_raise(LcArgumentError, "No block given (yield)")
+      end
     end
 
     protected def vm_putclass(me : LcVal, name : String, parent : LcVal, iseq : ISeq)

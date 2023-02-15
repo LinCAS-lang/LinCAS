@@ -249,6 +249,14 @@ module LinCAS
           ci           = @current_frame.call_info[op]
           calling_info = CallingInfo.new(topn(ci.argc), ci.argc, nil)
           vm_call(ci, calling_info)
+        when .invoke_block?
+          ci = @current_frame.call_info[op]
+          calling_info = CallingInfo.new(
+            me: @current_frame.me, 
+            argc: ci.argc, 
+            block: nil # Should not be used
+          )
+          vm_invoke_block(ci, calling_info)
         when .put_class?
           parent = pop 
           me     = pop
