@@ -511,8 +511,12 @@ module LinCAS
     def compile_call_args(iseq, args : Array(Node)?, named_args : Array(NamedArg)?)
       argc, splat_found, dblsplat_found = compile_call_args(iseq, args, !!named_args)
       list = compile_named_args(iseq, named_args, splat_found, dblsplat_found)
-      argc += list ? list.size : 0
-      return {argc, splat_found, dblsplat_found, list}
+      if list == 0
+        dblsplat_found = true
+      elsif list.is_a? Array(String)
+        argc += list.size
+      end
+      return {argc, splat_found, dblsplat_found, list.as?(Array(String))}
     end
 
     def compile_call_args(iseq : ISeq, args : Array(Node)?, named_args : Bool)
@@ -580,7 +584,7 @@ module LinCAS
         encoded << (IS::NEW_HASH | IS.new(named_args.size.to_u64)) if splat || dbl_splat
         encoded << IS::MERGE_KW if dbl_splat
         encoded << IS::ARRAY_APPEND if splat 
-        return nil  
+        return 0  
       else
         list = [] of String
         named_args.each do |n_arg|
