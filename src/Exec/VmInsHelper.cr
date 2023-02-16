@@ -388,6 +388,18 @@ module LinCAS
       return Internal.build_range(v1, v2, inc)
     end
 
+    @[AlwaysInline]
+    protected def vm_new_hash(size : UInt64)
+      hash = Internal.build_hash
+      depth = size.to_i64 * 2 - 1
+      size.times do
+        Internal.lc_hash_set_index(hash, topn(depth), topn(depth - 1))
+        depth -= 2
+      end
+      @sp -= size * 2
+      push hash
+    end
+
     #######################################
     # __     ____  __      _    ____ ___  #
     # \ \   / /  \/  |    / \  |  _ \_ _| #

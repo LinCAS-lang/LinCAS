@@ -69,6 +69,7 @@ module LinCAS
       DUP_HASH
 
       MAKE_RANGE
+      NEW_HASH
 
       LEAVE
       
