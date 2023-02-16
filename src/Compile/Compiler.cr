@@ -468,12 +468,7 @@ module LinCAS
         stack_increase
         encoded << IS::PUSH_SELF
       end
-      argc, splat, dblsplat = compile_call_args(iseq, node.args)
-      n_args = compile_named_args(iseq, node.named_args)
-
-      if n_args
-        argc += n_args.size
-      end
+      argc, splat, dblsplat, n_args = compile_call_args(iseq, node.args, node.named_args)
       
       block_param = node.block_param
       block = nil
@@ -513,7 +508,14 @@ module LinCAS
     end 
 
     @[AlwaysInline]
-    def compile_call_args(iseq, args)
+    def compile_call_args(iseq, args : Array(Node)?, named_args : Array(NamedArg)?)
+      argc, splat_found, dblsplat_found = compile_call_args(iseq, args, !!named_args)
+      list = compile_named_args(iseq, named_args, splat_found, dblsplat_found)
+      argc += list ? list.size : 0
+      return {argc, splat_found, dblsplat_found, list}
+    end
+
+    def compile_call_args(iseq : ISeq, args : Array(Node)?, named_args : Bool)
       argc = 0
       splat_found = dblsplat_found = false
       unless args.nil?
@@ -550,25 +552,49 @@ module LinCAS
             end
           end
         end
+        if splat_found && dblsplat_found && !named_args
+          encoded << IS::ARRAY_APPEND
+        end
       end
       return {argc, splat_found, dblsplat_found}
     end 
 
-    @[AlwaysInline]
-    def compile_named_args(iseq, named_args)
-      return unless named_args
-      list = [] of String
-      named_args.each do |n_arg|
-        name, value = n_arg.name, n_arg.value 
-        compile_each(iseq, value)
-        case name
-        when String
-          list << name
-        when StringLiteral
-          # Not implemented yet
+    def compile_named_args(iseq : ISeq, named_args : Array(NamedArg)?, splat : Bool, dbl_splat : Bool)
+      return nil unless named_args && !named_args.empty?
+      if splat || dbl_splat
+        encoded = iseq.encoded
+        named_args.each do |n_arg|
+          name, value = n_arg.name, n_arg.value 
+          case name
+          when String
+            obj = Internal.string2sym(name)
+            obj_index = iseq.object.size.to_u64
+            encoded << (IS::PUSHOBJ | IS.new(obj_index))
+            iseq.object << obj
+          when StringLiteral
+            # Not implemented yet
+          end
+          compile_each(iseq, value)
         end
+
+        encoded << (IS::NEW_HASH | IS.new(named_args.size.to_u64)) if splat || dbl_splat
+        encoded << IS::MERGE_KW if dbl_splat
+        encoded << IS::ARRAY_APPEND if splat 
+        return nil  
+      else
+        list = [] of String
+        named_args.each do |n_arg|
+          name, value = n_arg.name, n_arg.value 
+          compile_each(iseq, value)
+          case name
+          when String
+            list << name
+          when StringLiteral
+            # Not implemented yet
+          end
+        end
+        return list
       end
-      return list
     end
 
     def compile(iseq, node : And)
@@ -743,8 +769,8 @@ module LinCAS
     end
 
     def compile_yield(iseq, node : Yield)
-      argc, splat_found, dblsplat_found = compile_call_args(iseq, node.args)
-      kwargs = compile_named_args(iseq, node.named_args)
+      argc, splat_found, dblsplat_found, kwargs = compile_call_args(iseq, node.args, node.named_args)
+      
       ci = CallInfo.new(
         name: "",
         argc: argc, 
