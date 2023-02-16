@@ -22,10 +22,10 @@ module LinCAS::Internal
     class LCProc < LcVal
         @init = false
         @me   = uninitialized  LcVal
-        @code = uninitialized ISeq
-        @scp  = uninitialized VM::Environment
+        @iseq = uninitialized ISeq
+        @env  = uninitialized VM::Environment
         @part = [] of  LcVal
-        property init, me, args, code, scp
+        property init, me, args, iseq, env
         getter part
     end
 
@@ -42,19 +42,19 @@ module LinCAS::Internal
     end
 
     macro set_proc_code(proc,code)
-        {{proc}}.as(LCProc).code = {{code}}
+        {{proc}}.as(LCProc).iseq = {{code}}
     end
 
     macro get_proc_code(proc)
-        {{proc}}.as(LCProc).code
+        {{proc}}.as(LCProc).iseq
     end
 
     macro set_proc_scope(proc,scp)
-        {{proc}}.as(LCProc).scp = {{scp}}
+        {{proc}}.as(LCProc).env = {{scp}}
     end
 
     macro get_proc_scope(proc)
-        {{proc}}.as(LCProc).scp
+        {{proc}}.as(LCProc).env
     end
 
     macro set_proc_as_init(proc)
