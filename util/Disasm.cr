@@ -83,25 +83,29 @@ module LinCAS
         puts case ins
         when .pop?, .leave?, .noop?, .push_true?, .push_false?, .push_self?, .push_null?
           pattern % {i, ins, nil, line}
-        when .setlocal_0?, .setlocal_1?, .setlocal_2?, .setinstance_v?, .setclass_v?,
-             .getlocal_0?, .getlocal_1?, .getlocal_2?, .getconst?, .storeconst?
-          pattern % {i, ins, @iseq.symtab[op.value], line}
+        when .setlocal_0?, .setinstance_v?, .setclass_v?,
+             .getlocal_0?, .getconst?, .storeconst?
+          pattern % {i, ins, @iseq.symtab[op], line}
+        when .setlocal_1?, .getlocal_1?
+          pattern % {i, ins, get_var_name(@iseq.symtab, 1, op), line}
+        when .setlocal_2?, .getlocal_2?
+          pattern % {i, ins, get_var_name(@iseq.symtab, 2, op), line}
         when .setlocal?, .getlocal?
           op2 = encoded[i += 1].value
-          pattern % {i, ins, "#{op2} #{@iseq.symtab[op.value]}", line}
+          pattern % {i, ins, "#{op} #{get_var_name(@iseq.symtab, op, op2)}", line}
         when .jump?, .jumpf?, .jumpt?, .jumpf_and_pop?
           pattern % {i, ins, op, line}
         when .pushobj?
-          obj = get_object_str(op.value)
+          obj = get_object_str(op)
           pattern % {i, ins, obj, line}
         when .put_class?, .put_module?
           offset = encoded[i += 1].value
-          name = @iseq.names[op.value]
+          name = @iseq.names[op]
           @stack << {@iseq.jump_iseq[offset], name } 
           # Counter i is adjusted to the real instruction count
           pattern % {i - 1, ins, "#{name} at #{offset}", line}
         when .call?, .call_no_block?, .invoke_block?
-          ci = @iseq.call_info[op.value]
+          ci = @iseq.call_info[op]
           block = ci.block || "null"
           ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg?, ci.explicit, block}
           @stack << {block, "block"} if !block.is_a? String
@@ -110,7 +114,7 @@ module LinCAS
           op2, op3 = get_is_and_op(encoded[i += 1])
           name = @iseq.names[op2.value >> 32]
           @stack << {@iseq.jump_iseq[op3], name}
-          mid = "#{name}:#{FuncVisib.new(op.value.to_i32)} at #{op3}"
+          mid = "#{name}:#{FuncVisib.new(op.to_i32)} at #{op3}"
           # Counter i is adjusted to the real instruction count
           pattern % {i - 1, ins, mid, line}
         else
@@ -128,6 +132,11 @@ module LinCAS
         "at:#{offset}" 
       end
     end 
+
+    def get_var_name(symtab, level, offset)
+      level.times { symtab = symtab.previous.not_nil! }
+      return symtab[offset]
+    end
 
     def reset_line
       @line_index = 0
@@ -156,11 +165,11 @@ module LinCAS
     end 
 
     private def get_operand(op_code)
-      return op_code & IS::OP_MASK
+      return (op_code & IS::OP_MASK).value
     end
 
     private def get_is_and_op(is)
-      return {get_instruction(is), get_operand(is).value}
+      return {get_instruction(is), get_operand(is)}
     end
 
   end
