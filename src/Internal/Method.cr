@@ -213,14 +213,14 @@ module LinCAS::Internal
     }
 
 
-    class Method < LcVal
+    class Method < LcBase
         @method   = uninitialized LcMethod
         @receiver = uninitialized  LcVal
         @pym_def  = Pointer(Python::PyMethodDef).null
         property method,receiver,pym_def
     end
 
-    class UnboundMethod < LcVal
+    class UnboundMethod < LcBase
         @method   = uninitialized LcMethod
         property method
     end

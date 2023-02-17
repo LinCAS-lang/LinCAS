@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    abstract class LcBool < LcVal
+    abstract class LcBool < LcBase
     end
 
     class LcBTrue  < LcBool

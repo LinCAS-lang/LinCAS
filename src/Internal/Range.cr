@@ -16,7 +16,7 @@
 
 module LinCAS::Internal
 
-    class LcRange < LcVal
+    class LcRange < LcBase
         @left  : Intnum = 0
         @right : Intnum = 0
         @inclusive = true

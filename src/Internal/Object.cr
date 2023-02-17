@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    class LcObject < LcVal
+    class LcObject < LcBase
     end
 
     class_getter lc_object

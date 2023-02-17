@@ -15,7 +15,7 @@
 
 module LinCAS::Internal
 
-    class LcPyObject < LcVal
+    class LcPyObject < LcBase
         @pyObj  = PyObject.null
         @gc_ref : PyGC::Ref? = nil
         property pyObj,gc_ref

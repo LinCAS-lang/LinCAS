@@ -67,7 +67,7 @@ module LinCAS
             :no_block       => "No block given %s"
         }
 
-        class LcError < LcVal
+        class LcError < LcBase
             @body      : String = ""
             @backtrace : String = ""
             property body, backtrace

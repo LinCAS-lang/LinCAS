@@ -28,7 +28,7 @@ module LinCAS::Internal
     MAX_MATRIX_CAPA = 200 ** 2 
 
 
-    class Matrix < LcVal
+    class Matrix < LcBase
         @ptr  = Pointer( LcVal).null
         @rows = 0.as(IntnumR)
         @cols = 0.as(IntnumR)

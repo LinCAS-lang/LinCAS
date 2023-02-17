@@ -73,6 +73,9 @@ module LinCAS
   alias NameTable = LookUpTable(String, LcVal)
 
   abstract class LcVal
+  end
+
+  abstract class LcBase < LcVal
     @klass  = uninitialized LcClass
     @id     = 0_u64
     @data   = uninitialized IvarTable
@@ -81,7 +84,7 @@ module LinCAS
     property klass, data, id, flags, gc_ref
   end
 
-  class LcClass < LcVal
+  class LcClass < LcBase
     @methods   : MethodTable
     @namespace : NameTable
     @type      : SType

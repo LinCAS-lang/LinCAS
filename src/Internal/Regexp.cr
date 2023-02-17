@@ -40,7 +40,7 @@ module LinCAS::Internal
         Compiled
     end
 
-    class LcRegexp < LcVal
+    class LcRegexp < LcBase
         @flag     = RegexpFlag::Uncompiled
         @origin   = Pointer(LibC::Char).null
         @compiled = uninitialized Pcre

@@ -32,7 +32,7 @@ module LinCAS::Internal
         end
     end
 
-    abstract class LcNum < LcVal
+    abstract class LcNum < LcBase
     end
 
     class Num_ < LcNum
