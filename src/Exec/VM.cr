@@ -166,6 +166,8 @@ module LinCAS
     
     def exec
       #LibC.setjmp(@current_frame.jump_buff.to_unsafe)
+      dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
+      calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
       while true
         ins = next_is
         is, op = get_is_and_operand(ins)
@@ -241,17 +243,25 @@ module LinCAS
         when .push_null?
           push(Null)
         when .call?
-          ci           = @current_frame.call_info[op]
-          bh           = vm_capture_block(ci)
-          calling_info = CallingInfo.new(topn(ci.argc), ci.argc, bh)
+          ci            = @current_frame.call_info[op]
+          bh            = vm_capture_block(ci)
+          calling_info.unsafe_init(
+            topn(ci.argc), 
+            ci.argc, 
+            bh
+          )
           vm_call(ci, calling_info)
         when .call_no_block?
           ci           = @current_frame.call_info[op]
-          calling_info = CallingInfo.new(topn(ci.argc), ci.argc, nil)
+          calling_info.unsafe_init(
+            topn(ci.argc), 
+            ci.argc, 
+            nil
+          )
           vm_call(ci, calling_info)
         when .invoke_block?
           ci = @current_frame.call_info[op]
-          calling_info = CallingInfo.new(
+          calling_info.unsafe_init(
             me: @current_frame.me, 
             argc: ci.argc, 
             block: nil # Should not be used
@@ -435,6 +445,10 @@ module LinCAS
       # argc: number of args on stack
       # block: block handler
       def initialize(@me : LcVal, @argc : Int32, @block : BlockHandler? = nil)
+      end
+
+      def unsafe_init(@me : LcVal, @argc : Int32, @block : BlockHandler? = nil)
+        self
       end
 
       getter me, block
