@@ -176,7 +176,7 @@ module LinCAS
       # but we still want to be able to modify it without returning
       # the object every time.
       # Since we know the object is used only in this scope and its children,
-      # we can create a memory slot in stack with sise of Args instance 
+      # we can create a memory slot in stack with size of Args instance 
       # and cast its pointer to Args. Its equivalent in C is
       # ```
       # Args arg_body, *args;
