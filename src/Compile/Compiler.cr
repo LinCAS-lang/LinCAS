@@ -558,6 +558,7 @@ module LinCAS
         end
         if splat_found && dblsplat_found && !named_args
           encoded << IS::ARRAY_APPEND
+          argc -= 1
         end
       end
       return {argc, splat_found, dblsplat_found}
