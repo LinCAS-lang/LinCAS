@@ -134,6 +134,13 @@ module LinCAS::Internal
         return string
     end
 
+    def self.obj_inspect(obj : LcVal)
+        buffer = Internal.string_buffer_new
+        string_buffer_appender(buffer,obj)
+        buffer_trunc(buffer)
+        return String.new buff_ptr(buffer), buff_size(buffer)
+    end
+
     def self.lc_obj_to_s(obj :  LcVal)
         return build_string(lincas_obj_to_s(obj))
     end
