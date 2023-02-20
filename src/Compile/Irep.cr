@@ -173,7 +173,7 @@ module LinCAS
             @block_arg    # index in the symbol table
           )
         # Opt table is organized like this:
-        # sym table : [ lead ][ optional ][ splat ][ kwarg ][ dbl splat ][ blokarg ]
+        # sym table : [ lead ][ optional ][ splat ][ kwarg ][ dbl splat ][ blockarg ]
         # opt_table           [jump index][skip]
         # In which jump index points to the start of the instruction
         # to set the default value. Skip is the start of the instruction
@@ -183,7 +183,7 @@ module LinCAS
         @named_args = nil.as Hash(String, Tuple(UInt64, Bool))?
       end
 
-      property argc, optc, splat, kwargc, dbl_splat, block_arg
+      getter argc, optc, splat, kwargc, dbl_splat, block_arg
       property! opt_table, named_args
 
       def arg_simple?
