@@ -242,7 +242,7 @@ module LinCAS
       block = vm_get_block
       if block
         env = vm_new_env(block.iseq, calling, block.env, VM::VmFrame::BLOCK_FRAME)
-        iseq_offset = vm_setup_arg_complex(env, block.iseq.arg_info, ci, calling)
+        iseq_offset = vm_setup_block_args(env, block.iseq.arg_info, ci, calling)
         
         set_stack_consistency_trace(calling.argc)
         vm_push_control_frame(

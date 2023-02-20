@@ -15,9 +15,11 @@
 module LinCAS
   module VmArgs 
 
+    UNLIMITED_ARGUMENTS = Float32::INFINITY
+
     macro vm_setup_args_fast_track(ci, calling)
-      vm_set_up_kwargs({{ci}}, {{calling}}) if {{ci}}.has_kwargs?
       vm_set_up_splat({{ci}}, {{calling}}) if {{ci}}.splat
+      vm_set_up_kwargs({{ci}}, {{calling}}) if {{ci}}.has_kwargs?
     end
 
     macro migrate_args_from_splat(env, from, rest, splat, offset = 0)
@@ -27,15 +29,15 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    private def get_splat(index)
-      splat = topn(index)
+    private def get_splat
+      splat = pop
       vm_ensure_type splat, Internal::LcArray
       return lc_recast(splat, Ary) # Force casting to Ary
     end
 
     @[AlwaysInline]
-    private def get_kwsplat(index)
-      kwsplat = topn(index)
+    private def get_kwsplat
+      kwsplat = pop
       vm_ensure_type kwsplat, Internal::LcHash
       return lc_cast(kwsplat, Internal::LcHash)
     end
@@ -43,7 +45,7 @@ module LinCAS
     def vm_check_arity(min, max, given)
       debug "Arg check: min:#{min}, max:#{max}, given: #{given}"
       unless min <= given <= max
-        raise "Wrong number of arguments (given #{given}, expected #{max == Float32::INFINITY ? "#{min}+" : min..max})"
+        raise "Wrong number of arguments (given #{given}, expected #{max == UNLIMITED_ARGUMENTS ? "#{min}+" : min..max})"
       end
     end
 
@@ -86,13 +88,15 @@ module LinCAS
         min_argc = max_argc = argc
       else
         min_argc = argc.abs - 1
-        max_argc = Float32::INFINITY
+        max_argc = UNLIMITED_ARGUMENTS
       end
       vm_check_arity(min_argc, max_argc, calling.argc)
     end
 
     def vm_setup_iseq_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
-      if arg_info.arg_simple? && (!ci.dbl_splat || !ci.has_kwargs?)
+      if arg_info.arg_simple? && (!ci.dbl_splat)
+        # Here we have only positional arguments and optional splat
+        # or positional arguments and kw arguments.
         debug "Setting up arg simple"
         vm_setup_args_fast_track(ci, calling)
         vm_check_arity(arg_info.argc, arg_info.argc, calling.argc)
@@ -104,23 +108,10 @@ module LinCAS
       end
     end
 
-    ##
-    # Assumes max a hash after splat argument.
     private def vm_set_up_splat(ci : CallInfo, calling : VM::CallingInfo)
-      if !ci.dbl_splat || !ci.has_kwargs?
-        debug("Preserving kw args while setting up splat")
-        kwargs = pop
-      end
-      debug("Popping splat array")
-      splat = pop
-      vm_ensure_type splat, Internal::LcArray
-      splat = splat.as(Ary)
+      splat = get_splat
       debug("Splatting array")
       splat.each { |elem| push elem }
-      if kwargs
-        debug("Restoring kwargs")
-        push kwargs
-      end
       calling.argc += (splat.size - 1)
     end
 
@@ -152,244 +143,307 @@ module LinCAS
     # remaining ones (if any).
     # if argc == 0, then orig_argc points to one of
     # the following elements, if provided by the call.
-    struct Args
-      def initialize(
-        @orig_argc : Int32, # relative start of args
-        @argc : Int32, # number of args before splat
-        @splat : Bool = false,
-        @kwsplat : Bool = false,
-        @kwarg : Bool = false,
-        @splat_index = 0
-      ) 
-        @_kwsplat = nil.as(Internal::LcHash?) # Caches double splat
-        @_splat = nil.as(Ary?) # Caches splat
-      end
-      property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat, _kwsplat
+    class Args
+      {%for name in {"initialize", "unsafe_init"}%}
+        def {{name.id}}(
+          # Basic stuff
+          @orig_argc : Int32, # start of args
+          @argc : Int32, # number of args on stack
+
+          @splat_index = 0,
+          @keywords = nil.as(Array(String)?),
+          @kw_values = nil.as(Array(LcVal)?)
+        ) 
+          @_kwsplat = nil.as(Internal::LcHash?) # Caches double splat
+          @_splat = nil.as(Ary?) # Caches splat
+          @env_count = 0
+          self
+        end
+      {% end %}
+      property orig_argc, argc, splat, kwsplat, kwarg, splat_index, _splat, _kwsplat, env_count
+      property! keywords, kw_values
     end
 
 
     def vm_setup_arg_complex(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
       min_argc = arg_info.argc
-      max_argc = arg_info.splat? ? Float32::INFINITY : min_argc + arg_info.optc
+      max_argc = arg_info.splat? ? UNLIMITED_ARGUMENTS : min_argc + arg_info.optc
       iseq_offset = 0
-
-      args = Args.new(calling.argc, ci.argc_before_splat, ci.splat, ci.dbl_splat, ci.has_kwargs?)
+      dbl_splat = false
       
-      # If the method has no kwsplat or kwarguments, then we treat everything
-      # as a positional argument of type hash, or inserted in splat, if present.
-      # the idea is to organise things like this on stack:
-      # [positional][splat]
-      # <-- argc -->      ^ @sp
-      # ^ orig_argc
-      if !arg_info.kwargs? && !arg_info.dbl_splat?
-        debug("Simplifying stack for simple call args")
-        if ci.has_kwargs?
-          vm_set_up_kwargs(ci, calling)
-          if ci.dbl_splat
-            hash = pop
-            vm_merge_kw(topn(0), hash) # To check if hash1 dupped
-            calling.argc -= 1
-          end
-          args.kwarg = false
+      # For performance reasons, we don't want to create an Args object on heap
+      # but we still want to be able to modify it without returning
+      # the object every time.
+      # Since we know the object is used only in this scope and its children,
+      # we can create a memory slot in stack with sise of Args instance 
+      # and cast its pointer to Args. Its equivalent in C is
+      # ```
+      # Args arg_body, *args;
+      # args = &arg_body;
+      # ```
+      # arg_body shall never be touched to prevent memory corruption
+      arg_body = uninitialized UInt8[instance_sizeof(Args)]
+      args = arg_body.to_unsafe.as(Args).unsafe_init(
+        @sp - calling.argc, 
+        given_argc = ci.argc
+      )
+
+      if ci.has_kwargs?
+        args.keywords = ci.kwarg
+        kw_len = args.keywords.size
+        if arg_info.kwargs?
+          # migrate the kw  values to args
+          args.kw_values = Array(LcVal).build(kw_len) { |ptr| ptr.copy_from(@stack.ptr + (@sp - kw_len), kw_len); kw_len}
+          args.argc -= kw_len
+          given_argc -= kw_len
+          @sp -= kw_len # virtually erease keyword parameters from stack
+          calling.argc -= kw_len
+        else
+          # keywords are just a positional hash
+          given_argc = args_kw_to_hash(args)
+          calling.argc -= kw_len - 1
+          dbl_splat = arg_info.dbl_splat?
         end
-        if ci.splat && (ci.dbl_splat || ci.has_kwargs?)
-          value = pop
-          vm_array_append(topn(0), value) # Splat array is always dupped
-          calling.argc -= 1
-          args.kwsplat = false
-        elsif ci.dbl_splat || ci.has_kwargs?
-          args.argc += 1 # kwargs or kwsplat are counted as a positional argument
-        end
-        args.orig_argc = calling.argc
       end
 
-      given_argc = args.argc # splat and double splat not counted yet
-
+      # We are sure there is nothing after splat. This is
+      # ensured at compile time 
       if ci.splat
-        index = calling.argc - args.argc - 1
-        splat = get_splat index
+        splat = get_splat # splat is popped
         given_argc += splat.size - 1 # removing the splat in the counting
         args._splat = splat
+        args.argc -= 1
+        calling.argc -= 1
       end
 
-      if ci.dbl_splat
-        # we just cache the double splat for later use
-        args._kwsplat = get_kwsplat (ci.kwarg? ? ci.kwarg.size : 0)
+      if ci.dbl_splat || dbl_splat
+        args_kwsplat_magic_pop(args)
+        calling.argc -= 1 if !ci.splat
+        given_argc = args_given_argc args
       end
 
       vm_check_arity(min_argc, max_argc, given_argc)
+
+      # if we have a splat, we may have more than positional
+      # or optional arguments on stack. We want to move the
+      # exceeding ones to the splat, so that we don't run
+      # into problems when migrating everything to env.
+      # At this point we know we have a splat, otherwise
+      # the argc check would have failed due to too many args
+      truncate = min_argc + arg_info.optc
+      if args.argc > truncate
+        args_copy(args, truncate)
+        calling.argc = truncate 
+      end
+
+      # Now we have this situation:
+      # stack = [m1, m2, m3, ..., mN]
+      #                             ^@sp
+      # args
+      #  |> orig_argc = @sp - N
+      #  |> argc = N
+      #  |> _splat = Ary?
+      #  |> _kwsplat = LcHash?
+      #  |> keywords = Array(String)?
+      #  |> kw_values = Array(LcVal)?
+      #
+      # We migrate the arguments at this point and start from there.
+      # We have the positional arguments in place, splat, keywords
+      # or kwsplat in args, ready to be fixed in env
+      vm_migrate_args(env, calling)
+
       if arg_info.argc > 0
-        args = args_setup_positional(env, arg_info, args)
+        args_setup_positional(env, arg_info, args)
       end
+
       if arg_info.optc > 0
-        iseq_offset, args = args_setup_opt(env, arg_info, args)
+        iseq_offset = args_setup_opt(env, arg_info, args)
       end
+
       if arg_info.splat?
         args_setup_splat(env, arg_info, args)
       end
-
-      # We may not have kw args from the call (ci.kwarg)
-      # so we pass an empty static array instead. This is
-      # a small memory optimization
-      tmp = uninitialized String[0]
-      if arg_info.kwargc > 0
-        args_setup_kw(env, arg_info, args, ci.kwarg? || tmp)
+      
+      if arg_info.kwargs?
+        if args.kw_values?
+          args_setup_kw(env, arg_info, args)
+        elsif kwsplat = args._kwsplat
+          # TODO: what if splat keys are not symbols?
+          # For now just raise a type error
+          args.keywords, args.kw_values = split_kwsplat(kwsplat)
+          args_setup_kw(env, arg_info, args)
+        else
+          args.keywords = nil
+          args_setup_kw(env, arg_info, args)
+        end
+      elsif arg_info.dbl_splat?
+        args_setup_kwsplat(env, arg_info, args)
+      elsif (kwsplat = args._kwsplat) && kwsplat.size > 0
+        unknown = gather_unknown_keywords(kwsplat)
+        argument_kwerror "Unknown", unknown
       end
-
-      # At this point we have consumed all the arguments before splat
-      # and the splat itself. We are also sure that all the explicit
-      # keywords are set. We just miss to set up a double splat if existing.
-      # In case the method doesn't we have to throw an error on every extra
-      # keyword argument provided.
-      # The following method behaves differently then the previous ones and
-      # it is delegated to raise the error
-      args_setup_kwsplat(env, arg_info, args, ci.kwarg? || tmp)
-
+      
+      if arg_info.block_arg?
+        args_setup_block_arg(env, arg_info.block_arg, calling.block)
+      end
+      
       return iseq_offset
     end
 
-    private def args_setup_positional(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
-      elem_p = @sp - args.orig_argc
-      offset = 0
-      if arg_info.argc <= args.argc
-        # All positional arguments are already in args.argc
-        vm_migrate_args env, elem_p, offset, arg_info.argc
-        args.orig_argc -= arg_info.argc
-        args.argc -= arg_info.argc
+    @[AlwaysInline]
+    private def args_kw_to_hash(args : Args)
+      keywords = args.keywords
+      kw_start = args.orig_argc + (args.argc - keywords.size)
+      hash = Internal.build_hash
+      keywords.each_with_index do |name, i|
+        Internal.lc_hash_set_index(hash, Internal.string2sym(name), @stack[kw_start + i])
+      end
+      args.argc -= keywords.size - 1
+      @sp = kw_start # virtually erease the keyword values from stack
+      push hash 
+      return args.argc
+    end
+
+    ##
+    # It pops the keyword hash. If splat is given,
+    # then kwsplat is the last element. Otherwise
+    # pop it from stack
+    @[AlwaysInline]
+    private def args_kwsplat_magic_pop(args : Args)
+      kwsplat = nil
+      if !(splat = args._splat)
+        kwsplat = get_kwsplat
+        args.argc -= 1
+      elsif splat.size > 0 
+        kwsplat = splat.pop
+        vm_ensure_type kwsplat, Internal::LcHash
+      end
+      args._kwsplat = kwsplat.as Internal::LcHash
+    end
+
+    @[AlwaysInline]
+    private def args_given_argc(args : Args)
+      if splat = args._splat
+        return args.argc + splat.size
       else
-        # Positional arguments are partially in args.argc and splat
-        lc_bug "Failed to detect missing arguments" unless args.splat
-        vm_migrate_args env, elem_p, offset, args.argc
+        return args.argc
+      end
+    end
+
+    ##
+    # This is an unsafe function.
+    # It moves arguments from stack to a splat.
+    # The moved arguments are placed before the splat content
+    @[AlwaysInline]
+    private def args_copy(args : Args, truncate)
+      start = args.orig_argc + truncate
+      rest = args.argc - truncate
+      orig = @stack.ptr + start
+      if splat = args._splat
+        splat_p = splat.ptr
+        if splat.size + rest > splat.total_size
+          splat.total_size = splat.size + rest
+          splat.ptr = splat_p = splat_p.realloc(splat.total_size)
+        end
+        (splat_p + rest).move_from(splat_p, splat.size)
+        splat_p.copy_from(orig, rest)
+      else
+        splat = Ary.new rest
+        splat.ptr.copy_from(orig, rest)
+        args._splat = splat
+      end
+      @sp = start
+    end
+
+    private def args_setup_positional(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
+      debug "Setting up positional args"
+      argc = arg_info.argc
+      if argc <= args.argc
+        # It's ok. Everything is on place
+        args.argc -= argc
+      else
+        debug "Setting up positional args from splat"
+        # We have a splat for sure.
         splat = args._splat.not_nil!
-        from = args.argc
-        args.splat_index = rest = arg_info.argc - from
-        migrate_args_from_splat(env, from, rest, splat)
-        args.orig_argc -= args.argc
+        i = args.argc
+        j = 0
+        while i < argc
+          env[i] = splat[j]
+          i += 1
+          j += 1
+        end
+        args.splat_index = j
         args.argc = 0
       end
-      return args
+      args.env_count = argc
     end
 
     private def args_setup_opt(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
-      elem_p = @sp - args.orig_argc 
-      offset = arg_info.argc # opt start in env
+      i = 0
       optc = arg_info.optc
-      if optc <= args.argc
-        # All the opt args are already on stack
-        debug("Setting up opt args from stack")
-        vm_migrate_args(env, elem_p, offset, optc)
-        args.orig_argc -= optc
-        args.argc      -= optc
-        iseq_offset     = arg_info.opt_table[optc]
+
+      if args.argc >= optc
+        # Everything is already in place
+        args.argc -= optc
+        i = optc
       else
-        # we have some opt arg on stack, maybe a splat too
-        vm_migrate_args(env, elem_p, offset, args.argc)
-        if args.splat
-          # partial or zero opt args are on stack, but we have a splat
-          debug("Setting up opt args from stack + splat")
-          splat       = args._splat.not_nil!
-          splat_index = args.splat_index
-          from        = arg_info.argc + args.argc
-          if splat.size - splat_index >= optc - args.argc
-            # splat has all the opt_args (we don't care if splat has more)
-            debug("Setting up opt args from splat (complete)")
-            migrate_args_from_splat(env, from, optc - args.argc, splat, splat_index)
-            args.splat_index += optc - args.argc
-            iseq_offset       = arg_info.opt_table[optc]
-          else
-            # Splat has only partial opt args
-            debug("Setting up opt args from splat (partial)")
-            rest = splat.size - splat_index
-            migrate_args_from_splat(env, from, rest, splat, splat_index)
-            args.splat_index = splat.size.to_i32
-            iseq_offset = arg_info.opt_table[rest]
+        i = args.argc
+        j = args.env_count
+        args.argc = 0
+
+        if splat = args._splat
+          debug "Setting up opt from splat"
+
+          size = splat.size
+          while i < optc && args.splat_index < size
+            env[j] = splat[args.splat_index]
+            i += 1
+            j += 1
+            args.splat_index += 1
           end
-        else
-          iseq_offset = arg_info.opt_table[args.argc]
         end
-        args.orig_argc -= args.argc
-        args.argc = 0 
       end
-      return {iseq_offset, args}
+      args.env_count += optc # doesn't matter if we don't have all the optc
+      return arg_info.opt_table[i]
     end
 
     private def args_setup_splat(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
-      argc = args.argc
-      if args.splat
-        ary = splat = args._splat.not_nil!
-        if argc == 0
-          if args.splat_index == 0
-            # Splat is just the given splat
-
-            # nothing to do here
-            debug "Setting up splat = given splat"
-          else
-            # splat is just partial. Shift the remaining values to the left
-            # unsafe code below
-            debug "Setting up remaining splat"
-            size = splat.size - args.splat_index
-            splat.ptr.move_from(splat.ptr + args.splat_index, size)
-            splat.size = size
-          end
-        else
-          debug "Setting up splat stack + splat"
-          # we have some arg left on stack + splat
-          # unsafe code below
-          new_capa = splat.size + argc
-          if new_capa > splat.total_size
-            splat.ptr = splat.ptr.realloc(new_capa)
-            splat.total_size = new_capa
-          end
-          tmp = splat.ptr + argc
-          tmp.move_from(splat.ptr, splat.size)
-          tmp -= argc
-          tmp.copy_from(@stack.ptr + (@sp - args.orig_argc), argc)
-          splat.size = new_capa
+      debug "Setting up splat"
+      if splat = args._splat
+        unless args.splat_index.zero?
+          size = splat.size - args.splat_index
+          splat.ptr.move_from(splat.ptr + args.splat_index, size)
+          splat.size = size
         end
-      elsif argc > 0
-        # we have no splat given, but we have args left on stack
-        debug "Setting up splat from stack"
-        ary = Ary.new argc
-        orig_argc = args.orig_argc
-        argc.times do |i|
-          ary[i] = topn(orig_argc - i - 1) # Slower code, but safe
-        end
+        env[args.env_count] = splat.as(LcVal)
+        args._splat = nil
       else
-        # splat is just an empty array
-        debug "Setting up empty splat"
-        ary = Internal.build_ary_new
+        env[args.env_count] = Internal.build_ary_new
       end
-      env[arg_info.splat] = ary
+      args.env_count += 1
     end
 
     # kw is an array of strings or an empty static array. 
     # We leave the compiler infer the type
-    private def args_setup_kw(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args, kw)
+    private def args_setup_kw(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
       debug("Setting up keyword arguments")
       kw_bit = 0u64
-      kw_relative_start = kw.size - 1
-      kwsplat = args._kwsplat # get from cached object. Could be nil...
       env_relative_start = arg_info.argc + arg_info.optc + (arg_info.splat? ? 1:0)
 
-      vm_ensure_type kwsplat, Internal::LcHash if kwsplat
       missing = nil
-      kwrest  = nil
+      found = 0
+      tmp0 = uninitialized String[0]
+      tmp1 = uninitialized LcVal[0]
+
+      keywords = args.keywords? || tmp0
+      kw_values = args.kw_values? || tmp1
 
       arg_info.named_args.each do |name, (index, mandatory)|
-        if kw.includes? name
-          kw_index = kw.index! name
-          env[index] = topn(kw_relative_start - kw_index)
-          kw_bit |= 0x01 << (index - env_relative_start)
-        elsif kwsplat
-          sym = Internal.string2sym(name)
-          if Internal.hash_has_key(kwsplat, sym)
-            value = Internal.lc_hash_fetch(kwsplat, Internal.string2sym(name))
-            env[index] = value
-            kw_bit |= 0x01 << (index - env_relative_start)
-          else
-            missing = [] of String unless missing
-            missing << name if mandatory
-          end
+        if keywords.includes? name
+          kw_index = keywords.index! name
+          env[index] = kw_values[kw_index]
+          kw_bit |= 0x01 << (index - args.env_count)
+          found += 1
         elsif mandatory
           missing = [] of String unless missing
           missing << name
@@ -397,50 +451,91 @@ module LinCAS
           # do nothing
         end
       end
-      argument_kwerror "Missing", missing if missing && !missing.empty?
+      argument_kwerror "Missing", missing if missing
+
+      if arg_info.dbl_splat?
+        env[arg_info.dbl_splat] = make_dbl_splat(arg_info, keywords, kw_values)
+      elsif found != keywords.size
+        unknown = keywords.to_a - arg_info.named_args.keys
+        argument_kwerror "Unknown", unknown
+      end
       env.kw_bit = kw_bit
     end
 
-    private def args_setup_kwsplat(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args, kw)
-      kwsplat = args._kwsplat
-      allowed_kw = arg_info.kwargs? ? arg_info.named_args : NamedTuple.new
-      total_kw = kw.size + (kwsplat ? kwsplat.size:0) - env.kw_bit.popcount # total kw passed - total kw matched
-      if total_kw == 0
-        env[arg_info.dbl_splat] = Internal.build_hash if arg_info.dbl_splat?
-        # otherwise do nothing
-      elsif !arg_info.dbl_splat?
-        # we have unknown keywords
-        unknown = [] of String
-        kw.each do |name|
-          unknown << name unless allowed_kw.has_key? name
+    @[AlwaysInline]
+    private def make_dbl_splat(arg_info, passed_kw, passed_val)
+      acceptable_kw = arg_info.named_args
+      hash = Internal.build_hash
+      passed_kw.each_with_index do |kw, i|
+        unless acceptable_kw.has_key? kw
+          key = Internal.string2sym(kw)
+          Internal.lc_hash_set_index(hash, key, passed_val[i])
         end
-        if kwsplat
-          Internal.hash_each_key(kwsplat) do |key|
-            name = Internal.sym2string(key) # Temporary solution. Should call obj_any2string
-            unknown << name unless allowed_kw.has_key? name
-          end
+      end
+      return hash
+    end
+
+    @[AlwaysInline]
+    private def args_setup_kwsplat(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
+      if !(kwsplat = args._kwsplat)
+        kwsplat = Internal.build_hash
+      end
+      env[arg_info.dbl_splat] = kwsplat
+    end
+
+    @[AlwaysInline]
+    private def split_kwsplat(kwsplat : Internal::LcHash)
+      keywords = Array(String).new initial_capacity: kwsplat.size
+      values = Array(LcVal).new initial_capacity: kwsplat.size
+      Internal.hash_iterate(kwsplat) do |entry|
+        key = entry.key
+        value = entry.value
+        if key.is_a? Internal::LcSymbol
+          keywords << Internal.sym2string(key)
+          values << value
+        else
+          lc_raise(LcTypeError, "Hash key #{Internal.obj_inspect(key)} is not a symbol")
         end
-        argument_kwerror "Unknown", unknown if !unknown.empty? # this if condition is somehow redundant
+      end
+      return {keywords, values}
+    end
+
+    private def gather_unknown_keywords(kwsplat : Internal::LcHash)
+      keys = [] of String
+      Internal.hash_each_key(kwsplat) do |key|
+        keys << if key.is_a? Internal::LcSymbol
+          Internal.sym2string(key)
+        else
+          Internal.obj_inspect(key)
+        end
+      end
+      return keys
+    end
+
+    @[AlwaysInline] 
+    private def args_setup_block_arg(env : VM::Environment, index : Int32, block : VM::BlockHandler?)
+      if block
+        if block.is_a? LcBlock
+          block = Internal.lincas_block_to_proc block
+        end
+        env[index] = block
+      end
+    end
+
+    protected def vm_setup_block_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
+      if arg_info.arg_simple?
+        vm_setup_args_fast_track(ci, calling)
+        vm_migrate_args(env, calling)
+        # TODO: code for autosplat
+
+        if calling.argc > arg_info.argc
+          # truncate? 
+        else
+          # Nothing to do. Args in env are already set to null
+        end
+        return 0
       else
-        # We have a splat to put all the missing keywords
-        new_kwsplat = Internal.build_hash
-        kwbeg = kw.size - 1 # where kw values start on stack
-        # We push the remaining passed keywords
-        kw.each_with_index do |name, i|
-          unless allowed_kw.has_key? name
-            key = Internal.string2sym(name)
-            value = topn(kwbeg - i)
-            Internal.lc_hash_set_index(new_kwsplat, key, value)
-          end
-        end
-        # We push the remaining keywords from the passed double splat
-        if kwsplat
-          Internal.hash_iterate(kwsplat) do |entry|
-            name = Internal.sym2string(entry.key) # Temporary. Key could be anything
-            Internal.lc_hash_set_index(new_kwsplat, entry.key, entry.value) unless allowed_kw.has_key? name
-          end
-        end
-        env[arg_info.dbl_splat] = new_kwsplat
+        return vm_setup_arg_complex(env, arg_info, ci, calling)
       end
     end
 

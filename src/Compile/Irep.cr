@@ -208,6 +208,11 @@ module LinCAS
       def kwargs?
         @kwargc > 0
       end
+
+      @[AlwaysInline]
+      def block_arg?
+        @block_arg >= 0
+      end
     end
 
     struct Location 
