@@ -166,6 +166,7 @@ module LinCAS
 
 
     def vm_setup_arg_complex(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
+      debug("Setup arg complex")
       min_argc = arg_info.argc
       max_argc = arg_info.splat? ? UNLIMITED_ARGUMENTS : min_argc + arg_info.optc
       iseq_offset = 0
