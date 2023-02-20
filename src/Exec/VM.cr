@@ -310,7 +310,7 @@ module LinCAS
         when .merge_kw?
           hash2 = pop 
           hash1 = topn(0)
-          vm_merge_kw(hash1, hash1)
+          vm_merge_kw(hash1, hash2)
         when .dup_hash?
           hash = vm_dup_hash pop
           push hash
