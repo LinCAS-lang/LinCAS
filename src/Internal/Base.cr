@@ -99,14 +99,14 @@ module LinCAS
     def initialize(@type, @name, @parent = nil)
       @methods   = MethodTable.new 
       @namespace = NameTable.new
-      @ivar      = IvarTable.new
+      @data      = IvarTable.new
     end
 
     def initialize(@type, @name, @parent, @methods, @namespace)
-      @ivar = IvarTable.new
+      @data = IvarTable.new
     end
 
-    def initialize(@type, @name, @parent, @methods, @namespace, @ivar : IvarTable)
+    def initialize(@type, @name, @parent, @methods, @namespace, @data : IvarTable)
     end
 
     def is_class?
