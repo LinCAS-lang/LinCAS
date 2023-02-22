@@ -1055,7 +1055,7 @@ module LinCAS
           if block_var_follows?
             return parse_call_block_arg(args.empty? ? nil : args, check_par: true)
           end 
-          if @token.type == :IDENT && current_char == ':'
+          if @token.type == :IDENT && next_comes_colon_space?
             return parse_named_call_args(args.empty? ? nil : args, allow_newline: true)
           else 
             arg = parse_call_arg(double_splat)
@@ -1124,7 +1124,7 @@ module LinCAS
           return parse_call_block_arg(args.empty? ? nil : args , check_par: false)
         end 
         
-        if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && current_char == ':'
+        if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && next_comes_colon_space?
           return parse_named_call_args(args.empty? ? nil : args, allow_newline: false)
         else 
           arg = parse_call_arg(double_splat)
