@@ -200,25 +200,21 @@ module LinCAS
         when .setinstance_v?
           name = @current_frame.names[op]
           value = pop 
-          me    = pop
-          vm_setinstance_v(name, me, value)
+          vm_setinstance_v(name, @current_frame.me, value)
           push(value)
         when .getinstance_v?
           name = @current_frame.names[op]
-          me   = pop
-          value = vm_getinstance_v(name, me)
+          value = vm_getinstance_v(name, @current_frame.me)
           push(value)
         when .setclass_v?
           name  = @current_frame.names[op]
           value = pop 
-          me    = pop
-          vm_setclass_v(name, me, value)
+          vm_setclass_v(name, @current_frame.me, value)
           push(value)
         when .getclass_v?
           name = @current_frame.names[op]
-          me   = pop
-          value = vm_getinstance_v(name, me)
-          # push(value)
+          value = vm_getclass_v(name, @current_frame.me)
+          push(value)
         when .storeconst?
           name  = @current_frame.names[op]
           value = pop 
@@ -227,9 +223,7 @@ module LinCAS
           push(value)
         when .getconst?
           name  = @current_frame.names[op]
-          me    = pop
-          vm_getconst(name, me)
-          # push(value)
+          push(vm_getconst(name, pop))
         when .pop?
           pop
         when .pushobj?

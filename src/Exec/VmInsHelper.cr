@@ -133,16 +133,63 @@ module LinCAS
       return (value = me.data[name]?) ? value : Null
     end
 
-    protected def vm_setclass_v(name : String, me : LcVal, value : LcVal)
+    @[AlwaysInline]
+    private def self_or_class(obj : LcVal)
+      klass = obj
+      if !obj.is_a? LcClass
+        klass = obj.klass
+      end
+      return klass.as LcClass
     end
 
+    @[AlwaysInline]
+    protected def find_cvar_def(klass : LcClass, name : String)
+      found = false
+      while klass && !klass.data[name]?
+        klass = klass.parent
+      end
+      return klass
+    end
+
+    @[AlwaysInline]
+    protected def vm_setclass_v(name : String, me : LcVal, value : LcVal)
+      base = self_or_class me
+      klass = find_cvar_def(base, name) || base
+      klass.data[name] = value
+    end
+
+    @[AlwaysInline]
     protected def vm_getclass_v(name : String, me : LcVal)
+      base = self_or_class me
+      klass = find_cvar_def(base, name)
+      if klass
+        return klass.data[name]
+      end
+      lc_raise(LcNameError, "Uninitialized class variable #{name} in #{Internal.class_path(base)}")
     end
 
     protected def vm_storeconst(name : String, me : LcVal, value : LcVal)
+      base = self_or_class me
+      if !base.namespace.find name, const: true
+        Internal.lc_define_const(base, name, value)
+      else
+        lc_raise(LcNameError, "Constant #{name} already defined")
+      end
     end
 
+    ##
+    # TODO: what if we have this case:
+    #```
+    # class C { const CONST := 10}
+    # c = C
+    # printl c::CONST
+    # ```
+    # for now `c` is assumed to be another constant
     protected def vm_getconst(name : String, me : LcVal)
+      base = self_or_class me
+      const = Internal.lc_seek_const(base, name)
+      return const if const
+      lc_raise(LcNameError, "Uninitialized const #{name}")
     end
 
     protected def vm_capture_block(ci : CallInfo)
@@ -258,7 +305,7 @@ module LinCAS
     end
 
     protected def vm_putclass(me : LcVal, name : String, parent : LcVal, iseq : ISeq)
-      context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
+      context = self_or_class me
 
       if !(parent.is_a?(LcClass) && parent.is_class?) && parent != Null
         lc_raise(LcTypeError, "Parent must be a class (#{Internal.lc_typeof(parent)} given)")
