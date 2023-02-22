@@ -239,6 +239,7 @@ module LinCAS::Internal
     end 
 
     def self.lc_seek_const(str : LcClass, name : String)
+      return str if str.name == name
       const = seek_const_in_scope(str.namespace,name)
       return const if const
       parent = str.parent
