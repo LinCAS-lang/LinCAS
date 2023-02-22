@@ -76,12 +76,13 @@ module LinCAS
   end
 
   abstract class LcBase < LcVal
-    @klass  = uninitialized LcClass
+    @klass  = nil.as LcClass?
     @id     = 0_u64
-    @data   = uninitialized IvarTable
+    @data   = nil.as IvarTable?
     @flags  : ObjectFlags = ObjectFlags::NONE
     @gc_ref : Internal::PyGC::Ref? = nil
-    property klass, data, id, flags, gc_ref
+    property id, flags, gc_ref
+    property! klass, data
   end
 
   class LcClass < LcBase
