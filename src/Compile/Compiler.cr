@@ -736,10 +736,10 @@ module LinCAS
     end
 
     def compile_icvar(iseq, node : ClassVar | InstanceVar)
-      symtab = iseq.symtab
+      names = iseq.names
       name   = node.name 
-      symtab << name 
-      index = get_index_of(symtab, name)
+      set_uniq_name names, name 
+      index = get_index_of(names, name)
       is = node.is_a?(ClassVar) ? IS::GETCLASS_V : IS::GETINSTANCE_V
       iseq.encoded << (is | IS.new(index))
     end 

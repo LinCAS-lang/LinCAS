@@ -85,7 +85,7 @@ module LinCAS
           pattern % {i, ins, nil, line}
         when .setlocal_0?, .setinstance_v?, .setclass_v?,
              .getlocal_0?, .getconst?, .storeconst?
-          pattern % {i, ins, @iseq.symtab[op], line}
+          pattern % {i, ins, @iseq.names[op], line}
         when .setlocal_1?, .getlocal_1?
           pattern % {i, ins, get_var_name(@iseq.symtab, 1, op), line}
         when .setlocal_2?, .getlocal_2?
