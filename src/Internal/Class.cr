@@ -314,17 +314,6 @@ module LinCAS::Internal
     #  while klass.type.metaclass?
     #end
 
-
-    def self.lc_class_eq(klass :  LcVal, other :  LcVal)
-      return val2bool(klass.class == other.class &&
-                      type_of(klass) == type_of(other) &&
-                      (lc_class_compare(klass,other) == lctrue))
-    end
-
-    def self.lc_class_ne(klass :  LcVal, other)
-      return lc_bool_invert(lc_class_eq(klass,other))
-    end
-
     def self.lc_class_defrost(klass :  LcVal)
       klass.flags &= ~ObjectFlags::FROZEN 
       return klass 
@@ -510,8 +499,6 @@ module LinCAS::Internal
     def self.init_class
         # @@main_class     = lc_build_class("BaseClass")
         @@lc_class        = lc_build_class_class
-        add_static_method(@@lc_class,"==",   lc_class_eq,         1)
-        add_static_method(@@lc_class,"!=",   lc_class_ne,         1)
         add_static_method(@@lc_class,"to_s", lc_class_to_s,       0)
         add_static_method(@@lc_class,"name", lc_class_to_s,       0)
         add_static_method(@@lc_class,"inspect",lc_class_inspect,  0)
