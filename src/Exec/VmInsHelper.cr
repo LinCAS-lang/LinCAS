@@ -304,6 +304,18 @@ module LinCAS
       end
     end
 
+    private def vm_search_const_under(klass : LcClass, name : String)
+      const = Internal.lc_seek_const klass, name, exclude: true, recurse: false
+      return const if const
+      if klass == Internal.lc_object
+        parent = klass
+        while parent = parent.parent
+          const = Internal.lc_seek_const klass, name, exclude: true, recurse: false
+          return const if const
+        end
+      end
+    end
+
     protected def vm_putclass(me : LcVal, name : String, parent : LcVal, iseq : ISeq)
       context = self_or_class me
 
@@ -311,7 +323,7 @@ module LinCAS
         lc_raise(LcTypeError, "Parent must be a class (#{Internal.lc_typeof(parent)} given)")
       end
 
-      c_def = Internal.lc_seek_const context, name
+      c_def = vm_search_const_under context, name
       if c_def.is_a?(LcClass) && c_def.is_class?
         vm_check_frozen_object c_def, "Can't reopen a frozen class"
         unless parent == Null
@@ -332,7 +344,7 @@ module LinCAS
 
     protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)
       context = me.is_a?(LcClass) ? me.as(LcClass) : me.klass
-      m_def = Internal.lc_seek_const context, name
+      m_def = vm_search_const_under context, name
       if m_def.is_a?(LcClass) && m_def.is_module?
         vm_check_frozen_object m_def, "Can't reopen a frozen module"
       elsif m_def.nil?

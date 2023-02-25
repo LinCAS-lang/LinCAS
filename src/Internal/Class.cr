@@ -238,20 +238,20 @@ module LinCAS::Internal
       return nil
     end 
 
-    def self.lc_seek_const(str : LcClass, name : String)
+    def self.lc_seek_const(str : LcClass, name : String, exclude = false, recurse = true)
       return str if str.name == name
-      const = seek_const_in_scope(str.namespace,name)
-      return const if const
-      parent = str.parent
+      parent = str
       while parent
+        break if exclude && parent == @@lc_object && str != @@lc_object
         const = parent.namespace.find(name, const: true)
         if const
           check_pystructs(parent,const)
           return const
         end
+        break unless recurse
         parent = parent.parent
       end
-      return nil
+      return !exclude ? seek_const_in_scope(str.namespace,name) : nil
     end
 
     def self.lc_find_allocator(klass : LcClass)
