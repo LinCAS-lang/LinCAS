@@ -445,6 +445,8 @@ module LinCAS
         disable_regex
         next_token
         InstanceVar.new(name).at location
+      when :"::"
+        parse_ident
       else
         unexpected_token
         Noop.new
@@ -835,6 +837,10 @@ module LinCAS
     end
 
     def parse_id_or_call
+      if next_comes_colon_colon?
+        return parse_ident
+      end
+
       location   = @token.location
       is_capital = @token.type == :CAPITAL_VAR
       name       = @token.value.to_s 
@@ -1055,7 +1061,7 @@ module LinCAS
           if block_var_follows?
             return parse_call_block_arg(args.empty? ? nil : args, check_par: true)
           end 
-          if @token.type == :IDENT && next_comes_colon_space?
+          if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && next_comes_colon_space?
             return parse_named_call_args(args.empty? ? nil : args, allow_newline: true)
           else 
             arg = parse_call_arg(double_splat)
@@ -1395,6 +1401,10 @@ module LinCAS
       self.set_current_pos = pos 
       return comes_colon_space
     end 
+
+    def next_comes_colon_colon?
+      return current_char == ':' && peek_char == ':'
+    end
 
     def block_var_follows?
       @token.type == :"&" && !current_char.ascii_whitespace?
