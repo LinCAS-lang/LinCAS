@@ -625,6 +625,7 @@ module LinCAS
     def compile_const_def(iseq, node : ConstDef)
       names = iseq.names
       name   = node.name
+      iseq.encoded << IS::PUSH_SELF
       compile_each(iseq, node.exp)
       set_line(iseq,node)
       set_uniq_name names, name
@@ -643,7 +644,13 @@ module LinCAS
         set_line(iseq, node.location)
         size = names.size - 1
         stack_increase
-        encoded << IS::PUSH_SELF
+        if !node.global
+          encoded << IS::PUSH_SELF
+        else
+          index = iseq.object.size.to_u64
+          encoded << (IS::PUSHOBJ | IS.new(index))
+          iseq.object << Internal.lc_object
+        end
         names.each_with_index do |name, i|
           break if !last && i == size 
           set_uniq_name symtab, name 
