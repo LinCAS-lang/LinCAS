@@ -171,13 +171,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_eq(obj1 :  LcVal, obj2 :  LcVal)
-        return lcfalse unless obj1.class == obj2.class
-        if obj1.is_a? LcClass
-            return lc_class_eq(obj1,obj2)
-        else
-            return lctrue if obj1.id == obj2.id
-        end 
-        return lcfalse
+        return val2bool(obj1.object_id == obj2.object_id)
     end
 
     def self.lc_obj_freeze(obj :  LcVal)
