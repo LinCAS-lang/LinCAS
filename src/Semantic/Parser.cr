@@ -1478,18 +1478,12 @@ module LinCAS
       return (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && current_char == ':' && peek_char != ':'
     end 
 
+    @[AlwaysInline]
     def next_comes_colon_space?
-      pos = current_pos 
-      comes_colon_space = false
-      if next_char_no_column_increment == ':'
-        if peek_char == ' '
-          comes_colon_space = true 
-        end 
-      end 
-      self.set_current_pos = pos 
-      return comes_colon_space
+      return current_char == ':' && peek_char == ' '
     end 
 
+    @[AlwaysInline]
     def next_comes_colon_colon?
       return current_char == ':' && peek_char == ':'
     end
