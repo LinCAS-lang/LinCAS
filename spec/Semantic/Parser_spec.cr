@@ -278,4 +278,11 @@ describe Parser do
   assert_syntax_error "yield", "Invalid yield"
   assert_syntax_error "let foo {yield &block}", "Block argument should not be given"
   assert_syntax_error "let foo {yield &:to_s}", "Block should not be given"
+
+  it_parses_single "[]", ArrayLiteral.new([] of Node)
+  it_parses_single "[1, 2, 3]", ArrayLiteral.new([1.int, 2.int, 3.int] of Node)
+  it_parses_single "[1, :b]", ArrayLiteral.new([1.int, ":b".symbol] of Node)
+  it_parses_single "A::B::C", Namespace.new(["A", "B", "C"])
+  it_parses_single "::A::B::C", Namespace.new(["A", "B", "C"], true)
+  it_parses_single "::A", Namespace.new(["A"], true)
 end
