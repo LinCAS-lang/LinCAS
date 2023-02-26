@@ -80,6 +80,8 @@ module LinCAS
         compile_self(iseq, node)
       when Yield
         compile_yield(iseq, node)
+      when Body # parenthesized expressions
+        compile_body(iseq, node)
       else
       end
     end
