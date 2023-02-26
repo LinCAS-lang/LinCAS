@@ -373,7 +373,7 @@ module LinCAS
 
       encoded = iseq.encoded
       set_line(iseq, node.location)
-      compile(iseq, condition)
+      compile_each(iseq, condition)
       stack_decrease
       jump1 = encoded.size
       encoded.push IS::JUMPF
