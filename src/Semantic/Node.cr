@@ -305,6 +305,13 @@ module LinCAS
     def_equals name 
   end
 
+  class ArrayLiteral < Node
+    def initialize(@exps : Array(Node))
+    end
+    getter exps
+    def_equals exps
+  end
+
   class Self < Node 
   end
 

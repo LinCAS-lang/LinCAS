@@ -188,6 +188,11 @@ module LinCAS
       return exp
     end
 
+    def parse_op_assign_no_control(allow_ops = true, allow_suffix = true, is_condition = false)
+      check_void_expression_kw
+      parse_op_assign(allow_ops, allow_suffix, is_condition)
+    end
+
     def parse_op_assign(allow_ops = true, allow_suffix = true, is_condition = false)
       location = @token.location 
       
@@ -434,7 +439,12 @@ module LinCAS
         next_token
         SymbolLiteral.new(value)
       #when :"{"
-      #when :"["
+      when :"["
+        parse_array
+      when :"[]"
+        parse_empty_array
+      when :"("
+        parse_parenthesized_expression
       when :CLASS_VAR
         name = @token.value.to_s
         disable_regex
@@ -919,6 +929,84 @@ module LinCAS
         parser_raise("Both block arg and actual block given", location) 
       end
       return Call.new(Noop.new, name, args, named_args, block_arg, block).at location
+    end
+
+    def parse_array
+      location = @token.location
+      enable_regex
+      next_token_skip_space_or_newline
+
+      exps = [] of Node
+
+      while @token.type != :"]"
+        exp_location = @token.location
+
+        if @token.type == :"*"
+          next_token_skip_space_or_newline
+          exp = Splat.new(parse_op_assign_no_control).at exp_location
+        else
+          exp = parse_op_assign_no_control
+        end
+
+        exps << exp
+        skip_space
+
+        if @token.type == :","
+          enable_regex
+          next_token_skip_space_or_newline
+        else
+          skip_space_or_newline
+          check :"]" 
+          break
+        end
+      end
+      disable_regex
+
+      next_token_skip_space
+
+      return ArrayLiteral.new(exps).at location
+    end
+
+    def parse_empty_array
+      location = @token.location
+      next_token_skip_space
+      return ArrayLiteral.new([] of Node).at location
+    end
+
+    def parse_parenthesized_expression
+      location = @token.location
+      enable_regex
+
+      next_token_skip_space_or_newline
+      if @token.type == :")"
+        return Noop.new.at location
+      end
+
+      node = Body.new
+
+      @stop_on_do = false
+
+      loop do
+        node << parse_expression
+        case @token.type
+        when :")"
+          disable_regex
+          next_token_skip_space
+          break
+        when :EOL, :";"
+          next_token_skip_space_or_newline
+          if @token.type == :")"
+            disable_regex
+            next_token_skip_space
+            break
+          end
+        else
+          unexpected_token :")"
+        end
+      end
+
+      unexpected_token if @token.type == :"("
+      return node.at location
     end
 
     def parse_atomic_post(atomic : Node, location)
