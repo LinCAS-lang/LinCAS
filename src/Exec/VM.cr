@@ -165,7 +165,7 @@ module LinCAS
     end
     
     def exec
-      #LibC.setjmp(@current_frame.jump_buff.to_unsafe)
+      LibC.setjmp(@current_frame.jump_buff)
       dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
       calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
       while true
@@ -365,7 +365,7 @@ module LinCAS
     end
 
     private struct ExecFrame
-      getter me, env, flags, jump_buff, pc_bottom
+      getter me, env, flags, pc_bottom
       property sp, pc, real_sp
       getter! names, objects, call_info, iseq
 
@@ -374,7 +374,6 @@ module LinCAS
       @names     : Array(String)?
       @objects   : Array(LcVal)?
       @call_info : Array(CallInfo)?
-      @jump_buff : StaticArray(LibC::JmpBuf, 1)
 
       def initialize(@me : LcVal, @iseq : ISeq, @env : Environment, @flags : VmFrame)
         # Program counter.
@@ -390,7 +389,7 @@ module LinCAS
         @names     = iseq.names
         @objects   = iseq.object
         @call_info = iseq.call_info
-        @jump_buff = StaticArray[LibC::JmpBuf.new]
+        @jump_buff = uninitialized LibC::JmpBuf
       end
 
       ##
@@ -403,7 +402,7 @@ module LinCAS
         @names     = nil.as Array(String)?
         @objects   = nil.as Array(LcVal)?
         @call_info = nil.as Array(CallInfo)?
-        @jump_buff = StaticArray[LibC::JmpBuf.new]
+        @jump_buff = uninitialized LibC::JmpBuf
       end
 
       def copy_with(pc _pc = @pc, sp _sp = @sp, real_sp _real_sp = @real_sp)
