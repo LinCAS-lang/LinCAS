@@ -83,9 +83,11 @@ module LinCAS
         puts case ins
         when .pop?, .leave?, .noop?, .push_true?, .push_false?, .push_self?, .push_null?
           pattern % {i, ins, nil, line}
-        when .setlocal_0?, .setinstance_v?, .setclass_v?,
-             .getlocal_0?, .getconst?, .storeconst?
+        when .setinstance_v?, .setclass_v?,
+             .getconst?, .storeconst?
           pattern % {i, ins, @iseq.names[op], line}
+        when .setlocal_0?, .getlocal_0?
+          pattern % {i, ins, get_var_name(@iseq.symtab, 0, op), line}
         when .setlocal_1?, .getlocal_1?
           pattern % {i, ins, get_var_name(@iseq.symtab, 1, op), line}
         when .setlocal_2?, .getlocal_2?
