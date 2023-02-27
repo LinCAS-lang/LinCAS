@@ -219,7 +219,7 @@ module LinCAS
               atomic.args = [] of Node 
             end 
             next_token_skip_space_or_newline
-            atomic.args.not_nil! <<  parse_op_assign 
+            atomic.args.not_nil! <<  parse_op_assign_no_control 
           else 
             if atomic.is_a? ConstDef 
               lc_bug("ConstDef node should never be reached")
@@ -234,7 +234,7 @@ module LinCAS
             location = @token.location
             next_token_skip_space_or_newline
             
-            value  = parse_op_assign
+            value  = parse_op_assign_no_control
             atomic = Assign.new(atomic, value).at location   
           end  
         when :"+=", :"-=", :"*=", :".*=", :"**=", :"/=", :"\\=", :"%=", :"&&=", :"||=", :"&=", :"|=", :"^="
@@ -750,7 +750,7 @@ module LinCAS
       location = @token.location
       enable_regex
       next_token_skip_space_or_newline
-      condition = parse_op_assign allow_suffix: false, is_condition: true 
+      condition = parse_op_assign_no_control allow_suffix: false, is_condition: true 
       enable_regex
       skip_space 
       if @token.keyword? :then 
@@ -804,7 +804,7 @@ module LinCAS
       end 
 
       if is_while 
-        condition = parse_op_assign allow_suffix: false
+        condition = parse_op_assign_no_control allow_suffix: false
         skip_space 
         unless @token.type == :"{"
           check :EOL, :";"
@@ -820,7 +820,7 @@ module LinCAS
         check :until, kw: true 
         enable_regex
         next_token_skip_space_or_newline
-        condition = parse_op_assign
+        condition = parse_op_assign_no_control
         return Until.new(condition, body).at location
       end
     end
@@ -1054,7 +1054,7 @@ module LinCAS
                 check :")"
                 next_token
               else 
-                arg = parse_op_assign
+                arg = parse_op_assign_no_control
               end 
             else 
               skip_space_or_newline
@@ -1260,7 +1260,7 @@ module LinCAS
         check :":"
         next_token_skip_space_or_newline
 
-        value = parse_op_assign
+        value = parse_op_assign_no_control
         named_args << NamedArg.new(name, value).at location
 
         skip_space
@@ -1306,7 +1306,7 @@ module LinCAS
         end 
       end 
 
-      arg = parse_op_assign
+      arg = parse_op_assign_no_control
       
       if double_splat && splat != :double
         parser_raise "Argument not allowed after double splat", arg.location
