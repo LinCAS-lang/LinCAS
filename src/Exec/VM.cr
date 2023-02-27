@@ -55,7 +55,7 @@ module LinCAS
         lc_bug("Uninitialized VM")
       end
       obj = Internal.boot_main_object
-      vm_push_control_frame(obj, iseq, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
+      vm_push_control_frame(obj, Internal.lc_object, iseq, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
       @pc = @current_frame.pc
     end
 
@@ -107,16 +107,16 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_push_control_frame(me : LcVal, iseq : ISeq, flags)
-      env = Environment.new(iseq.symtab.size, flags)
+    protected def vm_push_control_frame(me : LcVal, context : LcClass, iseq : ISeq, flags)
+      env = Environment.new(iseq.symtab.size, context, flags)
       vm_push_control_frame(me, iseq, env, flags)
     end
 
     ##
     # Used for calls to internal methods only
     @[AlwaysInline]
-    protected def vm_push_control_frame(me : LcVal, block : BlockHandler?, flags)
-      env = Environment.new(0, flags, block)
+    protected def vm_push_control_frame(me : LcVal, context : LcClass, block : BlockHandler?, flags)
+      env = Environment.new(0, context, flags, block)
       frame = vm_new_frame(me, env, flags)
       push_control_frame frame
     end
@@ -416,22 +416,26 @@ module LinCAS
       def consistent_pc?(pc)
         return @pc_bottom <= pc <= @pc_top
       end
+
+      def jump_buff
+        return @jump_buff.to_unsafe
+      end
     end
 
     class Environment < Array(LcVal)
       @block_handler : BlockHandler?
-      def initialize(size, @frame_type : VmFrame, @previous : Environment? = nil)
+      def initialize(size, @context : LcClass, @frame_type : VmFrame, @previous : Environment? = nil)
         super(size, Null)
         @block_handler = nil
         @kw_bit = 0u64 # used in kw args
       end
 
-      def initialize(size, @frame_type : VmFrame, @block_handler : BlockHandler?, @previous : Environment? = nil)
+      def initialize(size, @context : LcClass, @frame_type : VmFrame, @block_handler : BlockHandler?, @previous : Environment? = nil)
         super(size, Null)
         @kw_bit = 0u64 # used in kw args
       end
 
-      getter previous, frame_type
+      getter previous, frame_type, context
       property block_handler, kw_bit
     end
 

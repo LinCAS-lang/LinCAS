@@ -169,8 +169,9 @@ module LinCAS
       Internal::PyGC.dispose(@gc_ref)
     end
 
-    property name, args, code, owner, arity, pyobj
-    property static, type, visib, needs_gc
+    property name, args, code, arity, pyobj,
+             static, type, visib, needs_gc
+    property! owner
   end
 
 end
