@@ -76,6 +76,9 @@ module LinCAS
       when NumberLiteral
         compile_number(iseq, node)
       when SymbolLiteral
+        compile_symbol(iseq, node)
+      when ArrayLiteral
+        compile_array(iseq, node)
       when Self
         compile_self(iseq, node)
       when Yield
@@ -773,8 +776,25 @@ module LinCAS
       iseq.encoded.push is
     end 
 
-    def compile(iseq, node : SymbolLiteral)
+    def compile_symbol(iseq, node : SymbolLiteral)
+      case name = node.name
+      when String
+        sym = Internal.string2sym name
+        is = IS::PUSHOBJ
+        index = iseq.object.size.to_u64
+        iseq.object << sym
+        iseq.encoded << (is | IS.new(index))
+      else
+        lc_bug "Unhandled compiling of symbol literals"
+      end
     end 
+
+    def compile_array(iseq, node : ArrayLiteral)
+      tmp = uninitialized Node[0]
+      exps = node.exps || tmp
+      exps.each { |exp| compile_each(iseq, exp) }
+      iseq.encoded << (IS::NEW_ARRAY | IS.new(exps.size.to_u64))
+    end
 
     def compile_self(iseq, node : Self)
       stack_increase
