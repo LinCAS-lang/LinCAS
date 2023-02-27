@@ -456,7 +456,17 @@ module LinCAS
         depth -= 2
       end
       @sp -= size * 2
-      push hash
+      return hash
+    end
+
+    @[AlwaysInline]
+    protected def vm_new_array(size : UInt64)
+      size = size.to_i64
+      array = Internal.build_ary(size).as(Internal::LcArray)
+      @sp -= size
+      array.ptr.copy_from(@stack.ptr + @sp, size)
+      array.size = size
+      return array.as(LcVal)
     end
 
     #######################################

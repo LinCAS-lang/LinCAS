@@ -323,7 +323,9 @@ module LinCAS
           v1 = pop
           push vm_make_range v1, v2, op
         when .new_hash?
-          vm_new_hash(op)
+          push vm_new_hash(op)
+        when .new_array?
+          push vm_new_array(op)
         when .leave?
           if vm_pop_control_frame
             return pop

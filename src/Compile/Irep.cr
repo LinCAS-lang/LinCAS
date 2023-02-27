@@ -70,6 +70,7 @@ module LinCAS
 
       MAKE_RANGE
       NEW_HASH
+      NEW_ARRAY
 
       LEAVE
       
