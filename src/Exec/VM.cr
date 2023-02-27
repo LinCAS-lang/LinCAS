@@ -17,6 +17,8 @@ module LinCAS
     include Internal
     include VmInsHelper
 
+    class LongJump < Exception; end
+
     alias BlockHandler = LcBlock | LCProc
     macro convert(err)
       LinCAS.convert_error({{err}})
@@ -165,173 +167,181 @@ module LinCAS
     end
     
     def exec
-      LibC.setjmp(@current_frame.jump_buff)
-      dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
-      calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
+      # this loop rescues a long jump after exception handling
+      # and allows the VM to start over from the new instructions
       while true
-        ins = next_is
-        is, op = get_is_and_operand(ins)
-        debug("executing instruction #{is}:#{op}")
-        case is 
-        when .noop?
-          # nothing to do
-        when .setlocal?
-          offset = next_is.value
-          vm_setlocal(offset, op, topn(0))
-        when .setlocal_0?
-          vm_setlocal_0(op, topn(0))
-        when .setlocal_1?
-          vm_setlocal_1(op, topn(0))
-        when .setlocal_2?
-          vm_setlocal_2(op, topn(0))
-        when .getlocal?
-          offset = next_is.value
-          value = vm_getlocal(offset, op)
-          push(value)
-        when .getlocal_0?
-          value = vm_getlocal_0(op)
-          push(value)
-        when .getlocal_1?
-          value = vm_getlocal_1(op)
-          push(value)
-        when .getlocal_2?
-          value = vm_getlocal_2(op)
-          push(value)
-        when .setinstance_v?
-          name = @current_frame.names[op]
-          value = pop 
-          vm_setinstance_v(name, @current_frame.me, value)
-          push(value)
-        when .getinstance_v?
-          name = @current_frame.names[op]
-          value = vm_getinstance_v(name, @current_frame.me)
-          push(value)
-        when .setclass_v?
-          name  = @current_frame.names[op]
-          value = pop 
-          vm_setclass_v(name, @current_frame.me, value)
-          push(value)
-        when .getclass_v?
-          name = @current_frame.names[op]
-          value = vm_getclass_v(name, @current_frame.me)
-          push(value)
-        when .storeconst?
-          name  = @current_frame.names[op]
-          value = pop 
-          me    = pop
-          vm_storeconst(name, me, value)
-          push(value)
-        when .getconst?
-          name  = @current_frame.names[op]
-          push(vm_getconst(name, pop))
-        when .pop?
-          pop
-        when .pushobj?
-          push(@current_frame.objects[op])
-        when .push_true?
-          push(LcTrue)
-        when .push_false?
-          push(LcFalse)
-        when .push_self?
-          push(@current_frame.me)
-        when .push_null?
-          push(Null)
-        when .call?
-          ci            = @current_frame.call_info[op]
-          bh            = vm_capture_block(ci)
-          calling_info.unsafe_init(
-            topn(ci.argc), 
-            ci.argc, 
-            bh
-          )
-          vm_call(ci, calling_info)
-        when .call_no_block?
-          ci           = @current_frame.call_info[op]
-          calling_info.unsafe_init(
-            topn(ci.argc), 
-            ci.argc, 
-            nil
-          )
-          vm_call(ci, calling_info)
-        when .invoke_block?
-          ci = @current_frame.call_info[op]
-          calling_info.unsafe_init(
-            me: @current_frame.me, 
-            argc: ci.argc, 
-            block: nil # Should not be used
-          )
-          vm_invoke_block(ci, calling_info)
-        when .put_class?
-          parent = pop 
-          me     = pop
-          name   = @current_frame.names[op]
-          op2     = next_is
-          iseq   = @current_frame.iseq.jump_iseq[op2.value]
-          vm_putclass(me, name, parent, iseq)
-        when .put_module?
-          me   = pop
-          name = @current_frame.names[op]
-          op2  = next_is
-          iseq = @current_frame.iseq.jump_iseq[op2.value]
-          vm_putmodule(me, name, iseq)
-        when .define_method?
-          oo = next_is
-          index, jmp_iseq = get_is_and_operand oo
-          index = index.value >> 32
-          name = @current_frame.names[index]
-          iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
-          vm_define_method(op.to_i32, nil, name, iseq, false)
-        when .define_smethod?
-          receiver = pop
-          oo = next_is
-          index, jmp_iseq = get_is_and_operand oo
-          index = index.value >> 32
-          name = @current_frame.names[index]
-          iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
-          vm_define_method(op.to_i32, receiver, name, iseq, true)
-        when .jumpt?
-          vm_jumpt(pop, op)
-        when .jumpf?
-          vm_jumpf(pop, op)
-        when .jump?
-          vm_jump(op)
-        when .jumpf_and_pop?
-          vm_jumpf_and_pop(pop, op)
-        when .check_kw?
-          value = vm_check_kw(op)
-          push(value)
-        when .splat_array?
-          ary = pop
-          obj = vm_splat_array(ary)
-          push(obj)
-        when .concat_array?
-          a2 = pop
-          a1 = topn(0)
-          vm_ary_concat(a1, a2)
-        when .array_append?
-          value = pop
-          vm_array_append(topn(0), value)
-        when .merge_kw?
-          hash2 = pop 
-          hash1 = topn(0)
-          vm_merge_kw(hash1, hash2)
-        when .dup_hash?
-          hash = vm_dup_hash pop
-          push hash
-        when .make_range?
-          v2 = pop
-          v1 = pop
-          push vm_make_range v1, v2, op
-        when .new_hash?
-          push vm_new_hash(op)
-        when .new_array?
-          push vm_new_array(op)
-        when .leave?
-          if vm_pop_control_frame
-            return pop
+        begin
+          dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
+          calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
+          # This is the real VM loop
+          while true
+            ins = next_is
+            is, op = get_is_and_operand(ins)
+            debug("executing instruction #{is}:#{op}")
+            case is 
+            when .noop?
+              # nothing to do
+            when .setlocal?
+              offset = next_is.value
+              vm_setlocal(offset, op, topn(0))
+            when .setlocal_0?
+              vm_setlocal_0(op, topn(0))
+            when .setlocal_1?
+              vm_setlocal_1(op, topn(0))
+            when .setlocal_2?
+              vm_setlocal_2(op, topn(0))
+            when .getlocal?
+              offset = next_is.value
+              value = vm_getlocal(offset, op)
+              push(value)
+            when .getlocal_0?
+              value = vm_getlocal_0(op)
+              push(value)
+            when .getlocal_1?
+              value = vm_getlocal_1(op)
+              push(value)
+            when .getlocal_2?
+              value = vm_getlocal_2(op)
+              push(value)
+            when .setinstance_v?
+              name = @current_frame.names[op]
+              value = pop 
+              vm_setinstance_v(name, @current_frame.me, value)
+              push(value)
+            when .getinstance_v?
+              name = @current_frame.names[op]
+              value = vm_getinstance_v(name, @current_frame.me)
+              push(value)
+            when .setclass_v?
+              name  = @current_frame.names[op]
+              value = pop 
+              vm_setclass_v(name, @current_frame.me, value)
+              push(value)
+            when .getclass_v?
+              name = @current_frame.names[op]
+              value = vm_getclass_v(name, @current_frame.me)
+              push(value)
+            when .storeconst?
+              name  = @current_frame.names[op]
+              value = pop 
+              me    = pop
+              vm_storeconst(name, me, value)
+              push(value)
+            when .getconst?
+              name  = @current_frame.names[op]
+              push(vm_getconst(name, pop))
+            when .pop?
+              pop
+            when .pushobj?
+              push(@current_frame.objects[op])
+            when .push_true?
+              push(LcTrue)
+            when .push_false?
+              push(LcFalse)
+            when .push_self?
+              push(@current_frame.me)
+            when .push_null?
+              push(Null)
+            when .call?
+              ci            = @current_frame.call_info[op]
+              bh            = vm_capture_block(ci)
+              calling_info.unsafe_init(
+                topn(ci.argc), 
+                ci.argc, 
+                bh
+              )
+              vm_call(ci, calling_info)
+            when .call_no_block?
+              ci           = @current_frame.call_info[op]
+              calling_info.unsafe_init(
+                topn(ci.argc), 
+                ci.argc, 
+                nil
+              )
+              vm_call(ci, calling_info)
+            when .invoke_block?
+              ci = @current_frame.call_info[op]
+              calling_info.unsafe_init(
+                me: @current_frame.me, 
+                argc: ci.argc, 
+                block: nil # Should not be used
+              )
+              vm_invoke_block(ci, calling_info)
+            when .put_class?
+              parent = pop 
+              me     = pop
+              name   = @current_frame.names[op]
+              op2     = next_is
+              iseq   = @current_frame.iseq.jump_iseq[op2.value]
+              vm_putclass(me, name, parent, iseq)
+            when .put_module?
+              me   = pop
+              name = @current_frame.names[op]
+              op2  = next_is
+              iseq = @current_frame.iseq.jump_iseq[op2.value]
+              vm_putmodule(me, name, iseq)
+            when .define_method?
+              oo = next_is
+              index, jmp_iseq = get_is_and_operand oo
+              index = index.value >> 32
+              name = @current_frame.names[index]
+              iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
+              vm_define_method(op.to_i32, nil, name, iseq, false)
+            when .define_smethod?
+              receiver = pop
+              oo = next_is
+              index, jmp_iseq = get_is_and_operand oo
+              index = index.value >> 32
+              name = @current_frame.names[index]
+              iseq = iseq = @current_frame.iseq.jump_iseq[jmp_iseq]
+              vm_define_method(op.to_i32, receiver, name, iseq, true)
+            when .jumpt?
+              vm_jumpt(pop, op)
+            when .jumpf?
+              vm_jumpf(pop, op)
+            when .jump?
+              vm_jump(op)
+            when .jumpf_and_pop?
+              vm_jumpf_and_pop(pop, op)
+            when .check_kw?
+              value = vm_check_kw(op)
+              push(value)
+            when .splat_array?
+              ary = pop
+              obj = vm_splat_array(ary)
+              push(obj)
+            when .concat_array?
+              a2 = pop
+              a1 = topn(0)
+              vm_ary_concat(a1, a2)
+            when .array_append?
+              value = pop
+              vm_array_append(topn(0), value)
+            when .merge_kw?
+              hash2 = pop 
+              hash1 = topn(0)
+              vm_merge_kw(hash1, hash2)
+            when .dup_hash?
+              hash = vm_dup_hash pop
+              push hash
+            when .make_range?
+              v2 = pop
+              v1 = pop
+              push vm_make_range v1, v2, op
+            when .new_hash?
+              push vm_new_hash(op)
+            when .new_array?
+              push vm_new_array(op)
+            when .leave?
+              if vm_pop_control_frame
+                return pop
+              end
+            else
+              lc_bug("Invalid instruction received (#{is})")
+            end
           end
-        else
-          lc_bug("Invalid instruction received (#{is})")
+        rescue LongJump
+          # retry
         end
       end 
       # Unreachable
@@ -350,6 +360,11 @@ module LinCAS
     @[AlwaysInline]
     def block_given?
       return !!vm_get_block 
+    end
+    
+    @[AlwaysInline]
+    def get_class_ref
+      return @current_frame.env.context
     end
 
     enum VmFrame : UInt32
@@ -389,7 +404,6 @@ module LinCAS
         @names     = iseq.names
         @objects   = iseq.object
         @call_info = iseq.call_info
-        @jump_buff = uninitialized LibC::JmpBuf
       end
 
       ##
@@ -402,7 +416,6 @@ module LinCAS
         @names     = nil.as Array(String)?
         @objects   = nil.as Array(LcVal)?
         @call_info = nil.as Array(CallInfo)?
-        @jump_buff = uninitialized LibC::JmpBuf
       end
 
       def copy_with(pc _pc = @pc, sp _sp = @sp, real_sp _real_sp = @real_sp)
@@ -415,10 +428,6 @@ module LinCAS
 
       def consistent_pc?(pc)
         return @pc_bottom <= pc <= @pc_top
-      end
-
-      def jump_buff
-        return @jump_buff.to_unsafe
       end
     end
 

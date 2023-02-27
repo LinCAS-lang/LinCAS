@@ -15,28 +15,6 @@
 
 @[Link(ldflags: "#{__DIR__}/LibC/libc.o")]
 lib LibC
-    # struct JmpBuf
-    #     __rbx : ULong
-    #     __rsp : ULong
-    #     __rbp : ULong
-    #     __r12 : ULong
-    #     __r13 : ULong
-    #     __r14 : ULong
-    #     __r15 : ULong
-    #     __rip : ULong    
-    # end
-
-    {%if flag?(:x86_64)%}
-      JBLEN = (9 * 2) + 3 + 16
-    {%elsif flag?(:i386)%}
-      JBLEN = 18
-    {%elsif flag?(:arm)%}
-      JBLEN (10 + 16 + 2)
-    {%elsif flag?(:arm64)%}
-      JBLEN = (14 + 8 + 2) * 2
-    {%end%}
-    alias JmpBuf = Int[JBLEN]
-
     fun strstr(str1 : Char*, str2 : Char*) : Char*
     fun printf(format : Char*, ... ) : Int 
     fun toupper(str : Char*) : Char*
@@ -53,7 +31,4 @@ lib LibC
     fun sub_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
     fun mul_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
     fun mul_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
-
-    fun setjmp(buf : Int*) : Int
-    fun longjmp(buf : Int*, rval : Int)
 end
