@@ -289,9 +289,8 @@ module LinCAS::Internal
         lc_add_static(@@lc_class,"&&",obj_and,             1)
         lc_add_static(@@lc_class,"!",obj_not,              0)
 
-        lc_class_add_method(@@lc_class,"respond_to?",wrap(lc_obj_responds_to,2), 1)
-        lc_class_add_method(@@lc_class,"hash",wrap(lc_obj_hash,1),               0)
-        lc_class_add_method(@@lc_class,"send",wrap(lc_obj_send,2),              -3)
+        add_method(@@lc_class,"hash",lc_obj_hash,               0)
+        
     end
 
 end

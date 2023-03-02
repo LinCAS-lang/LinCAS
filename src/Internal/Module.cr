@@ -103,6 +103,11 @@ module LinCAS::Internal
       return tmp
     end
 
+    def self.lc_module_add_internal(mod : LcClass, name : String, method : LcProc, arity : Int32)
+      internal.lc_add_internal(mod,name,method,arity)
+      internal.lc_add_static(mod,name,method,arity)
+    end
+
     def self.lc_include_module(receiver : LcClass, mod : LcClass)
       if receiver.methods.object_id == mod.methods.object_id
         lc_raise(LcArgumentError, "Cyclic include detected")
@@ -116,13 +121,53 @@ module LinCAS::Internal
       end
     end
 
-    def self.lc_module_add_internal(mod : LcClass, name : String, method : LcProc, arity : Int32)
-      internal.lc_add_internal(mod,name,method,arity)
-      internal.lc_add_static(mod,name,method,arity)
+    
+    def self.lc_mod_ancestors(klass :  LcVal)
+      ary = build_ary_new
+      while klass 
+        lc_ary_push(ary,klass)
+        klass = lc_cast(klass, LcClass).parent
+      end
+      return ary 
+    end
+
+    def self.lc_module_rm_method(obj :  LcVal,name :  LcVal)
+      sname = id2string(name)
+      return lcfalse unless sname
+      unless lc_obj_responds_to? obj, sname
+        lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
+        return lcfalse 
+      else 
+        lc_remove_internal(obj.klass,sname)
+        return lctrue  
+      end
+    end
+
+    def self.lc_module_delete_method(obj :  LcVal,name :  LcVal)
+      sname = id2string(name)
+      return lcfalse unless sname
+      klass = class_of(obj)
+      if klass.methods.find(sname)
+        klass.methods.delete(sname)
+        return lctrue
+      else 
+        lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
+      end 
+      return lcfalse 
     end
 
     def self.init_module
       @@lc_module = lc_build_module_class
+
+      add_method(@@lc_module,"to_s", lc_class_to_s,       0)
+      add_method(@@lc_module,"name", lc_class_to_s,       0)
+      add_method(@@lc_module,"inspect",lc_class_inspect,  0)
+      add_method(@@lc_module,"defrost",lc_class_defrost,  0)
+      add_method(@@lc_module,"instance_method",lc_instance_method,       1)
+      add_method(@@lc_module,"ancestors", lc_mod_ancestors,              0)
+      add_method(@@lc_module,"alias",lc_alias_method,                    2)
+      add_method(@@lc_module,"remove_method",lc_module_rm_method,        1)
+      add_method(@@lc_module,"delete_method",lc_module_delete_method,    1)
     end
 
 end

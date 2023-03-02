@@ -379,19 +379,6 @@ module LinCAS::Internal
     #     return lctrue  
     #   end
     # end
-    
-    # TODO: move to Object
-    def self.lc_class_rm_method(obj :  LcVal,name :  LcVal)
-      sname = id2string(name)
-      return lcfalse unless sname
-      unless lc_obj_responds_to? obj, sname
-        lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
-        return lcfalse 
-      else 
-        lc_remove_internal(obj.klass,sname)
-        return lctrue  
-      end
-    end
 
     # def self.lc_class_delete_instance_method(klass :  LcVal,name :  LcVal)
     #     sname = id2string(name)
@@ -419,28 +406,6 @@ module LinCAS::Internal
     #     return lcfalse 
     # end 
 
-    def self.lc_class_delete_method(obj :  LcVal,name :  LcVal)
-      sname = id2string(name)
-      return lcfalse unless sname
-      klass = class_of(obj)
-      if klass.methods.find(sname)
-        klass.methods.delete(sname)
-        return lctrue
-      else 
-        lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
-      end 
-      return lcfalse 
-    end
-
-    def self.lc_class_ancestors(klass :  LcVal)
-      ary = build_ary_new
-      while klass 
-        lc_ary_push(ary,klass)
-        klass = lc_cast(klass, LcClass).parent
-      end
-      return ary 
-    end
-
     def self.lc_class_parent(klass :  LcVal)
       s_klass = lc_cast(klass, LcClass).parent
       return s_klass if s_klass
@@ -448,10 +413,10 @@ module LinCAS::Internal
     end
 
     def self.alias_method_str(klass : LcClass, m_name : String, new_name : String)
-      method = seek_method(klass,m_name,true)
-      if method.is_a? LcMethod
+      cc = seek_method(klass,m_name,false)
+      if method = cc.method
         lc_add_method(klass,new_name,method)
-      elsif method == 2
+      elsif cc.m_missing_status == 1
         lc_raise(LcNoMethodError,"Cannot alias protected methods")
         return false
       else
@@ -497,27 +462,14 @@ module LinCAS::Internal
 
 
     def self.init_class
-        # @@main_class     = lc_build_class("BaseClass")
-        @@lc_class        = lc_build_class_class
-        add_static_method(@@lc_class,"to_s", lc_class_to_s,       0)
-        add_static_method(@@lc_class,"name", lc_class_to_s,       0)
-        add_static_method(@@lc_class,"inspect",lc_class_inspect,  0)
-        add_static_method(@@lc_class,"defrost",lc_class_defrost,  0)
-        add_static_method(@@lc_class,"parent",lc_class_parent,    0)
+        @@lc_class  = lc_build_class_class
+
+        add_method(@@lc_class,"parent",lc_class_parent,    0)
 
         # add_static_method(@@lc_class,"remove_instance_method",lc_class_rm_instance_method,     1)
         # add_static_method(@@lc_class,"remove_static_method",lc_class_rm_static_method,         1)
         # add_static_method(@@lc_class,"delete_static_method",lc_class_delete_static_method,     1)
         # add_static_method(@@lc_class,"delete_instance_method",lc_class_delete_instance_method, 1)
-        add_static_method(@@lc_class,"instance_method",lc_instance_method,                 1)
-        add_static_method(@@lc_class,"ancestors", lc_class_ancestors,                      0)
-
-        lc_class_add_method(@@lc_class,"is_a?", wrap(lc_is_a,2),                           1)
-        lc_class_add_method(@@lc_class,"class",wrap(lc_class_real,1),                      0)
-        lc_class_add_method(@@lc_class,"remove_method",wrap(lc_class_rm_method,2),         1)
-        lc_class_add_method(@@lc_class,"delete_method",wrap(lc_class_delete_method,2),     1)
-        lc_class_add_method(@@lc_class,"alias",wrap(lc_alias_method,3),                    2)
-        lc_class_add_method(@@lc_class,"method",wrap(lc_get_method, 2),                    1)
     end
 
 end

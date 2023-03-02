@@ -142,7 +142,7 @@ module LinCAS
             add_method(@@lc_error,"defrost",lc_obj_defrost,    0)
 
 
-            lc_module_add_internal(@@lc_kernel,"raise",wrap(lc_raise_err,2), 1)
+            add_method(@@lc_kernel,"raise",lc_raise_err, 1)
 
             @@lc_type_err    = lc_build_internal_class("TypeError",@@lc_error     )
             @@lc_arg_err     = lc_build_internal_class("ArgumentError",@@lc_error )
