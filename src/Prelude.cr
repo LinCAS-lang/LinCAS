@@ -14,16 +14,81 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "./Internal/Internal"
+require "./Internal/Base"
+require "./Internal/LibC"
+require "./Internal/Pythonlib"
+require "./Internal/PyHelper"
+require "./Internal/Overload.cr"
+require "./Internal/Sort"
+require "./Internal/Internal"
+require "./Internal/Method"
+require "./Internal/Class"
+require "./Internal/Module"
+require "./Internal/Kernel"
+require "./Internal/Raise"
+require "./Internal/Matrix"
+require "./Internal/Object"
+require "./Internal/Null"
+require "./Internal/Boolean"
+require "./Internal/Range"
+require "./Internal/Array"
+require "./Internal/Number"
+require "./Internal/Integer"
+require "./Internal/Float"
+require "./Internal/String"
+require "./Internal/String_buffer"
+require "./Internal/Symbol"
+require "./Internal/Regexp"
+require "./Internal/MatchData"
+require "./Internal/Hash"
+require "./Internal/Dir"
+require "./Internal/File"
+require "./Internal/Load"
+require "./Internal/Math"
+
+#require "./Symbolic"
+require "./Internal/Smath"
+require "./Internal/Integrals"
+require "./Internal/GSL"
+require "./Internal/Complex"
+require "./Internal/Python"
+require "./Internal/Pymethod"
+require "./Internal/PyGC"
+require "./Internal/PyObject"
+require "./Internal/Proc"
+
+module LinCAS::Internal
+
+    def self.lc_initialize
+        Python.Py_Initialize
+        # These three initializers must always be called first and in the 
+        # following order
+        init_class
+        init_module
+        init_object
+        {% for name in @type.class.methods.select(&.name.starts_with?("init_")).map(&.name) %}
+            {% unless {"init_class", "init_module", "init_object"}.includes? name.stringify %}
+              {{name.id}}
+            {% end %}
+        {% end %}
+        Exec.init
+    end
+
+    def self.lc_finalize
+        PyGC.clear_all
+        Python.Py_Finalize 
+    end
+end
+
 {% begin %}
     
-    require "./Internal/Internal"
-    require "./Internal/Structures"
-    module LinCAS::Internal
-        @@main_class = uninitialized LcClass  
+    module LinCAS::Internal 
         {{built_in = %w|
             class 
             module
             object
+            
             kernel
             array
             error
@@ -47,8 +112,8 @@
             range
             math
             proc
-            symbolic
-        |}}  
+            
+        |}}  # symbolic
 
         {{extra_v = %w|
             type_err
@@ -71,74 +136,12 @@
             not_impl_err
         |}}
 
-        {{ extra_init = %w|
-            load
-            pyhelper
-        |}}
-
         {% for name in built_in + extra_v %}
             @@lc_{{name.id}} = uninitialized LcClass
+            class_getter lc_{{name.id}}
         {% end %}
     end  
     
-    require "./Internal/**"
-
-    module LinCAS::Internal
-
-        def self.lc_initialize
-            Python.Py_Initialize
-            {% for name in built_in + extra_init%}
-                init_{{name.id}}
-            {% end %}
-        end
-
-        def self.lc_finalize
-            PyGC.clear_all
-            Python.Py_Finalize 
-        end
-    end
+    #require "./Internal/**"
 
 {% end %}
-
-# require "./LibC"
-# require "./Pythonlib"
-# require "./PyHelper"
-# require "./Overload.cr"
-# require "./Sort"
-# require "./Internal"
-# require "./Method"
-# require "./Structures"
-# require "./Class"
-# require "./Module"
-# require "./Kernel"
-# require "./Raise"
-# require "./Matrix"
-# require "./Object"
-# require "./Null"
-# require "./Boolean"
-# require "./Range"
-# require "./Array"
-# require "./Number"
-# require "./Integer"
-# require "./Float"
-# require "./String"
-# require "./String_buffer"
-# require "./Symbol"
-# require "./Regexp"
-# require "./MatchData"
-# require "./Hash"
-# require "./Dir"
-# require "./File"
-# require "./Load"
-# require "./Math"
-# 
-# require "./Symbolic"
-# require "./Smath"
-# require "./Integrals"
-# require "./GSL"
-# require "./Complex"
-# require "./Python"
-# require "./Pymethod"
-# require "./PyGC"
-# require "./PyObject"
-# require "./Proc"
