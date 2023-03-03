@@ -84,7 +84,7 @@ module LinCAS::Internal
         end
 
         lc_add_internal(@@lc_null,"clone",null_clone, 0)
-        init_lazy_const(Null,@@lc_null)
+        lincas_init_lazy_const(Null,@@lc_null)
     end
 
     global Null = Internal.lc_lazy_build_null

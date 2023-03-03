@@ -232,7 +232,7 @@ module LinCAS::Internal
         end
     end
 
-    def self.init_chain
+    def self.lincas_init_chain
       @@lc_class.parent  = @@lc_module
       @@lc_class.klass.parent = @@lc_module.klass
       @@lc_module.parent = @@lc_object
