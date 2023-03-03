@@ -269,7 +269,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     private def self.fetch_pystruct(name : String)
       name = "_#{name}"
-      tmp = @@main_class.namespace.find(name)
+      tmp = @@lc_object.namespace.find(name)
       if !tmp || !(tmp.is_a? LcClass)
         lc_bug("Previously declared Python Class/Module not found") 
       end
