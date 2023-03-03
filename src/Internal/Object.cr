@@ -245,7 +245,7 @@ module LinCAS::Internal
         define_allocator(@@lc_object,lc_obj_allocate)
 
         # Initialising the inheritance chain of objects
-        init_chain
+        lincas_init_chain
         
         add_method(@@lc_object,"init",lc_obj_init,     0)
         add_method(@@lc_object,"==",lc_obj_eq,         1)
