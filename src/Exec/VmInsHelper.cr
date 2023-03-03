@@ -60,7 +60,7 @@ module LinCAS
     @[AlwaysInline]
     def vm_check_frozen_object(obj : LcVal, msg : String)
       if has_flag obj, FROZEN
-        lc_raise(LcFrozenError, msg)
+        lc_raise(Internal.lc_frozen_err, msg)
       end
     end
 
@@ -165,7 +165,7 @@ module LinCAS
       if klass
         return klass.data[name]
       end
-      lc_raise(LcNameError, "Uninitialized class variable #{name} in #{Internal.class_path(base)}")
+      lc_raise(Internal.lc_name_err, "Uninitialized class variable #{name} in #{Internal.class_path(base)}")
     end
 
     protected def vm_storeconst(name : String, me : LcVal, value : LcVal)
@@ -173,7 +173,7 @@ module LinCAS
       if !base.namespace.find name, const: true
         Internal.lc_define_const(base, name, value)
       else
-        lc_raise(LcNameError, "Constant #{name} already defined")
+        lc_raise(Internal.lc_name_err, "Constant #{name} already defined")
       end
     end
 
@@ -189,7 +189,7 @@ module LinCAS
       base = self_or_class me
       const = Internal.lc_seek_const(base, name)
       return const if const
-      lc_raise(LcNameError, "Uninitialized const #{name}")
+      lc_raise(Internal.lc_name_err, "Uninitialized const #{name}")
     end
 
     protected def vm_capture_block(ci : CallInfo)
@@ -301,7 +301,7 @@ module LinCAS
         )
         @pc += iseq_offset
       else
-        lc_raise(LcArgumentError, "No block given (yield)")
+        lc_raise(Internal.lc_arg_err, "No block given (yield)")
       end
     end
 
@@ -321,14 +321,14 @@ module LinCAS
       context = self_or_class me
 
       if !(parent.is_a?(LcClass) && parent.is_class?) && parent != Null
-        lc_raise(LcTypeError, "Parent must be a class (#{Internal.lc_typeof(parent)} given)")
+        lc_raise(Internal.lc_type_err, "Parent must be a class (#{Internal.lc_typeof(parent)} given)")
       end
 
       c_def = vm_search_const_under context, name
       if c_def.is_a?(LcClass) && c_def.is_class?
         vm_check_frozen_object c_def, "Can't reopen a frozen class"
         unless parent == Null
-          lc_raise LcTypeError, "Superclass missmatch for #{name}"
+          lc_raise Internal.lc_type_err, "Superclass missmatch for #{name}"
         end
       elsif c_def.nil?
         if parent.is_a?(LcClass)
@@ -337,7 +337,7 @@ module LinCAS
           c_def = Internal.lc_build_user_class(name, context.namespace)
         end
       else
-        lc_raise LcTypeError, "'#{name}' is not a class"
+        lc_raise Internal.lc_type_err, "'#{name}' is not a class"
       end
       set_stack_consistency_trace 0
       vm_push_control_frame(c_def.not_nil!, c_def.not_nil!.as(LcClass), iseq, VM::VmFrame::CLASS_FRAME)
@@ -351,7 +351,7 @@ module LinCAS
       elsif m_def.nil?
         m_def = Internal.lc_build_user_module(name, context.namespace)
       else
-        lc_raise LcTypeError, "'#{name}' is not a module"
+        lc_raise Internal.lc_type_err, "'#{name}' is not a module"
       end
       set_stack_consistency_trace 0
       vm_push_control_frame(m_def.not_nil!, m_def.not_nil!.as(LcClass), iseq, VM::VmFrame::CLASS_FRAME)

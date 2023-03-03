@@ -44,7 +44,7 @@ module LinCAS::Internal
 
     macro ensure_var(var)
         if !(get_function({{var}}).is_a? Variable)
-            lc_raise(LcTypeError,"Argument must be Variable, not #{lc_typeof({{var}})}")
+            lc_raise(lc_type_err,"Argument must be Variable, not #{lc_typeof({{var}})}")
             return Null 
         end
     end
@@ -67,7 +67,7 @@ module LinCAS::Internal
             elsif el.is_a? LcNum
                 tmp << Snumber.new(num2num(el).as(IntnumR))
             else
-                lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(el)} into Symbolic")
+                lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(el)} into Symbolic")
                 tmp << NanC
             end
         end
@@ -197,12 +197,12 @@ module LinCAS::Internal
 
     def self.lc_snum_init(f :  LcVal, value :  LcVal)
         if !(value.is_a?  LcVal)
-            lc_raise(LcTypeError,"Argument must be Number, (#{lc_typeof(value)} given)")
+            lc_raise(lc_type_err,"Argument must be Number, (#{lc_typeof(value)} given)")
             return Null 
         end
         v = num2num(value)
         if v.is_a? BigInt
-            lc_raise(LcNotSupportedError,"Big integers are not supported in symbolics yet")
+            lc_raise(lc_not_supp_err,"Big integers are not supported in symbolics yet")
             return Null 
         end
         neg = v < 0

@@ -126,7 +126,7 @@ module LinCAS::Internal
 
     macro hash_check(hash)
         if !({{hash}}.is_a? LcHash)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{hash}})} into Hash")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{hash}})} into Hash")
             return Null 
         end
     end
@@ -142,7 +142,7 @@ module LinCAS::Internal
             return n_capa if capa > size
             capa <<= 1
         end
-        lc_raise(LcRuntimeError,"(Hash table too big)")
+        lc_raise(lc_runtime_err,"(Hash table too big)")
         return size + 2
     end
 

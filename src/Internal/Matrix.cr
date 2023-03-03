@@ -51,7 +51,7 @@ module LinCAS::Internal
     macro resize_matrix_capa(mx,rws,cls)
         size = {{rws}} * {{cls}}
         if size > MAX_MATRIX_CAPA
-            lc_raise(LcArgumentError,"(Max matrix size exceeded)")
+            lc_raise(lc_arg_err,"(Max matrix size exceeded)")
             return Null 
         else
             {{mx}}.as(Matrix).ptr = matrix_ptr({{mx}}).realloc(size)
@@ -95,7 +95,7 @@ module LinCAS::Internal
 
     macro matrix_check(matrix)
         unless {{matrix}}.is_a? Matrix 
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
             return Null 
         end
     end
@@ -146,7 +146,7 @@ module LinCAS::Internal
         c = lc_num_to_cr_i(cols,IntD).as(IntD)
         return Null unless c
         if r < 0 || c < 0
-            lc_raise(LcArgumentError,"Matrices must have a positive number of rows and columns")
+            lc_raise(lc_arg_err,"Matrices must have a positive number of rows and columns")
             return Null
         end
         resize_matrix_capa(matrix,r,c)
@@ -256,7 +256,7 @@ module LinCAS::Internal
             c       = lc_num_to_cr_i(j,IntD).as(IntD)
             return Null unless c
             if (c < 0) || (c > cls)
-                lc_raise(LcIndexError,"(Index [#{i.to_s},#{c}] out of matrix)")
+                lc_raise(lc_index_err,"(Index [#{i.to_s},#{c}] out of matrix)")
                 return Null 
             end
             r_lower = r_left(i)
@@ -278,7 +278,7 @@ module LinCAS::Internal
             return Null unless r
             rws = matrix_rws(matrix)
             if (r < 0) || (r > rws)
-                lc_raise(LcIndexError,"(Index [#{r},#{j.to_s}] out of matrix)")
+                lc_raise(lc_index_err,"(Index [#{r},#{j.to_s}] out of matrix)")
                 return Null 
             end
             cls = matrix_cls(matrix)
@@ -327,7 +327,7 @@ module LinCAS::Internal
         c = lc_num_to_cr_i(j)
         return Null unless c 
         if (r < 0) && (c < 0) && (r >= matrix_rws(matrix)) && (c >= matrix_cls(matrix))
-            lc_raise(LcIndexError,"(Index [#{r},#{c}] out of matrix)")
+            lc_raise(lc_index_err,"(Index [#{r},#{c}] out of matrix)")
             return Null 
         end
         set_matrix_index(matrix,r,c,value)
@@ -354,11 +354,11 @@ module LinCAS::Internal
 
     def self.lc_matrix_sum(m1 :  LcVal, m2 :  LcVal)
         unless m2.is_a? Matrix 
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
             return Null 
         end
         if !same_matrix_size(m1,m2)
-            lc_raise(LcMathError,"Incompatible matrices for sum")
+            lc_raise(lc_math_err,"Incompatible matrices for sum")
             return Null
         end
         rws = matrix_rws(m1)
@@ -395,7 +395,7 @@ module LinCAS::Internal
     def self.lc_matrix_sub(m1 :  LcVal, m2 :  LcVal)
         matrix_check(m2)
         if !same_matrix_size(m1,m2)
-            lc_raise(LcMathError,"Incompatible matrices for difference")
+            lc_raise(lc_math_err,"Incompatible matrices for difference")
             return Null
         end
         rws = matrix_rws(m1)
@@ -450,7 +450,7 @@ module LinCAS::Internal
 
     def self.lc_matrix_prod(m1 :  LcVal, m2)
         unless m2.is_a? Matrix 
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(m2)} into Matrix")
             return Null 
         end
         rws1 = matrix_rws(m1)
@@ -458,7 +458,7 @@ module LinCAS::Internal
         rws2 = matrix_rws(m2)
         cls2 = matrix_cls(m2)
         if cls1 != rws2 
-            lc_raise(LcMathError,"Incompatible matrices for product")
+            lc_raise(lc_math_err,"Incompatible matrices for product")
             return Null 
         end
         tmp = build_matrix(rws1,cls2)
@@ -622,7 +622,7 @@ module LinCAS::Internal
         return Null unless r2_val
         rws = matrix_rws(mx)
         if (r1_val < 0) || (r2_val < 0) || (r1_val >= rws) || (r2_val >= rws)
-            lc_raise(LcIndexError,"(Indexes out of matrix)")
+            lc_raise(lc_index_err,"(Indexes out of matrix)")
             return Null 
         end
         cls = matrix_cls(mx)
@@ -638,7 +638,7 @@ module LinCAS::Internal
         return Null unless c2_val
         cls = matrix_cls(mx)
         if (c1_val < 0) || (c2_val < 0) || (c1_val >= cls) || (c2_val >= cls)
-            lc_raise(LcIndexError,"(Indexes out of matrix)")
+            lc_raise(lc_index_err,"(Indexes out of matrix)")
             return Null 
         end
         rws = matrix_rws(mx)
@@ -677,7 +677,7 @@ module LinCAS::Internal
 
     def self.lc_matrix_det(mx :  LcVal)
         unless matrix_squared(mx)
-            lc_raise(LcMathError,"(Non-squared matrix for determinant)")
+            lc_raise(lc_math_err,"(Non-squared matrix for determinant)")
             return Null 
         end 
         rws     = matrix_rws(mx)
@@ -714,7 +714,7 @@ module LinCAS::Internal
 
     def self.lc_matrix_lu(mx :  LcVal)
         unless matrix_squared(mx)
-            lc_raise(LcMathError,"(Non-squared matrix for LU reduction)")
+            lc_raise(lc_math_err,"(Non-squared matrix for LU reduction)")
             return Null 
         end 
         rws     = matrix_rws(mx)
@@ -794,7 +794,7 @@ module LinCAS::Internal
         rws = lc_num_to_cr_i(size, Int64).as(Int64)
         return Null unless rws 
         if rws < 0
-            lc_raise(LcArgumentError,"(Negative matrix size)")
+            lc_raise(lc_arg_err,"(Negative matrix size)")
             return Null 
         end 
         return matrix_id(rws) 

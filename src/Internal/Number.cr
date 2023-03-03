@@ -27,7 +27,7 @@ module LinCAS::Internal
 
     macro check_num(v)
         if !({{v}}.is_a? LcNum)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{v}})} into Number")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{v}})} into Number")
             return Null 
         end
     end
@@ -81,11 +81,11 @@ module LinCAS::Internal
             c = internal.coerce(v1,v2).as( LcVal)
             return Null if c == Null
             if !(c.is_a? LcArray)
-                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                lc_raise(lc_type_err,"Coerce must return [x,y]")
                 return Null 
             end
             if !(ary_size(c) == 2)
-                lc_raise(LcTypeError,"Coerce must return [x,y]")
+                lc_raise(lc_type_err,"Coerce must return [x,y]")
                 return Null 
             end
             return Exec.lc_call_fun(
@@ -100,7 +100,7 @@ module LinCAS::Internal
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) > num2num(n2))
         else 
-            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
+            lc_raise(lc_arg_err,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -108,7 +108,7 @@ module LinCAS::Internal
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) < num2num(n2))
         else 
-            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
+            lc_raise(lc_arg_err,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -116,7 +116,7 @@ module LinCAS::Internal
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) >= num2num(n2))
         else 
-            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
+            lc_raise(lc_arg_err,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 
@@ -124,7 +124,7 @@ module LinCAS::Internal
         if n1.is_a? NumType && n2.is_a? NumType
             return val2bool(num2num(n1) <= num2num(n2))
         else 
-            lc_raise(LcArgumentError,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
+            lc_raise(lc_arg_err,convert(:comparison_failed) % {lc_typeof(n1),lc_typeof(n2)})
         end
     end
 

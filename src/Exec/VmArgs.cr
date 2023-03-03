@@ -495,7 +495,7 @@ module LinCAS
           keywords << Internal.sym2string(key)
           values << value
         else
-          lc_raise(LcTypeError, "Hash key #{Internal.obj_inspect(key)} is not a symbol")
+          lc_raise(Internal.lc_type_err, "Hash key #{Internal.obj_inspect(key)} is not a symbol")
         end
       end
       return {keywords, values}

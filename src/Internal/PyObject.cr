@@ -49,7 +49,7 @@ module LinCAS::Internal
 
     macro pyobj_check(obj)
        if !(obj.is_a? LcPyObject)
-          lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{obj}})} into PyObject")
+          lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{obj}})} into PyObject")
           return Null 
        end
     end
@@ -192,7 +192,7 @@ module LinCAS::Internal
         if method.is_a? LcMethod && method.type == LcMethodT::PYTHON
             return lc_call_python(method,argv)
         else
-            lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{pyobj2string(pyobj_get_obj(obj))} : PyObject")
+            lc_raise(lc_nomet_err,"Undefined method `#{name}' for #{pyobj2string(pyobj_get_obj(obj))} : PyObject")
             return Null 
         end
     end

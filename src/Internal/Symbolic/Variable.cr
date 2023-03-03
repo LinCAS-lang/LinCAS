@@ -169,7 +169,7 @@ module LinCAS::Internal
             if Internal.test(tmp)
                 return num2num(tmp)
             else
-                Exec.lc_raise(LcKeyError,"Dictionary does not contain '#{@name}'")
+                Exec.lc_raise(Internal.lc_key_err,"Dictionary does not contain '#{@name}'")
                 return 1 
             end
         end

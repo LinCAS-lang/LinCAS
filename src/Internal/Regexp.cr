@@ -99,11 +99,11 @@ module LinCAS::Internal
 
     macro regex_check(regex)
         if !({{regex}}.is_a? LcRegexp)
-            lc_raise(LcTypeError,"No impilicit conversion of #{lc_typeof({{regex}})} into Regexp")
+            lc_raise(lc_type_err,"No impilicit conversion of #{lc_typeof({{regex}})} into Regexp")
             return Null 
         end
         if regex_flag({{regex}}) == RegexpFlag::Uncompiled
-            lc_raise(LcTypeError,"Uncompiled regexp")
+            lc_raise(lc_type_err,"Uncompiled regexp")
             return Null 
         end
     end
@@ -123,12 +123,12 @@ module LinCAS::Internal
         origin   = str_gsub_char(source,PATTERN,SUB)
         compiled = LibPCRE.compile(origin,(OPT_NONE | UTF_8 | NO_UTF8_CHECK),out error, out erroffset,nil)
         if compiled.null?
-            lc_raise(LcArgumentError,"#{String.new(error)} at #{erroffset}") 
+            lc_raise(lc_arg_err,"#{String.new(error)} at #{erroffset}") 
             return Null 
         end
         extra = LibPCRE.study(compiled, 0, out studyerror)
         if extra.null? && studyerror
-            lc_raise(LcArgumentError,String.new(studyerror))
+            lc_raise(lc_arg_err,String.new(studyerror))
             return Null 
         end
         LibPCRE.full_info(compiled, nil, INFO_CAPTURECOUNT, out captured)
@@ -229,7 +229,7 @@ module LinCAS::Internal
                 buffer_append(buffer,pointer_of(value))
             else
                 error = true 
-                lc_raise(LcTypeError,"Argument must be Regexp or String (#{lc_typeof(value)} given)")
+                lc_raise(lc_type_err,"Argument must be Regexp or String (#{lc_typeof(value)} given)")
                 break 
             end
             buffer_append(buffer,'|') if i < size
@@ -252,7 +252,7 @@ module LinCAS::Internal
         elsif value.is_a? LcRegexp
             return lc_regex_to_s(value)
         end 
-        lc_raise(LcTypeError,"Argument must be Regexp or String (#{lc_typeof(value)} given)")
+        lc_raise(lc_type_err,"Argument must be Regexp or String (#{lc_typeof(value)} given)")
         return Null
     end
 

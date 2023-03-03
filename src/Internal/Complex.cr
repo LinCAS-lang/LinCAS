@@ -40,7 +40,7 @@ module LinCAS::Internal
 
     macro complex_check2(cpx)
         if !complex_is_alloc({{cpx}})
-            lc_raise(LcTypeError,"Uninitialized complex")
+            lc_raise(lc_type_err,"Uninitialized complex")
             return Null 
         end
     end
@@ -51,7 +51,7 @@ module LinCAS::Internal
         elsif {{v}}.is_a? LcNum
             return {{name.id}}_num({{cpx}},{{v}})
         end
-        lc_raise(LcTypeError,"Expecting complex or Number (#{lc_typeof({{v}})} given)")
+        lc_raise(lc_type_err,"Expecting complex or Number (#{lc_typeof({{v}})} given)")
         return Null
     end
 

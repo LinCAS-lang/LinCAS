@@ -76,7 +76,7 @@ module LinCAS::Internal
     {% for name in %w|atan2 nrt copysign hypot| %}
         def self.lc_{{name.id}}_ary(a1 :  LcVal, a2 :  LcVal)
             if ary_size(a1) != ary_size(a2)
-                lc_raise(LcArgumentError,"(Array size missmatch)")
+                lc_raise(lc_arg_err,"(Array size missmatch)")
                 return Null 
             end
             new_ary = build_ary_new
@@ -107,7 +107,7 @@ module LinCAS::Internal
     def self.lc_acos(unused, v : LcVal)
         adef_with_block(cos,v, Acos) do 
             if val > 1
-                lc_raise(LcMathError,"(Value out of domain)")
+                lc_raise(lc_math_err,"(Value out of domain)")
                 return Null 
             end
         end
@@ -116,7 +116,7 @@ module LinCAS::Internal
     def self.lc_asin(unused, v : LcVal)
         adef_with_block(sin,v, Asin) do 
             if val > 1
-                lc_raise(LcMathError,"(Value out of domain)")
+                lc_raise(lc_math_err,"(Value out of domain)")
                 return Null 
             end
         end
@@ -146,7 +146,7 @@ module LinCAS::Internal
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(lc_math_err,"(Value out of domain)")
             return Null 
         end 
         return num2float(Math.gamma(val).to_f)
@@ -159,7 +159,7 @@ module LinCAS::Internal
     def self.lc_log(unused,v : LcVal)
         def_with_block(log,v,Log) do 
             if val < 0
-                lc_raise(LcMathError,"(Value out of domain)")
+                lc_raise(lc_math_err,"(Value out of domain)")
                 return Null
             end
         end
@@ -172,7 +172,7 @@ module LinCAS::Internal
     def self.lc_atanh(unused, v : LcVal)
         adef_with_block(tanh,v) do
             if val.abs > 1
-                lc_raise(LcMathError,"(Value out of domain)")
+                lc_raise(lc_math_err,"(Value out of domain)")
                 return Null
             end
         end
@@ -216,7 +216,7 @@ module LinCAS::Internal
         val2 = internal.lc_num_to_cr_f(v2)
         return Null unless val2
         if val1.even? && val2 < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(lc_math_err,"(Value out of domain)")
             return Null
         end
         if val1.is_a? BigInt
@@ -239,7 +239,7 @@ module LinCAS::Internal
         val = internal.lc_num_to_cr_f(v)
         return Null unless val
         if val < 0
-            lc_raise(LcMathError,"(Value out of domain)")
+            lc_raise(lc_math_err,"(Value out of domain)")
             return Null
         end
         return num2float(Math.log10(val).to_f)

@@ -33,7 +33,7 @@ module LinCAS::Internal
 
     macro check_range(range)
         if !({{range}}.is_a? LcRange)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{range}})} into Range")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{range}})} into Range")
             return Null 
         end
     end
@@ -56,7 +56,7 @@ module LinCAS::Internal
         lft = r_left(range)
         rht = r_right(range)
         if lft.is_a? BigInt || rht.is_a? BigInt 
-            lc_raise(LcNotImplError,"No conversion of BigInt to python yet")
+            lc_raise(lc_not_impl_err,"No conversion of BigInt to python yet")
             return nil 
         end
         inc = inclusive(range) ? 0 : -1

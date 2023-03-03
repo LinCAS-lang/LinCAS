@@ -56,7 +56,7 @@ module LinCAS::Internal
 
     macro mdata_check(mdata)
         if !({{mdata}}.is_a? LcMatchData)
-            lc_raise(LcTypeError,"No inplicit_conversion of #{lc_typeof({{mdata}})} into MatchData")
+            lc_raise(lc_type_err,"No inplicit_conversion of #{lc_typeof({{mdata}})} into MatchData")
             return Null 
         end
     end
@@ -179,7 +179,7 @@ module LinCAS::Internal
             return Null if match_start(mdata,i) < 0
             return build_string_with_ptr(matched_data(mdata,i))
         end
-        lc_raise(LcTypeError,"Integer or String expected (#{lc_typeof(index)} given)")
+        lc_raise(lc_type_err,"Integer or String expected (#{lc_typeof(index)} given)")
         return Null
     end
 

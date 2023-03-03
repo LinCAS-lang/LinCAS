@@ -46,7 +46,7 @@ module LinCAS::Internal
 
     private def self.set_at_exit_proc(proc :  LcVal)
         if @@running
-            lc_raise(LcRuntimeError,"can't call at_exit() inside a finalization proc")
+            lc_raise(lc_runtime_err,"can't call at_exit() inside a finalization proc")
         else
             ExitProcs << proc 
         end
@@ -178,10 +178,10 @@ module LinCAS::Internal
 
     def self.lc_include(klass :  LcVal, mod :  LcVal)
         if !(mod.is_a? LcClass)
-            lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
+            lc_raise(lc_type_err,"Module expected (#{lc_typeof(mod)} given)")
         elsif !((struct_type(mod.as(LcClass),SType::MODULE)) || 
                 (struct_type(mod.as(LcClass),SType::PyMODULE)))
-            lc_raise(LcTypeError,"Module expected (#{lc_typeof(mod)} given)")
+            lc_raise(lc_type_err,"Module expected (#{lc_typeof(mod)} given)")
         else
             if !klass.is_a? LcClass
                 klass = class_of(klass)
@@ -246,7 +246,7 @@ module LinCAS::Internal
             set_at_exit_proc(proc)
             return proc
         else
-            lc_raise(LcArgumentError,"invoked without a block")
+            lc_raise(lc_arg_err,"invoked without a block")
             return Null 
         end
     end

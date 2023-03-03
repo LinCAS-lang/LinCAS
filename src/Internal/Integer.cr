@@ -51,7 +51,7 @@ module LinCAS::Internal
         elsif value.is_a? LcFloat
             v = value.val.to_i
         else
-            lc_raise(LcTypeError,"No implicit conversion of %s into Integer" % lc_typeof(value))
+            lc_raise(lc_type_err,"No implicit conversion of %s into Integer" % lc_typeof(value))
             return nil 
         end
         return r_type ? i_to_t(v,r_type) : v
@@ -61,7 +61,7 @@ module LinCAS::Internal
         if (v2 = t.new(int)) == int 
             return v2 
         else
-            lc_raise(LcTypeError,"Bad approximation of #{int.class} into #{t}")
+            lc_raise(lc_type_err,"Bad approximation of #{int.class} into #{t}")
             return nil
         end
     end
@@ -204,7 +204,7 @@ module LinCAS::Internal
     def self.lc_int_idiv(n1 :  LcVal, n2 :  LcVal)
         if n2.is_a? LcInt 
             if int2num(n2) == 0
-                lc_raise(LcZeroDivisionError,"(Division by 0)")
+                lc_raise(lc_zerodiv_err,"(Division by 0)")
                 return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             {% if flag?(:fast_math) %}

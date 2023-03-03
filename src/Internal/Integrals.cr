@@ -62,7 +62,7 @@ module LinCAS::Internal
         params   = [] of Variable
         f.get_params(params)
         if params.size > 1
-            lc_raise(LcArgumentError,"Function must contain only one variable (#{params.size} given)")
+            lc_raise(lc_arg_err,"Function must contain only one variable (#{params.size} given)")
             return Float64::NAN 
         end
         param     = build_string(params[0].name)

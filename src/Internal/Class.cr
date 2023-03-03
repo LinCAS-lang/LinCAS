@@ -293,7 +293,7 @@ module LinCAS::Internal
 
     def self.lc_is_a(obj :  LcVal, lcType :  LcVal)
       if !(lcType.is_a? LcClass)
-        lc_raise(LcArgumentError,"Argument must be a class or a module")
+        lc_raise(lc_arg_err,"Argument must be a class or a module")
         return lcfalse
       end
       objClass = class_of(obj)
@@ -417,10 +417,10 @@ module LinCAS::Internal
       if method = cc.method
         lc_add_method(klass,new_name,method)
       elsif cc.m_missing_status == 1
-        lc_raise(LcNoMethodError,"Cannot alias protected methods")
+        lc_raise(lc_nomet_err,"Cannot alias protected methods")
         return false
       else
-        lc_raise(LcNoMethodError,convert(:no_method) % klass.name)
+        lc_raise(lc_nomet_err,convert(:no_method) % klass.name)
         return false
       end
       return true
@@ -443,7 +443,7 @@ module LinCAS::Internal
       return Null unless name 
       cc = seek_method(obj.klass,name, explicit: false, ignore_visib: true)
       unless cc.method 
-        lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(obj)}")
+        lc_raise(lc_nomet_err,"Undefined method `#{name}' for #{lc_typeof(obj)}")
         return Null 
       end
       return build_method(obj,cc.method.not_nil!)
@@ -454,7 +454,7 @@ module LinCAS::Internal
       return Null unless name
       cc = seek_method(klass.klass, name, explicit: false, ignore_visib: true)
       unless cc.method
-        lc_raise(LcNoMethodError,"Undefined method `#{name}' for #{lc_typeof(klass)}")
+        lc_raise(lc_nomet_err,"Undefined method `#{name}' for #{lc_typeof(klass)}")
         return Null 
       end
       return build_unbound_method(cc.method.not_nil!)

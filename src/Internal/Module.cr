@@ -110,7 +110,7 @@ module LinCAS::Internal
 
     def self.lc_include_module(receiver : LcClass, mod : LcClass)
       if receiver.methods.object_id == mod.methods.object_id
-        lc_raise(LcArgumentError, "Cyclic include detected")
+        lc_raise(lc_arg_err, "Cyclic include detected")
       else
         s_mod  = lc_make_shared_module(mod)
         parent = receiver.parent 
@@ -135,7 +135,7 @@ module LinCAS::Internal
       sname = id2string(name)
       return lcfalse unless sname
       unless lc_obj_responds_to? obj, sname
-        lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
+        lc_raise(lc_nomet_err,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
         return lcfalse 
       else 
         lc_remove_internal(obj.klass,sname)
@@ -151,7 +151,7 @@ module LinCAS::Internal
         klass.methods.delete(sname)
         return lctrue
       else 
-        lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
+        lc_raise(lc_nomet_err,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
       end 
       return lcfalse 
     end

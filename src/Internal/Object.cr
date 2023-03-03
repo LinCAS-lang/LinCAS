@@ -54,7 +54,7 @@ module LinCAS::Internal
             value = int2num(obj)
             {%if !flag?(:fast_m)%}
                 if value.is_a? BigInt 
-                    lc_raise(LcNotImplError,"No conversion of big ints to python yet")
+                    lc_raise(lc_not_impl_err,"No conversion of big ints to python yet")
                     return nil 
                 end
             {% end %}
@@ -67,7 +67,7 @@ module LinCAS::Internal
             if is_pyembedded(obj)
                 return obj.namespace.py_obj.not_nil! 
             else
-                lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+                lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
                 return nil
             end
         elsif obj.is_a? LcArray
@@ -83,7 +83,7 @@ module LinCAS::Internal
         elsif obj.is_a? LcRange
             return range2py(obj)
         else
-            lc_raise(LcNotImplError,"No conversion of #{lc_typeof(obj)} to python yet")
+            lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
             return nil 
         end
     end
@@ -100,13 +100,13 @@ module LinCAS::Internal
         end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
-            lc_raise(LcInstanceErr,"Can't instantiate %s" % klass.name)
+            lc_raise(lc_instance_err,"Can't instantiate %s" % klass.name)
             return Null 
         end
         if allocator.is_a? LcProc
             return allocator.call(klass).as( LcVal)
         end
-        lc_raise(LcInstanceErr,"Undefined allocator for %s" % klass.path.to_s)
+        lc_raise(lc_instance_err,"Undefined allocator for %s" % klass.path.to_s)
         return Null
     end
 

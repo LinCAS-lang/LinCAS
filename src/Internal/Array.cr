@@ -60,7 +60,7 @@ module LinCAS::Internal
     macro resize_ary_capa(ary,size)
         f_size = ary_size({{ary}}) + {{size}}
         if MAX_ARY_CAPA < f_size
-            lc_raise(LcArgumentError,"(Max array size exceeded)")
+            lc_raise(lc_arg_err,"(Max array size exceeded)")
             return Null 
         end
         {{ary}}.as(LcArray).ptr = {{ary}}.as(LcArray).ptr.realloc(f_size)
@@ -70,7 +70,7 @@ module LinCAS::Internal
     macro resize_ary_capa_2(ary)
         f_size = ary_total_size(ary) + MIN_ARY_CAPA
         if MAX_ARY_CAPA < f_size
-            lc_raise(LcArgumentError,"(Max array size exceeded)")
+            lc_raise(lc_arg_err,"(Max array size exceeded)")
             return Null 
         end
         {{ary}}.as(LcArray).ptr = ary_ptr({{ary}}).realloc(f_size)
@@ -79,7 +79,7 @@ module LinCAS::Internal
 
     macro resize_ary_capa_3(ary,capa)
         if MAX_ARY_CAPA < {{capa}}
-            lc_raise(LcArgumentError,"(Max array size exceeded)")
+            lc_raise(lc_arg_err,"(Max array size exceeded)")
             return Null 
         end
         {{ary}}.as(LcArray).ptr = ary_ptr({{ary}}).realloc({{capa}})
@@ -98,7 +98,7 @@ module LinCAS::Internal
     macro ary_sort_by_m(ary_ptr,length)
         lc_heap_sort({{ary_ptr}},{{length}}) do |v1,v2|
             if !Exec.block_given?
-                lc_raise(LcArgumentError,"Expected block not found")
+                lc_raise(lc_arg_err,"Expected block not found")
                 next nil 
             end
             r1 = Exec.lc_yield(v1)
@@ -110,7 +110,7 @@ module LinCAS::Internal
                 ptr2 = pointer_of(r2)
                 next ((libc.strcmp(ptr1,ptr2) > 0) ? 1 : 0)
             else
-                lc_raise(LcArgumentError,"Comparison between #{lc_typeof(r1)} and #{lc_typeof(r2)} failed")
+                lc_raise(lc_arg_err,"Comparison between #{lc_typeof(r1)} and #{lc_typeof(r2)} failed")
                 next nil 
             end
         end
@@ -254,7 +254,7 @@ module LinCAS::Internal
         x = lc_num_to_cr_i(size)
         return Null unless x.is_a? Intnum 
         if (x.is_a? BigInt)
-            lc_raise(LcArgumentError,"BigInt not supported for array creation")
+            lc_raise(lc_arg_err,"BigInt not supported for array creation")
             return Null 
         end
         x = x.to_i64
@@ -327,7 +327,7 @@ module LinCAS::Internal
             ary_range_to_null(ary,a_ary_size,x)
             ary_set_index(ary,x,value)
         elsif x < a_ary_size
-            lc_raise(LcIndexError,"(Index #{x} out of array)") unless x >= 0
+            lc_raise(lc_index_err,"(Index #{x} out of array)") unless x >= 0
             ary_set_index(ary,x,value)
         else
             n = 0
@@ -505,7 +505,7 @@ module LinCAS::Internal
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
         if arylen - 1 < x < 0
-            lc_raise(LcIndexError,"(Index #{x} out of array)")
+            lc_raise(lc_index_err,"(Index #{x} out of array)")
             return Null 
         elsif x == arylen - 1
             argv.each_with_index do |e,i|
@@ -547,7 +547,7 @@ module LinCAS::Internal
         return Null unless i2_val
         arylen = ary_size(ary)
         if (i1_val < 0) || (i2_val < 0) || (i1_val >= arylen) || (i2_val >= arylen)
-            lc_raise(LcIndexError,"(Indexes out of array)")
+            lc_raise(lc_index_err,"(Indexes out of array)")
             return Null 
         end 
         ptr = ary_ptr(ary)
@@ -584,7 +584,7 @@ module LinCAS::Internal
                     if v1.is_a? LcNum && v2.is_a? LcNum
                         next (num2num(v1) > num2num(v2) ? 1 : 0)
                     else
-                        lc_raise(LcArgumentError,"Comparison between #{lc_typeof(v1)} and #{lc_typeof(v2)} failed")
+                        lc_raise(lc_arg_err,"Comparison between #{lc_typeof(v1)} and #{lc_typeof(v2)} failed")
                         next nil
                     end
                 end
@@ -595,12 +595,12 @@ module LinCAS::Internal
                         ptr2 = pointer_of(v2)
                         next ((libc.strcmp(ptr1,ptr2) > 0) ? 1 : 0)
                     else
-                        lc_raise(LcArgumentError,"Comparison between #{lc_typeof(v1)} and #{lc_typeof(v2)} failed")
+                        lc_raise(lc_arg_err,"Comparison between #{lc_typeof(v1)} and #{lc_typeof(v2)} failed")
                         next nil
                     end
                 end
             else
-                lc_raise(LcArgumentError,"Comparison between #{lc_typeof(ary[0])} and #{lc_typeof(ary[1])} failed")
+                lc_raise(lc_arg_err,"Comparison between #{lc_typeof(ary[0])} and #{lc_typeof(ary[1])} failed")
             end
         end
     end
@@ -752,7 +752,7 @@ module LinCAS::Internal
             ary_iterate_with_index(current,i) do |v,j|
                 if v.is_a? LcArray
                     if v == ary
-                        lc_raise(LcArgumentError,"Recursive array join") 
+                        lc_raise(lc_arg_err,"Recursive array join") 
                         return Null 
                     end 
                     processing << {current,length,j+1} << {v,ary_size(v),0_i64}
@@ -766,7 +766,7 @@ module LinCAS::Internal
         buffer_trunc(buffer)
         string = build_string_with_ptr(buff_ptr(buffer),buff_size(buffer))
         if string.size > STR_MAX_CAPA
-            lc_raise(LcRuntimeError,"String overflows max length")
+            lc_raise(lc_runtime_err,"String overflows max length")
             return Null 
         end 
         return build_string(string)
@@ -786,7 +786,7 @@ module LinCAS::Internal
         r_beg = r_left(range)
         r_end = r_right(range)
         if r_beg.is_a? BigInt || r_end.is_a? BigInt
-            lc_raise(LcNotSupportedError,"BigInt range is not supported yet")
+            lc_raise(lc_not_supp_err,"BigInt range is not supported yet")
             return Null
         end
         ary   = build_ary_new 

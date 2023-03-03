@@ -67,7 +67,7 @@ module LinCAS::Internal
         py_fetch_error(pointerof(type),pointerof(val),pointerof(tr))
         type_ = pyobj2string(type)
         val_  = pyobj2string(val)
-        return lc_raise(LcPyException," #{exception_name(type_)}: #{val_}")
+        return lc_raise(lc_pyexception," #{exception_name(type_)}: #{val_}")
         pyobj_decref_n(type,val,tr)
     end
 
@@ -83,7 +83,7 @@ module LinCAS::Internal
             elsif is_pytype(p_module)
                 import = lc_build_pyclass(import_name,p_module, namespace)
             else
-                lc_raise(LcPyImportError,"Invalid import object")
+                lc_raise(lc_pyimport_err,"Invalid import object")
                 pyobj_decref(p_module)
                 import = Null
             end

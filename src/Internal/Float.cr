@@ -22,7 +22,7 @@ module LinCAS::Internal
         elsif num.is_a? LcFloat
             return float2num(num).as(Floatnum)
         else
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(num)} into Float")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(num)} into Float")
         end 
         return nil 
     end
@@ -106,7 +106,7 @@ module LinCAS::Internal
         n1 = n1.as(LcFloat)
         if n2.is_a? LcFloat
             if float2num(n2) == 0
-                lc_raise(LcZeroDivisionError,"(Division by 0)")
+                lc_raise(lc_zerodiv_err,"(Division by 0)")
                 return positive_num(n1) ? @@lc_infinity : @@lc_ninfinity
             end
             return num2int((float2num(n1) / float2num(n2)).to_i)

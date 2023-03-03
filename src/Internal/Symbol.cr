@@ -83,7 +83,7 @@ module LinCAS::Internal
         elsif id.is_a? LcSymbol
             return sym2string(id)
         end
-        lc_raise(LcTypeError,"Expecting String or Symbol (#{lc_typeof(id)} given)")
+        lc_raise(lc_type_err,"Expecting String or Symbol (#{lc_typeof(id)} given)")
         nil
     end
 

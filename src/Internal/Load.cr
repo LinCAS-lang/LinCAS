@@ -30,7 +30,7 @@ module LinCAS::Internal
     def self.require_file(path :  LcVal,opt :  LcVal? = nil)
         path   = String.new(file_expand_path(path,opt))
         if !file_exist(path)
-            lc_raise(LcLoadError,"No such file '#{path}'")
+            lc_raise(lc_load_err,"No such file '#{path}'")
             return nil 
         else
             if !check_required(path)

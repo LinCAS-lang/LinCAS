@@ -98,7 +98,7 @@ module LinCAS::Internal
     #             next build_function(Snumber.new(v))
     #         end
     #     else
-    #         lc_raise(LcTypeError,"Expecting number (#{lc_typeof(arg)} given)")
+    #         lc_raise(lc_type_err,"Expecting number (#{lc_typeof(arg)} given)")
     #         next Null 
     #     end
     # end

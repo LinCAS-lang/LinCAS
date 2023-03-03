@@ -66,7 +66,7 @@ module LinCAS::Internal
         st_len    = str_size({{lcStr}})
         final_size = st_len + {{value}}
         if final_size > STR_MAX_CAPA
-            lc_raise(LcIndexError, "String size too big")
+            lc_raise(lc_index_err, "String size too big")
             return Null
         else
             {{lcStr}}.as(LcString).str_ptr = pointer_of({{lcStr}}).realloc(final_size.to_i + 1)
@@ -77,7 +77,7 @@ module LinCAS::Internal
 
     macro resize_str_capacity_2(str,value)
         if {{value}} > STR_MAX_CAPA
-            lc_raise(LcIndexError, "String size too big")
+            lc_raise(lc_index_err, "String size too big")
             return Null
         else
             {{str}}.as(LcString).str_ptr = pointer_of({{str}}).realloc({{value}})
@@ -102,7 +102,7 @@ module LinCAS::Internal
 
     macro str_check(string)
         if !({{string}}.is_a? LcString)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{string}})} into String")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{string}})} into String")
             return Null
         end
     end
@@ -118,7 +118,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.string2cr(string :  LcVal)
         unless string.is_a? LcString
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(string)} into String")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(string)} into String")
             return nil
         else 
             return String.new(pointer_of(string))
@@ -138,7 +138,7 @@ module LinCAS::Internal
             if val.is_a? LcString
                 size += str_size(val)
             else 
-                lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof(val)} into String")
+                lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(val)} into String")
                 return -1
             end
         end
@@ -298,7 +298,7 @@ module LinCAS::Internal
             #ptr[sz] = 0_u8
         else
             lc_raise(
-                LcTypeError,
+                lc_type_err,
                 "No implicit conversion of #{lc_typeof(value.as( LcVal))} into String"
             )
             return Null
@@ -431,7 +431,7 @@ module LinCAS::Internal
     def self.lc_str_icompare(str1 :  LcVal, str2 :  LcVal)
         unless str2.is_a? LcString
             lc_raise(
-                LcTypeError,
+                lc_type_err,
                 "No implicit conversion of #{lc_typeof(str2)} into String"
             )
             return Null
@@ -525,7 +525,7 @@ module LinCAS::Internal
         x = internal.lc_num_to_cr_i(index)
         return Null unless x.is_a? Number  
         if x > str_size(str) || x < 0
-            lc_raise(LcIndexError,"(index #{x} out of String)")
+            lc_raise(lc_index_err,"(index #{x} out of String)")
             return Null
         else 
             str_check(value)
@@ -556,7 +556,7 @@ module LinCAS::Internal
         x = internal.lc_num_to_cr_i(index)
         return Null unless x.is_a? Number  
         if x > str_size(str) || x < 0
-            lc_raise(LcIndexError,"(Index #{x} out of String)")
+            lc_raise(lc_index_err,"(Index #{x} out of String)")
         else
             str_check(value)
             st_size  = str_size(str)

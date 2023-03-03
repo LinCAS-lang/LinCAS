@@ -71,10 +71,10 @@ module LinCAS::Internal
 
     macro check_proc(proc)
         if !({{proc}}.is_a? LCProc)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{proc}})} into Proc")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{proc}})} into Proc")
             return Null
         elsif !is_initialized_proc? {{proc}}
-            # lc_raise(LcInstanceErr,"Proc uncorrectly initialized")
+            # lc_raise(lc_instance_err,"Proc uncorrectly initialized")
             return Null
         end
     end
@@ -96,7 +96,7 @@ module LinCAS::Internal
                 proc_init(proc,lc_cast(block, LcBlock))
             end
         else
-            lc_raise(LcArgumentError,"Tried to create a proc without a block")
+            lc_raise(lc_arg_err,"Tried to create a proc without a block")
         end
         return proc
     end
@@ -130,7 +130,7 @@ module LinCAS::Internal
         elsif block.is_a? LCProc 
             # Do nothing. It is the same object
         else
-            lc_raise(LcArgumentError,"Tried to create a proc without a block")
+            lc_raise(lc_arg_err,"Tried to create a proc without a block")
         end
         return proc
     end

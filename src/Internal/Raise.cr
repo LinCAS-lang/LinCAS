@@ -17,30 +17,6 @@ module LinCAS
     
     module Internal
 
-        @@err_dict = uninitialized Hash(ErrType,LcClass)
-        
-        enum ErrType
-            TypeError
-            ArgumentError
-            RuntimeError
-            InternalError
-            NameError
-            NoMethodError
-            ZeroDivisionError
-            SystemStackError
-            FrozenError
-            IndexError
-            MathError
-            InstanceError
-            LoadError
-            KeyError
-            NotSupportedError
-            SintaxError
-            PyException
-            PyImportError
-            NotImplementedError
-        end
-
         ERR_MESSAGE = {
             :wrong_node_reached => "Wrong node reached",
             :not_a_const    => "'%s' is not a constant",
@@ -73,9 +49,9 @@ module LinCAS
             property body, backtrace
         end
 
-        def self.build_error(error : ErrType,body : String, backtrace : String)
-            body  = String.build { |io| io << error << ':' << ' ' << body}
-            klass = @@err_dict[error]
+        # Warn: no check is performed to see if klass is an error class or
+        def self.build_error(klass : LcClass, body : String, backtrace : String)
+            body  = String.build { |io| io << class_path(klass) << ':' << ' ' << body}
             err   = lc_err_new(klass).as(LcError)
             err.body      = body 
             err.backtrace = backtrace
@@ -119,12 +95,12 @@ module LinCAS
 
         def self.lc_raise_err(unused,error :  LcVal)
             if error.is_a? LcString 
-                err = build_error(LcRuntimeError,String.new(error.as(LcString).str_ptr),"")
+                err = build_error(lc_runtime_err,String.new(error.as(LcString).str_ptr),"")
                 Exec.lc_raise(err)
                 return Null
             end 
             if !(error.is_a? LcError)
-                lc_raise(LcTypeError,"(Error object expected)")
+                lc_raise(lc_type_err,"(Error object expected)")
                 return Null
             end 
             Exec.lc_raise(error)
@@ -162,27 +138,6 @@ module LinCAS
             @@lc_pyexception = lc_build_internal_class("PyException",@@lc_error   )
             @@lc_pyimport_err = lc_build_internal_class("PyImportError",@@lc_error)
             @@lc_not_impl_err = lc_build_internal_class("NotImplementedError",@@lc_error)
-
-            @@err_dict = {
-                ErrType::TypeError         => @@lc_type_err,
-                ErrType::ArgumentError     => @@lc_arg_err,
-                ErrType::RuntimeError      => @@lc_runtime_err,
-                ErrType::NameError         => @@lc_name_err,
-                ErrType::NoMethodError     => @@lc_nomet_err,
-                ErrType::ZeroDivisionError => @@lc_zerodiv_err,
-                ErrType::SystemStackError  => @@lc_systemstack_err,
-                ErrType::FrozenError       => @@lc_frozen_err,
-                ErrType::IndexError        => @@lc_index_err,
-                ErrType::MathError         => @@lc_math_err,
-                ErrType::InstanceError     => @@lc_instance_err,
-                ErrType::LoadError         => @@lc_load_err,
-                ErrType::KeyError          => @@lc_key_err, 
-                ErrType::NotSupportedError => @@lc_not_supp_err,
-                ErrType::SintaxError       => @@lc_sintax_err,
-                ErrType::PyException       => @@lc_pyexception,
-                ErrType::PyImportError     => @@lc_pyimport_err,
-                ErrType::NotImplementedError => @@lc_not_impl_err
-            }
         end
 
 
@@ -191,26 +146,6 @@ module LinCAS
         end
 
     end
-
-    LcTypeError     = Internal::ErrType::TypeError
-    LcArgumentError = Internal::ErrType::ArgumentError
-    LcRuntimeError  = Internal::ErrType::RuntimeError
-    LcInternalError = Internal::ErrType::InternalError
-    LcNameError     = Internal::ErrType::NameError
-    LcNoMethodError = Internal::ErrType::NoMethodError
-    LcFrozenError   = Internal::ErrType::FrozenError
-    LcZeroDivisionError = Internal::ErrType::ZeroDivisionError
-    LcSystemStackError  = Internal::ErrType::SystemStackError
-    LcIndexError    = Internal::ErrType::IndexError
-    LcMathError     = Internal::ErrType::MathError
-    LcInstanceErr   = Internal::ErrType::InstanceError
-    LcLoadError     = Internal::ErrType::LoadError
-    LcKeyError      = Internal::ErrType::KeyError
-    LcNotSupportedError = Internal::ErrType::NotSupportedError
-    LcSintaxError   = Internal::ErrType::SintaxError
-    LcPyException   = Internal::ErrType::PyException
-    LcPyImportError = Internal::ErrType::PyImportError
-    LcNotImplError  = Internal::ErrType::NotImplementedError
 
     macro convert_error(name)
         Internal::ERR_MESSAGE[{{name}}]
