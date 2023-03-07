@@ -134,13 +134,6 @@ module LinCAS
     getter iseq, me, env
   end
 
-  struct OptArg
-    def initialize(@name : String, @optcode : Bytecode)
-    end
-    getter name
-    property optcode
-  end
-
   enum LcMethodT
     INTERNAL
     USER
