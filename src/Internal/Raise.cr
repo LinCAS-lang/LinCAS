@@ -134,7 +134,7 @@ module LinCAS
             @@lc_load_err    = lc_build_internal_class("LoadError",@@lc_error     )
             @@lc_key_err     = lc_build_internal_class("KeyError",@@lc_error      )
             @@lc_not_supp_err = lc_build_internal_class("NotSupportedError",@@lc_error)
-            @@lc_sintax_err  = lc_build_internal_class("SintaxError",@@lc_error   )
+            @@lc_syntax_err  = lc_build_internal_class("SyntaxError",@@lc_error   )
             @@lc_pyexception = lc_build_internal_class("PyException",@@lc_error   )
             @@lc_pyimport_err = lc_build_internal_class("PyImportError",@@lc_error)
             @@lc_not_impl_err = lc_build_internal_class("NotImplementedError",@@lc_error)

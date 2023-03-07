@@ -130,7 +130,7 @@ end
             load_err
             key_err
             not_supp_err
-            sintax_err
+            syntax_err
             pyexception
             pyimport_err
             not_impl_err
