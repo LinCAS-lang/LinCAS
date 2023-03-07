@@ -218,7 +218,7 @@ module LinCAS
     end
 
     private def vm_no_method_found(ci : CallInfo, calling : VM::CallingInfo, cc : VM::CallCache)
-      raise  "No method found"
+      raise  "No method found (#{ci.name}, #{calling.me.class})"
       case cc.m_missing_status
       when 0
       when 1
@@ -478,10 +478,9 @@ module LinCAS
     protected def vm_seek_exception_handler(type : CatchType)
       save_current_frame
       while !@control_frames.empty?
-        begin
-          frame = @control_frames[-1]
-          next unless frame.iseq?
-          dist = frame.pc - frame.pc_bottom
+        frame = @control_frames[-1]
+        if frame.iseq?
+          dist = frame.pc - frame.pc_bottom - 1 # pc is always 1 instruction ahead
           frame.iseq.catchtable.each do |ct_entry|
             if ct_entry.type == type && ct_entry.start <= dist <= ct_entry.end
               case type
@@ -494,14 +493,14 @@ module LinCAS
               end
             end
           end
-        ensure
-          @control_frames.pop
         end
+        @control_frames.pop
       end
       nil
     end
 
     protected def vm_handle_exception(ct_entry : CatchTableEntry, error : Internal::LcError)
+      debug "Handling exception"
       case ct_entry.type
       in .catch?
         restore_regs
@@ -512,25 +511,31 @@ module LinCAS
         else
           @sp = @control_frames[-2].real_sp
         end
+        debug("State reset to [fc: #{@control_frames.size}][ss: #{@sp}]")
+        debug("Handling frame: #{@current_frame.flags}")
         @pc = @current_frame.pc_bottom + ct_entry.cont
-        env = vm_new_env(ct_entry.iseq, @current_frame.env.context, @current_frame.pc, VM::VmFrame::CATCH_FRAME)
+        env = vm_new_env(ct_entry.iseq, @current_frame.env.context, @current_frame.env, VM::VmFrame::CATCH_FRAME)
         env[0] = error.as(LcVal)
+        set_stack_consistency_trace(0)
         vm_push_control_frame(
           me: @current_frame.me,
           iseq: ct_entry.iseq,
           env: env,
           flags: env.frame_type
         )
-        raise VM::LongJump # go back to VM#exec
+        debug "Jumping to VM#exec"
+        raise VM::LongJump.new # go back to VM#exec
       in .break?
       end
     end
 
     protected def vm_raise_exception(error : Internal::LcError)
       unless ct_entry = vm_seek_exception_handler(CatchType::CATCH)
+        debug("Raising exception and exit")
         vm_print_error error
         exit 1
       end
+      vm_handle_exception(ct_entry, error)
     end
 
     @[AlwaysInline]
