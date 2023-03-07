@@ -61,6 +61,7 @@ module LinCAS
       JUMP
       JUMPF_AND_POP
       CHECK_KW
+      CHECK_MATCH
 
       SPLAT_ARRAY
       CONCAT_ARRAY
@@ -71,6 +72,8 @@ module LinCAS
       MAKE_RANGE
       NEW_HASH
       NEW_ARRAY
+
+      THROW
 
       LEAVE
       
@@ -90,12 +93,12 @@ module LinCAS
       @type : CatchType, 
       @start : Int32, 
       @end : Int32,
-      @cont : Int32
-    )
+      @cont : Int32,
       @iseq = nil.as(ISeq?)
+    )
     end
 
-    getter type, start, :end
+    getter type, start, :end, cont
     getter! iseq
   end
 
@@ -143,6 +146,7 @@ module LinCAS
     METHOD
     BLOCK
     CLASS
+    CATCH
   end
 
   class ISeq

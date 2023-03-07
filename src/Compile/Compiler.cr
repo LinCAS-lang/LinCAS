@@ -48,6 +48,8 @@ module LinCAS
         compile_if(iseq, node)
       when Select
         compile_select(iseq, node)
+      when Try
+        compile_try(iseq, node)
       when While
         compile_while(iseq,node)
       when Until 
@@ -396,6 +398,52 @@ module LinCAS
 
     def compile_select(iseq, node : Select)
     end 
+
+    def compile_try(iseq, node)
+      encoded = iseq.encoded
+      start = iseq.encoded.size
+      compile_body(iseq, node.main_body)
+      _end = encoded.size - 1
+      # we insert one more instruction to prevent infinite
+      # loop when recovering from exception handling
+      encoded << IS::NOOP
+      cont = encoded.size
+      if catch = node.catch
+        symtab = node.symtab.not_nil!
+        catch_iseq = ISeq.new(ISType::CATCH, @filename, symtab)
+        catch.each do |entry|
+          compile_catch_entry(catch_iseq, entry, symtab)
+        end
+        catch_iseq.encoded << (IS::GETLOCAL_0 | IS.new(0)) << (IS::THROW | IS.new(0))
+        ct_entry = CatchTableEntry.new CatchType::CATCH, start, _end, cont, catch_iseq
+        iseq.catchtable << ct_entry
+      end
+    end
+
+    def compile_catch_entry(iseq, entry : CatchExp, symtab : SymTable)
+      encoded = iseq.encoded
+      jump = nil
+      if type = entry.type
+        set_line(iseq, type.location)
+        encoded << (IS::GETLOCAL_0 | IS.new(0))
+        compile_each(iseq, type)
+        encoded << IS::CHECK_MATCH
+        jump = encoded.size
+        encoded << IS::JUMPF
+      end
+      if var = entry.var
+        set_line(iseq, entry.location)
+        encoded << (IS::GETLOCAL_0 | IS.new(0))
+        index = get_var_offset symtab, var
+        encoded << (IS::SETLOCAL_0 | IS.new(index)) << IS::POP
+      end
+      compile_body(iseq, entry.body)
+      if jump
+        jmp_index = encoded.size.to_u64
+        encoded[jump] |= IS.new(jmp_index)
+      end
+      encoded << IS::LEAVE
+    end
 
     def compile_while(iseq, node : While)
       condition = node.condition 
