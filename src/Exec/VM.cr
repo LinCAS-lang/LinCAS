@@ -16,10 +16,13 @@ module LinCAS
   class VM
     include Internal
     include VmInsHelper
+    include Backtrace 
 
     class LongJump < Exception; end
 
     alias BlockHandler = LcBlock | LCProc
+    alias Context = LcClass | LcMethod
+
     macro convert(err)
       LinCAS.convert_error({{err}})
     end
@@ -92,9 +95,14 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    protected def save_current_frame
+      @control_frames[-1] = @current_frame.copy_with pc: @pc unless @control_frames.empty?
+    end
+
+    @[AlwaysInline]
     protected def push_control_frame(frame)
       # We need to save the current frame updating it with the current pc
-      @control_frames[-1] = @current_frame.copy_with pc: @pc unless @control_frames.empty?
+      save_current_frame
 
       # now we can push the new frame
       @control_frames << frame
@@ -109,7 +117,7 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    protected def vm_push_control_frame(me : LcVal, context : LcClass, iseq : ISeq, flags)
+    protected def vm_push_control_frame(me : LcVal, context : Context, iseq : ISeq, flags)
       env = Environment.new(iseq.symtab.size, context, flags)
       vm_push_control_frame(me, iseq, env, flags)
     end
@@ -117,7 +125,7 @@ module LinCAS
     ##
     # Used for calls to internal methods only
     @[AlwaysInline]
-    protected def vm_push_control_frame(me : LcVal, context : LcClass, block : BlockHandler?, flags)
+    protected def vm_push_control_frame(me : LcVal, context : Context, block : BlockHandler?, flags)
       env = Environment.new(0, context, flags, block)
       frame = vm_new_frame(me, env, flags)
       push_control_frame frame
@@ -441,14 +449,15 @@ module LinCAS
     end
 
     class Environment < Array(LcVal)
+
       @block_handler : BlockHandler?
-      def initialize(size, @context : LcClass, @frame_type : VmFrame, @previous : Environment? = nil)
+      def initialize(size, @context : Context, @frame_type : VmFrame, @previous : Environment? = nil)
         super(size, Null)
         @block_handler = nil
         @kw_bit = 0u64 # used in kw args
       end
 
-      def initialize(size, @context : LcClass, @frame_type : VmFrame, @block_handler : BlockHandler?, @previous : Environment? = nil)
+      def initialize(size, @context : Context, @frame_type : VmFrame, @block_handler : BlockHandler?, @previous : Environment? = nil)
         super(size, Null)
         @kw_bit = 0u64 # used in kw args
       end

@@ -65,12 +65,17 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    private def vm_new_env(iseq : ISeq, context : LcClass, calling : VM::CallingInfo, flags)
+    private def vm_new_env(iseq : ISeq, context : VM::Context, previous : VM::Environment, flags)
+      return VM::Environment.new(iseq.symtab.size, context, flags, nil, previous)
+    end
+    
+    @[AlwaysInline]
+    private def vm_new_env(iseq : ISeq, context : VM::Context, calling : VM::CallingInfo, flags)
       return VM::Environment.new(iseq.symtab.size, context, flags, calling.block)
     end
 
     @[AlwaysInline]
-    private def vm_new_env(iseq : ISeq, context : LcClass, calling : VM::CallingInfo, previous : VM::Environment, flags)
+    private def vm_new_env(iseq : ISeq, context : VM::Context, calling : VM::CallingInfo, previous : VM::Environment, flags)
       return VM::Environment.new(iseq.symtab.size, context, flags, calling.block, previous)
     end
 
@@ -247,7 +252,7 @@ module LinCAS
       argv = vm_collect_args(method.arity, calling)
 
       set_stack_consistency_trace(calling.argc + 1)
-      vm_push_control_frame(calling.me, method.owner, calling.block, VM::VmFrame::ICALL_FRAME)
+      vm_push_control_frame(calling.me, method, calling.block, VM::VmFrame::ICALL_FRAME)
       val = call_internal_special(method, argv)
 
       push val
@@ -272,7 +277,7 @@ module LinCAS
 
     private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       iseq = method.code.as(ISeq)
-      env = vm_new_env(iseq, method.owner, calling, VM::VmFrame::UCALL_FRAME)
+      env = vm_new_env(iseq, method, calling, VM::VmFrame::UCALL_FRAME)
       offset = vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
       
       set_stack_consistency_trace(calling.argc + 1)
