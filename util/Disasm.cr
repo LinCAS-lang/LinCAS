@@ -19,28 +19,32 @@ module LinCAS
     @last_line : Int32 | Int64
     def initialize(@iseq : ISeq)
       @stack = [{@iseq, ""}]
-      @line_index = 0
       @lc         = -1
       @last_line  = -1
-      @sp         = 0
+      @ident = ""
     end
 
     def disasm
       while !@stack.empty?
         @iseq, name = @stack.shift
-        reset_line
-        type     = @iseq.type.to_s
-        filename = @iseq.filename
-        iseq_name = name == "" ? "#{type}" : "#{type}:#{name}"
-        puts "#{iseq_name}>#{"="* (79 - type.size)}",
-             "file: #{filename}",
-             "local table: (size: %s, argc: %s, [opt: %s splat: %s, kw: %s, kwsplat: %s, block: %s])" %
-             format_arg_info(@iseq)
-  
-        print_symtable(@iseq.symtab)
-        print_encoded(@iseq.encoded)
+        disasm_general(name)
         puts nil
       end
+    end
+
+    def disasm_general(name)
+      reset_line
+      type     = @iseq.type.to_s
+      filename = @iseq.filename
+      iseq_name = name == "" ? "#{type}" : "#{type}:#{name}"
+      puts "#{@ident}#{iseq_name}>#{"="* (79 - type.size)}",
+           "#{@ident}file: #{filename}",
+           "#{@ident}local table: (size: %s, argc: %s, [opt: %s splat: %s, kw: %s, kwsplat: %s, block: %s])" %
+           format_arg_info(@iseq)
+
+      print_catchtbl(@iseq.catchtable)
+      print_symtable(@iseq.symtab)
+      print_encoded(@iseq.encoded)
     end
 
     def format_arg_info(iseq)
@@ -62,14 +66,14 @@ module LinCAS
     def print_symtable(symtab)
       str = String.build do |io|
         symtab.each_with_index do |name, i|
-          io << i << ':' << ' ' << name << "  "
+          io << @ident << i << ':' << ' ' << name << "  "
         end
       end
       puts str
     end
 
     def print_encoded(encoded : Array(IS))
-      pattern = "%04d %-13s %-51s%10s"
+      pattern = "#{@ident}%04d %-13s %-51s%10s"
       line_pattern = "(%4s)[Li]"
       callinfo_pattern = "<ci!name:%s, argc:%s, kwarg:%s, explict:%s, %s>"
       i = -1
@@ -125,6 +129,24 @@ module LinCAS
       end
     end
 
+    def print_catchtbl(catch_tbl)
+      format = "| catch type: %s st %04d, ed %04d, cont %04d"
+      if !catch_tbl.empty?
+        puts "== catch table"
+        catch_tbl.each do |entry|
+          puts format % {entry.type.to_s.downcase, entry.start, entry.end, entry.cont}
+          case entry.type
+          when .catch?
+            preserve_state(entry.iseq) do 
+              @ident += "| "
+              disasm_general(nil) 
+            end
+          end
+        end
+        puts "|#{"-" * (79)}"
+      end
+    end
+
     def get_object_str(offset)
       obj = @iseq.object[offset]
       case obj
@@ -141,7 +163,6 @@ module LinCAS
     end
 
     def reset_line
-      @line_index = 0
       @lc         = -1
       @last_line  = -1
     end
@@ -172,6 +193,14 @@ module LinCAS
 
     private def get_is_and_op(is)
       return {get_instruction(is), get_operand(is)}
+    end
+
+    def preserve_state(iseq)
+      state = {@iseq,  @lc, @last_line, @ident}
+      @iseq = iseq
+      reset_line
+      yield
+      @iseq, @lc, @last_line, @ident = state
     end
 
   end
