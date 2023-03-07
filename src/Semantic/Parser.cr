@@ -396,7 +396,8 @@ module LinCAS
           parse_module
         when :public, :protected, :private, :let
           parse_let
-        # when :try
+        when :try
+          parse_try
         when :if
           parse_if
         when :do, :while
@@ -744,6 +745,56 @@ module LinCAS
     end
 
     def parse_try 
+      location = @token.location
+      disable_regex
+      next_token_skip_space_or_newline
+      check :"{"
+      body = parse_body
+      catch = nil
+      symtab = nil
+      state = @token.location
+      skip_space_or_newline
+      if @token.keyword? :catch
+        catch = [] of CatchExp
+        catch_all = false
+        push_symtab SymType::BLOCK
+        register_id @stringpool.get "!@e" # where the error is saved
+        while @token.keyword? :catch
+          loc = @token.location
+          next_token_skip_space
+          type = nil
+          var = nil
+          if (@token.type == :IDENT && !@token.is_kw) || @token.type == :CAPITAL_VAR
+            parser_raise(
+              "Specific exception handling must be specified before catch-all statement", 
+              @token.location
+            ) if catch_all
+            type = parse_op_assign_no_control
+            skip_space
+          end
+          if @token.type == :"=>"
+            parser_raise("Catch all statement already specified", @token.location) if catch_all
+            next_token_skip_space_or_newline
+            check :IDENT, :CAPITAL_VAR
+            var = @token.value.to_s
+            register_id var
+            next_token_skip_space_or_newline
+          end
+          skip_space_or_newline
+          catch_all = !!type
+          check :"{"
+          catch_body = parse_body
+          catch << CatchExp.new(type, var, body).at loc
+          skip_space
+          restore_pt = @token.location
+          skip_space_or_newline
+        end
+        lex_restore_state restore_pt.not_nil! # we want to leave an end-of-line after the statement
+        symtab = pop_symtab
+      else
+        lex_restore_state state
+      end
+      return Try.new(body, catch, symtab).at location
     end
 
     def parse_if 

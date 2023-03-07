@@ -15,6 +15,13 @@
 require "set"
 require "./ParserHelper"
 
+# for reference only
+class VM
+  def lc_raise_syntax_error(*args)
+  end
+end
+Exec = VM.new
+
 def symtab(type)
   return SymTable.new(type)
 end
@@ -71,7 +78,7 @@ describe Parser do
     prog.filename.should eq(__FILE__)
     prog.body.class.should eq(Body)
   end
-
+  
   it_parses_single "123", "123".int
   it_parses_single "1.3", "1.3".float
   it_parses_single "12i", "12i".complex
@@ -285,4 +292,12 @@ describe Parser do
   it_parses_single "A::B::C", Namespace.new(["A", "B", "C"])
   it_parses_single "::A::B::C", Namespace.new(["A", "B", "C"], true)
   it_parses_single "::A", Namespace.new(["A"], true)
+
+  it_parses_multiple ["try {} catch {}", "try {\n} catch {\n}", "try\n{\n}\ncatch\n{\n}"], Try.new(Body.new, [CatchExp.new(nil, nil, Body.new)], SymTable.new(SymType::BLOCK) << "!@e")
+  it_parses_single "try {} catch => e \n {}", Try.new(Body.new, [CatchExp.new(nil, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}\n catch {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new), CatchExp.new(nil, nil , Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  
+  assert_syntax_error "try {} catch {} catch SyntaxError => e \n {}", "Specific exception handling must be specified before catch-all statement"
+  assert_syntax_error "try {} catch {} catch => e \n {}", "Catch all statement already specified"
 end
