@@ -764,12 +764,17 @@ module LinCAS
           next_token_skip_space
           type = nil
           var = nil
-          if (@token.type == :IDENT && !@token.is_kw) || @token.type == :CAPITAL_VAR
+          if (@token.type == :IDENT && !@token.is_kw) || @token.type == :CAPITAL_VAR || @token.type == :"("
             parser_raise(
               "Specific exception handling must be specified before catch-all statement", 
               @token.location
             ) if catch_all
-            type = parse_op_assign_no_control
+            type = case @token.type
+            when :"("
+              parse_op_assign_no_control
+            else
+              parse_ident
+            end
             skip_space
           end
           if @token.type == :"=>"
@@ -781,10 +786,14 @@ module LinCAS
             next_token_skip_space_or_newline
           end
           skip_space_or_newline
-          catch_all = !!type
+
+          if !type
+            parser_raise("Catch all statement already specified", loc) if catch_all
+            catch_all = true
+          end
           check :"{"
           catch_body = parse_body
-          catch << CatchExp.new(type, var, body).at loc
+          catch << CatchExp.new(type, var, catch_body).at loc
           skip_space
           restore_pt = @token.location
           skip_space_or_newline
