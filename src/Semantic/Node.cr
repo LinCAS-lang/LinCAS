@@ -326,5 +326,20 @@ module LinCAS
 
     def_equals args, named_args
   end
+
+  class Try < Node
+    def initialize(@main_body : Body, @catch : Array(CatchExp)?, @symtab : SymTable?)
+    end
+    getter main_body, catch, symtab
+    def_equals main_body, catch, symtab
+  end
+  
+  class CatchExp < Node
+    def initialize(@type : Node?, @var : String?, @body : Body)
+    end
+    getter type, var, body
+    def_equals type, var, body
+  end
+
   
 end
