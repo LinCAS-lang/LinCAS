@@ -1634,21 +1634,20 @@ module LinCAS
           io << ", expecting: "
           io << args.join(", ")
         end
-        io << '\n'
-        io << "Line: " << @token.location.line << ':' << @token.location.column
-        io << '\n'
-        io << "In: " << @filename
       end 
-      # Exec.lc_raise(LcSyntaxError, msg)
       if @spec_mode
         raise SyntaxException.new msg
       end
+      parser_raise msg, @token.location
     end
 
     def parser_raise(msg, location)
       if @spec_mode
         raise SyntaxException.new msg
       end
+      location = location.not_nil!
+      last_location = "  from #{filename}:#{location.line}:#{location.column} in <top (required)>"
+      Exec.lc_raise_syntax_error(msg, last_location)
     end
 
   end

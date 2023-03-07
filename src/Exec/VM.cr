@@ -166,7 +166,8 @@ module LinCAS
       return value
     end
     
-    def exec
+    def exec : LcVal
+      cfp = @control_frames.size
       # this loop rescues a long jump after exception handling
       # and allows the VM to start over from the new instructions
       while true
@@ -341,6 +342,10 @@ module LinCAS
             end
           end
         rescue LongJump
+          unless cfp <= @control_frames.size
+            # this is not the call that should handle the exception
+            raise LongJump.new
+          end
           # retry
         end
       end 
@@ -364,9 +369,11 @@ module LinCAS
     
     @[AlwaysInline]
     def get_class_ref
-      return @current_frame.env.context
+      context = @current_frame.env.context
+      return context.is_a?(LcClass) ? context : context.owner
     end
 
+    @[Flags]
     enum VmFrame : UInt32
       MAIN_FRAME  = 1 << 6
       CLASS_FRAME = 1 << 7
@@ -375,6 +382,8 @@ module LinCAS
       ICALL_FRAME = 1 << 10
       PCALL_FRAME = 1 << 11
       UCALL_FRAME = 1 << 12
+
+      CATCH_FRAME = 1 << 13
 
       FLAG_FINISH = 1
     end

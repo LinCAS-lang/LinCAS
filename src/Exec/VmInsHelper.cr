@@ -470,6 +470,71 @@ module LinCAS
       return array.as(LcVal)
     end
 
+    protected def vm_seek_exception_handler(type : CatchType)
+      save_current_frame
+      while !@control_frames.empty?
+        begin
+          frame = @control_frames[-1]
+          next unless frame.iseq?
+          dist = frame.pc - frame.pc_bottom
+          frame.iseq.catchtable.each do |ct_entry|
+            if ct_entry.type == type && ct_entry.start <= dist <= ct_entry.end
+              case type
+              in .catch?
+                return ct_entry
+              in .break?
+                if @control_frames[-2].iseq == ct_entry.iseq
+                  return ct_entry
+                end
+              end
+            end
+          end
+        ensure
+          @control_frames.pop
+        end
+      end
+      nil
+    end
+
+    protected def vm_handle_exception(ct_entry : CatchTableEntry, error : Internal::LcError)
+      case ct_entry.type
+      in .catch?
+        restore_regs
+        # In this case we want to wipe off the stack from any left values after the
+        # passed call args.
+        if @current_frame.flags.main_frame?
+          @sp = 0
+        else
+          @sp = @control_frames[-2].real_sp
+        end
+        @pc = @current_frame.pc_bottom + ct_entry.cont
+        env = vm_new_env(ct_entry.iseq, @current_frame.env.context, @current_frame.pc, VM::VmFrame::CATCH_FRAME)
+        env[0] = error.as(LcVal)
+        vm_push_control_frame(
+          me: @current_frame.me,
+          iseq: ct_entry.iseq,
+          env: env,
+          flags: env.frame_type
+        )
+        raise VM::LongJump # go back to VM#exec
+      in .break?
+      end
+    end
+
+    protected def vm_raise_exception(error : Internal::LcError)
+      unless ct_entry = vm_seek_exception_handler(CatchType::CATCH)
+        vm_print_error error
+        exit 1
+      end
+    end
+
+    @[AlwaysInline]
+    private def vm_print_error(error : Internal::LcError)
+      puts "Traceback (most recent call last)", 
+            error.backtrace, 
+            error.body
+    end
+
     #######################################
     # __     ____  __      _    ____ ___  #
     # \ \   / /  \/  |    / \  |  _ \_ _| #
@@ -494,14 +559,36 @@ module LinCAS
       Null
     end
 
-    def lc_raise(code,msg)
-      Null
+    @[AlwaysInline]
+    def lc_raise(type, msg)
+      error = Internal.build_error(
+        type,
+        msg,
+        vm_get_backtrace
+      )
+      lc_raise(error)
+    end
+
+    @[AlwaysInline]
+    def lc_raise_syntax_error(msg, last_loc)
+      error = Internal.build_error(
+        Internal.lc_syntax_err,
+        msg,
+        vm_get_backtrace + last_loc
+      )
+      lc_raise(error)
     end
 
     def lc_raise(error :  LcVal)
-      Null
+      error = error.as(Internal::LcError)
+      if error.backtrace.empty?
+        error.backtrace = vm_get_backtrace
+      end
+      vm_raise_exception(error)
+      error # Unreachable. For inference purposes only
     end 
 
+    @[AlwaysInline]
     def get_block 
       vm_get_block
     end

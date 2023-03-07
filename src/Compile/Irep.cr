@@ -80,14 +80,23 @@ module LinCAS
     {% end %}
   end
 
-  enum ISType
-    PROGRAM
-    METHOD
-    BLOCK
-    CLASS
+  enum CatchType
+    CATCH
+    BREAK
   end
 
-  class CatchT
+  class CatchTableEntry
+    def initialize(
+      @type : CatchType, 
+      @start : Int32, 
+      @end : Int32,
+      @cont : Int32
+    )
+      @iseq = nil.as(ISeq?)
+    end
+
+    getter type, start, :end
+    getter! iseq
   end
 
   ##
@@ -129,8 +138,15 @@ module LinCAS
     end
   end
 
+  enum ISType
+    PROGRAM
+    METHOD
+    BLOCK
+    CLASS
+  end
+
   class ISeq
-    getter type, encoded, symtab, filename, line, catchtables, object, jump_iseq, call_info, names
+    getter type, encoded, symtab, filename, line, catchtable, object, jump_iseq, call_info, names
     property stack_size
     property! arg_info
 
@@ -142,7 +158,7 @@ module LinCAS
       @arg_info = nil.as ArgInfo?
 
       @encoded     = [] of IS
-      @catchtables = [] of CatchT
+      @catchtable  = [] of CatchTableEntry
       @line        = [] of Location
       @object      = [] of LcVal
       @jump_iseq   = [] of ISeq
