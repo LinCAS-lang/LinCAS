@@ -557,6 +557,10 @@ module LinCAS
 
     def scan_kw_or_ident(start)
       case current_char
+      when 'b'
+        if (next_char == 'r') && (next_char == 'e') && (next_char == 'a') && (next_char == 'k')
+          return check_kw start, :break
+        end
       when 'c'
         case next_char
         when 'a'
