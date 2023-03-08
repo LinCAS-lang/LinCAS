@@ -1198,7 +1198,7 @@ module LinCAS
       has_parenthesis : Bool = true,
       stopped_on_do_after_space : Bool = false
 
-    def parse_call_args(stop_on_do_after_space = false, allow_curly = false, control = false)
+    def parse_call_args(stop_on_do_after_space = false, allow_curly = false, control = false, is_yield = false)
       case @token.type 
       when :"("
         enable_regex
@@ -1210,9 +1210,11 @@ module LinCAS
         next_token_skip_space_or_newline
         while @token.type != :")"
           if block_var_follows?
+            parser_raise("Block argument should not be given", @token.location) if control
             return parse_call_block_arg(args.empty? ? nil : args, check_par: true)
           end 
           if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && next_comes_colon_space?
+            parser_raise("Control statements don't accept keyword arguments", @token.location) if control && !is_yield
             return parse_named_call_args(args.empty? ? nil : args, allow_newline: true)
           else 
             arg = parse_call_arg(double_splat)
@@ -1241,13 +1243,13 @@ module LinCAS
           unexpected_token
         end 
 
-        return parse_call_args_space_consumed(check_plus_minus: true, allow_curly: allow_curly, control: control) 
+        return parse_call_args_space_consumed(check_plus_minus: true, allow_curly: allow_curly, control: control, is_yield: is_yield) 
       else 
         nil
       end 
     end
 
-    def parse_call_args_space_consumed(check_plus_minus = true, allow_curly = false, control = false, end_tk = :")")
+    def parse_call_args_space_consumed(check_plus_minus = true, allow_curly = false, control = false, is_yield = false, end_tk = :")")
       case @token.type 
       when :"&"
         return nil if current_char.ascii_whitespace?
@@ -1278,10 +1280,12 @@ module LinCAS
       while @token.type != :EOL && @token.type != :";" && @token.type != :":" && @token.type != end_tk && !end_token?
         
         if block_var_follows?
+          parser_raise("Block argument should not be given", @token.location) if control
           return parse_call_block_arg(args.empty? ? nil : args , check_par: false)
         end 
         
         if (@token.type == :IDENT || @token.type == :CAPITAL_VAR) && next_comes_colon_space?
+          parser_raise("Control statements don't accept keyword arguments", @token.location) if control && !is_yield
           return parse_named_call_args(args.empty? ? nil : args, allow_newline: false)
         else 
           arg = parse_call_arg(double_splat)
@@ -1520,7 +1524,7 @@ module LinCAS
       end
 
       next_token
-      call_args = preserve_stop_on_do { parse_call_args control: true}
+      call_args = preserve_stop_on_do { parse_call_args control: true, is_yield: true}
 
       if call_args
         args = call_args.args
