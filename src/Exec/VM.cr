@@ -345,6 +345,8 @@ module LinCAS
               push vm_new_hash(op)
             when .new_array?
               push vm_new_array(op)
+            when .throw?
+              vm_throw(op, pop)
             when .leave?
               if vm_pop_control_frame
                 return pop
@@ -398,6 +400,12 @@ module LinCAS
       CATCH_FRAME = 1 << 13
 
       FLAG_FINISH = 1
+    end
+
+    enum ThrowState
+      RAISE = 0
+      BREAK = 1
+      RETURN = 2
     end
 
     private struct ExecFrame

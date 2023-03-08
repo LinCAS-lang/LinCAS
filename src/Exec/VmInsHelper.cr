@@ -493,6 +493,19 @@ module LinCAS
       return array.as(LcVal)
     end
 
+    @[AlwaysInline]
+    def vm_throw(state : UInt64, obj : LcVal)
+      state = VM::ThrowState.new(state.to_i32)
+      case state
+      when .raise?
+        lc_raise(obj)
+      when .break?
+      when .return?
+      else
+        lc_bug("Invalid or unhandled throw state (#{state})")
+      end
+    end
+
     protected def vm_seek_exception_handler(type : CatchType)
       save_current_frame
       while !@control_frames.empty?
