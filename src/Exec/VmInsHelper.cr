@@ -500,6 +500,12 @@ module LinCAS
       when .raise?
         lc_raise(obj)
       when .break?
+        handler = vm_seek_exception_handler CatchType::BREAK
+        if handler
+          vm_handle_exception(handler, obj)
+        else
+          lc_bug("Invalid break found")
+        end
       when .return?
       else
         lc_bug("Invalid or unhandled throw state (#{state})")
@@ -539,7 +545,7 @@ module LinCAS
         debug("Handling frame: #{@current_frame.flags}")
         @pc = @current_frame.pc_bottom + ct_entry.cont
         env = vm_new_env(ct_entry.iseq, @current_frame.env.context, @current_frame.env, VM::VmFrame::CATCH_FRAME)
-        env[0] = error.as(LcVal)
+        env[0] = value.as(LcVal)
         set_stack_consistency_trace(0)
         vm_push_control_frame(
           me: @current_frame.me,
@@ -548,9 +554,22 @@ module LinCAS
           flags: env.frame_type
         )
         debug "Jumping to VM#exec"
-        raise VM::LongJump.new # go back to VM#exec
       in .break?
+        target_iseq = ct_entry.iseq
+        while !@control_frames.empty? && @control_frames[-1].iseq? != target_iseq 
+          @control_frames.pop
+        end
+        if @control_frames.empty?
+          lc_bug("Failed to recover from break")
+        end
+
+        # now we are at the target frame
+        restore_regs
+        @pc = @current_frame.pc_bottom + ct_entry.cont
+        push value # break is a sort of return
+      in .next?
       end
+      raise VM::LongJump.new # go back to VM#exec
     end
 
     protected def vm_raise_exception(error : Internal::LcError)
