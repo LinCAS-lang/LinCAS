@@ -284,7 +284,7 @@ describe Parser do
   assert_syntax_error "let func=.wrong {}", "Unexpected token '.'"
   assert_syntax_error "yield", "Invalid yield"
   assert_syntax_error "let foo {yield &block}", "Block argument should not be given"
-  assert_syntax_error "let foo {yield &:to_s}", "Block should not be given"
+  assert_syntax_error "let foo {yield &:to_s}", "Block argument should not be given"
 
   it_parses_single "[]", ArrayLiteral.new([] of Node)
   it_parses_single "[1, 2, 3]", ArrayLiteral.new([1.int, 2.int, 3.int] of Node)
@@ -296,8 +296,8 @@ describe Parser do
   it_parses_multiple ["try {} catch {}", "try {\n} catch {\n}", "try\n{\n}\ncatch\n{\n}"], Try.new(Body.new, [CatchExp.new(nil, nil, Body.new)], SymTable.new(SymType::BLOCK) << "!@e")
   it_parses_multiple ["try v0 catch\n v1", "try { v0 } catch {v1}", "try\nv0\ncatch\nv1"], Try.new(Body.new << "v0".variable, [CatchExp.new(nil, nil, Body.new << "v1".variable)], SymTable.new(SymType::BLOCK) << "!@e")
   it_parses_single "try {} catch => e \n {}", Try.new(Body.new, [CatchExp.new(nil, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
-  it_parses_single "try {} catch SyntaxError => e \n {}", Try.new(Body.new, [CatchExp.new(Namespace.new(["SyntaxError"]), "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
-  it_parses_single "try {} catch SyntaxError => e \n {}\n catch {}", Try.new(Body.new, [CatchExp.new(Namespace.new(["SyntaxError"]), "e", Body.new), CatchExp.new(nil, nil , Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}\n catch {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new), CatchExp.new(nil, nil , Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
   
   assert_syntax_error "try {} catch {} catch SyntaxError => e \n {}", "Specific exception handling must be specified before catch-all statement"
   assert_syntax_error "try {} catch {} catch => e \n {}", "Catch all statement already specified"
