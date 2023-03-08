@@ -69,6 +69,7 @@ module LinCAS
       when RangeLiteral
         compile_range(iseq, node)
       when ControlExpression
+        compile_control_expression_each(iseq, node)
       when OpAssign
         compile_opassign(iseq, node)
       when Variable 
@@ -360,7 +361,7 @@ module LinCAS
       set_line(iseq, node)
     end
 
-    def compile_block(node : Block)
+    def compile_block(iseq, node : Block)
       block_iseq = ISeq.new(ISType::BLOCK, @filename, node.symtab)
       params = node.params
       if params = node.params
@@ -368,8 +369,18 @@ module LinCAS
       else
         block_iseq.arg_info = ISeq::ArgInfo.new(0,0,-1,0,-1,-1)
       end
-      compile_body(block_iseq, node.body)
-      block_iseq.encoded << IS::LEAVE
+      encoded = block_iseq.encoded
+      with_state(State::Block) do 
+        start = encoded.size
+        compile_body(block_iseq, node.body)
+
+        _end = encoded.size - 1
+        break_entry = CatchTableEntry.new(CatchType::BREAK, start, _end, iseq.encoded.size, iseq)
+        next_entry = CatchTableEntry.new(CatchType::NEXT, start, _end, encoded.size)
+        block_iseq.catchtable << break_entry << next_entry
+        
+        encoded << IS::LEAVE 
+      end
       return block_iseq
     end 
 
@@ -523,20 +534,45 @@ module LinCAS
       end
       argc, splat, dblsplat, n_args = compile_call_args(iseq, node.args, node.named_args)
       
+
+      # If block param is just a block forwarding, then  we need to
+      # compile it now, as it is a call arg that is put on stack
       block_param = node.block_param
+      if block_p = !!(block_param && !block_param.is_a? Block)
+        compile_each(iseq, block_param)
+      end
+      call_with_block = !!(node.block || block_p)
+      is = 
+        case node.name
+        # when "+"
+        # when "-"
+        # when "*"
+        # when "/"
+        # when "\\"
+        # when "**"
+        else
+          call_with_block ? IS::CALL : IS::CALL_NO_BLOCK
+        end
+
+      set_line(iseq, node.location)
+      is_index = encoded.size
+      encoded << is << IS::NOOP # noop is used in case of break
+
+      # We compile any passed block now, after the emission of all the call
+      # instruction, as well as the emission if a call info.
+      # This because while compiling the block, we need to know the jump
+      # offsets when emitting the `break' catch table entry
       block = nil
-      block_p = false
       case block_param
       when Block 
-        block = compile_block(block_param)
+        block = compile_block(iseq, block_param)
       else
         if block_param.nil?
           if tmp = node.block
-            block = compile_block(tmp) 
+            block = compile_block(iseq, tmp) 
           end
         else
-          compile_each(iseq, block_param)
-          block_p = true
+          # already compiled
         end
       end
 
@@ -544,20 +580,7 @@ module LinCAS
 
       call_info = CallInfo.new(call_name, argc, splat, dblsplat, n_args, !!receiver, block, block_p)
       index = set_call_info(iseq, call_info)
-      call_with_block = !!(block || block_p)
-      is = case node.name
-      # when "+"
-      # when "-"
-      # when "*"
-      # when "/"
-      # when "\\"
-      # when "**"
-      else
-        call_with_block ? IS::CALL : IS::CALL_NO_BLOCK
-      end
-      op = IS.new(index)
-      set_line(iseq, node.location)
-      encoded << (is | op)
+      encoded[is_index] |= IS.new(index) 
     end 
 
     @[AlwaysInline]
@@ -740,7 +763,46 @@ module LinCAS
       iseq.encoded << (IS::MAKE_RANGE | IS.new(flag))
     end 
 
-    def compile(iseq, node : ControlExpression)
+    @[AlwaysInline]
+    def compile_control_expression_each(iseq, node : ControlExpression)
+      puts "called compile ce #{node.type}"
+      case node.type
+      when :break
+        compile_break(iseq, node)
+      when :next
+        compile_next(iseq, node)
+      when :return
+        compile_return(iseq, node)
+      else
+        lc_bug("Wrong or unhandled control expression (#{node.type})")
+      end
+    end
+
+    def compile_break(iseq, node)
+      puts "Compiling break"
+      if @compiler_state.empty?
+        location = node.location.not_nil!
+        last_location = "  from #{@filename}:#{location.line}:#{location.column} in <top (required)>"
+        Exec.lc_raise_syntax_error("Invalid break", last_location)
+      end
+      encoded = iseq.encoded
+      if exp = node.exp
+        compile_each(iseq, exp)
+      else
+        encoded << IS::PUSH_NULL
+      end
+      state = @compiler_state.last
+      case state.state
+      in .loop?
+      in .block?
+        encoded << (IS::THROW | IS.new(VM::ThrowState::BREAK.value.to_u64))
+      end
+    end
+
+    def compile_next(iseq, node)
+    end
+
+    def compile_return(iseq, node)
     end
 
     def compile_opassign(iseq, node : OpAssign)

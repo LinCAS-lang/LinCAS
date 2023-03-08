@@ -86,6 +86,7 @@ module LinCAS
   enum CatchType
     CATCH
     BREAK
+    NEXT
   end
 
   class CatchTableEntry
