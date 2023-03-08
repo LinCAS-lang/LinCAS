@@ -285,23 +285,28 @@ module LinCAS::Internal
     ######################################
 
     @[AlwaysInline]
-    def self.lc_class_compare(klass1 :  LcVal, klass2 :  LcVal)
-      return val2bool(klass2.is_a?(LcClass) && 
-              ((class_name(klass1) == class_name(klass2)) || 
+    def self.lincas_class_compare(klass1 :  LcVal, klass2 :  LcVal)
+      return klass2.is_a?(LcClass) && 
+              ((lc_cast(klass1,LcClass).methods == lc_cast(klass2, LcClass).methods || 
               (klass1.object_id == klass2.object_id)))
     end
 
-    def self.lc_is_a(obj :  LcVal, lcType :  LcVal)
-      if !(lcType.is_a? LcClass)
+    def self.lincas_obj_is_a(obj : LcVal, c : LcVal)
+      if !(c.is_a? LcClass)
         lc_raise(lc_arg_err,"Argument must be a class or a module")
-        return lcfalse
       end
-      objClass = class_of(obj)
-      while objClass
-          return lctrue if lc_class_compare(objClass,lcType) == lctrue
-          objClass = objClass.parent
+      cl = class_of(obj)
+      while cl
+        if lincas_class_compare(cl, c)
+          return  true
+        end
+        cl = cl.parent
       end
-      return lcfalse
+      return false
+    end
+    
+    def self.lc_is_a(obj :  LcVal, c :  LcVal)
+      return val2bool(lincas_obj_is_a(obj, c))
     end
 
     def self.lc_class_real(klass : LcVal)

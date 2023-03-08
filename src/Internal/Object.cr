@@ -260,7 +260,7 @@ module LinCAS::Internal
         add_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
         add_method(@@lc_object,"is_null",lc_obj_null,   0)
         add_method(@@lc_object,"inspect",lc_obj_to_s,   0)
-        alias_method_str(@@lc_object,"inspect","to_s"       )
+        alias_method_str(@@lc_object,"inspect","to_s"    )
         add_method(@@lc_object,"to_m",lc_obj_to_m,      0)
 
         obj_and = LcProc.new do |args|

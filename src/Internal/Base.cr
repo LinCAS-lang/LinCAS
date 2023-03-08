@@ -54,6 +54,10 @@ module LinCAS
 
     def finalize 
     end
+
+    def ==(other)
+      return object_id == other.object_id
+    end
   end
 
   enum Allocator 
