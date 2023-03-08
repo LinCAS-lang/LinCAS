@@ -404,6 +404,8 @@ module LinCAS
           parse_loop
         # when :for
         # when :select
+        when :break
+          parse_break
         when :const
           parse_const
         when :true 
@@ -1533,6 +1535,29 @@ module LinCAS
       end
 
       return Yield.new(args, named_args, !!has_parenthesis).at location
+    end
+
+    def parse_break
+      parse_control_expression :break
+    end
+
+    def parse_control_expression(type)
+      location = @token.location
+      next_token
+
+      call_args = preserve_stop_on_do { parse_call_args allow_curly: true, control: true }
+      args = call_args.args if call_args
+
+      if args && !args.empty?
+        if args.size == 1 && !args.first.is_a? Splat
+          node = ControlExpression.new(type, args.first)
+        else
+          node = ControlExpression.new(type, ArrayLiteral.new(args).at(args.last.location)).at location
+        end
+      else
+        node = ControlExpression.new(type, ).at location
+      end
+      return node
     end
 
     def named_args_start?

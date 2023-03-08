@@ -254,7 +254,7 @@ module LinCAS
 
   class ControlExpression < Node
     getter type, exp
-    def initialize(@type : Symbol, @exp : Node)
+    def initialize(@type : Symbol, @exp : Node? = nil)
     end
   end
 
