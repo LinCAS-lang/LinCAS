@@ -177,13 +177,13 @@ module LinCAS::Internal
 
     def self.lc_typeof(v :  LcVal)
       if v.is_a? LcClass 
-        if type_of(v).module?
-          return "#{v.as(LcClass).name} : Module"
+        if type_of(v).includes? SType.flags(MODULE, PyMODULE)
+          return "#{class_path(lc_cast(v, LcClass))}:Module"
         else 
-          return "#{v.as(LcClass).name} : Class"
+          return "#{class_path(lc_cast(v, LcClass))}:Class"
         end 
       else 
-        return class_of(v).name
+        return class_path(class_of(v))
       end 
       # Should never get here
       ""

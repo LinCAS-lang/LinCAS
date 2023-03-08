@@ -64,6 +64,7 @@ module LinCAS
     UNDEF 
   end
 
+  @[Flags]
   enum SType
     METACLASS
     CLASS 
