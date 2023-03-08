@@ -440,6 +440,18 @@ module LinCAS
       return (@current_frame.env.kw_bit & (1 << index)).zero? ? LcFalse : LcTrue
     end
 
+    protected def vm_check_match(type : UInt64, a : LcVal, b : LcVal)
+      case type
+      when 0 # catch
+        if !(Internal.lincas_obj_is_a(b, Internal.lc_module))
+          lc_raise(Internal.lc_type_err, "Class or module required for catch statement")
+        end
+        return Internal.val2bool(Internal.lincas_obj_is_a(a, b))
+      else
+        LcFalse
+      end
+    end
+
     @[AlwaysInline]
     protected def vm_dup_hash(hash : LcVal)
       # Same thing as vm_ary_concat

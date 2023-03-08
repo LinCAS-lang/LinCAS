@@ -315,6 +315,10 @@ module LinCAS
             when .check_kw?
               value = vm_check_kw(op)
               push(value)
+            when .check_match?
+              b = pop
+              a = pop
+              push vm_check_match(op, a, b)
             when .splat_array?
               ary = pop
               obj = vm_splat_array(ary)
