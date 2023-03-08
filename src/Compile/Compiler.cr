@@ -438,11 +438,11 @@ module LinCAS
         encoded << (IS::SETLOCAL_0 | IS.new(index)) << IS::POP
       end
       compile_body(iseq, entry.body)
+      encoded << IS::LEAVE
       if jump
         jmp_index = encoded.size.to_u64
         encoded[jump] |= IS.new(jmp_index)
       end
-      encoded << IS::LEAVE
     end
 
     def compile_while(iseq, node : While)
