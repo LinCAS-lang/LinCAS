@@ -514,14 +514,7 @@ module LinCAS
           dist = frame.pc - frame.pc_bottom - 1 # pc is always 1 instruction ahead
           frame.iseq.catchtable.each do |ct_entry|
             if ct_entry.type == type && ct_entry.start <= dist <= ct_entry.end
-              case type
-              in .catch?
-                return ct_entry
-              in .break?
-                if @control_frames[-2].iseq == ct_entry.iseq
-                  return ct_entry
-                end
-              end
+              return ct_entry
             end
           end
         end
@@ -530,7 +523,7 @@ module LinCAS
       nil
     end
 
-    protected def vm_handle_exception(ct_entry : CatchTableEntry, error : Internal::LcError)
+    protected def vm_handle_exception(ct_entry : CatchTableEntry, value : LcVal)
       debug "Handling exception"
       case ct_entry.type
       in .catch?
