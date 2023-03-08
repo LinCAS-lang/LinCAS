@@ -748,8 +748,11 @@ module LinCAS
       location = @token.location
       disable_regex
       next_token_skip_space_or_newline
-      check :"{"
-      body = parse_body
+      if @token.type == :"{"
+        body = parse_body
+      else
+        body = Body.new << parse_op_assign
+      end
       catch = nil
       symtab = nil
       state = @token.location
@@ -791,8 +794,11 @@ module LinCAS
             parser_raise("Catch all statement already specified", loc) if catch_all
             catch_all = true
           end
-          check :"{"
-          catch_body = parse_body
+          if @token.type ==  :"{"
+            catch_body = parse_body
+          else
+            catch_body = Body.new << parse_op_assign
+          end
           catch << CatchExp.new(type, var, catch_body).at loc
           skip_space
           restore_pt = @token.location
@@ -1263,7 +1269,7 @@ module LinCAS
       end
 
       case @token.value
-      when :if, :while, :until, :then, :else
+      when :if, :while, :until, :then, :else, :catch
         return nil unless next_comes_colon_space?
       end 
 
