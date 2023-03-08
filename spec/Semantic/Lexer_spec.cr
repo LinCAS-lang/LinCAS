@@ -83,7 +83,7 @@ describe "Lexer" do
   it_lexes_keywords [:if, :elsif, :then, :else, :let, :select, :case, :while, :until,
                      :do, :for, :to, :downto, :class, :module, :public, :protected,
                      :private, :inherits, :const, :new, :self, :yield, :__FILE__,
-                     :__DIR__, :try, :catch, :true, :false, :null, :return, :next]
+                     :__DIR__, :try, :catch, :true, :false, :null, :return, :next, :break]
   it_lexes_idents ["ident", "other", "letting", "constant", "ident?", "ident!", "_ident"]
   it_lexes_idents ["ident_1", "id234", "let?", "class?", "module!"]
   it_lexes_operators [:".", :"..", :"...", :"+", :"-", :"*", :".*", :"**", :"/", :"\\", :"+=",
