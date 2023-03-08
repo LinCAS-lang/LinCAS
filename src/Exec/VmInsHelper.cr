@@ -218,12 +218,18 @@ module LinCAS
     end
 
     private def vm_no_method_found(ci : CallInfo, calling : VM::CallingInfo, cc : VM::CallCache)
-      raise  "No method found (#{ci.name}, #{calling.me.class})"
+      msg = 
       case cc.m_missing_status
-      when 0
-      when 1
-      when 2
+      when 0 #  undefined
+        "Undefined method `#{ci.name}' for #{Internal.lc_typeof(calling.me)}"
+      when 1 # protected
+        "Protected method `#{ci.name}' called for #{Internal.lc_typeof(calling.me)}"
+      when 2 # private
+        "Private method `#{ci.name}' called for #{Internal.lc_typeof(calling.me)}"
+      else
+        "Undefined method `#{ci.name}'"
       end
+      lc_raise(Internal.lc_nomet_err, msg)
     end
 
     ##
