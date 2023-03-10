@@ -508,6 +508,15 @@ module LinCAS
       encoded   = iseq.encoded
       # set_line(iseq, node)
 
+      # Since we don't know if there is a 'next' instruction
+      # in advance, we put a pop statent before the loop that gets
+      # skipped in all cases, but when a 'next' is found.
+      # This pop removes the argument left on stack by the
+      # 'next statement'
+      encoded << (IS::JUMP | IS.new((encoded.size + 2).to_u64))
+      next_index = IS.new(encoded.size.to_u64)
+      encoded << IS::POP 
+
       # Pick the starting offset for loop jump
       start_loop_jump = IS.new(encoded.size.to_u64)
       state = with_state(State::Loop) { compile_body(iseq, body) }
@@ -523,7 +532,7 @@ module LinCAS
       end 
       state.nexts.each do |offset|
         ensure_is(encoded[offset], IS::JUMP)
-        encoded[offset] |= start_loop_jump
+        encoded[offset] |= next_index
       end 
     end 
 
