@@ -765,7 +765,6 @@ module LinCAS
 
     @[AlwaysInline]
     def compile_control_expression_each(iseq, node : ControlExpression)
-      puts "called compile ce #{node.type}"
       case node.type
       when :break
         compile_break(iseq, node)
@@ -779,7 +778,6 @@ module LinCAS
     end
 
     def compile_break(iseq, node)
-      puts "Compiling break"
       if @compiler_state.empty?
         location = node.location.not_nil!
         last_location = "  from #{@filename}:#{location.line}:#{location.column} in <top (required)>"
