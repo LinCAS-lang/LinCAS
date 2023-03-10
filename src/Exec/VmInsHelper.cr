@@ -555,14 +555,14 @@ module LinCAS
         )
         debug "Jumping to VM#exec"
       in .break?
+        if !@control_frames[-1].flags.proc_frame?
+          lc_raise(Internal.lc_localjmp_err, "Break from proc/captured block")
+        end
         target_iseq = ct_entry.iseq
         while !@control_frames.empty? && @control_frames[-1].iseq? != target_iseq 
           @control_frames.pop
         end
-        if @control_frames.empty?
-          lc_bug("Failed to recover from break")
-        end
-
+        lc_bug("Failed to recover from break")  if @control_frames.empty?
         # now we are at the target frame
         restore_regs
         @pc = @current_frame.pc_bottom + ct_entry.cont
