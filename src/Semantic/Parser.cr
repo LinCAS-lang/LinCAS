@@ -404,8 +404,8 @@ module LinCAS
           parse_loop
         # when :for
         # when :select
-        when :break
-          parse_break
+        when :break, :next, :return
+          parse_control_expression @token.value.as(Symbol)
         when :const
           parse_const
         when :true 
@@ -1539,10 +1539,6 @@ module LinCAS
       end
 
       return Yield.new(args, named_args, !!has_parenthesis).at location
-    end
-
-    def parse_break
-      parse_control_expression :break
     end
 
     def parse_control_expression(type)
