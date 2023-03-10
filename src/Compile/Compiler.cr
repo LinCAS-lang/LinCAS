@@ -376,7 +376,7 @@ module LinCAS
 
         _end = encoded.size - 1
         break_entry = CatchTableEntry.new(CatchType::BREAK, start, _end, iseq.encoded.size, iseq)
-        next_entry = CatchTableEntry.new(CatchType::NEXT, start, _end, encoded.size + 1) # + 1 because we insert a noop
+        next_entry = CatchTableEntry.new(CatchType::NEXT, start, _end, encoded.size)
         block_iseq.catchtable << break_entry << next_entry
         
         encoded << IS::NOOP << IS::LEAVE 
@@ -393,18 +393,20 @@ module LinCAS
       set_line(iseq, node.location)
       compile_each(iseq, condition)
       stack_decrease
-      jump1 = encoded.size
+      jumpf = encoded.size
       encoded.push IS::JUMPF
       compile_body(iseq, then_branch)
-      jump2 = encoded.size
+      # set jump to skip else statement and set jump in case
+      # if condition is false
+      jump = encoded.size
+      encoded << IS::JUMP
+      encoded[jumpf] |= IS.new(encoded.size.to_u64)
       if else_branch
-        encoded << IS::JUMP
-        encoded[jump1] |= IS.new(encoded.size.to_u64)
         compile_body(iseq, else_branch)
-        encoded[jump2] |= IS.new(encoded.size.to_u64) 
       else 
-        encoded[jump1] |= IS.new(encoded.size.to_u64)
+        encoded << IS::PUSH_NULL
       end
+      encoded[jump] |= IS.new(encoded.size.to_u64) # skip else statement
     end 
 
     def compile_select(iseq, node : Select)
@@ -568,7 +570,7 @@ module LinCAS
 
       set_line(iseq, node.location)
       is_index = encoded.size
-      encoded << is << IS::NOOP # noop is used in case of break
+      encoded << is # << IS::NOOP # noop is used in case of break
 
       # We compile any passed block now, after the emission of all the call
       # instruction, as well as the emission if a call info.
