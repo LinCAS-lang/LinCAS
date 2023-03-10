@@ -485,7 +485,10 @@ module LinCAS
 
       state.breaks.each do |offset|
         ensure_is(encoded[offset], IS::JUMP)
-        encoded[offset] |= end_loop_jump
+        # we add 1 because we want to skip the PUSH_NULL
+        # instruction. The jump should be on the following
+        # one that can be either a pop or a leave
+        encoded[offset] |= end_loop_jump + 1
       end 
       state.nexts.each do |offset|
         ensure_is(encoded[offset], IS::JUMP)
@@ -792,6 +795,8 @@ module LinCAS
       state = @compiler_state.last
       case state.state
       in .loop?
+        state.breaks << encoded.size
+        encoded << IS::JUMP
       in .block?
         encoded << (IS::THROW | IS.new(VM::ThrowState::BREAK.value.to_u64))
       end
