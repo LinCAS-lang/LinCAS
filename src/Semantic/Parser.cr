@@ -335,7 +335,7 @@ module LinCAS
     def_op_parsing :bin_and, :shift, "Call.new(left, method, [right] of Node)", %(:"&")
     def_op_parsing :shift, :add_or_sub, "Call.new(left, method, [right] of Node)", %(:"<<", :">>")
     def_op_parsing :add_or_sub, :mul_or_div, "Call.new(left, method, [right] of Node)", %(:"+", :"-")
-    def_op_parsing :mul_or_div, :pow, "Call.new(left, method, [right] of Node)", %(:"*", :".*", :"/", :"\\\\")
+    def_op_parsing :mul_or_div, :pow, "Call.new(left, method, [right] of Node)", %(:"*", :".*", :"/", :"\\\\", :"%")
     
     def parse_pow
       skip_space
