@@ -376,10 +376,10 @@ module LinCAS
 
         _end = encoded.size - 1
         break_entry = CatchTableEntry.new(CatchType::BREAK, start, _end, iseq.encoded.size, iseq)
-        next_entry = CatchTableEntry.new(CatchType::NEXT, start, _end, encoded.size)
+        next_entry = CatchTableEntry.new(CatchType::NEXT, start, _end, encoded.size + 1) # + 1 because we insert a noop
         block_iseq.catchtable << break_entry << next_entry
         
-        encoded << IS::LEAVE 
+        encoded << IS::NOOP << IS::LEAVE 
       end
       return block_iseq
     end 
