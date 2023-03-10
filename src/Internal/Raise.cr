@@ -138,6 +138,7 @@ module LinCAS
             @@lc_pyexception = lc_build_internal_class("PyException",@@lc_error   )
             @@lc_pyimport_err = lc_build_internal_class("PyImportError",@@lc_error)
             @@lc_not_impl_err = lc_build_internal_class("NotImplementedError",@@lc_error)
+            @@lc_localjmp_err = lc_build_internal_class("LocalJumpError",@@lc_error)
         end
 
 
