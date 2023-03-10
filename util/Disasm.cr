@@ -130,7 +130,7 @@ module LinCAS
     end
 
     def print_catchtbl(catch_tbl)
-      format = "| catch type: %s st %04d, ed %04d, cont %04d"
+      format = "| catch type: %-5s st %04d, ed %04d, cont %04d"
       if !catch_tbl.empty?
         puts "== catch table"
         catch_tbl.each do |entry|
