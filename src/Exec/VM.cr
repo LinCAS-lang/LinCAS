@@ -405,7 +405,8 @@ module LinCAS
     enum ThrowState
       RAISE = 0
       BREAK = 1
-      RETURN = 2
+      NEXT  = 2
+      RETURN = 3
     end
 
     private struct ExecFrame

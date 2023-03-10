@@ -784,10 +784,8 @@ module LinCAS
     @[AlwaysInline]
     def compile_control_expression_each(iseq, node : ControlExpression)
       case node.type
-      when :break
-        compile_break(iseq, node)
-      when :next
-        compile_next(iseq, node)
+      when :break, :next
+        compile_break_or_next(iseq, node)
       when :return
         compile_return(iseq, node)
       else
@@ -795,32 +793,36 @@ module LinCAS
       end
     end
 
-    def compile_break(iseq, node)
-      if @compiler_state.empty?
-        location = node.location.not_nil!
-        last_location = "  from #{@filename}:#{location.line}:#{location.column} in <top (required)>"
-        Exec.lc_raise_syntax_error("Invalid break", last_location)
-      end
+    def compile_break_or_next(iseq, node : ControlExpression)
+      type = node.type
+      check_valid_control_expression node
+      compile_control_exp_arg iseq, node
+      state = @compiler_state.last
       encoded = iseq.encoded
+      case state.state
+      in .loop?
+        (type == :break ? state.breaks : state.nexts) << encoded.size
+        encoded << IS::JUMP
+      in .block?
+        throw_state = (type == :break ? VM::ThrowState::BREAK : VM::ThrowState::NEXT).value.to_u64
+        encoded << (IS::THROW | IS.new(throw_state))
+      end
+    end
+
+    def compile_return(iseq, node : ControlExpression)
+      compile_control_exp_arg iseq, node
+      if @compiler_state.empty?
+        iseq.encoded << IS::LEAVE
+      end
+    end
+
+    @[AlwaysInline]
+    def compile_control_exp_arg(iseq, node)
       if exp = node.exp
         compile_each(iseq, exp)
       else
-        encoded << IS::PUSH_NULL
+        iseq.encoded << IS::PUSH_NULL
       end
-      state = @compiler_state.last
-      case state.state
-      in .loop?
-        state.breaks << encoded.size
-        encoded << IS::JUMP
-      in .block?
-        encoded << (IS::THROW | IS.new(VM::ThrowState::BREAK.value.to_u64))
-      end
-    end
-
-    def compile_next(iseq, node)
-    end
-
-    def compile_return(iseq, node)
     end
 
     def compile_opassign(iseq, node : OpAssign)
@@ -1013,6 +1015,16 @@ module LinCAS
 
     protected def ensure_is(is, type)
       # nothing
+    end
+
+    @[AlwaysInline]
+    protected def check_valid_control_expression(node : ControlExpression)
+      type = node.type
+      if @compiler_state.empty?
+        location = node.location.not_nil!
+        last_location = "  from #{@filename}:#{location.line}:#{location.column} in <top (required)>"
+        Exec.lc_raise_syntax_error("Invalid #{type}", last_location)
+      end
     end
 
     protected def with_state(type : State)
