@@ -20,6 +20,7 @@ module LinCAS
       @max_stack_size = 0
       @compiler_state = [] of CompilerState
       @filename = ""
+      @emit_pop = true
     end
 
     def compile(node : Program)
@@ -306,8 +307,12 @@ module LinCAS
       nodes.each do |n|
         compile_each(iseq, n)
         unless n == last
-          encoded.push IS::POP
-          stack_decrease
+          if @emit_pop
+            encoded.push IS::POP
+            stack_decrease
+          else
+            @emit_pop = true
+          end
         end
       end
     end
@@ -403,6 +408,7 @@ module LinCAS
         compile_body(iseq, else_branch)
         encoded[jump2] |= IS.new(encoded.size.to_u64) 
       else 
+        @emit_pop = false
         encoded[jump1] |= IS.new(encoded.size.to_u64)
       end
     end 
