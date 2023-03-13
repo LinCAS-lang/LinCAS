@@ -60,7 +60,7 @@ module LinCAS
         lc_bug("Uninitialized VM")
       end
       obj = Internal.boot_main_object
-      vm_push_control_frame(obj, Internal.lc_object, iseq, VmFrame::MAIN_FRAME | VmFrame::FLAG_FINISH)
+      vm_push_control_frame(obj, Internal.lc_object, iseq, VmFrame.flags(MAIN_FRAME, FLAG_FINISH, FLAG_LOCAL))
       @pc = @current_frame.pc
     end
 
@@ -400,9 +400,10 @@ module LinCAS
       CATCH_FRAME = 1 << 13
 
       FLAG_FINISH = 1
+      FLAG_LOCAL  = 1 << 1
     end
 
-    enum ThrowState
+    enum ThrowState : UInt64
       RAISE = 0
       BREAK = 1
       NEXT  = 2
@@ -477,6 +478,8 @@ module LinCAS
 
       getter previous, frame_type, context
       property block_handler, kw_bit
+
+      def_equals object_id
     end
 
     class CallingInfo

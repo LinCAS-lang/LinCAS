@@ -427,7 +427,7 @@ module LinCAS
         catch.each do |entry|
           compile_catch_entry(catch_iseq, entry, symtab)
         end
-        catch_iseq.encoded << (IS::GETLOCAL_0 | IS.new(0)) << (IS::THROW | IS.new(0))
+        catch_iseq.encoded << (IS::GETLOCAL_0 | IS.new(VM::ThrowState::RAISE.value)) << (IS::THROW | IS.new(0))
         ct_entry = CatchTableEntry.new CatchType::CATCH, start, _end, cont, catch_iseq
         iseq.catchtable << ct_entry
       end
@@ -800,15 +800,17 @@ module LinCAS
         (type == :break ? state.breaks : state.nexts) << encoded.size
         encoded << IS::JUMP
       in .block?
-        throw_state = (type == :break ? VM::ThrowState::BREAK : VM::ThrowState::NEXT).value.to_u64
+        throw_state = (type == :break ? VM::ThrowState::BREAK : VM::ThrowState::NEXT).value
         encoded << (IS::THROW | IS.new(throw_state))
       end
     end
 
     def compile_return(iseq, node : ControlExpression)
       compile_control_exp_arg iseq, node
-      if @compiler_state.empty?
+      if iseq.type.method?
         iseq.encoded << IS::LEAVE
+      else
+        iseq.encoded << (IS::THROW | IS.new(VM::ThrowState::RETURN.value))
       end
     end
 

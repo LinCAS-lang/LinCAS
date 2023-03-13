@@ -258,7 +258,7 @@ module LinCAS
       argv = vm_collect_args(method.arity, calling)
 
       set_stack_consistency_trace(calling.argc + 1)
-      vm_push_control_frame(calling.me, method, calling.block, VM::VmFrame::ICALL_FRAME)
+      vm_push_control_frame(calling.me, method, calling.block, VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL))
       val = call_internal_special(method, argv)
 
       push val
@@ -283,11 +283,11 @@ module LinCAS
 
     private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       iseq = method.code.as(ISeq)
-      env = vm_new_env(iseq, method, calling, VM::VmFrame::UCALL_FRAME)
+      env = vm_new_env(iseq, method, calling, VM::VmFrame.flags(UCALL_FRAME, FLAG_LOCAL))
       offset = vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
       
       set_stack_consistency_trace(calling.argc + 1)
-      vm_push_control_frame(calling.me, iseq, env, VM::VmFrame::UCALL_FRAME)
+      vm_push_control_frame(calling.me, iseq, env, env.frame_type)
       # no need to update sp in the frame. When another call happens, 
       # it will be saved automatically
       @pc += offset
@@ -312,7 +312,7 @@ module LinCAS
         )
         @pc += iseq_offset
       else
-        lc_raise(Internal.lc_arg_err, "No block given (yield)")
+        lc_raise(Internal.lc_localjmp_err, "No block given (yield)")
       end
     end
 
@@ -351,7 +351,7 @@ module LinCAS
         lc_raise Internal.lc_type_err, "'#{name}' is not a class"
       end
       set_stack_consistency_trace 0
-      vm_push_control_frame(c_def.not_nil!, c_def.not_nil!.as(LcClass), iseq, VM::VmFrame::CLASS_FRAME)
+      vm_push_control_frame(c_def.not_nil!, c_def.not_nil!.as(LcClass), iseq, VM::VmFrame.flags(CLASS_FRAME, FLAG_LOCAL))
     end
 
     protected def vm_putmodule(me : LcVal, name : String, iseq : ISeq)
@@ -365,7 +365,7 @@ module LinCAS
         lc_raise Internal.lc_type_err, "'#{name}' is not a module"
       end
       set_stack_consistency_trace 0
-      vm_push_control_frame(m_def.not_nil!, m_def.not_nil!.as(LcClass), iseq, VM::VmFrame::CLASS_FRAME)
+      vm_push_control_frame(m_def.not_nil!, m_def.not_nil!.as(LcClass), iseq, VM::VmFrame.flags(CLASS_FRAME, FLAG_LOCAL))
     end
 
     protected def vm_define_method(visibility : Int32, receiver : LcVal?, name : String, iseq : ISeq, singleton : Bool)
@@ -495,21 +495,48 @@ module LinCAS
 
     @[AlwaysInline]
     def vm_throw(state : UInt64, obj : LcVal)
-      state = VM::ThrowState.new(state.to_i32)
+      state = VM::ThrowState.new(state)
       case state
       when .raise?
         lc_raise(obj)
-      when .break?
-        handler = vm_seek_exception_handler CatchType::BREAK
+      when .break?, .next?
+        ctype = state.break? ? CatchType::BREAK : CatchType::NEXT
+        handler = vm_seek_exception_handler ctype
         if handler
           vm_handle_exception(handler, obj)
         else
-          lc_bug("Invalid break found")
+          lc_bug("Invalid #{state.to_s.downcase} found")
         end
       when .return?
+        save_current_frame
+        current_env = @current_frame.env
+        target_lenv = vm_env_lenv(current_env)
+        i = @control_frames.size - 1
+        while 0 <= i
+          escape_frame = @control_frames[i]
+          if escape_frame.env == target_lenv || escape_frame.flags.includes? VM::VmFrame::MAIN_FRAME
+            break
+          end
+          i -= 1
+        end
+        unless escape_frame && escape_frame.flags.includes? VM::VmFrame.flags(UCALL_FRAME, PROC_FRAME)
+          lc_raise(Internal.lc_localjmp_err, "Unexpected return")
+        end
+        # Silent return. It doesn't happen through vm_pop_control_frame
+        @control_frames.delete_at(i, @control_frames.size - i)
+        restore_regs
+        push obj
       else
         lc_bug("Invalid or unhandled throw state (#{state})")
       end
+    end
+
+    @[AlwaysInline]
+    private def vm_env_lenv(env : VM::Environment)
+      while env && !env.frame_type.flag_local?
+        env = env.previous
+      end
+      return env
     end
 
     protected def vm_seek_exception_handler(type : CatchType)
@@ -553,7 +580,6 @@ module LinCAS
           env: env,
           flags: env.frame_type
         )
-        debug "Jumping to VM#exec"
       in .break?
         if !@control_frames[-1].flags.proc_frame?
           lc_raise(Internal.lc_localjmp_err, "Break from proc/captured block")
@@ -568,7 +594,14 @@ module LinCAS
         @pc = @current_frame.pc_bottom + ct_entry.cont
         push value # break is a sort of return
       in .next?
+        # Next statement causes a throw only when used in blocks.
+        # Therefore, the current frame is a block/proc frame. We just
+        # need to set pc to the proper instruction
+        restore_regs
+        @pc = @current_frame.pc_bottom + ct_entry.cont
+        push value
       end
+      debug "Jumping to VM#exec"
       raise VM::LongJump.new # go back to VM#exec
     end
 
