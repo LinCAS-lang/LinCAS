@@ -687,7 +687,9 @@ module LinCAS
             unexpected_token end_tk if double_splat
             enable_regex
             next_token_skip_space_or_newline
-            default_value = parse_op_assign false, false
+            if !(@token.type == :"," || @token.type == end_tk) 
+              default_value = parse_op_assign false, false
+            end
             disable_regex
             kwargc += 1
           else
