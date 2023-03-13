@@ -389,18 +389,18 @@ module LinCAS
 
     @[Flags]
     enum VmFrame : UInt32
-      MAIN_FRAME  = 1 << 6
-      CLASS_FRAME = 1 << 7
-      BLOCK_FRAME = 1 << 8
-      PROC_FRAME  = 1 << 9
-      ICALL_FRAME = 1 << 10
-      PCALL_FRAME = 1 << 11
-      UCALL_FRAME = 1 << 12
-
-      CATCH_FRAME = 1 << 13
-
-      FLAG_FINISH = 1
-      FLAG_LOCAL  = 1 << 1
+      FLAG_FINISH 
+      FLAG_LOCAL 
+       
+      MAIN_FRAME  
+      CLASS_FRAME 
+      BLOCK_FRAME 
+      PROC_FRAME  
+      ICALL_FRAME
+      PCALL_FRAME
+      UCALL_FRAME
+      DUMMY_FRAME
+      CATCH_FRAME 
     end
 
     enum ThrowState : UInt64
