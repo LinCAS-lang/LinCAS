@@ -30,7 +30,11 @@ module LinCAS
     end
 
     protected def get_location(frame, p_location, io)
-      if !frame.flags.icall_frame?
+      if frame.flags.dummy_frame?
+        iseq = frame.iseq
+        filename = iseq.filename
+        line = iseq.start_location
+      elsif !frame.flags.icall_frame?
         dist = frame.pc - frame.pc_bottom
         iseq = frame.iseq
         filename = iseq.filename

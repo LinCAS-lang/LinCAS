@@ -151,7 +151,8 @@ module LinCAS
   end
 
   class ISeq
-    getter type, encoded, symtab, filename, line, catchtable, object, jump_iseq, call_info, names
+    getter type, encoded, symtab, filename, line, catchtable, 
+            object, jump_iseq, call_info, names, start_location
     property stack_size
     property! arg_info
 
@@ -175,6 +176,12 @@ module LinCAS
       # use 'set_uniq_name' when compiling
       @names       = Array(String).new
       @stack_size  = 10
+      @start_location = 0.as(Int32 | Int64)
+    end
+
+    def at(line : Int32 | Int64)
+      @start_location = line
+      self
     end
 
     class ArgInfo

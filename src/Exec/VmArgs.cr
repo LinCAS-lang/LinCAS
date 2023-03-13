@@ -42,21 +42,46 @@ module LinCAS
       return lc_cast(kwsplat, Internal::LcHash)
     end
 
-    def vm_check_arity(min, max, given)
+    ##
+    # Used when checking internal functions
+    protected def vm_check_arity(min, max, given)
       debug "Arg check: min:#{min}, max:#{max}, given: #{given}"
       unless min <= given <= max
-        raise "Wrong number of arguments (given #{given}, expected #{max == UNLIMITED_ARGUMENTS ? "#{min}+" : min..max})"
+        msg = "Wrong number of arguments (given #{given}, expected #{max == UNLIMITED_ARGUMENTS ? "#{min}+" : min == max ? min : min..max})"
+        lc_raise(Internal.lc_arg_err, msg)
       end
     end
 
-    def argument_kwerror(reason : String, kws : Array(String))
-      error = "#{reason} keyword(s) #{kws}"
-      raise error
+    ##
+    # Used when checking iseq functions
+    @[AlwaysInline]
+    protected def vm_check_arity(env : VM::Environment, min, max, given)
+      unless min <= given <= max
+        msg = "Wrong number of arguments (given #{given}, expected #{max == UNLIMITED_ARGUMENTS ? "#{min}+" : min == max ? min : min..max})"
+        raise_argument_error(env, msg)
+      end
+    end
+
+    @[AlwaysInline]
+    protected def argument_kwerror(env : VM::Environment, reason : String, kws : Array(String))
+      msg = "#{reason} keyword(s) #{kws}"
+      raise_argument_error(env, msg)
+    end
+
+    @[AlwaysInline]
+    private def raise_argument_error(env : VM::Environment, msg : String)
+      vm_push_control_frame(
+        Null, # self 
+        env.context.as(LcMethod).code.as(ISeq), 
+        env,
+        VM::VmFrame.flags(DUMMY_FRAME, FLAG_LOCAL)  
+      )
+      lc_raise(Internal.lc_arg_err, msg)
     end
 
     ##
     # Only for calls to internal methods
-    def vm_collect_args(argc, calling : VM::CallingInfo)
+    protected def vm_collect_args(argc, calling : VM::CallingInfo)
       return case argc
       when 0 
         {topn(0)}
@@ -74,7 +99,7 @@ module LinCAS
 
     ##
     # Used to prepare args on stack for internal or python calls
-    def vm_setup_args_internal_or_python(ci : CallInfo, calling : VM::CallingInfo, argc)
+    protected def vm_setup_args_internal_or_python(ci : CallInfo, calling : VM::CallingInfo, argc)
       if !ci.dbl_splat || !ci.has_kwargs?
         vm_setup_args_fast_track(ci, calling)
       elsif ci.has_kwargs? && ci.dbl_splat
@@ -84,13 +109,6 @@ module LinCAS
         calling.argc -= 1
         vm_set_up_splat(ci, calling) if ci.splat
       end
-      if argc >= 0 # Likely
-        min_argc = max_argc = argc
-      else
-        min_argc = argc.abs - 1
-        max_argc = UNLIMITED_ARGUMENTS
-      end
-      vm_check_arity(min_argc, max_argc, calling.argc)
     end
 
     def vm_setup_iseq_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
@@ -99,7 +117,7 @@ module LinCAS
         # or positional arguments and kw arguments.
         debug "Setting up arg simple"
         vm_setup_args_fast_track(ci, calling)
-        vm_check_arity(arg_info.argc, arg_info.argc, calling.argc)
+        vm_check_arity(env, arg_info.argc, arg_info.argc, calling.argc)
         vm_migrate_args(env, calling)
         return 0
       else
@@ -223,7 +241,7 @@ module LinCAS
         given_argc = args_given_argc args
       end
 
-      vm_check_arity(min_argc, max_argc, given_argc)
+      vm_check_arity(env, min_argc, max_argc, given_argc)
 
       # if we have a splat, we may have more than positional
       # or optional arguments on stack. We want to move the
@@ -281,7 +299,7 @@ module LinCAS
         args_setup_kwsplat(env, arg_info, args)
       elsif (kwsplat = args._kwsplat) && kwsplat.size > 0
         unknown = gather_unknown_keywords(kwsplat)
-        argument_kwerror "Unknown", unknown
+        argument_kwerror env, "Unknown", unknown
       end
       
       if arg_info.block_arg?
@@ -452,13 +470,13 @@ module LinCAS
           # do nothing
         end
       end
-      argument_kwerror "Missing", missing if missing
+      argument_kwerror env, "Missing", missing if missing
 
       if arg_info.dbl_splat?
         env[arg_info.dbl_splat] = make_dbl_splat(arg_info, keywords, kw_values)
       elsif found != keywords.size
         unknown = keywords.to_a - arg_info.named_args.keys
-        argument_kwerror "Unknown", unknown
+        argument_kwerror env, "Unknown", unknown
       end
       env.kw_bit = kw_bit
     end

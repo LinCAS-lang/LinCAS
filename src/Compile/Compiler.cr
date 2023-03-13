@@ -193,7 +193,7 @@ module LinCAS
       is    = receiver ? IS::DEFINE_SMETHOD : IS::DEFINE_METHOD
       encoded << (is | IS.new(visibility.value.to_u64))
 
-      method = ISeq.new(ISType::METHOD, @filename, node.symtab)
+      method = ISeq.new(ISType::METHOD, @filename, node.symtab).at node.location.not_nil!.line
       if params = node.params
         compile_method_params(method, params)
       else
