@@ -261,10 +261,10 @@ module LinCAS
       set_stack_consistency_trace(argc + 1)
       vm_push_control_frame(calling.me, method, calling.block, VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL))
 
-      if argc >= 0 # Likely
-        min_argc = max_argc = argc
+      if (arity = method.arity) >= 0 # Likely
+        min_argc = max_argc = arity
       else
-        min_argc = argc.abs - 1
+        min_argc = arity - 1
         max_argc = UNLIMITED_ARGUMENTS
       end
       vm_check_arity(min_argc, max_argc, calling.argc)
