@@ -24,10 +24,10 @@ module LinCAS
 
     def self.new(filename : String, code : String, stringpool : StringPool? = nil)
       reader = Char::Reader.new(code)
-      new(filename, reader, Set(String).new, stringpool)
+      new(filename, reader, stringpool)
     end
      
-    def initialize(filename : String, reader : Char::Reader, @consts : Set(String), stringpool : StringPool? = nil) 
+    def initialize(filename : String, reader : Char::Reader, stringpool : StringPool? = nil) 
       super(filename, reader, stringpool)
       @method_nesting = 0
       @block_nesting  = 0
@@ -547,7 +547,7 @@ module LinCAS
         global = true 
         next_token_skip_space_or_newline
       end
-      check :IDENT, :CAPITAL_VAR 
+      check :CAPITAL_VAR 
       parse_ident_after_colons(@token.location, global)
     end 
 
@@ -557,7 +557,7 @@ module LinCAS
       next_token 
       while @token.type == :"::"
         next_token_skip_space_or_newline
-        check :IDENT, :CAPITAL_VAR
+        check :CAPITAL_VAR
         names << @token.value.to_s 
         next_token
       end 
@@ -900,13 +900,12 @@ module LinCAS
       location = @token.location 
       disable_regex
       next_token_skip_space_or_newline
-      check :IDENT, :CAPITAL_VAR
-      name = @token.value.to_s 
+      check :CAPITAL_VAR
+      name = @token.value.to_s
       next_token_skip_space
       check :":="
       enable_regex
       next_token_skip_space_or_newline
-      puts "After const: #{@token.type}"
       value = parse_or
       return ConstDef.new(name, value).at location
     end
