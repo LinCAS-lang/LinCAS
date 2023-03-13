@@ -503,6 +503,14 @@ module LinCAS
       return array.as(LcVal)
     end
 
+    #######################################
+    #  _____ _   _ ____   _____        __ #
+    # |_   _| | | |  _ \ / _ \ \      / / #
+    #   | | | |_| | |_) | | | \ \ /\ / /  #
+    #   | | |  _  |  _ <| |_| |\ V  V /   #
+    #   |_| |_| |_|_| \_\\___/  \_/\_/    #
+    #######################################
+
     @[AlwaysInline]
     def vm_throw(state : UInt64, obj : LcVal)
       state = VM::ThrowState.new(state)
