@@ -414,7 +414,7 @@ module LinCAS::Internal
     end
 
     def self.alias_method_str(klass : LcClass, m_name : String, new_name : String)
-      cc = seek_method(klass,m_name,false)
+      cc = seek_method(klass, m_name, explicit: false)
       if method = cc.method
         lc_add_method(klass,new_name,method)
       elsif cc.m_missing_status == 1
