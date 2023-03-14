@@ -67,7 +67,9 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_build_metaclass(klass : LcClass, parent : LcClass?)
-      return LcClass.new(SType::METACLASS, "#<Class:#{class_path(klass)}>", parent)
+      metaclass = LcClass.new(SType::METACLASS, "#<Class:#{class_path(klass)}>", parent)
+      metaclass.klass = @@lc_class
+      return metaclass
     end
 
     ##
@@ -80,18 +82,16 @@ module LinCAS::Internal
       if parent = klass.parent # klass.parent is not nil
         parent = parent.klass
       else
-        parent = @@lc_class 
+        parent = @@lc_class
       end
-      metaclass       = lc_build_metaclass(klass, parent)
-      metaclass.klass = @@lc_class
-      klass.klass     = metaclass
+      klass.klass = lc_build_metaclass(klass, parent)
       return klass
     end
 
     @[AlwaysInline]
     def self.lc_build_class(name : String, namespace : NameTable, parent : LcClass)
       klass = LcClass.new(SType::CLASS, name, parent)
-      klass.namespace.parent = namespace
+      klass.namespace.parent = namespace # upper lexical scope
       namespace[name] = klass
       return lc_attach_metaclass(klass)
     end
