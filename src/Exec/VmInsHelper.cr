@@ -258,12 +258,32 @@ module LinCAS
       lc_raise(Internal.lc_nomet_err, msg)
     end
 
+    @[AlwaysInline]
+    private def vm_dispatch_method(ci : CallInfo, calling : VM::CallingInfo)
+      context = get_class_ref
+      _self = calling.me
+      if !(explicit = ci.explicit)
+        if @current_frame.flags.includes? VM::VmFrame.flags(UCALL_FRAME)
+          debug("Dispatching method using context #{context.name}##{ci.name}")
+          klass = context
+        else
+          klass = _self.klass
+          debug("Dispatching method in object class #{klass.name}##{ci.name}")
+        end
+      else
+        klass = _self.klass
+        explicit = !(_self == context || Internal.lincas_obj_is_a(_self, context))
+        debug("Dispatching #{klass.name}##{ci.name}; explicit: #{explicit} (orig: #{ci.explicit})")       
+      end
+      return Internal.seek_method(klass, ci.name, explicit)
+    end
+
     ##
     # Performs the actual call of a method
     @[AlwaysInline]
     protected def vm_call(ci : CallInfo, calling : VM::CallingInfo)
       debug("Seeking method '#{ci.name}' in #{calling.me.klass.name}")
-      cc = Internal.seek_method(calling.me.klass, ci.name, ci.explicit)
+      cc = vm_dispatch_method(ci, calling)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
       vm_call_any(method, ci, calling)
@@ -361,26 +381,27 @@ module LinCAS
       const = method = nil
       case is
       when .call_or_const?
-        method = Internal.seek_method(calling.me.klass, ci.name, ci.explicit).method
+        method = vm_dispatch_method(ci, calling).method
         unless method
           const = vm_dispatch_const(Null, ci.name, true)
         end
       when .const_or_call?
         const = vm_dispatch_const(Null, ci.name, true)
         unless const
-          method = Internal.seek_method(calling.me.klass, ci.name, ci.explicit).method
+          method = vm_dispatch_method(ci, calling).method
         end
       end
 
       if const
         push const
       elsif method
+        push calling.me # we need to have self on stack
         vm_call_any(method, ci, calling)
       else
         case is
         when .call_or_const?
           part = "method or constant"
-        when .call_or_const?
+        when .const_or_call?
           part = "constant or method"
         end
         msg = "Undefined #{part} `#{ci.name}'"
