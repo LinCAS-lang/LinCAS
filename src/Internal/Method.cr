@@ -132,7 +132,7 @@ module LinCAS::Internal
 
     # macro undef_static(name,owner)
     #     internal.lc_undef_internal_static({{name}},{{owner}})
-    # end 
+    # end
 
     def self.seek_method(receiver : LcClass, name : String, explicit : Bool, ignore_visib = false)
         klass = receiver
@@ -177,7 +177,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_responds_to?(obj :  LcVal, name : String)
-        m = internal.seek_method(obj.klass, name, true) # Method call is of explicit type
+        m = internal.seek_method(obj.klass, name, explicit: true) # Method call is of explicit type
         return m.is_a? LcMethod
     end
 
