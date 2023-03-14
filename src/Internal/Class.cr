@@ -290,18 +290,21 @@ module LinCAS::Internal
               (klass1.object_id == klass2.object_id)))
     end
 
+    def self.class_search_ancestor(cl : LcClass, c : LcVal)
+      while cl
+        if lincas_class_compare(cl, c)
+          return  cl
+        end
+        cl = cl.parent
+      end
+      return nil
+    end
+    
     def self.lincas_obj_is_a(obj : LcVal, c : LcVal)
       if !(c.is_a? LcClass)
         lc_raise(lc_arg_err,"Argument must be a class or a module")
       end
-      cl = class_of(obj)
-      while cl
-        if lincas_class_compare(cl, c)
-          return  true
-        end
-        cl = cl.parent
-      end
-      return false
+      return !!class_search_ancestor(obj.klass, c)
     end
     
     def self.lc_is_a(obj :  LcVal, c :  LcVal)
