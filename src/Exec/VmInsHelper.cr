@@ -182,6 +182,32 @@ module LinCAS
       end
     end
 
+    private def vm_dispatch_const(orig_class : LcVal, name : String, allow_null : Bool)
+      if orig_class == Null && allow_null
+        # current lexical scope
+        base = get_class_ref
+        if base.type.metaclass?
+          # we need to find the real class this metaclass belongs to
+          context_class = self_or_class @current_frame.me
+          while context_class && context_class.klass != base
+            context_class = context_class.parent
+          end
+          if context_class
+            base = context_class
+          else
+            lc_bug("Vm failed to resolve the lexical scope for constant #{name}")
+          end
+        end
+      else
+        unless orig_class.is_a? LcClass
+          lc_raise(Internal.lc_type_err, "#{Internal.lc_typeof(orig_class)} is not a class/module")
+        end
+        base = orig_class.as(LcClass)
+      end
+      return Internal.lc_seek_const(base, name)
+    end
+
+
     ##
     # TODO: what if we have this case:
     #```
@@ -190,9 +216,9 @@ module LinCAS
     # printl c::CONST
     # ```
     # for now `c` is assumed to be another constant
-    protected def vm_getconst(name : String, me : LcVal)
-      base = self_or_class me
-      const = Internal.lc_seek_const(base, name)
+    @[AlwaysInline]
+    protected def vm_getconst(orig_class : LcVal, name : String, allow_null : Bool)
+      const = vm_dispatch_const(orig_class, name, allow_null)
       return const if const
       lc_raise(Internal.lc_name_err, "Uninitialized const #{name}")
     end

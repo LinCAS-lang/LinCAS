@@ -735,17 +735,21 @@ module LinCAS
         size = names.size - 1
         stack_increase
         if !node.global
-          encoded << IS::PUSH_SELF
+          encoded << IS::PUSH_NULL << IS::PUSH_TRUE
         else
           index = iseq.object.size.to_u64
           encoded << (IS::PUSHOBJ | IS.new(index))
+          encoded << IS::PUSH_FALSE
           iseq.object << Internal.lc_object
         end
+        push_false = false
         names.each_with_index do |name, i|
           break if !last && i == size 
           set_uniq_name symtab, name 
           index = get_index_of symtab, name
+          encoded << IS::PUSH_FALSE if push_false
           encoded << (IS::GETCONST | IS.new(index))
+          push_false = true
         end
       end
     end 

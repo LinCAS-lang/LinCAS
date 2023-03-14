@@ -238,7 +238,8 @@ module LinCAS
               push(value)
             when .getconst?
               name  = @current_frame.names[op]
-              push(vm_getconst(name, pop))
+              allow_null = pop
+              push(vm_getconst(pop, name, allow_null == LcTrue))
             when .pop?
               pop
             when .pushobj?
