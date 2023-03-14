@@ -112,7 +112,8 @@ module LinCAS
     getter argc, name, explicit, block, splat, dbl_splat, block_param
     getter! kwarg
 
-    def initialize(@name : String, 
+    def initialize(
+      @name : String, 
       @argc : Int32, 
       @splat : Bool,
       @dbl_splat : Bool, 
@@ -126,21 +127,6 @@ module LinCAS
     @[AlwaysInline]
     def has_kwargs?
       return !!kwarg? && !kwarg.empty?
-    end
-
-    # @[AlwaysInline]
-    # def args_on_stack
-    #   return @argc + (has_kwargs? ? @kwarg.not_nil!.size : 0)
-    # end
-
-    @[AlwaysInline]
-    def argc_before_splat
-      return @argc - 
-             (@splat ? 1:0) - 
-             (@dbl_splat ? 1:0) - 
-             (kwarg? ? kwarg.size:0)
-             # block param has already been captured by VM,
-             # so no need to subtract it
     end
   end
 
