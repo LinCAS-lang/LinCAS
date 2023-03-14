@@ -26,8 +26,8 @@ module LinCAS
     # call-handler function's responsability to copy them
     # to the environment context.
     #
-    # Since we need to clear the arg part after the call.
-    # Therefore we need to remember what is the actual stack
+    # Since we need to clear the arg part after the call
+    # we need to remember what is the actual stack
     # pointer before the call args (and before pushing a new frame)
     macro set_stack_consistency_trace(offset)
       %sp = @sp - ({{offset}})
@@ -307,10 +307,12 @@ module LinCAS
     private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       vm_setup_args_internal_or_python(ci, calling, method.arity)
       argv = vm_collect_args(method.arity, calling)
-
-      argc = calling.argc
-      set_stack_consistency_trace(argc + 1)
-      vm_push_control_frame(calling.me, method, calling.block, VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL))
+      flags = VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL)
+      if ci.has_kwargs? || ci.dbl_splat
+        flags |= VM::VmFrame::FLAG_KEYWORDS
+      end
+      set_stack_consistency_trace(calling.argc + 1)
+      vm_push_control_frame(calling.me, method, calling.block, flags)
 
       if (arity = method.arity) >= 0 # Likely
         min_argc = max_argc = arity
@@ -341,10 +343,15 @@ module LinCAS
         method.code.as(LcProc).call(argv[0], argv[1])
       end
     end
-
+    
+    @[AlwaysInline]
     private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      vm_call_user(method, ci, calling, VM::VmFrame.flags(UCALL_FRAME, FLAG_LOCAL))
+    end
+    
+    private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags)
       iseq = method.code.as(ISeq)
-      env = vm_new_env(iseq, method, calling, VM::VmFrame.flags(UCALL_FRAME, FLAG_LOCAL))
+      env = vm_new_env(iseq, method, calling, flags)
       offset = vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
       
       set_stack_consistency_trace(calling.argc + 1)
@@ -735,7 +742,34 @@ module LinCAS
     end
 
     def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
-      return Null
+      push method.receiver
+      argv.each { |arg| push arg }
+      method_entry = method.method
+      ci = CallInfo.new(
+        name: method_entry.name,
+        argc: argv.size.to_i32,
+        splat: false,
+        dbl_splat: @current_frame.flags.includes?(VM::VmFrame::FLAG_KEYWORDS),
+        kwarg: nil
+      )
+      calling = VM::CallingInfo.new(
+        me: method.receiver, 
+        argc: ci.argc, 
+        block: vm_get_block
+      )
+      flags = VM::VmFrame.flags(FLAG_FINISH, FLAG_LOCAL)
+      case method_entry.type
+      when .internal?
+        set_stack_consistency_trace(1)
+        vm_call_internal(method_entry, ci, calling)
+        return pop
+      when .python?
+      when .proc?
+      when .user?
+        vm_call_user(method_entry, ci, calling, flags)
+        return exec
+      end
+      Null # unreachable
     end
 
     def lc_call_fun(receiver :  LcVal, method : String, *args)

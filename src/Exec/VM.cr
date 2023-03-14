@@ -400,6 +400,7 @@ module LinCAS
     enum VmFrame : UInt32
       FLAG_FINISH 
       FLAG_LOCAL 
+      FLAG_KEYWORDS
        
       MAIN_FRAME  
       CLASS_FRAME 
