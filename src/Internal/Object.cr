@@ -18,8 +18,6 @@ module LinCAS::Internal
     class LcObject < LcBase
     end
 
-    class_getter lc_object
-
     @[AlwaysInline]
     def self.compare_by_type?(obj1 :  LcVal, obj2 :  LcVal)
         return obj1.is_a? NumType && obj2.is_a? NumType

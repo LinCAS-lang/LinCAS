@@ -110,7 +110,6 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.lc_build_user_class(name : String, namespace : NameTable, parent : LcClass = @@lc_object)
       klass = lc_build_class(name, namespace, parent)
-      lc_set_parent_class(klass,parent)
       return klass
     end
 
@@ -312,12 +311,6 @@ module LinCAS::Internal
     def self.lc_class_real(klass : LcVal)
       return class_of(klass)
     end
-
-    #@[AlwaysInline]
-    #def self.lc_class_class(obj :  LcVal)
-    #  klass = class_of(obj)
-    #  while klass.type.metaclass?
-    #end
 
     def self.lc_class_defrost(klass :  LcVal)
       klass.flags &= ~ObjectFlags::FROZEN 
