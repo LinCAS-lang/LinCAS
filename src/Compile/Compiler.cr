@@ -859,7 +859,8 @@ module LinCAS
         argc: 0,
         splat: false,
         dbl_splat: false,
-        kwarg: nil
+        kwarg: nil,
+        explicit: false
       )
       ci_index = IS.new(set_call_info iseq, ci)
       if node.type.unknown?
