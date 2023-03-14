@@ -260,13 +260,18 @@ module LinCAS
 
     ##
     # Performs the actual call of a method
+    @[AlwaysInline]
     protected def vm_call(ci : CallInfo, calling : VM::CallingInfo)
       debug("Seeking method '#{ci.name}' in #{calling.me.klass.name}")
       cc = Internal.seek_method(calling.me.klass, ci.name, ci.explicit)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
+      vm_call_any(method, ci, calling)
+    end 
 
-      return case method.type 
+    @[AlwaysInline]
+    private def vm_call_any(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      case method.type 
       when .internal?
         vm_call_internal(method, ci, calling)
       when .user?
@@ -277,7 +282,7 @@ module LinCAS
         lc_bug("Invalid method type received")
         Null
       end
-    end 
+    end
 
     private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       vm_setup_args_internal_or_python(ci, calling, method.arity)
@@ -349,6 +354,37 @@ module LinCAS
         @pc += iseq_offset
       else
         lc_raise(Internal.lc_localjmp_err, "No block given (yield)")
+      end
+    end
+
+    protected def vm_call_or_const(ci : CallInfo, calling : VM::CallingInfo, is : IS)
+      const = method = nil
+      case is
+      when .call_or_const?
+        method = Internal.seek_method(calling.me.klass, ci.name, ci.explicit).method
+        unless method
+          const = vm_dispatch_const(Null, ci.name, true)
+        end
+      when .const_or_call?
+        const = vm_dispatch_const(Null, ci.name, true)
+        unless const
+          method = Internal.seek_method(calling.me.klass, ci.name, ci.explicit).method
+        end
+      end
+
+      if const
+        push const
+      elsif method
+        vm_call_any(method, ci, calling)
+      else
+        case is
+        when .call_or_const?
+          part = "method or constant"
+        when .call_or_const?
+          part = "constant or method"
+        end
+        msg = "Undefined #{part} `#{ci.name}'"
+        lc_raise(Internal.lc_name_err, msg)
       end
     end
 

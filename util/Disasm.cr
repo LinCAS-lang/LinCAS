@@ -116,6 +116,9 @@ module LinCAS
           ci_str = callinfo_pattern % {ci.name, ci.argc, ci.kwarg?, ci.explicit, block}
           @stack << {block, "block"} if !block.is_a? String
           pattern % {i, ins, ci_str, line}
+        when .const_or_call?, .call_or_const?
+          ci = @iseq.call_info[op]
+          pattern % {i, ins, ci.name, line}
         when .define_method?, .define_smethod?
           op2, op3 = get_is_and_op(encoded[i += 1])
           name = @iseq.names[op2.value >> 32]

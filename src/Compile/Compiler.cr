@@ -854,24 +854,21 @@ module LinCAS
       name  = node.name
       encoded = iseq.encoded 
       set_line(iseq, node.location)
+      ci = CallInfo.new(
+        name: name,
+        argc: 0,
+        splat: false,
+        dbl_splat: false,
+        kwarg: nil
+      )
+      ci_index = IS.new(set_call_info iseq, ci)
       if node.type.unknown?
-        encoded << IS::PUSH_SELF
         if node.is_capital
-          # Constant
-          set_uniq_name iseq.names, name
-          index = get_index_of(iseq.names, name)
-          encoded << (IS::GETCONST | IS.new(index))
+          # Constant or call
+          encoded << (IS::CONST_OR_CALL | ci_index)
         else
-          # Call
-          ci = CallInfo.new(
-            name: name,
-            argc: 0,
-            splat: false,
-            dbl_splat: false,
-            kwarg: nil
-          )
-          ci_index = IS.new(set_call_info iseq, ci)
-          encoded << (IS::CALL_NO_BLOCK | ci_index)
+          # Call or constant 
+          encoded << (IS::CALL_OR_CONST | ci_index)
         end
       else
         stack_increase 

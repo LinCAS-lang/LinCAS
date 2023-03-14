@@ -49,7 +49,9 @@ module LinCAS
       PUSH_NULL
       CALL
       CALL_NO_BLOCK
-      INVOKE_BLOCK 
+      INVOKE_BLOCK
+      CONST_OR_CALL
+      CALL_OR_CONST 
 
       PUT_CLASS 
       PUT_MODULE

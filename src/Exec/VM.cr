@@ -277,6 +277,14 @@ module LinCAS
                 block: nil # Should not be used
               )
               vm_invoke_block(ci, calling_info)
+            when .const_or_call?, .call_or_const?
+              ci = @current_frame.call_info[op]
+              calling_info.unsafe_init(
+                me: @current_frame.me, 
+                argc: ci.argc, 
+                block: nil # Should not be used
+              )
+              vm_call_or_const(ci, calling_info, is)
             when .put_class?
               parent = pop 
               me     = pop
