@@ -547,7 +547,7 @@ module LinCAS
         global = true 
         next_token_skip_space_or_newline
       end
-      check :CAPITAL_VAR 
+      check :IDENT, :CAPITAL_VAR 
       parse_ident_after_colons(@token.location, global)
     end 
 
@@ -557,7 +557,7 @@ module LinCAS
       next_token 
       while @token.type == :"::"
         next_token_skip_space_or_newline
-        check :CAPITAL_VAR
+        check :IDENT, :CAPITAL_VAR
         names << @token.value.to_s 
         next_token
       end 
@@ -900,8 +900,8 @@ module LinCAS
       location = @token.location 
       disable_regex
       next_token_skip_space_or_newline
-      check :CAPITAL_VAR
-      name = @token.value.to_s
+      check :IDENT, :CAPITAL_VAR
+      name = @token.value.to_s 
       next_token_skip_space
       check :":="
       enable_regex
