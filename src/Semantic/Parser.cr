@@ -949,6 +949,8 @@ module LinCAS
         block = parse_block(block, @stop_on_do)
       end
 
+      check_not_block_arg_and_block block_arg, block
+
       if block || block_arg || named_args || has_parenthesis
         node = Call.new(nil, name, args, named_args, block_arg, block, has_parenthesis)
       else 
@@ -1151,9 +1153,7 @@ module LinCAS
           end
 
           block = parse_block(block, @stop_on_do)
-          if block && block_arg
-            parser_raise("Both block arg and actual block given", location)
-          end 
+          check_not_block_arg_and_block block_arg, block
           
           atomic = Call.new(atomic, name, args, named_args, block_arg, block, !!has_parenthesis).at location
         when :"[]"
@@ -1181,9 +1181,7 @@ module LinCAS
           end 
 
           block = parse_block(block, @stop_on_do)
-          if block && block_arg
-            parser_raise("Both block arg and actual block given", location)
-          end 
+          check_not_block_arg_and_block block_arg, block
           name = @stringpool.get "[]"
           atomic = Call.new(atomic, name, (args || [] of Node), named_args, block_arg,  block, false).at location
         else 
@@ -1239,7 +1237,7 @@ module LinCAS
         disable_regex
         next_token
         if stop_on_do_after_space && @token.keyword? :do 
-          CallArgs.new nil, nil, nil, nil, false, true
+          return CallArgs.new nil, nil, nil, nil, false, true
         end 
 
         if control && @token.keyword? :do 
@@ -1665,6 +1663,13 @@ module LinCAS
         end 
       end
     end 
+
+    @[AlwaysInline]
+    def check_not_block_arg_and_block(block_arg, block)
+      if block_arg && block
+        parser_raise("Both block arg and actual block given", block.location)
+      end
+    end
 
     def check_let_name
       names = {
