@@ -177,7 +177,7 @@ module LinCAS::Internal
   end
 
   def self.lc_obj_responds_to?(obj :  LcVal, name : String)
-    return !!internal.seek_method(obj.klass, name, explicit: true) # Method call is of explicit type
+    return !!internal.seek_method(obj.klass, name, explicit: true).method # Method call is of explicit type
   end
 
   def self.lc_obj_has_internal_m?(obj :  LcVal,name : String)
