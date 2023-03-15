@@ -683,7 +683,7 @@ module LinCAS
           flags: env.frame_type
         )
       in .break?
-        if !@control_frames[-1].flags.proc_frame?
+        if !@control_frames[-1].flags.block_frame?
           lc_raise(Internal.lc_localjmp_err, "Break from proc/captured block")
         end
         target_iseq = ct_entry.iseq
