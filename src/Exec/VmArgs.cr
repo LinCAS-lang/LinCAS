@@ -82,19 +82,17 @@ module LinCAS
     ##
     # Only for calls to internal methods
     protected def vm_collect_args(argc, calling : VM::CallingInfo)
-      return case argc
-      when 0 
-        {topn(0)}
-      when 1
-        {topn(1), topn(0)}
-      when 2
-        {topn(2), topn(1), topn(0)}
-      when 3
-        {topn(3), topn(2), topn(1), topn(0)}
+      argv = StaticArray(LcVal, 4).new(Null)
+      if argc >= 0
+        (argc + 1).times do |i|
+          argv[i] = topn(argc - i)
+        end
       else
         depth = calling.argc
-        {topn(depth), @stack.shared_copy(@sp - depth, depth).as(LcVal)}
+        argv[0] = topn(depth)
+        argv[1] = @stack.shared_copy(@sp - depth, depth).as(LcVal)
       end
+      return argv
     end
 
     ##
