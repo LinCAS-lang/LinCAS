@@ -84,6 +84,8 @@ module LinCAS
         compile_array(iseq, node)
       when Self
         compile_self(iseq, node)
+      when NewObject
+        compile_newobject(iseq, node)
       when Yield
         compile_yield(iseq, node)
       when Body # parenthesized expressions
@@ -361,6 +363,22 @@ module LinCAS
       set_line(iseq, node)
     end
 
+    def compile_block_any(iseq, block_param, block)
+      case block_param
+      when Block 
+        return compile_block(iseq, block_param)
+      else
+        if block_param.nil?
+          if block
+            return compile_block(iseq, block) 
+          end
+        else
+          # already compiled
+        end
+      end
+      return nil
+    end
+
     def compile_block(iseq, node : Block)
       block_iseq = ISeq.new(ISType::BLOCK, @filename, node.symtab)
       params = node.params
@@ -576,19 +594,7 @@ module LinCAS
       # instruction, as well as the emission if a call info.
       # This because while compiling the block, we need to know the jump
       # offsets when emitting the `break' catch table entry
-      block = nil
-      case block_param
-      when Block 
-        block = compile_block(iseq, block_param)
-      else
-        if block_param.nil?
-          if tmp = node.block
-            block = compile_block(iseq, tmp) 
-          end
-        else
-          # already compiled
-        end
-      end
+      block = compile_block_any(iseq, block_param, node.block)
 
       lc_bug("Both block and block param found at compile time") if block && block_p
 
@@ -949,6 +955,25 @@ module LinCAS
       stack_increase
       set_line(iseq, node)
       iseq.encoded << IS::PUSH_SELF
+    end
+
+    def compile_newobject(iseq, node : NewObject)
+      compile_each(iseq, node.id)
+      argc, splat, dblsplat, n_args = compile_call_args(iseq, node.args, node.named_args)
+
+      block_param = node.block_param
+      if block_p = !!(node.block_param && !node.block_param.is_a? Block)
+        compile_each(iseq, block_param)
+      end
+      
+      encoded = iseq.encoded
+      is_index = encoded.size
+      encoded << ((node.block || block_p) ? IS::NEW_OBJECT_WITH_BLOCK : IS::NEW_OBJECT)
+      block = compile_block_any(iseq, block_param, node.block)
+
+      call_info = CallInfo.new("init", argc, splat, dblsplat, n_args, false, block, block_p)
+      index = set_call_info(iseq, call_info)
+      encoded[is_index] |= IS.new(index) 
     end
 
     def compile_yield(iseq, node : Yield)

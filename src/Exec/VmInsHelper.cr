@@ -587,6 +587,26 @@ module LinCAS
       return array.as(LcVal)
     end
 
+    protected def vm_new_object(ci : CallInfo, calling : VM::CallingInfo)
+      argc = calling.argc
+      klass = topn(argc).as LcClass
+      if !klass.is_class?
+        lc_raise(Internal.lc_type_err, "Object type must be a class (#{Internal.lc_typeof(klass)} given)")
+      end
+
+      obj = Internal.lc_new_object(klass)
+      @stack[@sp - argc - 1] = calling.me = obj # we replace the class with the actual object
+
+      # now we can call initialize if there is any
+      cc = vm_dispatch_method(ci, calling)
+      if init = cc.method
+        call_method_with_handled_return(init, ci, calling)
+        push calling.me
+      else
+        vm_no_method_found(ci, calling, cc)
+      end
+    end
+
     #######################################
     #  _____ _   _ ____   _____        __ #
     # |_   _| | | |  _ \ / _ \ \      / / #
@@ -751,14 +771,19 @@ module LinCAS
       )
       push method.receiver
       argv.each { |arg| push arg }
-      vm_call_any(method_entry, ci, calling, VM::VmFrame::FLAG_FINISH)
-      case method_entry.type
+      return call_method_with_handled_return(method_entry, ci, calling)
+    end
+
+    @[AlwaysInline]
+    protected def call_method_with_handled_return(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      vm_call_any(method, ci, calling, VM::VmFrame::FLAG_FINISH)
+      case method.type
       when .internal?, .python?
         return pop
       when .user?, .proc?
         return exec
       else
-        lc_bug("Missing implementation for calling #{method_entry.type}")
+        lc_bug("Missing implementation for calling #{method.type}")
       end
       Null # unreachable
     end

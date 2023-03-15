@@ -354,6 +354,23 @@ module LinCAS
               push vm_new_hash(op)
             when .new_array?
               push vm_new_array(op)
+            when .new_object_with_block?
+              ci = @current_frame.call_info[op]
+              bh = vm_capture_block(ci)
+              calling_info.unsafe_init(
+                Null, # set during the execution
+                ci.argc, 
+                bh
+              )
+              vm_new_object(ci, calling_info)
+            when .new_object?
+              ci = @current_frame.call_info[op]
+              calling_info.unsafe_init(
+                Null, # set during the execution
+                ci.argc, 
+                nil
+              )
+              vm_new_object(ci, calling_info)
             when .throw?
               vm_throw(op, pop)
             when .leave?
@@ -504,8 +521,8 @@ module LinCAS
         self
       end
 
-      getter me, block
-      property argc
+      getter block
+      property argc, me
     end
 
     ##

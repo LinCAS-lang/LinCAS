@@ -74,6 +74,8 @@ module LinCAS
       MAKE_RANGE
       NEW_HASH
       NEW_ARRAY
+      NEW_OBJECT
+      NEW_OBJECT_WITH_BLOCK
 
       THROW
 
