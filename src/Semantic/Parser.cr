@@ -1396,7 +1396,7 @@ module LinCAS
       next_token_skip_space
       if @token.type == :SYMBOL
         block_arg_name = next_temp_var
-        obj = Variable.new(block_arg_name, ID::LOCAL_V)
+        obj = Variable.new(block_arg_name, ID::LOCAL_V, depth: 0)
         name = @token.value.to_s.lstrip(":")
         next_token
         call = Call.new(obj, name).at location

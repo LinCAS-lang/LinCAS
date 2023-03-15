@@ -147,7 +147,7 @@ module LinCAS::Internal
     # the klass is a Python class (wrapped in a LinCAS one)
     def self.build_pyobj(klass :  LcVal)
         klass = lc_cast(klass,LcClass)
-        objk  = klass.symTab.as(HybridSymT).pyObj
+        objk  = klass.namespace.py_obj.not_nil!
         return build_pyobj(klass,objk)
     end
 

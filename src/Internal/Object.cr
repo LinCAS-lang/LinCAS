@@ -104,7 +104,7 @@ module LinCAS::Internal
         if allocator.is_a? LcProc
             return allocator.call(klass).as( LcVal)
         end
-        lc_raise(lc_instance_err,"Undefined allocator for %s" % klass.path.to_s)
+        lc_raise(lc_instance_err,"Undefined allocator for %s" % class_path(klass))
         return Null
     end
 
