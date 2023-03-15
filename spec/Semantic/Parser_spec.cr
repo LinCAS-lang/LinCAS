@@ -301,4 +301,10 @@ describe Parser do
   
   assert_syntax_error "try {} catch {} catch SyntaxError => e \n {}", "Specific exception handling must be specified before catch-all statement"
   assert_syntax_error "try {} catch {} catch => e \n {}", "Catch all statement already specified"
+
+  it_parses_single "new Array()", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, nil)
+  it_parses_single "new Array(1, 2)", NewObject.new(Namespace.new(["Array"]), [1.int, 2.int] of Node, nil, nil, nil)
+  it_parses_single "new Array(1, a: 2)", NewObject.new(Namespace.new(["Array"]), [1.int] of Node, [NamedArg.new("a", 2.int)], nil, nil)
+  it_parses_single "new Array &block", NewObject.new(Namespace.new(["Array"]), nil, nil, "block".variable, nil)
+  it_parses_single "new Array {}", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, Block.new(nil, Body.new, SymTable.new(SymType::BLOCK)))
 end

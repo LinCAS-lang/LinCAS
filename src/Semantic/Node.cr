@@ -315,6 +315,18 @@ module LinCAS
   class Self < Node 
   end
 
+  class NewObject < Node
+    getter id, args, named_args, block_param, block 
+    def initialize(
+      @id          : Namespace,
+      @args        : Array(Node)?     = nil,
+      @named_args  : Array(NamedArg)? = nil,
+      @block_param : Node?            = nil, 
+      @block       : Block?            = nil, #change to block
+    ) 
+    end
+  end
+
   class Yield < Node
     getter args, named_args, has_parenthesis
     def initialize(

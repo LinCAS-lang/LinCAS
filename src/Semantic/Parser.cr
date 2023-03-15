@@ -420,6 +420,8 @@ module LinCAS
           disable_regex
           next_token
           Self.new
+        when :new
+          parse_new_statement
         when :yield
           parse_yield
         else
@@ -1516,6 +1518,39 @@ module LinCAS
         params = Params.new(block_arg, splat_index: splat_index.not_nil!)
       end
       return Block.new(params, body, pop_symtab).at location
+    end
+
+    def parse_new_statement
+      location = @token.location
+      disable_regex
+      next_token_skip_space_or_newline
+      id = parse_ident
+      call_args = preserve_stop_on_do(@stop_on_do) { parse_call_args }
+      if call_args
+        args = call_args.args
+        named_args = call_args.named_args
+        block_arg = call_args.block_arg
+        block = call_args.block
+        has_parenthesis = call_args.has_parenthesis
+      end
+      # The following if statement is a bit of a duplicate of code, but for now
+      # let's keep it so
+      if call_args && call_args.stopped_on_do_after_space
+        # `do' block must be attached to the leftmost call. 
+        # This is just an argument
+        # bar new A do {}
+        block = parse_curly_block(block)
+      elsif @stop_on_do && call_args && has_parenthesis
+        # `do' block must be attached to the leftmost call. This
+        # call is just an argument
+        # bar new A(x) do {} 
+        block = parse_curly_block(block)
+      else 
+        block = parse_block(block, @stop_on_do)
+      end
+      check_not_block_arg_and_block block_arg, block
+
+      return NewObject.new(id, args, named_args, block_arg, block)
     end
 
     def parse_yield        
