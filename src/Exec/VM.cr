@@ -398,6 +398,7 @@ module LinCAS
 
     @[Flags]
     enum VmFrame : UInt32
+      FLAG_NONE = 0
       FLAG_FINISH 
       FLAG_LOCAL 
       FLAG_KEYWORDS

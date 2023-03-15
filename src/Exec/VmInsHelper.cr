@@ -281,21 +281,22 @@ module LinCAS
     ##
     # Performs the actual call of a method
     @[AlwaysInline]
-    protected def vm_call(ci : CallInfo, calling : VM::CallingInfo)
+    protected def vm_call(ci : CallInfo, calling : VM::CallingInfo, flags = VM::VmFrame::FLAG_NONE)
       debug("Seeking method '#{ci.name}' in #{calling.me.klass.name}")
       cc = vm_dispatch_method(ci, calling)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
-      vm_call_any(method, ci, calling)
+      vm_call_any(method, ci, calling, flags)
+      return method.type
     end 
 
     @[AlwaysInline]
-    private def vm_call_any(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+    private def vm_call_any(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
       case method.type 
       when .internal?
-        vm_call_internal(method, ci, calling)
+        vm_call_internal(method, ci, calling, flags)
       when .user?
-        vm_call_user(method, ci, calling)
+        vm_call_user(method, ci, calling, flags)
       # when .python?
       # when .proc?
       else
@@ -304,10 +305,10 @@ module LinCAS
       end
     end
 
-    private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+    private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
       vm_setup_args_internal_or_python(ci, calling, method.arity)
       argv = vm_collect_args(method.arity, calling)
-      flags = VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL)
+      flags |= VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL)
       if ci.has_kwargs? || ci.dbl_splat
         flags |= VM::VmFrame::FLAG_KEYWORDS
       end
@@ -333,24 +334,17 @@ module LinCAS
       when 0
         method.code.as(LcProc).call(argv[0])
       when 2
-        argv = argv.as(T3)
         method.code.as(LcProc).call(argv[0], argv[1], argv[2])
       when 3
-        argv = argv.as(T4)
         method.code.as(LcProc).call(argv[0], argv[1], argv[2], argv[3])
       else
-        argv = argv.as(T2)
         method.code.as(LcProc).call(argv[0], argv[1])
       end
     end
     
-    @[AlwaysInline]
-    private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
-      vm_call_user(method, ci, calling, VM::VmFrame.flags(UCALL_FRAME, FLAG_LOCAL))
-    end
-    
-    private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags)
+    private def vm_call_user(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
       iseq = method.code.as(ISeq)
+      flags |= VM::VmFrame.flags(UCALL_FRAME, FLAG_LOCAL)
       env = vm_new_env(iseq, method, calling, flags)
       offset = vm_setup_iseq_args(env, iseq.arg_info, ci, calling)
       
@@ -364,11 +358,11 @@ module LinCAS
     private def vm_call_python()
     end
 
-    protected def vm_invoke_block(ci : CallInfo, calling : VM::CallingInfo)
+    protected def vm_invoke_block(ci : CallInfo, calling : VM::CallingInfo, flags = VM::VmFrame::FLAG_NONE)
       block = vm_get_block
       if block
         p_env = block.env
-        env = vm_new_env(block.iseq, p_env.context, calling, p_env, VM::VmFrame::BLOCK_FRAME)
+        env = vm_new_env(block.iseq, p_env.context, calling, p_env, VM::VmFrame::BLOCK_FRAME | flags)
         iseq_offset = vm_setup_block_args(env, block.iseq.arg_info, ci, calling)
         
         set_stack_consistency_trace(calling.argc)
@@ -403,7 +397,7 @@ module LinCAS
         push const
       elsif method
         push calling.me # we need to have self on stack
-        vm_call_any(method, ci, calling)
+        vm_call_any(method, ci, calling, VM::VmFrame::FLAG_NONE)
       else
         case is
         when .call_or_const?
@@ -742,8 +736,6 @@ module LinCAS
     end
 
     def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
-      push method.receiver
-      argv.each { |arg| push arg }
       method_entry = method.method
       ci = CallInfo.new(
         name: method_entry.name,
@@ -757,27 +749,60 @@ module LinCAS
         argc: ci.argc, 
         block: vm_get_block
       )
-      flags = VM::VmFrame.flags(FLAG_FINISH, FLAG_LOCAL)
+      push method.receiver
+      argv.each { |arg| push arg }
+      vm_call_any(method_entry, ci, calling, VM::VmFrame::FLAG_FINISH)
       case method_entry.type
-      when .internal?
-        set_stack_consistency_trace(1)
-        vm_call_internal(method_entry, ci, calling)
+      when .internal?, .python?
         return pop
-      when .python?
-      when .proc?
-      when .user?
-        vm_call_user(method_entry, ci, calling, flags)
+      when .user?, .proc?
         return exec
+      else
+        lc_bug("Missing implementation for calling #{method_entry.type}")
       end
       Null # unreachable
     end
 
-    def lc_call_fun(receiver :  LcVal, method : String, *args)
-      return Null 
+    def lc_call_fun(receiver :  LcVal, method : String, *argv)
+      ci = CallInfo.new(
+        name: method,
+        argc: argv.size.to_i32,
+        splat: false,
+        dbl_splat: false,
+        kwarg: nil
+      )
+      calling = VM::CallingInfo.new(
+        me: receiver, 
+        argc: ci.argc, 
+        block: nil
+      )
+      push receiver
+      argv.each { |arg| push arg }
+      type = vm_call(ci, calling, VM::VmFrame::FLAG_FINISH)
+      case type
+      when .user?, .proc?
+        return exec
+      else
+        return pop
+      end
     end
 
-    def lc_yield(*args :  LcVal)
-      Null
+    def lc_yield(*argv :  LcVal)
+      argv.each { |arg| push arg }
+      ci = CallInfo.new(
+        name: "",
+        argc: argv.size.to_i32,
+        splat: false,
+        dbl_splat: false,
+        kwarg: nil
+      )
+      calling = VM::CallingInfo.new(
+        me: @current_frame.me, 
+        argc: ci.argc, 
+        block: nil
+      )
+      vm_invoke_block(ci, calling, VM::VmFrame::FLAG_FINISH)
+      return exec
     end
 
     @[AlwaysInline]
