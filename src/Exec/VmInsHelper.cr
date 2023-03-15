@@ -232,7 +232,7 @@ module LinCAS
         if bh.is_a? LcProc 
           return bh
         else 
-          # lc_raise(.., "Wrong argument type #{type_of(bh)} (expected Proc)")
+          lc_raise(Internal.lc_arg_err, "Wrong argument type #{type_of(bh)} (expected Proc)")
         end
       end
       nil
