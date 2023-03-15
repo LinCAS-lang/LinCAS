@@ -475,7 +475,6 @@ module LinCAS::Internal
         ptr    = ary_ptr(ary)
         arylen.times do |i|
             Exec.lc_yield(ptr[i],num2int(i))
-            break if Exec.error?
         end
         return Null 
     end
@@ -560,7 +559,6 @@ module LinCAS::Internal
         tmp  = build_ary(size)
         size.times do |i|
             value = Exec.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
-            break if Exec.error?
             ary_set_index(tmp,i,value)
         end
         set_ary_size(tmp,size)
@@ -571,7 +569,6 @@ module LinCAS::Internal
         size = ary_size(ary)
         size.times do |i|
             value = Exec.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
-            break if Exec.error?
             ary_set_index(ary,i,value)
         end
         return ary 
