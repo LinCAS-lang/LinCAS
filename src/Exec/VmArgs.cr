@@ -440,8 +440,6 @@ module LinCAS
       args.env_count += 1
     end
 
-    # kw is an array of strings or an empty static array. 
-    # We leave the compiler infer the type
     private def args_setup_kw(env : VM::Environment, arg_info : ISeq::ArgInfo, args : Args)
       debug("Setting up keyword arguments")
       kw_bit = 0u64
@@ -542,13 +540,15 @@ module LinCAS
     protected def vm_setup_block_args(env : VM::Environment, arg_info : ISeq::ArgInfo, ci : CallInfo, calling : VM::CallingInfo)
       if arg_info.arg_simple?
         vm_setup_args_fast_track(ci, calling)
-        vm_migrate_args(env, calling)
         # TODO: code for autosplat
 
         if calling.argc > arg_info.argc
-          # truncate? 
+          # truncate
+          @sp -= (calling.argc - arg_info.argc)
+          calling.argc = arg_info.argc
+          vm_migrate_args(env, calling)
         else
-          # Nothing to do. Args in env are already set to null
+          vm_migrate_args(env, calling)
         end
         return 0
       else
