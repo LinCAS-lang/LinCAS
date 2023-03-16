@@ -389,6 +389,19 @@ module LinCAS
       lc_bug("VM ran out of loop")
     end
 
+    # We want to make sure the calling info are not corrupted
+    # by another function or block call before the original call has
+    # finished (very important for new object instantiation).
+    # Therefore, we separate the scope in the following method, so
+    # we make sure calling_info is unique for each execution.
+    #
+    # Here there is also a small optimization in terms of memory.
+    # We expect calls and block invoking to be quite frequent,
+    # therefore it is quite inefficient to allocate CallingInfo objects
+    # every time, and a struct doesn't fit as we may need to modify some
+    # member of cCallingInfo.
+    # So we can collect some stack memory through a static array, and cast
+    # its pointer to CallingInfo. This solution can be unsafe
     @[AlwaysInline]
     def with_calling_info(**args)
       dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]

@@ -147,6 +147,9 @@ module LinCAS
       return klass.as LcClass
     end
 
+    # To set or get a class variable we need to know in which class
+    # of the inheritance chain it was defined. If no definition is
+    # found, the method returns nil
     @[AlwaysInline]
     protected def find_cvar_def(klass : LcClass, name : String)
       found = false
@@ -182,6 +185,24 @@ module LinCAS
       end
     end
 
+    # The behavior we wish to have is the following:
+    # When a method references a constant, we want to look for from
+    # the class and its ancestores the method is defined in and in the
+    # class upper lexical scopes. For example:
+    # ```
+    # class MyClass {
+    #   const MyConst := 10
+    #   let get_myconst {
+    #     return MyConst
+    #   }
+    # }
+    # class MyClass2 inherits MyClass {
+    #   const MyConst := 100
+    # }
+    #
+    # my_obj := new MyClass2
+    # my_obj.get_myconst  #=> should return 10 and not 100
+    # ```
     private def vm_dispatch_const(orig_class : LcVal, name : String, allow_null : Bool)
       if orig_class == Null && allow_null
         # current lexical scope
@@ -258,11 +279,24 @@ module LinCAS
       lc_raise(Internal.lc_nomet_err, msg)
     end
 
+    # Here it gets a bit tricky. What we wish to happen is:
+    # * if a method is private, it must be visible only within the class
+    #   of definition (can't be called from the instance)
+    # * if a method is protected, it is visible within the class of definition
+    #   and to all it's children. (can't be called from the instance)
+    # * public methods can be called anywhere.
+    # * if the call is in the format `self.my_method`, this enforces
+    #   the method lookup from the class of the instance the method was invoked
+    #   on and not from the class of definition. However, protected or
+    #   private methods should be allowed if they meet the rules above
     @[AlwaysInline]
     private def vm_dispatch_method(ci : CallInfo, calling : VM::CallingInfo)
       context = get_class_ref
       _self = calling.me
       if !(explicit = ci.explicit)
+        # The call is in the format `foo`. If this happens within a user method
+        # scope, then we use such lexical scope to search the method. Otherwise,
+        # we use the class of the object that is currently executing.
         if @current_frame.flags.includes? VM::VmFrame.flags(UCALL_FRAME)
           debug("Dispatching method using context #{context.name}##{ci.name}")
           klass = context
@@ -271,6 +305,9 @@ module LinCAS
           debug("Dispatching method in object class #{klass.name}##{ci.name}")
         end
       else
+        # In this case the call is in the format `a.foo`. The method is searched from
+        # the class of `a` and allows protected and private methods (explicit)only if
+        # `a` is an instance or sub instance of the current lexical scope
         klass = _self.klass
         explicit = !(_self == context || Internal.lincas_obj_is_a(_self, context))
         debug("Dispatching #{klass.name}##{ci.name}; explicit: #{explicit} (orig: #{ci.explicit})")       
@@ -279,7 +316,8 @@ module LinCAS
     end
 
     ##
-    # Performs the actual call of a method
+    # Performs the actual call of a method. It is responsible of dispatching it
+    # and call it
     @[AlwaysInline]
     protected def vm_call(ci : CallInfo, calling : VM::CallingInfo, flags = VM::VmFrame::FLAG_NONE)
       debug("Seeking method '#{ci.name}' in #{calling.me.klass.name}")
@@ -315,6 +353,9 @@ module LinCAS
       set_stack_consistency_trace(calling.argc + 1)
       vm_push_control_frame(calling.me, method, calling.block, flags)
 
+      # This argc check is done here instead of 'vm_setup_args_internal_or_python'
+      # since we need to provide a good backtrace in case of failure. To do so
+      # we need to have the call frame in place, and this happens in the line above.
       if (arity = method.arity) >= 0 # Likely
         min_argc = max_argc = arity
       else
@@ -351,7 +392,7 @@ module LinCAS
       set_stack_consistency_trace(calling.argc + 1)
       vm_push_control_frame(calling.me, iseq, env, env.frame_type)
       # no need to update sp in the frame. When another call happens, 
-      # it will be saved automatically
+      # it will be saved automatically (set_stack_consistency_trace)
       @pc += offset
     end 
 
