@@ -180,8 +180,6 @@ module LinCAS
       # and allows the VM to start over from the new instructions
       while true
         begin
-          dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
-          calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
           # This is the real VM loop
           while true
             ins = next_is
@@ -253,38 +251,34 @@ module LinCAS
             when .push_null?
               push(Null)
             when .call?
-              ci            = @current_frame.call_info[op]
-              bh            = vm_capture_block(ci)
-              calling_info.unsafe_init(
-                topn(ci.argc), 
-                ci.argc, 
-                bh
-              )
-              vm_call(ci, calling_info)
+              ci = @current_frame.call_info[op]
+              bh = vm_capture_block(ci)
+              with_calling_info(me: topn(ci.argc), argc: ci.argc, block: bh) do |calling|
+                vm_call(ci, calling)
+              end
             when .call_no_block?
               ci           = @current_frame.call_info[op]
-              calling_info.unsafe_init(
-                topn(ci.argc), 
-                ci.argc, 
-                nil
-              )
-              vm_call(ci, calling_info)
+              with_calling_info(me: topn(ci.argc), argc: ci.argc, block: nil) do |calling|
+                vm_call(ci, calling)
+              end
             when .invoke_block?
               ci = @current_frame.call_info[op]
-              calling_info.unsafe_init(
+              with_calling_info(
                 me: @current_frame.me, 
                 argc: ci.argc, 
                 block: nil # Should not be used
-              )
-              vm_invoke_block(ci, calling_info)
+              ) do |calling|
+                vm_invoke_block(ci, calling)
+              end
             when .const_or_call?, .call_or_const?
               ci = @current_frame.call_info[op]
-              calling_info.unsafe_init(
+              with_calling_info(
                 me: @current_frame.me, 
                 argc: ci.argc, 
                 block: nil # Should not be used
-              )
-              vm_call_or_const(ci, calling_info, is)
+              ) do |calling|
+                vm_call_or_const(ci, calling, is)
+              end
             when .put_class?
               parent = pop 
               me     = pop
@@ -357,20 +351,22 @@ module LinCAS
             when .new_object_with_block?
               ci = @current_frame.call_info[op]
               bh = vm_capture_block(ci)
-              calling_info.unsafe_init(
-                Null, # set during the execution
-                ci.argc, 
-                bh
-              )
-              vm_new_object(ci, calling_info)
+              with_calling_info(
+                me: Null, # set during the execution
+                argc: ci.argc, 
+                block: bh
+              ) do |calling|
+                vm_new_object(ci, calling)
+              end
             when .new_object?
               ci = @current_frame.call_info[op]
-              calling_info.unsafe_init(
-                Null, # set during the execution
-                ci.argc, 
-                nil
-              )
-              vm_new_object(ci, calling_info)
+              with_calling_info(
+                me: Null, # set during the execution
+                argc: ci.argc, 
+                block: nil
+              ) do |calling|
+                vm_new_object(ci, calling)
+              end
             when .throw?
               vm_throw(op, pop)
             when .leave?
@@ -391,6 +387,14 @@ module LinCAS
       end 
       # Unreachable
       lc_bug("VM ran out of loop")
+    end
+
+    @[AlwaysInline]
+    def with_calling_info(**args)
+      dont_touch_me = uninitialized UInt8[instance_sizeof(CallingInfo)]
+      calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
+      calling_info.unsafe_init(**args)
+      yield calling_info
     end
 
     @[AlwaysInline]
