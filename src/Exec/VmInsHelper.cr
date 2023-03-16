@@ -228,11 +228,11 @@ module LinCAS
       if block 
         return iseq_to_captured_block(block)
       else
-        bh = topn(0)
-        if bh.is_a? LcProc 
+        bh = pop
+        if bh.is_a? Internal::LCProc 
           return bh
         else 
-          lc_raise(Internal.lc_arg_err, "Wrong argument type #{type_of(bh)} (expected Proc)")
+          lc_raise(Internal.lc_arg_err, "Wrong argument type #{Internal.lc_typeof(bh)} (expected Proc)")
         end
       end
       nil
