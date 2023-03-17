@@ -102,7 +102,7 @@ module LinCAS::Internal
     end
 
     def self.build_proc
-        return lc_proc_allocate(@@lc_proc)
+        return lc_proc_allocate_0(@@lc_proc)
     end
 
     def self.lincas_block_to_proc(block : LcBlock)
