@@ -88,8 +88,18 @@ module LinCAS
 
   class Block < Node
     getter params, body, symtab
+    
+    # for debug purposes
+    def initialize
+      @params = nil.as(Params?)
+      @body = Body.new
+      @symtab = SymTable.new SymType::BLOCK
+    end
+
     def initialize(@params : Params?, @body : Body, @symtab : SymTable)
     end
+
+    def_equals params, body, symtab
   end
 
   class Params 
@@ -252,10 +262,20 @@ module LinCAS
     def_equals left, right, inclusive
   end 
 
+  class RegexLiteral < Node
+    getter value, options
+    def initialize(@value : StringLiteral, @options : Regex::Options)
+    end
+
+    def_equals value, options
+  end
+
   class ControlExpression < Node
     getter type, exp
     def initialize(@type : Symbol, @exp : Node? = nil)
     end
+
+    def_equals type, exp
   end
 
   class OpAssign < Node 
@@ -299,7 +319,7 @@ module LinCAS
 
   class SymbolLiteral < Node 
     getter name 
-    def initialize(@name : String | Array(String))
+    def initialize(@name : String | StringLiteral)
     end 
 
     def_equals name 
@@ -325,6 +345,7 @@ module LinCAS
       @block       : Block?            = nil, #change to block
     ) 
     end
+    def_equals id, args, named_args, block_param, block
   end
 
   class Yield < Node

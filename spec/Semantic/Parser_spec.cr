@@ -26,6 +26,10 @@ def symtab(type)
   return SymTable.new(type)
 end
 
+def regex(string, options = Regex::Options::None)
+  return RegexLiteral.new(StringLiteral.new([string] of String | Node, false), options)
+end
+
 def it_parses_single2(string, expected_nodes : Array(Node))
   it "Parses #{string.inspect}" do
     parser = Parser.new(__FILE__, string)
@@ -94,6 +98,36 @@ describe Parser do
   ].each do |symbol|
     it_parses_single symbol, symbol.symbol
   end
+  
+  it_parses_multiple ["'foo'", "\"foo\""], StringLiteral.new(["foo"] of Node | String, false)
+  it_parses_single "\"foo\\\n bar\"", StringLiteral.new(["foobar"] of Node | String, false)
+  it_parses_single "'foo\\\n bar'", StringLiteral.new(["foo\\\\n bar"] of Node | String, false)
+  it_parses_single "\"foo\#{baz}bar\"", StringLiteral.new(["foo","baz".variable,"bar"] of Node | String, true)
+  it_parses_single "\"foo\#{ \"baz\" }bar\"", StringLiteral.new(["foobazbar"] of Node | String, false)
+  it_parses_single "'foo\#{ \"baz\" }bar'", StringLiteral.new(["foo\#{ \"baz\" }bar"] of Node | String, false)
+  it_parses_single "\"\#{ 1 }\"", StringLiteral.new([1.int] of Node | String, true)
+  it_parses_single "\"\#{ }\"", StringLiteral.new([""] of Node | String, false)
+  it_parses_single "\"\"", StringLiteral.new([""] of Node | String, false)
+  it_parses_single "call \"foo\#{bar do {}}baz\"", Call.new(nil, "call", [StringLiteral.new(["foo", Call.new(nil, "bar", block: Block.new, has_parenthesis: false), "baz"] of Node | String, true)] of Node, has_parenthesis: false)
+
+  it_parses_single "//", regex("")
+  it_parses_single "/ /", regex(" ")
+  it_parses_single "/=/", regex("=")
+  it_parses_single "/ foo /", regex(" foo ")
+  it_parses_single "/foo/", regex("foo")
+  it_parses_single "/foo/i", regex("foo", Regex::Options::IGNORE_CASE)
+  it_parses_single "/foo/m", regex("foo", Regex::Options::MULTILINE)
+  it_parses_single "/foo/x", regex("foo", Regex::Options::EXTENDED)
+  it_parses_single "/foo/imximx", regex("foo", Regex::Options::IGNORE_CASE | Regex::Options::MULTILINE | Regex::Options::EXTENDED)
+  it_parses_single "/fo\\so/", regex("fo\\so")
+  it_parses_single "/fo\\/so/", regex("fo/so")
+  it_parses_single "/fo\#{\"bar\"}o/", regex("fobaro")
+  it_parses_single "/fo\#{ 1 }o/", RegexLiteral.new(StringLiteral.new(["fo", 1.int, "o"] of Node | String, true), Regex::Options::None)
+  it_parses_single "a := //", Assign.new("a".variable, regex(""))
+  it_parses_single2 "/ /; / /", [regex(" "), regex(" ")]
+  it_parses_single "if / / then / / elsif / / then / / else / /", If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
+  it_parses_single "[/ /, / /]", ArrayLiteral.new([regex(" "), regex(" ")] of Node)
+  it_parses_single "/ / / / /", Call.new(regex(" "), "/", [regex(" ")] of Node)
 
   it_parses_multiple ["1 + 2", "1 +\n2", "1 +2"], Call.new(1.int, "+", [2.int] of Node)
   it_parses_multiple ["1 -2", "1 - 2", "1 - \n2"], Call.new(1.int, "-", [2.int] of Node)
@@ -293,11 +327,11 @@ describe Parser do
   it_parses_single "::A::B::C", Namespace.new(["A", "B", "C"], true)
   it_parses_single "::A", Namespace.new(["A"], true)
 
-  it_parses_multiple ["try {} catch {}", "try {\n} catch {\n}", "try\n{\n}\ncatch\n{\n}"], Try.new(Body.new, [CatchExp.new(nil, nil, Body.new)], SymTable.new(SymType::BLOCK) << "!@e")
-  it_parses_multiple ["try v0 catch\n v1", "try { v0 } catch {v1}", "try\nv0\ncatch\nv1"], Try.new(Body.new << "v0".variable, [CatchExp.new(nil, nil, Body.new << "v1".variable)], SymTable.new(SymType::BLOCK) << "!@e")
-  it_parses_single "try {} catch => e \n {}", Try.new(Body.new, [CatchExp.new(nil, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
-  it_parses_single "try {} catch SyntaxError => e \n {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
-  it_parses_single "try {} catch SyntaxError => e \n {}\n catch {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new), CatchExp.new(nil, nil , Body.new)], SymTable.new(SymType::BLOCK) << "!@e" << "e")
+  it_parses_multiple ["try {} catch {}", "try {\n} catch {\n}", "try\n{\n}\ncatch\n{\n}"], Try.new(Body.new, [CatchExp.new(nil, nil, Body.new)], symtab(SymType::BLOCK) << "!@e")
+  it_parses_multiple ["try v0 catch\n v1", "try { v0 } catch {v1}", "try\nv0\ncatch\nv1"], Try.new(Body.new << "v0".variable, [CatchExp.new(nil, nil, Body.new << "v1".variable)], symtab(SymType::BLOCK) << "!@e")
+  it_parses_single "try {} catch => e \n {}", Try.new(Body.new, [CatchExp.new(nil, "e", Body.new)], symtab(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new)], symtab(SymType::BLOCK) << "!@e" << "e")
+  it_parses_single "try {} catch SyntaxError => e \n {}\n catch {}", Try.new(Body.new, [CatchExp.new("SyntaxError".variable, "e", Body.new), CatchExp.new(nil, nil , Body.new)], symtab(SymType::BLOCK) << "!@e" << "e")
   
   assert_syntax_error "try {} catch {} catch SyntaxError => e \n {}", "Specific exception handling must be specified before catch-all statement"
   assert_syntax_error "try {} catch {} catch => e \n {}", "Catch all statement already specified"
@@ -306,5 +340,5 @@ describe Parser do
   it_parses_single "new Array(1, 2)", NewObject.new(Namespace.new(["Array"]), [1.int, 2.int] of Node, nil, nil, nil)
   it_parses_single "new Array(1, a: 2)", NewObject.new(Namespace.new(["Array"]), [1.int] of Node, [NamedArg.new("a", 2.int)], nil, nil)
   it_parses_single "new Array &block", NewObject.new(Namespace.new(["Array"]), nil, nil, "block".variable, nil)
-  it_parses_single "new Array {}", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, Block.new(nil, Body.new, SymTable.new(SymType::BLOCK)))
+  it_parses_single "new Array {}", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, Block.new(nil, Body.new, symtab(SymType::BLOCK)))
 end

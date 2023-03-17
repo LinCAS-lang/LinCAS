@@ -72,7 +72,7 @@ module LinCAS
     end 
 
     def parse
-      enable_regex 
+      slash_is_regex! 
       next_token_skip_end
       push_symtab SymType::PROGRAM
       stmts = parse_statements
@@ -90,6 +90,7 @@ module LinCAS
         body << parse_expression
         skip_space 
         check :EOL, :";", :EOF
+        slash_is_regex!
         next_token_skip_end
       end
       check :EOF
@@ -180,7 +181,7 @@ module LinCAS
     end 
 
     def parse_expression_suffix(location)
-      enable_regex
+      slash_is_regex!
       next_token_skip_end
       exp = parse_op_assign
       exp = yield exp 
@@ -195,7 +196,6 @@ module LinCAS
 
     def parse_op_assign(allow_ops = true, allow_suffix = true, is_condition = false)
       location = @token.location 
-      
       atomic = parse_ternary_if 
       while true 
         case @token.type 
@@ -206,7 +206,7 @@ module LinCAS
           unexpected_token unless allow_suffix
           break
         when :":="
-          enable_regex
+          slash_is_regex!
           break unless is_assignable? atomic
           
           if atomic.is_a? Call 
@@ -254,7 +254,7 @@ module LinCAS
 
           method = @stringpool.get(@token.type.to_s.rstrip("="))
 
-          enable_regex
+          slash_is_regex!
           next_token_skip_space_or_newline
           exp = parse_assign
           atomic = OpAssign.new(atomic, method, exp).at location  
@@ -316,11 +316,13 @@ module LinCAS
             check_void_value left, location
             location = @token.location
             method   = @stringpool.get @token.type.to_s
+
+            slash_is_regex!
             next_token_skip_space_or_newline
 
             right = parse_{{next_op.id}}
             left  = {{node.id}}.at location
-          else 
+          else
             return left
           end
         end 
@@ -349,6 +351,8 @@ module LinCAS
           check_void_value left, location
           location = @token.location
           method   = @stringpool.get @token.type.to_s
+
+          slash_is_regex!
           next_token_skip_space_or_newline
 
           right = parse_pow
@@ -443,6 +447,8 @@ module LinCAS
         disable_regex
         next_token
         SymbolLiteral.new(value)
+      when :STRING, :DELIMITER_START
+        parse_delimiter
       #when :"{"
       when :"["
         parse_array
@@ -468,7 +474,6 @@ module LinCAS
       end
     end
 
-    # Disables lexing of regexp delimiter after finishing
     def parse_stmts_delimited(token_t : Symbol)
       body = Body.new
       skip_end
@@ -478,12 +483,12 @@ module LinCAS
         
         unless @token.type == token_t && !(@token.type == :EOF)
           check :EOL, :";"
+          slash_is_regex!
           next_token_skip_end
         end
       end
       
       check token_t
-      disable_regex
       next_token
       body
     end
@@ -556,11 +561,13 @@ module LinCAS
     def parse_ident_after_colons(location, global)
       names = [] of String 
       names << @token.value.to_s
+      disable_regex
       next_token 
       while @token.type == :"::"
         next_token_skip_space_or_newline
         check :IDENT, :CAPITAL_VAR
-        names << @token.value.to_s 
+        names << @token.value.to_s
+        disable_regex
         next_token
       end 
 
@@ -653,7 +660,6 @@ module LinCAS
       end
       skip_space_or_newline
       check :"{"
-      enable_regex
       @method_nesting += 1
       body = parse_body
       @method_nesting -= 1
@@ -687,7 +693,7 @@ module LinCAS
           next_token
           if @token.type == :":"
             unexpected_token end_tk if double_splat
-            enable_regex
+            slash_is_regex!
             next_token_skip_space_or_newline
             if !(@token.type == :"," || @token.type == end_tk) 
               default_value = parse_op_assign false, false
@@ -698,7 +704,7 @@ module LinCAS
             skip_space
             if @token.type == :":="
               unexpected_token(end_tk) if splat || kwargc > 0 || double_splat
-              enable_regex
+              slash_is_regex!
               next_token_skip_space_or_newline
               default_value = parse_op_assign false, false
               disable_regex
@@ -752,7 +758,7 @@ module LinCAS
 
     def parse_try 
       location = @token.location
-      disable_regex
+      slash_is_regex!
       next_token_skip_space_or_newline
       if @token.type == :"{"
         body = parse_body
@@ -815,12 +821,13 @@ module LinCAS
 
     def parse_if 
       location = @token.location
-      enable_regex
+      slash_is_regex!
       next_token_skip_space_or_newline
       condition = parse_op_assign_no_control allow_suffix: false, is_condition: true 
-      enable_regex
+      slash_is_regex!
       skip_space 
-      if @token.keyword? :then 
+      if @token.keyword? :then
+        slash_is_regex!
         next_token_skip_space_or_newline
       else 
         skip_space_or_newline
@@ -828,13 +835,13 @@ module LinCAS
       then_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
       
       unless @token.type == :EOF
-        enable_regex
         restore_pt = @token.location 
         skip_space_or_newline
         case @token
         when .keyword? :elsif 
           else_branch = parse_if
         when .keyword? :else
+          slash_is_regex!
           next_token_skip_space_or_newline
           else_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
         else 
@@ -845,6 +852,7 @@ module LinCAS
     end
 
     def parse_body 
+      slash_is_regex!
       next_token_skip_space_or_newline
       return parse_stmts_delimited :"}"
     end 
@@ -855,13 +863,14 @@ module LinCAS
       case @token 
       when .keyword? :while 
         is_while = true 
-        enable_regex
+        slash_is_regex!
         next_token_skip_space_or_newline
       when .keyword? :do 
-        enable_regex
+        slash_is_regex!
         next_token_skip_space
         if @token.keyword? :while 
           is_while = true 
+          slash_is_regex!
           next_token_skip_space_or_newline
         else 
           skip_space_or_newline
@@ -881,11 +890,12 @@ module LinCAS
         return While.new(condition, body).at location
       else 
         check :"{"
+        slash_is_regex!
         next_token_skip_space_or_newline
         body      = parse_stmts_delimited :"}"
         skip_space_or_newline
         check :until, kw: true 
-        enable_regex
+        slash_is_regex!
         next_token_skip_space_or_newline
         condition = parse_op_assign_no_control
         return Until.new(condition, body).at location
@@ -906,7 +916,7 @@ module LinCAS
       name = @token.value.to_s 
       next_token_skip_space
       check :":="
-      enable_regex
+      slash_is_regex!
       next_token_skip_space_or_newline
       value = parse_or
       return ConstDef.new(name, value).at location
@@ -924,7 +934,7 @@ module LinCAS
       next_token
 
       call_args = preserve_stop_on_do(@stop_on_do) { parse_call_args stop_on_do_after_space: @stop_on_do }
-
+      
       if call_args
         args            = call_args.args
         named_args      = call_args.named_args
@@ -999,9 +1009,169 @@ module LinCAS
       return Call.new(Noop.new, name, args, named_args, block_arg, block).at location
     end
 
+    record Chunk,
+      value : String | Node,
+      line_number : Int64
+    
+    def parse_delimiter(want_skip_space = true)
+      location = @token.location
+      delimiter_t = @token.delimiter_t
+      is_symbol = delimiter_t == :Q_SYMBOL_D
+
+      check :DELIMITER_START
+      escape_newline!
+      next_string_token(delimiter_t)
+
+      chunks = [] of Chunk
+      has_interpolation = false
+
+      delimiter_t, has_interpolation, options = consume_delimiter chunks, delimiter_t, has_interpolation
+      
+      #if want_skip_space && delimiter_t.kind.in? {:STRING, :Q_SYMBOL_D}
+      #  while true
+      #    passed_backslash_newline = @token.passed_backslash_newline
+      #    skip_space
+      #
+      #    if passed_backslash_newline && @token.type == :DELIMITER_START && token.delimiter_t.kind.in? {:STRING, :Q_SYMBOL_D}
+      #      next_string_token(delimiter_t)
+      #      delimiter_t = @token.delimiter_t
+      #      delimiter_t, has_interpolation, options = consume_delimiter pieces, delimiter_t, has_interpolation
+      #    else
+      #      break
+      #    end
+      #  end
+      #end
+
+      if has_interpolation
+        chunks = combine_interpolation_chunks(chunks, delimiter_t)
+        result = StringLiteral.new chunks, interpolated: true
+      else
+        chunk = combine_chunks(chunks, delimiter_t)
+        result = StringLiteral.new chunk, interpolated: false
+      end
+
+      case delimiter_t.type
+      when :REGEXP_D
+        if !result.interpolated && (regex_error = Regex.error?(result.pcs.first.as(String)))
+          parser_raise "Invalid regular expression: #{regex_error}", location
+        end
+        result = RegexLiteral.new(result, options)
+      when :Q_SYMBOL_D
+        result = SymbolLiteral.new result
+      end
+      
+      return result.at location    
+    end
+
+    def combine_interpolation_chunks(chunks, delimiter_t)
+      strings = [] of String
+      final = [] of Node | String
+      chunks.each do |chunk|
+        value = chunk.value
+        if value.is_a?(String)
+          strings << value
+        else
+          if !strings.empty?
+            final << strings.join
+            strings.clear
+          end
+          final << value
+        end
+      end
+      # we need to flush strings if it's not empty
+      if !strings.empty?
+        final << strings.join
+      end
+      return final
+    end
+
+    @[AlwaysInline]
+    def combine_chunks(chunks, delimiter_t)
+      [chunks.map(&.value).join] of Node | String
+    end
+
+    def consume_delimiter(chunks, delimiter_t, has_interpolation)
+      options = Regex::Options::None
+      while true
+        case @token.type
+        when :STRING
+          chunks << Chunk.new(@token.value.to_s, @token.location.line)
+          next_string_token(delimiter_t)
+          delimiter_t = @token.delimiter_t
+        when :DELIMITER_END
+          if delimiter_t.type == :REGEXP_D
+            options = consume_regex_options
+          end
+          dont_escape_newline!
+          next_token
+          break
+        when :EOF
+          location = @token.location
+          case delimiter_t.type
+          when :Q_SYMBOL_D
+            parser_raise "Unterminated quoted symbol", location
+          when :REGEXP_D
+            parser_raise "Unterminated regular expression", location
+          when :STRING
+            parser_raise "Unterminated string literal", location
+          end
+        when :"\#{"
+          line = @token.location.line
+          delimiter_t = @token.delimiter_t
+          dont_escape_newline!
+          next_token_skip_space_or_newline
+          
+          if @token.type != :"}"
+            exp = preserve_stop_on_do { parse_expression }
+  
+            if exp.is_a?(StringLiteral) && !exp.interpolated
+              chunks << Chunk.new(exp.pcs.first.as(String), line)
+            else
+              chunks << Chunk.new(exp, line)
+              has_interpolation = true
+            end
+  
+            skip_space_or_newline
+            if @token.type != :"}"
+              parser_raise "Unterminated string interpolation", @token.location
+            end
+          end
+          escape_newline!
+          next_string_token(delimiter_t)
+          delimiter_t = @token.delimiter_t
+        else
+          lc_bug "Unknown or unhandled string token"
+        end
+      end
+      return {delimiter_t, has_interpolation, options}
+    end
+
+    def consume_regex_options
+      options = Regex::Options::None
+      while true
+        case current_char
+        when 'i'
+          options |= Regex::Options::IGNORE_CASE
+          next_char
+        when 'm'
+          options |= Regex::Options::MULTILINE
+          next_char
+        when 'x'
+          options |= Regex::Options::EXTENDED
+          next_char
+        else
+          if 'a' <= current_char.downcase <= 'z'
+            parser_raise "Unknown regex option: #{current_char}", current_location
+          end
+          break
+        end
+      end
+      options
+    end
+
     def parse_array
       location = @token.location
-      enable_regex
+      slash_is_regex!
       next_token_skip_space_or_newline
 
       exps = [] of Node
@@ -1020,7 +1190,7 @@ module LinCAS
         skip_space
 
         if @token.type == :","
-          enable_regex
+          slash_is_regex!
           next_token_skip_space_or_newline
         else
           skip_space_or_newline
@@ -1043,7 +1213,7 @@ module LinCAS
 
     def parse_parenthesized_expression
       location = @token.location
-      enable_regex
+      slash_is_regex!
 
       next_token_skip_space_or_newline
       if @token.type == :")"
@@ -1096,7 +1266,8 @@ module LinCAS
           end
         when :"."
           check_void_value atomic, location  
-          location = @token.location 
+          location = @token.location
+          disable_regex 
           next_token
           check_callable_name
           name = ((@token.value == "") ? @token.type : @token.value).to_s
@@ -1105,7 +1276,7 @@ module LinCAS
           space_consumed = false
           block          = nil
           if @token.type == :SPACE 
-            disable_regex
+            enable_regex
             next_token
             space_consumed = true
           end
@@ -1202,7 +1373,7 @@ module LinCAS
     def parse_call_args(stop_on_do_after_space = false, allow_curly = false, control = false, is_yield = false)
       case @token.type 
       when :"("
-        enable_regex
+        slash_is_regex!
 
         args = [] of Node 
         @stop_on_do = false 
@@ -1225,7 +1396,7 @@ module LinCAS
           
           skip_space_or_newline
           if @token.type == :","
-            enable_regex
+            slash_is_regex!
             next_token_skip_space_or_newline
           end            
         end
@@ -1262,7 +1433,7 @@ module LinCAS
         return nil unless allow_curly
       when :"*", :"**", :"::"
         return nil if current_char.ascii_whitespace?
-      when :IDENT, :INT, :FLOAT, :COMPLEX, :"$", :"$!", :SYMBOL, :CLASS_VAR, :INSTANCE_VAR, :CAPITAL_VAR, :"[", :"[]", :"(", :":\"", :"'", :"\"", :"!"
+      when :IDENT, :INT, :FLOAT, :COMPLEX, :"$", :"$!", :SYMBOL, :CLASS_VAR, :INSTANCE_VAR, :CAPITAL_VAR, :DELIMITER_START, :"[", :"[]", :"(", :"!"
         # nothing 
       else 
         return nil 
@@ -1298,7 +1469,7 @@ module LinCAS
 
         if @token.type == :","
           location = @token.location
-          enable_regex
+          slash_is_regex!
           next_token_skip_space_or_newline
           parser_raise("Invalid trailing comma", location) if @token.type == :EOF
         else 
@@ -1449,7 +1620,7 @@ module LinCAS
       push_symtab SymType::BLOCK
       @block_nesting += 1
       location = @token.location
-      enable_regex
+      slash_is_regex!
       next_token_skip_space_or_newline
 
       if @token.type == :"|"

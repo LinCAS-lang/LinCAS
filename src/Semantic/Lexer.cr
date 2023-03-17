@@ -25,7 +25,9 @@ module LinCAS
     end
 
     def initialize(@filename : String, @reader : Char::Reader, stringpool : StringPool? = nil) 
+      @slash_is_regex = true
       @regex_enabled  = true
+      @escape_newline = false
       @line           = 1i64
       @col            = 1
       @stringpool     = stringpool || StringPool.new
@@ -40,19 +42,23 @@ module LinCAS
         skip_comment 
       end
       
-      start =   current_pos
+      start = current_pos
       space_skipped = false
+      reset_regex_flags = true
       @token.location = current_location
       case current_char
       when '\0'
         @token.type = :EOF
       when '\n' 
         consume_newline
+        reset_regex_flags = false
       when ' ', '\t'
         consume_space
         space_skipped = true
+        reset_regex_flags = false
       when ';'
         next_char_and_token :";"
+        reset_regex_flags = false
       when '('
         next_char_and_token :"("
       when ')'
@@ -88,14 +94,10 @@ module LinCAS
         else
           @token.type = :|
         end
-      when '"'
-        delimiter_t = Token::DelimiterType.new(:"\"", current_char, true, true)
-        @token.type = :"\""
-        @token.delimiter_t = delimiter_t
-        next_char
-      when '\''
-        delimiter_t = Token::DelimiterType.new(:"'", current_char, false, false)
-        @token.type = :"'"
+      when '"', '\''
+        interpolation = escape = current_char == '"'
+        delimiter_t = Token::DelimiterType.new(:STRING, current_char, interpolation, escape)
+        @token.type = :DELIMITER_START
         @token.delimiter_t = delimiter_t
         next_char
       when ','
@@ -176,16 +178,21 @@ module LinCAS
           @token.type = :"*"
         end
       when '/'
-        if @regex_enabled
-          delimiter_t = Token::DelimiterType.new(:REGEXP_D, current_char, false, true)
-          @token.type = :REGEXP_D
-          @token.delimiter_t = delimiter_t
-          next_char
-          return @token
-        end
-        case next_char
-        when '='
+        char = next_char
+        if !@slash_is_regex && char == '='
           next_char_and_token :"/="
+        elsif @slash_is_regex
+          delimiter_t = Token::DelimiterType.new(:REGEXP_D, '/', true, true)
+          @token.type = :DELIMITER_START
+          @token.delimiter_t = delimiter_t
+          @token.raw = "/"
+        elsif char.ascii_whitespace? || char == '\0'
+          @token.type = :"/"
+        elsif @regex_enabled
+          delimiter_t = Token::DelimiterType.new(:REGEXP_D, '/', true, true)
+          @token.type = :DELIMITER_START
+          @token.delimiter_t = delimiter_t
+          @token.raw = "/"
         else 
           @token.type = :"/"
         end
@@ -193,6 +200,16 @@ module LinCAS
         case next_char
         when '='
           next_char_and_token :"\\="
+        when '\n'
+          if @escape_newline
+            @line += 1
+            @col = 1
+            @token.passed_backslash_newline = true
+            consume_space
+            reset_regex_flags = false
+          else
+            @token.type = :"\\"
+          end
         else
           @token.type = :"\\"
         end
@@ -304,7 +321,10 @@ module LinCAS
             symbol start
           end
         when '"'
-          next_char_and_token :":\""
+          delimiter_t = Token::DelimiterType.new(:Q_SYMBOL_D, current_char, true, true)
+          @token.type = :DELIMITER_START
+          @token.delimiter_t = delimiter_t
+          next_char
         else
           if ident_start? current_char
             while ident_part? next_char
@@ -357,6 +377,11 @@ module LinCAS
           #lex_raise()
         end 
       end
+
+      if reset_regex_flags
+        @slash_is_regex = false
+        @enable_regex = true
+      end
       @space_skipped = space_skipped
       @token
     end 
@@ -368,6 +393,7 @@ module LinCAS
       delimiter       = delimiter_t.delimiter
       start           = current_pos 
       @token.location = current_location
+      @token.delimiter_t = delimiter_t
       if interpolation && (current_char == '#') && (peek_char == '{')
         next_char
         next_char
@@ -375,73 +401,103 @@ module LinCAS
         return @token
       end 
       if current_char == delimiter
-        @token.type = delimiter_t.type 
+        next_char
+        @token.type = :DELIMITER_END
         return @token
       end
       io = IO::Memory.new
       loop do 
+        wants_next_char = true
         case current_char
         when '\0'
           #lex_raise()
         when '#'
           if interpolation && (peek_char == '{')
             break
-          else 
+          else
             io << current_char
-            next
           end
         when '\\'
-          if escape 
-            case next_char
-            when 'a'
-              io << '\a'
-            when 'b'
-              io << 'b'
-            when 'n'
-              io << '\n'
-            when 'r'
-              io << '\r'
-            when 't'
-              io << '\t'
-            when 'v'
-              io << '\v'
-            when 'f'
-              io << '\f'
-            when 'e'
-              io << '\e'
-            when '\n'
-              @line += 1
-              @col   = 0
-              while true
-                char = next_char
-                case char
-                when '\0'
-                 #lex_raise()
-                when '\n'
-                  @line += 0
-                  @col   = 0
-                when .ascii_whitespace?
-                  # Continue
-                else
-                  break
-                end
+          if escape
+            if delimiter_t.type == :REGEXP_D
+              next_char
+              if delimiter == '/' && current_char == '/'
+                io << "/"
+              else
+                io << "\\#{current_char}"
               end
-            else 
-              io << current_char
+            else
+              case next_char
+              when 'a'
+                io << '\a'
+              when 'b'
+                io << 'b'
+              when 'n'
+                io << '\n'
+              when 'r'
+                io << '\r'
+              when 't'
+                io << '\t'
+              when 'v'
+                io << '\v'
+              when 'f'
+                io << '\f'
+              when 'e'
+                io << '\e'
+              when '\n'
+                @line += 1
+                @col   = 0
+                while true
+                  char = next_char
+                  case char
+                  when '\0'
+                   #lex_raise()
+                  when '\n'
+                    @line += 1
+                    @col   = 0
+                  when .ascii_whitespace?
+                    # Continue
+                  else
+                    break
+                  end
+                end
+                wants_next_char = false
+              else 
+                io << current_char
+              end
             end
           else 
-            io <<  current_char
+            io << current_char
           end
         when delimiter
           break 
         else
-          io << current_char
+          maybe_escape_non_printable(current_char, escape, io)
         end
-        next_char
+        next_char if wants_next_char
       end 
       @token.type = :STRING
       @token.value = io.to_s 
       @token
+    end
+
+    def maybe_escape_non_printable(char, escape, io)
+      if escape
+        return io << char
+      else
+        io << case char
+        when '\a' then "\a"
+        when '\b' then "\\b"
+        when '\e' then "\\e"
+        when '\f' then "\\f"
+        when '\n' then "\\n"
+        when '\r' then "\\r"
+        when '\t' then "\\t"
+        when '\v' then "\\v"
+        when '\0' then "\\0"
+        else char
+        end
+      end
     end
 
     def scan_zero_number(start)
@@ -776,11 +832,15 @@ module LinCAS
     end
 
     def lex_restore_state(location : Location)
+      lex_restore_state_no_token location
+      next_token
+    end  
+
+    def lex_restore_state_no_token(location : Location)
       @col  = location.column
       @line = location.line
       self.set_current_pos = location.lex_pos
-      next_token
-    end  
+    end
 
     @[AlwaysInline]
     def set_current_pos=(pos)
@@ -834,7 +894,7 @@ module LinCAS
 
     def skip_comment
       if current_char == '#'
-        while next_char != '\n'
+        while next_char != '\n' && current_char != '\0'
         end 
       else
         next_char
@@ -850,8 +910,24 @@ module LinCAS
     end
 
     def consume_space
-      while {' ', '\t'}.includes? next_char
-        # do nothing 
+      while true
+        next_char
+        case current_char
+        when ' ', '\t'
+          next_char
+        when '\\'
+          loc = current_location
+          if @escape_newline && next_char == '\n'
+            @line += 1
+            @col = 1
+            @token.passed_backslash_newline = true
+          else
+            lex_restore_state_no_token loc
+            break
+          end
+        else
+          break
+        end
       end 
       @token.type = :SPACE
     end
@@ -906,6 +982,28 @@ module LinCAS
     @[AlwaysInline]
     def disable_regex 
       @regex_enabled = false 
+    end
+
+    @[AlwaysInline]
+    def slash_is_regex!
+      @slash_is_regex = true
+    end
+
+    def slash_is_not_regex!
+      @slash_is_regex = false
+    end
+
+    @[AlwaysInline]
+    def escape_newline!
+      @escape_newline = true
+    end
+
+    @[AlwaysInline]
+    def dont_escape_newline!
+      @escape_newline = false
+    end
+
+    def unknown_token
     end
 
     def lex_warn(msg)

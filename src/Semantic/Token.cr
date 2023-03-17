@@ -105,27 +105,21 @@ module LinCAS
     end
 
     property location : Location
-    property type, value, raw, is_kw, delimiter_t
+    property type, value, raw, is_kw, delimiter_t, passed_backslash_newline
     
     @value : String | Symbol 
-
-    def initialize
-      @location    = Location.new(0,0,0)
-      @type        = :EOF
-      @value       = ""
-      @raw         = ""
-      @is_kw       = false
-      @delimiter_t = DelimiterType.new(:"\"", ',', false, false)
-    end
-
-    def reset
-      @location    = Location.new(0,0,0)
-      @type        = :EOF
-      @value       = ""
-      @raw         = ""
-      @is_kw       = false
-      @delimiter_t = DelimiterType.new(:"\"", ',', false, false)
-    end
+    
+    {%for name in %w(initialize reset)%}
+      def {{name.id}}
+        @location    = Location.new(0,0,0)
+        @type        = :EOF
+        @value       = ""
+        @raw         = ""
+        @is_kw       = false
+        @delimiter_t = DelimiterType.new(:"\"", ',', false, false)
+        @passed_backslash_newline = false
+      end
+    {% end %}
 
     def copy_from(token)
       @location    = token.location

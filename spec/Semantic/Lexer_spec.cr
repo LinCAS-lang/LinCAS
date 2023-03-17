@@ -24,7 +24,7 @@ end
 def it_lexes_no_regexp(string, token_t)
   it "lexes #{string.inspect}" do 
     lexer = Lexer.new __FILE__, string
-    lexer.disable_regex
+    lexer.slash_is_not_regex!
     token = lexer.next_token
     token.type.should eq(token_t)
   end 
@@ -90,7 +90,7 @@ describe "Lexer" do
                       :"-=", :"*=", :".*=", :"**=", :"/=", :"\\=", :"^", :"^=", :">", :">=", :"<",
                       :"<=", :"==", :"===", :"=", :":=", :"%", :"%=", :"!", :"!=", :"&", :"&=",
                       :"&&", :"&&=", :"|", :"||", :"|=", :"||=", :":", :"::", :",", :"<<",
-                      :">>", :"(", :")", :"[", :"]", :"{",:"}", :"[]", :"[]=", :"\"", :"'",
+                      :">>", :"(", :")", :"[", :"]", :"{",:"}", :"[]", :"[]=",
                       :"$", :"$!", :"=>", :"-@"]
   it_lexes "..*", :"."
   it_lexes ";", :";"
@@ -107,18 +107,19 @@ describe "Lexer" do
   it_lexes "_", :UNDERSCORE
   it_lexes_symbols [":<=", ":!", ":==", ":+", ":-", ":*", ":**", ":/", ":\\", ":^", ":&", ":%", 
                     ":[]", ":[]=", ":>", ":>=", ":>>", ":<<", ":foo", ":foo!", ":foo?", ":foo="]
-  it_lexes ":\"", :":\""
+  it_lexes "\"", :DELIMITER_START
+  it_lexes "'", :DELIMITER_START
 
   it "lexes a string" do
     lexer = Lexer.new __FILE__, "\"hello world\""
     tk    = lexer.next_token
-    tk.type.should eq(:"\"")
+    tk.type.should eq(:DELIMITER_START)
     delimiter_t = tk.delimiter_t
     tk = lexer.next_string_token delimiter_t
     tk.type.should eq(:STRING)
     tk.value.should eq("hello world")
     tk = lexer.next_string_token delimiter_t
-    tk.type.should eq(:"\"")
+    tk.type.should eq(:DELIMITER_END)
   end
 
   it "lexes sequence \"..*\"" do
