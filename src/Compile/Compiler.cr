@@ -217,7 +217,7 @@ module LinCAS
       # success of the instruction. So no need to put another
       # object on stack
       #
-      # encoded << IS::PUSH_OBJ | (iseq.object.size.to_u64)
+      # encoded << IS::PUSHOBJ | (iseq.object.size.to_u64)
       # iseq.object << Internal.build_symbol(name)
     end
 
@@ -670,9 +670,8 @@ module LinCAS
           case name
           when String
             obj = Internal.string2sym(name)
-            obj_index = iseq.object.size.to_u64
+            obj_index = set_obj_special iseq, obj
             encoded << (IS::PUSHOBJ | IS.new(obj_index))
-            iseq.object << obj
           when StringLiteral
             # Not implemented yet
           end
@@ -744,10 +743,9 @@ module LinCAS
         if !node.global
           encoded << IS::PUSH_NULL << IS::PUSH_TRUE
         else
-          index = iseq.object.size.to_u64
+          index = set_obj_special iseq, Internal.lc_object
           encoded << (IS::PUSHOBJ | IS.new(index))
           encoded << IS::PUSH_FALSE
-          iseq.object << Internal.lc_object
         end
         push_false = false
         names.each_with_index do |name, i|
@@ -970,8 +968,7 @@ module LinCAS
       when String
         sym = Internal.string2sym name
         is = IS::PUSHOBJ
-        index = iseq.object.size.to_u64
-        iseq.object << sym
+        index = set_obj_special iseq, sym
         iseq.encoded << (is | IS.new(index))
       else
         lc_bug "Unhandled compiling of symbol literals"
@@ -1002,6 +999,7 @@ module LinCAS
       
       encoded = iseq.encoded
       is_index = encoded.size
+      set_line(iseq, node.location)
       encoded << ((node.block || block_p) ? IS::NEW_OBJECT_WITH_BLOCK : IS::NEW_OBJECT)
       block = compile_block_any(iseq, block_param, node.block)
 
