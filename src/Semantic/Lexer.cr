@@ -914,7 +914,7 @@ module LinCAS
         next_char
         case current_char
         when ' ', '\t'
-          next_char
+          # do nothing
         when '\\'
           loc = current_location
           if @escape_newline && next_char == '\n'
