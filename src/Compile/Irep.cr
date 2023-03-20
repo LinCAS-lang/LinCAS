@@ -70,12 +70,15 @@ module LinCAS
       ARRAY_APPEND
       MERGE_KW
       DUP_HASH
+      STR_CONCAT
 
       MAKE_RANGE
       NEW_HASH
       NEW_ARRAY
       NEW_OBJECT
       NEW_OBJECT_WITH_BLOCK
+
+      OBJ2STRING
 
       THROW
 

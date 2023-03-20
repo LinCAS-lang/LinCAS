@@ -64,6 +64,7 @@ module LinCAS
       when Namespace 
         compile_namespace(iseq, node)
       when StringLiteral
+        compile_string_literal(iseq, node)
       when TrueLiteral, FalseLiteral
         compile(iseq, node)
       when RangeLiteral
@@ -760,7 +761,40 @@ module LinCAS
       end
     end 
 
-    def compile(iseq, node : StringLiteral)
+    def compile_string_literal(iseq, node : StringLiteral)
+      set_line(iseq, node.location)
+      skip_first = false
+      concat  = node.pcs.size
+      encoded = iseq.encoded
+      str = node.pcs.first
+      if str.is_a? String
+        compile_string_atomic iseq, str
+        skip_first = true
+      else
+        compile_string_atomic iseq, ""
+        concat += 1
+      end
+      if node.interpolated
+        node.pcs.each do |el|
+          if !skip_first
+            if el.is_a? String
+              compile_string_atomic(iseq, el)
+            else
+              compile_each(iseq, el)
+              encoded << IS::OBJ2STRING
+            end
+          else
+            skip_first = false
+          end
+        end
+        encoded << (IS::STR_CONCAT | IS.new(concat.to_u64))
+      end
+    end
+    
+    def compile_string_atomic(iseq, string : String)
+      obj = Internal.build_string(string.to_unsafe)
+      index = set_obj_special iseq, obj
+      iseq.encoded << (IS::PUSHOBJ | IS.new(index))
     end
 
     def compile(iseq, node : TrueLiteral)

@@ -340,6 +340,8 @@ module LinCAS
             when .dup_hash?
               hash = vm_dup_hash pop
               push hash
+            when .str_concat?
+              push vm_str_concat op
             when .make_range?
               v2 = pop
               v1 = pop
@@ -367,6 +369,8 @@ module LinCAS
               ) do |calling|
                 vm_new_object(ci, calling)
               end
+            when .obj2_string?
+              push vm_obj_to_s pop
             when .throw?
               vm_throw(op, pop)
             when .leave?

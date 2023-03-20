@@ -600,6 +600,13 @@ module LinCAS
       return Internal.lc_hash_clone hash
     end
 
+    protected def vm_str_concat(count : UInt64)
+      @sp -= count
+      return Internal.lincas_concat_literals(count) do |i|
+        @stack[@sp + i]
+      end
+    end
+
     @[AlwaysInline]
     protected def vm_make_range(v1 : LcVal, v2 : LcVal, inclusive : UInt64)
       inc = !(inclusive & 0x01).zero?
@@ -645,6 +652,20 @@ module LinCAS
         push calling.me
       else
         vm_no_method_found(ci, calling, cc)
+      end
+    end
+
+    protected def vm_obj_to_s(obj : LcVal)
+      converted = false
+      loop do
+        if obj.is_a? Internal::LcString
+          return obj
+        elsif !converted
+          obj = lc_call_fun(obj, "to_s")
+          converted = true
+        else
+          return Internal.lc_obj_to_s(obj)
+        end
       end
     end
 
