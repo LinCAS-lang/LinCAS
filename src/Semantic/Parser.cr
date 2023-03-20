@@ -804,6 +804,7 @@ module LinCAS
           if @token.type ==  :"{"
             catch_body = parse_body
           else
+            skip_end
             catch_body = Body.new << parse_op_assign
           end
           catch << CatchExp.new(type, var, catch_body).at loc
@@ -826,11 +827,11 @@ module LinCAS
       condition = parse_op_assign_no_control allow_suffix: false, is_condition: true 
       slash_is_regex!
       skip_space 
+      slash_is_regex!
       if @token.keyword? :then
-        slash_is_regex!
         next_token_skip_space_or_newline
       else 
-        skip_space_or_newline
+        skip_end
       end
       then_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
       

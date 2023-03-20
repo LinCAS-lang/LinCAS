@@ -125,7 +125,8 @@ describe Parser do
   it_parses_single "/fo\#{ 1 }o/", RegexLiteral.new(StringLiteral.new(["fo", 1.int, "o"] of Node | String, true), Regex::Options::None)
   it_parses_single "a := //", Assign.new("a".variable, regex(""))
   it_parses_single2 "/ /; / /", [regex(" "), regex(" ")]
-  it_parses_single "if / / then / / elsif / / then / / else / /", If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
+  it_parses_multiple ["if / / then / / elsif / / then / / else / /",
+                      "if / /; / / elsif / /; / / else / /"], If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
   it_parses_single "[/ /, / /]", ArrayLiteral.new([regex(" "), regex(" ")] of Node)
   it_parses_single "/ / / / /", Call.new(regex(" "), "/", [regex(" ")] of Node)
 
