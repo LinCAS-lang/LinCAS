@@ -305,6 +305,16 @@ module LinCAS::Internal
         end 
     end
 
+    def self.lincas_concat_literals(size)
+        string = String.build do |io|
+            size.times do |i|
+                obj = yield(i).as(LcString)
+                io.write_string(obj.str_ptr.to_slice(obj.size))
+            end
+        end
+        return build_string_recycle string
+    end
+
     #$I +
     #$U str + other_str -> new_str
     #
