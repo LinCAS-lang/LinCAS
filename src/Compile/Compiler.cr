@@ -788,6 +788,9 @@ module LinCAS
         encoded << (IS::STR_CONCAT | IS.new(concat.to_u64))
       end
     end
+
+    def compile_regex_literal(iseq, node : RegexLiteral)
+    end
     
     def compile_string_atomic(iseq, string : String)
       obj = Internal.build_string(string.to_unsafe)
