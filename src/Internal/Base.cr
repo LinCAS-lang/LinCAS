@@ -76,6 +76,7 @@ module LinCAS
   alias IvarTable = Hash(String, LcVal)
   alias MethodTable = LookUpTable(String, LcMethod)
   alias NameTable = LookUpTable(String, LcVal)
+  alias Serial = UInt32
 
   abstract class LcVal
   end
@@ -139,7 +140,11 @@ module LinCAS
     getter iseq, me, env
   end
 
-  enum LcMethodT
+  @[Flags]
+  enum MethodFlags
+    CACHED
+    INVALIDATED
+
     INTERNAL
     USER
     PYTHON 
@@ -147,29 +152,58 @@ module LinCAS
   end
 
   class LcMethod
+    @@global_serial : Serial = 0
+
     @code      : ISeq | LcProc | ::Nil
     @owner     : LcClass? = nil
     @arity     : IntnumR  = 0 # used for internal methods
     @pyobj     : Python::PyObject = Python::PyObject.null
     @static    = false
-    @type      : LcMethodT = LcMethodT::INTERNAL
+    @flags      : MethodFlags = MethodFlags::INTERNAL
     @needs_gc  = false
     @gc_ref    : Internal::PyGC::Ref? = nil
+    @serial    : Serial
+    @cached    = false
 
     def initialize(@name : String, @visib : FuncVisib)
       @code = nil
+      @serial = next_serial
     end
 
     def initialize(@name : String, @visib : FuncVisib, @code : ISeq)
+      @serial = next_serial
     end
 
     def finalize 
       Internal::PyGC.dispose(@gc_ref)
     end
 
+    def next_serial
+      return @@global_serial
+    ensure
+      if @@global_serial == Serial::MAX
+        lc_bug("Reached max serial number")
+      end
+      @@global_serial += 1
+    end
+
+    def clear_cache
+      @serial = next_serial
+      @flags &= ~MethodFlags::CACHED
+    end
+
+    def cached!
+      @flags |= MethodFlags::CACHED
+    end
+
+    def cached?
+      @flags &= MethodFlags::CACHED
+    end
+
     property name, args, code, arity, pyobj,
-             static, type, visib, needs_gc
+             static, flags, visib, needs_gc
     property! owner
+    getter serial
   end
 
 end

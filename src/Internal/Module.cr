@@ -138,6 +138,7 @@ module LinCAS::Internal
         lc_raise(lc_nomet_err,"Can't find instance method '%s' for %s" % {sname,lc_typeof(obj)})
         return lcfalse 
       else 
+        invalidate_cc_by_class(obj.klass, sname)
         lc_remove_internal(obj.klass,sname)
         return lctrue  
       end
@@ -147,7 +148,8 @@ module LinCAS::Internal
       sname = id2string(name)
       return lcfalse unless sname
       klass = class_of(obj)
-      if klass.methods.find(sname)
+      if method = klass.methods.find(sname)
+        method.flags |= MethodFlags::INVALIDATED
         klass.methods.delete(sname)
         return lctrue
       else 

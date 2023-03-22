@@ -164,6 +164,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.lc_add_method_with_owner(klass : LcClass, name : String, method : LcMethod)
       method.owner = klass
+      invalidate_cc_by_class(klass, name)
       lc_add_method(klass, name, method)
     end
 

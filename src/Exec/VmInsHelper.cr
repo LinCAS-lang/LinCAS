@@ -279,6 +279,13 @@ module LinCAS
       lc_raise(Internal.lc_nomet_err, msg)
     end
 
+    private def has_valid_cc?(ci : CallInfo, calling : VM::CallingInfo)
+      return (cc = ci.cc) && 
+          cc.klass == calling.me.klass && 
+          !cc.method.not_nil!.flags.invalidated? &&
+          cc.orig_serial == cc.method.not_nil!.serial
+    end
+
     # Here it gets a bit tricky. What we wish to happen is:
     # * if a method is private, it must be visible only within the class
     #   of definition (can't be called from the instance)
@@ -291,6 +298,9 @@ module LinCAS
     #   private methods should be allowed if they meet the rules above
     @[AlwaysInline]
     private def vm_dispatch_method(ci : CallInfo, calling : VM::CallingInfo)
+      if has_valid_cc? ci, calling
+        return ci.cc.not_nil!
+      end
       context = get_class_ref
       _self = calling.me
       if !(explicit = ci.explicit)
@@ -324,13 +334,18 @@ module LinCAS
       cc = vm_dispatch_method(ci, calling)
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
+      unless ci.cc == cc
+        cc.klass = calling.me.klass
+        ci.cc  = cc # store the call cache for next call
+        method.cached!
+      end
       vm_call_any(method, ci, calling, flags)
-      return method.type
+      return method.flags
     end 
 
     @[AlwaysInline]
     private def vm_call_any(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
-      case method.type 
+      case method.flags 
       when .internal?
         vm_call_internal(method, ci, calling, flags)
       when .user?
@@ -839,13 +854,13 @@ module LinCAS
     @[AlwaysInline]
     protected def call_method_with_handled_return(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       vm_call_any(method, ci, calling, VM::VmFrame::FLAG_FINISH)
-      case method.type
+      case method.flags
       when .internal?, .python?
         return pop
       when .user?, .proc?
         return exec
       else
-        lc_bug("Missing implementation for calling #{method.type}")
+        lc_bug("Missing implementation for calling #{method.flags}")
       end
       Null # unreachable
     end

@@ -29,7 +29,7 @@ module LinCAS::Internal
   end
 
   macro set_default(m,owner,code,arity)
-    {{m}}.type   = LcMethodT::INTERNAL
+    {{m}}.flags   = MethodFlags::INTERNAL
     {{m}}.owner  = {{owner}}
     {{m}}.code   = {{code}}
     {{m}}.arity  = {{arity}}
@@ -42,7 +42,7 @@ module LinCAS::Internal
 
   def self.pymethod_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = true)
     m     = new_lc_method(name,FuncVisib::PUBLIC)
-    m.type  = LcMethodT::PYTHON
+    m.flags  = MethodFlags::PYTHON
     m.pyobj   = pyobj 
     m.arity   = -1 # get_pymethod_argc(pyobj,name)
     m.owner   = owner if owner
@@ -57,7 +57,7 @@ module LinCAS::Internal
 
   def self.lc_def_method(name : String, code : ISeq, visib : FuncVisib = FuncVisib::PUBLIC)
     m     = LcMethod.new(name,visib, code)
-    m.type  = LcMethodT::USER
+    m.flags  = MethodFlags::USER
     return m
   end
 
@@ -98,7 +98,7 @@ module LinCAS::Internal
 
   def self.lc_undef_internal_method(name,owner : LinCAS::LcClass)
     m = lc_undef_method(name,owner)
-    m.type = LcMethodT::INTERNAL 
+    m.flags = MethodFlags::INTERNAL 
     return m
   end 
 
@@ -173,7 +173,19 @@ module LinCAS::Internal
       end
       klass = klass.parent
     end
-    return VM::CallCache.new(method, m_missing_reason)
+    serial = method ? method.serial : Serial.new(0)
+    return VM::CallCache.new(method, m_missing_reason, serial)
+  end
+
+  def self.invalidate_cc_by_class(klass, name)
+    method = seek_method(klass, name, explicit: false, ignore_visib: true).method
+    if method && method.cached?
+      if klass == method.owner
+        method.flags |= MethodFlags::INVALIDATED
+      else
+        method.clear_cache
+      end
+    end
   end
 
   def self.lc_obj_responds_to?(obj :  LcVal, name : String)
@@ -183,7 +195,7 @@ module LinCAS::Internal
   def self.lc_obj_has_internal_m?(obj :  LcVal,name : String)
     cc = internal.seek_method(obj.klass, name, explicit: false, ignore_visib: true)
     return -1 unless cc.method
-    return 0 if cc.method.not_nil!.type == LcMethodT::INTERNAL 
+    return 0 if cc.method.not_nil!.flags.internal? 
     return 1
   end
 

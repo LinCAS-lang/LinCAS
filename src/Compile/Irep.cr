@@ -117,6 +117,7 @@ module LinCAS
   class CallInfo
     getter argc, name, explicit, block, splat, dbl_splat, block_param
     getter! kwarg
+    property cc
 
     def initialize(
       @name : String, 
@@ -128,6 +129,7 @@ module LinCAS
       @block : ISeq? = nil,
       @block_param = false
      )
+     @cc = nil.as(VM::CallCache?)
     end
 
     @[AlwaysInline]

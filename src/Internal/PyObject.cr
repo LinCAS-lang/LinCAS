@@ -189,7 +189,7 @@ module LinCAS::Internal
         argv   = argv.shifted_copy
         return Null unless name
         method = seek_method(obj.klass, name, explicit: true)
-        if method.is_a? LcMethod && method.type == LcMethodT::PYTHON
+        if method.is_a? LcMethod && method.flags.python?
             return lc_call_python(method,argv)
         else
             lc_raise(lc_nomet_err,"Undefined method `#{name}' for #{pyobj2string(pyobj_get_obj(obj))} : PyObject")

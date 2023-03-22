@@ -553,9 +553,20 @@ module LinCAS
     #  * 0: undefined
     #  * 1: protected method called (explicit call)
     #  * 2: private method called
-    record CallCache,
-      method : LcMethod?,
-      m_missing_status : Int32
+    struct CallCache
+      def initialize(
+        @method : LcMethod?,
+        @m_missing_status : Int32,
+        @orig_serial : Serial
+      )
+        @klass = nil.as(LcClass?)
+      end
+
+      getter method, m_missing_status, orig_serial
+      property! klass
+
+      def_equals method, orig_serial, klass
+    end
 
 
   end
