@@ -201,7 +201,8 @@ describe Parser do
   it_parses_single "foo?", Call.new(nil, "foo?", has_parenthesis: false)
   it_parses_single "foo!", Call.new(nil, "foo!", has_parenthesis: false)
 
-  it_parses_multiple ["foo(&:to_s)", "foo &:to_s"], Call.new(nil, "foo", block: Block.new(Params.new([Arg.new("__temp1", nil)]), Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK) << "__temp1"))
+  it_parses_multiple ["foo(&:to_s)", "foo &:to_s", "foo(&.to_s)", "foo &.to_s"], Call.new(nil, "foo", block: Block.new(Params.new([Arg.new("__temp1", nil)]), Body.new << Call.new("__temp1".variable, "to_s"), symtab(SymType::BLOCK) << "__temp1"))
+  it_parses_multiple ["foo(&.bar 1)", "foo &.bar 1", "foo(&.bar(1))", "foo &.bar(1)"], Call.new(nil, "foo", block: Block.new(Params.new([Arg.new("__temp1", nil)]), Body.new << Call.new("__temp1".variable, "bar", [1.int]), symtab(SymType::BLOCK) << "__temp1"))
   it_parses_multiple ["foo(&block)", "foo &block"], Call.new(nil, "foo", block_param: "block".variable)
   it_parses_multiple ["foo(1, *splat, **dblsplat, a: 10, &block)", "foo 1, *splat, **dblsplat, a: 10, &block"], Call.new(nil, "foo", [1.int, Splat.new("splat".variable), DoubleSplat.new("dblsplat".variable)] of Node, [NamedArg.new("a", 10.int)], "block".variable)
   assert_syntax_error "foo **splat, 12", "Argument not allowed after double splat"
