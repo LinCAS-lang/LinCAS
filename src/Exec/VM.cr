@@ -250,6 +250,8 @@ module LinCAS
               push(@current_frame.me)
             when .push_null?
               push(Null)
+            when .dup?
+              push topn(0)
             when .call?
               ci = @current_frame.call_info[op]
               bh = vm_capture_block(ci)

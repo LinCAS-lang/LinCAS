@@ -702,8 +702,8 @@ module LinCAS
       set_line(iseq, node)
       encoded = iseq.encoded
       compile_each(iseq, node.left)
-      jump_offset = encoded.size
-      encoded << IS::JUMPF
+      jump_offset = encoded.size + 1
+      encoded << IS::DUP << IS::JUMPF << IS::POP
       compile_each(iseq, node.right)
       encoded[jump_offset] |= IS.new(encoded.size.to_u64)
     end 
@@ -712,8 +712,8 @@ module LinCAS
       set_line(iseq, node)
       encoded = iseq.encoded
       compile_each(iseq, node.left)
-      jump_offset = encoded.size
-      encoded << IS::JUMPT
+      jump_offset = encoded.size + 1
+      encoded << IS::DUP << IS::JUMPT << IS::POP
       compile_each(iseq, node.right)
       encoded[jump_offset] |= IS.new(encoded.size.to_u64)
     end 

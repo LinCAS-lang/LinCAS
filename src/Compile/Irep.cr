@@ -47,6 +47,7 @@ module LinCAS
       PUSH_FALSE 
       PUSH_SELF
       PUSH_NULL
+      DUP
       CALL
       CALL_NO_BLOCK
       INVOKE_BLOCK
