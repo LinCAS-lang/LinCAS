@@ -50,15 +50,17 @@ module LinCAS::Internal
   end
 
   def self.pystatic_method_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = false)
-    m    = pymethod_new(name,pyobj,owner,temp)
-    m.static = true
-    return m 
+    return pymethod_new(name,pyobj,owner,temp)
   end
 
   def self.lc_def_method(name : String, code : ISeq, visib : FuncVisib = FuncVisib::PUBLIC)
     m     = LcMethod.new(name,visib, code)
     m.flags  = MethodFlags::USER
     return m
+  end
+
+  def self.lc_def_method(name : String, code : String, owner : LcClass, arity : IntnumR, type : MethodFlags, visib : FuncVisib = FuncVisib::PUBLIC)
+    return LcMethod.new(name, visib, code, arity, type, owner)
   end
 
   # def self.lc_def_static_method(name : String, args : FuncArgSet, 
@@ -81,9 +83,7 @@ module LinCAS::Internal
   end
 
   def self.lc_define_internal_static_method(name, owner : LinCAS::LcClass, code, arity)
-    m    = self.lc_define_internal_method(name,owner,code,arity)
-    m.static = true
-    return m
+    return lc_define_internal_method(name,owner,code,arity)
   end
 
   def self.lc_undef_usr_method(name,owner : LcClass)

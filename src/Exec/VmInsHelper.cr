@@ -350,6 +350,10 @@ module LinCAS
         vm_call_internal(method, ci, calling, flags)
       when .user?
         vm_call_user(method, ci, calling, flags)
+      when .attr_reader?
+        vm_call_getter(method, ci, calling)
+      when .attr_writer?
+        vm_call_setter(method, ci, calling)
       # when .python?
       # when .proc?
       else
@@ -410,6 +414,20 @@ module LinCAS
       # it will be saved automatically (set_stack_consistency_trace)
       @pc += offset
     end 
+
+    @[AlwaysInline]
+    private def vm_call_getter(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      vm_check_arity(0, 0, calling.argc)
+      @stack[@sp - 1] = vm_getinstance_v(method.code.as(String), calling.me)
+    end
+
+    @[AlwaysInline]
+    private def vm_call_setter(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      vm_check_arity(1, 1, calling.argc)
+      @sp -= 1
+      @stack[@sp - 1] = @stack[@sp]
+      vm_setinstance_v(method.code.as(String), calling.me, topn(0))
+    end
 
     private def vm_call_python()
     end
@@ -855,7 +873,7 @@ module LinCAS
     protected def call_method_with_handled_return(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
       vm_call_any(method, ci, calling, VM::VmFrame::FLAG_FINISH)
       case method.flags
-      when .internal?, .python?
+      when .internal?, .python?, .attr_reader?, .attr_writer?
         return pop
       when .user?, .proc?
         return exec

@@ -117,12 +117,10 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.string2cr(string :  LcVal)
-        unless string.is_a? LcString
-            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(string)} into String")
-            return nil
-        else 
-            return String.new(pointer_of(string))
-        end
+      unless string.is_a? LcString
+        lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(string)} into String")
+      end
+      return String.new(pointer_of(string))
     end
 
     @[AlwaysInline]

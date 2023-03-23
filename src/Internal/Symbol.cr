@@ -78,13 +78,14 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     private def self.id2string(id :  LcVal)
-        if id.is_a? LcString 
-            return string2cr(id)
-        elsif id.is_a? LcSymbol
-            return sym2string(id)
-        end
+      if id.is_a? LcString 
+          return string2cr(id)
+      elsif id.is_a? LcSymbol
+          return sym2string(id)
+      else
         lc_raise(lc_type_err,"Expecting String or Symbol (#{lc_typeof(id)} given)")
-        nil
+        ""
+      end
     end
 
     def self.lc_sym_inspect(sym :  LcVal)

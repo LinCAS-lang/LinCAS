@@ -149,21 +149,21 @@ module LinCAS
     USER
     PYTHON 
     PROC
+    ATTR_READER
+    ATTR_WRITER
   end
 
   class LcMethod
     @@global_serial : Serial = 0
 
-    @code      : ISeq | LcProc | ::Nil
+    @code      : ISeq | LcProc | String | ::Nil
     @owner     : LcClass? = nil
     @arity     : IntnumR  = 0 # used for internal methods
     @pyobj     : Python::PyObject = Python::PyObject.null
-    @static    = false
-    @flags      : MethodFlags = MethodFlags::INTERNAL
+    @flags     : MethodFlags = MethodFlags::INTERNAL
     @needs_gc  = false
     @gc_ref    : Internal::PyGC::Ref? = nil
     @serial    : Serial
-    @cached    = false
 
     def initialize(@name : String, @visib : FuncVisib)
       @code = nil
@@ -171,6 +171,10 @@ module LinCAS
     end
 
     def initialize(@name : String, @visib : FuncVisib, @code : ISeq)
+      @serial = next_serial
+    end
+
+    def initialize(@name : String, @visib : FuncVisib, @code, @arity : IntnumR, @flags : MethodFlags, @owner : LcClass)
       @serial = next_serial
     end
 
@@ -201,7 +205,7 @@ module LinCAS
     end
 
     property name, args, code, arity, pyobj,
-             static, flags, visib, needs_gc
+             flags, visib, needs_gc
     property! owner
     getter serial
   end

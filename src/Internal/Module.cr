@@ -158,6 +158,77 @@ module LinCAS::Internal
       return lcfalse 
     end
 
+    @[AlwaysInline]
+    def self.lincas_attr?(id : String)
+      if id.ends_with? /\?|\!|=/
+        lc_raise(lc_name_err, "Invalid attribute name #{id}")
+      end
+    end
+
+    def self.lc_attr(klass : LcClass, id : String, read : Bool, write : Bool)
+      if read
+        reader = lc_def_method(id, "@#{id}", klass, 0, MethodFlags::ATTR_READER)
+        lc_add_method(klass, id, reader)
+      end
+      if write
+        name = "#{id}="
+        writer = lc_def_method(name, "@#{id}", klass, 1, MethodFlags::ATTR_WRITER)
+        lc_add_method(klass, name, writer)
+      end
+    end
+
+    def self.lc_module_property(klass : LcVal, argv : LcVal)
+      if klass.is_a? LcClass
+        argv  = lc_recast(argv, Ary)
+        names = build_ary argv.size * 2
+        argv.each do |name|
+          id = id2string(name)
+          lincas_attr? id
+          lc_attr(klass, id, read: true, write: true)
+          lc_ary_push names, string2sym(id)
+          lc_ary_push names, string2sym("#{id}=")
+        end
+        return names
+      else
+        lc_bug("Property method expected a class/module")
+        Null # unreachable
+      end
+    end
+
+    def self.lc_module_getter(klass : LcVal, argv : LcVal)
+      if klass.is_a? LcClass
+        argv  = lc_recast(argv, Ary)
+        names = build_ary argv.size
+        argv.each do |name|
+          id = id2string(name)
+          lincas_attr? id
+          lc_attr(klass, id, read: true, write: false)
+          lc_ary_push names, string2sym(id)
+        end
+        return names
+      else
+        lc_bug("Property method expected a class/module")
+        Null # unreachable
+      end
+    end
+
+    def self.lc_module_setter(klass : LcVal, argv : LcVal)
+      if klass.is_a? LcClass
+        argv  = lc_recast(argv, Ary)
+        names = build_ary argv.size
+        argv.each do |name|
+          id = id2string(name)
+          lincas_attr? id
+          lc_attr(klass, id, read: false, write: true)
+          lc_ary_push names, string2sym("#{id}=")
+        end
+        return names
+      else
+        lc_bug("Property method expected a class/module")
+        Null # unreachable
+      end
+    end
+
     def self.init_module
       @@lc_module = lc_build_module_class
 
@@ -170,6 +241,9 @@ module LinCAS::Internal
       add_method(@@lc_module,"alias",lc_alias_method,                    2)
       add_method(@@lc_module,"remove_method",lc_module_rm_method,        1)
       add_method(@@lc_module,"delete_method",lc_module_delete_method,    1)
+      add_method(@@lc_module,"property",lc_module_property,             -2)
+      add_method(@@lc_module,"getter",lc_module_getter,                 -2)
+      add_method(@@lc_module,"setter",lc_module_setter,                 -2)
     end
 
 end
