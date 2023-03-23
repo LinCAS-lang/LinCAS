@@ -976,6 +976,22 @@ module LinCAS
       return main_namespace # Unreachable. Just for inference purposes
     end
 
+    def get_current_filedir
+      @control_frames.reverse_each do |frame|
+        if !(frame.flags.includes? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME, DUMMY_FRAME))
+          return File.dirname(frame.iseq.filename)
+        end
+      end
+      "" # unreachable
+    end
+
+    def run(iseq : ISeq)
+      obj = @control_frames.first.me
+      set_stack_consistency_trace 0
+      vm_push_control_frame(obj, Internal.lc_object, iseq, VM::VmFrame.flags(TOP_FRAME, FLAG_FINISH, FLAG_LOCAL))
+      return exec
+    end
+
     def error?
       lc_bug("Deprecated error handling used")
       false 

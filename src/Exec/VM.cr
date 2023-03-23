@@ -443,7 +443,8 @@ module LinCAS
       FLAG_LOCAL 
       FLAG_KEYWORDS
        
-      MAIN_FRAME  
+      MAIN_FRAME
+      TOP_FRAME  
       CLASS_FRAME 
       BLOCK_FRAME 
       PROC_FRAME  

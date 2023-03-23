@@ -90,6 +90,8 @@ module LinCAS
     private def base_env_or_cref_name(env : VM::Environment, io)
       if env.frame_type.main_frame?
         io << "<main>"
+      elsif env.frame_type.top_frame?
+        io << "<top>"
       else
         context = env.context
         io << (context.is_a?(LcMethod) ? context.name : class_or_module_name(context, io))

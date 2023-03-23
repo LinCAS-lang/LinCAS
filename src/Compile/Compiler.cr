@@ -15,6 +15,12 @@
 module LinCAS
   class Compiler
 
+    @@instance = Compiler.new
+
+    def self.compile(node : Program)
+      @@instance.compile(node)
+    end
+
     def initialize
       @stack_size = 0
       @max_stack_size = 0
@@ -329,7 +335,7 @@ module LinCAS
       when Variable  
         name  = node.name
         depth = node.depth 
-        lc_bug("Negative depth") if depth < 0
+        lc_bug("Negative depth for #{name}") if depth < 0
         is = case depth 
         when 0 
           IS::SETLOCAL_0

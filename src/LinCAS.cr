@@ -19,7 +19,7 @@ require "option_parser"
 require "colorize"
 
 {% if flag?(:use_lp) %}
-  ENV["libDir"] = File.expand_path("../lib",Dir.current)
+  ENV["libDir"] = File.expand_path("./lib",Dir.current)
 {% else %}
   ENV["libDir"] = "/usr/local/lib/LinCAS/lib"
 {% end %}
