@@ -253,6 +253,9 @@ module LinCAS
   class FalseLiteral < Node 
   end
 
+  class NullLiteral < Node
+  end
+
   class RangeLiteral < Node
     property left, right, inclusive
 

@@ -248,8 +248,15 @@ module LinCAS
             parser_raise("Can't reassign a constant", location)
           end 
 
-          if atomic.is_a?(Variable) && atomic.name == "self"
-            parser_raise("Can't change value of self", location)
+          if atomic.is_a?(Variable) 
+            if atomic.name == "self"
+              parser_raise("Can't change value of self", location)
+            end
+            if atomic.type.unknown?
+              register_id atomic.name
+              atomic.type  = ID::LOCAL_V
+              atomic.depth = 0
+            end
           end 
 
           method = @stringpool.get(@token.type.to_s.rstrip("="))
@@ -420,6 +427,10 @@ module LinCAS
           disable_regex
           next_token 
           FalseLiteral.new
+        when :null
+          disable_regex
+          next_token
+          NullLiteral.new
         when :self 
           disable_regex
           next_token

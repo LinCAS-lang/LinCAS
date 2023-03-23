@@ -65,7 +65,7 @@ module LinCAS
         compile_namespace(iseq, node)
       when StringLiteral
         compile_string_literal(iseq, node)
-      when TrueLiteral, FalseLiteral
+      when TrueLiteral, FalseLiteral, NullLiteral
         compile(iseq, node)
       when RangeLiteral
         compile_range(iseq, node)
@@ -808,6 +808,12 @@ module LinCAS
       stack_increase
       set_line(iseq, node.location)
       iseq.encoded << IS::PUSH_FALSE
+    end
+
+    def compile(iseq, node : NullLiteral)
+      stack_increase
+      set_line(iseq, node.location)
+      iseq.encoded << IS::PUSH_NULL
     end
 
     def compile_range(iseq, node : RangeLiteral)
