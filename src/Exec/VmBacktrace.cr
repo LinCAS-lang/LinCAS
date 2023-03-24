@@ -91,7 +91,7 @@ module LinCAS
       if env.frame_type.main_frame?
         io << "<main>"
       elsif env.frame_type.top_frame?
-        io << "<top>"
+        io << "<top (required)>"
       else
         context = env.context
         io << (context.is_a?(LcMethod) ? context.name : class_or_module_name(context, io))
