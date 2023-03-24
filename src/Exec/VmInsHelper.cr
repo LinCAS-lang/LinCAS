@@ -357,7 +357,7 @@ module LinCAS
       # when .python?
       # when .proc?
       else
-        lc_bug("Invalid method type received")
+        lc_bug("Invalid method type received (#{typeof(method.flags)})")
         Null
       end
     end
