@@ -282,6 +282,8 @@ module LinCAS
         true_c = parse_ternary_if
         skip_space_or_newline
         check :":"
+        slash_is_regex!
+        next_token_skip_space
         false_c = parse_ternary_if
         skip_space
         condition = If.new(condition, true_c, false_c).at location
@@ -460,7 +462,8 @@ module LinCAS
         SymbolLiteral.new(value)
       when :STRING, :DELIMITER_START
         parse_delimiter
-      #when :"{"
+      when :"{"
+        parse_hash_literal
       when :"["
         parse_array
       when :"[]"
@@ -1181,6 +1184,47 @@ module LinCAS
       options
     end
 
+    def parse_hash_literal
+      location = @token.location
+      slash_is_regex!
+      next_token_skip_space_or_newline
+      entries = [] of HashLiteral::Entry
+      while @token.type != :"}"
+        check_eq_gt = true
+        if @token.type.in?({:IDENT, :CAPITAL_VAR}) && next_comes_colon_space?
+          key = SymbolLiteral.new(@token.value.to_s)
+          next_token; 
+          slash_is_regex!
+          next_token_skip_space_or_newline
+          check_eq_gt = false
+        else
+          key = parse_op_assign_no_control
+          skip_space_or_newline
+        end
+
+        if check_eq_gt
+          check :"=>"
+          slash_is_regex!
+          next_token_skip_space_or_newline
+        end
+
+        value = parse_op_assign_no_control
+
+        entries << HashLiteral::Entry.new(key, value)
+        skip_space
+        if @token.type == :","
+          slash_is_regex!
+          next_token_skip_space_or_newline
+        else
+          skip_space_or_newline
+        end
+      end
+      check :"}"
+      disable_regex
+      next_token_skip_space
+      return HashLiteral.new(entries).at location
+    end
+
     def parse_array
       location = @token.location
       slash_is_regex!
@@ -1579,6 +1623,8 @@ module LinCAS
       next_token #_skip_space
       if @token.type == :SYMBOL || @token.type == :"."
         block_arg_name = next_temp_var
+        push_symtab SymType::BLOCK
+        register_id block_arg_name
         obj = Variable.new(block_arg_name, ID::LOCAL_V, depth: 0)
         if @token.type == :SYMBOL
           name = @token.value.to_s.lstrip(":")
@@ -1587,7 +1633,7 @@ module LinCAS
         else
           call = parse_atomic_post(obj, location)
         end
-        block = Block.new(Params.new([Arg.new(block_arg_name, nil)]), Body.new << call, SymTable.new(SymType::BLOCK) << block_arg_name).at location
+        block = Block.new(Params.new([Arg.new(block_arg_name, nil)]), Body.new << call, pop_symtab).at location
       elsif @token.type == :IDENT || @token.type == :CAPITAL_VAR
         block_arg = parse_op_assign
       else 

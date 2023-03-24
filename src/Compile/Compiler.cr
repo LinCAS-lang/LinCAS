@@ -89,6 +89,8 @@ module LinCAS
         compile_symbol(iseq, node)
       when ArrayLiteral
         compile_array(iseq, node)
+      when HashLiteral
+        compile_hash(iseq, node)
       when Self
         compile_self(iseq, node)
       when NewObject
@@ -997,6 +999,15 @@ module LinCAS
       iseq.encoded << (IS::NEW_ARRAY | IS.new(exps.size.to_u64))
     end
 
+    def compile_hash(iseq, node : HashLiteral)
+      set_line(iseq, node.location)
+      node.entries.each do |entry|
+        compile_each(iseq, entry.key)
+        compile_each(iseq, entry.value)
+      end
+      iseq.encoded << (IS::NEW_HASH | IS.new(node.entries.size.to_u64))
+    end
+
     def compile_self(iseq, node : Self)
       stack_increase
       set_line(iseq, node)
@@ -1054,7 +1065,7 @@ module LinCAS
     protected def get_index_of(symtab, name)
       index = symtab.index(name)
       return index.to_u64 if index 
-      lc_bug("Variable offset not found") 
+      lc_bug("Variable offset not found (#{name})") 
       0u64
     end
 
@@ -1064,7 +1075,7 @@ module LinCAS
         return index.to_u64 if index
         symtab = symtab.previous
       end 
-      lc_bug("Variable offset not found") 
+      lc_bug("Variable offset not found (#{name})") 
       0u64
     end 
 

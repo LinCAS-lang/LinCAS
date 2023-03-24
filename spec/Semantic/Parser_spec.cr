@@ -30,6 +30,10 @@ def regex(string, options = Regex::Options::None)
   return RegexLiteral.new(StringLiteral.new([string] of String | Node, false), options)
 end
 
+def hentry(key, value)
+  HashLiteral::Entry.new(key, value)
+end
+
 def it_parses_single2(string, expected_nodes : Array(Node))
   it "Parses #{string.inspect}" do
     parser = Parser.new(__FILE__, string)
@@ -328,6 +332,9 @@ describe Parser do
   it_parses_single "A::B::C", Namespace.new(["A", "B", "C"])
   it_parses_single "::A::B::C", Namespace.new(["A", "B", "C"], true)
   it_parses_single "::A", Namespace.new(["A"], true)
+  it_parses_single "{}", HashLiteral.new([] of HashLiteral::Entry)
+  it_parses_single "{a: 1, :b => 2}", HashLiteral.new([hentry("a".symbol, 1.int), hentry(":b".symbol, 2.int)])
+  it_parses_single "{1 => 2, 3 => 4}", HashLiteral.new([hentry(1.int, 2.int), hentry(3.int, 4.int)])
 
   it_parses_multiple ["try {} catch {}", "try {\n} catch {\n}", "try\n{\n}\ncatch\n{\n}"], Try.new(Body.new, [CatchExp.new(nil, nil, Body.new)], symtab(SymType::BLOCK) << "!@e")
   it_parses_multiple ["try v0 catch\n v1", "try { v0 } catch {v1}", "try\nv0\ncatch\nv1"], Try.new(Body.new << "v0".variable, [CatchExp.new(nil, nil, Body.new << "v1".variable)], symtab(SymType::BLOCK) << "!@e")
