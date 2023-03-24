@@ -119,13 +119,13 @@ module LinCAS::Internal
         @@lc_boolean = internal.lc_build_internal_class("Boolean")
         lc_undef_allocator(@@lc_boolean)
 
-        lc_remove_internal(@@lc_boolean,"defrost")
+        lc_undef_method(@@lc_boolean,"defrost")
 
-        add_method(@@lc_boolean,"!", lc_bool_invert,0)
-        add_method(@@lc_boolean,"==",lc_bool_eq,    1)
-        add_method(@@lc_boolean,"!=",lc_bool_ne,    1)
-        add_method(@@lc_boolean,"&&",lc_bool_and,   1)
-        add_method(@@lc_boolean,"||",lc_bool_or,    1)
+        define_method(@@lc_boolean,"!", lc_bool_invert,0)
+        define_method(@@lc_boolean,"==",lc_bool_eq,    1)
+        define_method(@@lc_boolean,"!=",lc_bool_ne,    1)
+        define_method(@@lc_boolean,"&&",lc_bool_and,   1)
+        define_method(@@lc_boolean,"||",lc_bool_or,    1)
 
         lincas_init_lazy_const(LcTrue,@@lc_boolean)
         lincas_init_lazy_const(LcFalse,@@lc_boolean)

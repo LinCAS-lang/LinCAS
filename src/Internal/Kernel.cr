@@ -257,17 +257,17 @@ module LinCAS::Internal
     def self.init_kernel
         @@lc_kernel = internal.lc_build_internal_module("Kernel")
 
-        add_method(@@lc_kernel,"class",lc_class_real,       0)
-        add_method(@@lc_kernel,"printl",lc_outl,            1)
-        add_method(@@lc_kernel,"print",lc_out,              1)
-        add_method(@@lc_kernel,"reads",lc_in,               0)
-        add_method(@@lc_kernel,"include",lc_include,        1)
-        add_method(@@lc_kernel,"exit",lc_exit,             -1)
-        add_method(@@lc_kernel,"at_exit",lc_at_exit,        0)
-        add_method(@@lc_kernel,"method",lc_get_method,      1)
-        add_method(@@lc_kernel,"is_a?", lc_is_a,            1)
-        add_method(@@lc_kernel,"send",lc_obj_send,          -3)
-        add_method(@@lc_kernel,"respond_to?",lc_obj_responds_to, 1)
+        define_method(@@lc_kernel,"class",lc_class_real,       0)
+        define_method(@@lc_kernel,"printl",lc_outl,            1)
+        define_method(@@lc_kernel,"print",lc_out,              1)
+        define_method(@@lc_kernel,"reads",lc_in,               0)
+        define_method(@@lc_kernel,"include",lc_include,        1)
+        define_method(@@lc_kernel,"exit",lc_exit,             -1)
+        define_method(@@lc_kernel,"at_exit",lc_at_exit,        0)
+        define_method(@@lc_kernel,"method",lc_get_method,      1)
+        define_method(@@lc_kernel,"is_a?", lc_is_a,            1)
+        define_method(@@lc_kernel,"send",lc_obj_send,          -3)
+        define_method(@@lc_kernel,"respond_to?",lc_obj_responds_to, 1)
     
         lc_include_module(@@lc_object,@@lc_kernel)
     end

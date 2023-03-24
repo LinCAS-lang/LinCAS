@@ -286,30 +286,24 @@ module LinCAS::Internal
         return table
     end
 
-
     def self.init_regexp
         @@lc_regexp = internal.lc_build_internal_class("Regexp")
         define_allocator(@@lc_regexp,lc_regex_allocate)
 
-        add_static_method(@@lc_regexp,"error?",lc_regex_error,          1)
-        add_static_method(@@lc_regexp,"escape",lc_regex_escape,         1)
-        add_static_method(@@lc_regexp,"union",lc_regex_union,          -1)
-        add_static_method(@@lc_regexp,"union_part",lc_regex_union_part, 1)
+        define_singleton_method(@@lc_regexp,"error?",lc_regex_error,          1)
+        define_singleton_method(@@lc_regexp,"escape",lc_regex_escape,         1)
+        define_singleton_method(@@lc_regexp,"union",lc_regex_union,          -1)
+        define_singleton_method(@@lc_regexp,"union_part",lc_regex_union_part, 1)
 
-        add_method(@@lc_regexp,"init",lc_regex_initialize,              1)
-        add_method(@@lc_regexp,"to_s",lc_regex_to_s,                    0)
+        define_protected_method(@@lc_regexp,"init",lc_regex_initialize,              1)
+        define_method(@@lc_regexp,"to_s",lc_regex_to_s,                    0)
         alias_method_str(@@lc_regexp,"to_s","origin")
-        add_method(@@lc_regexp,"inspect",lc_regex_inspect,              0)
-        add_method(@@lc_regexp,"match",lc_regex_match,                 -2)
-        add_method(@@lc_regexp,"+",lc_regex_sum,                        1)
-        add_method(@@lc_regexp,"==",lc_regex_eq,                        1)
-        add_method(@@lc_regexp,"name_table",lc_regex_name_table,        0)
-
-        regex_clone = LcProc.new do |args|
-            next lc_cast(args,T1)[0]
-        end
-
-        lc_add_internal(@@lc_regexp,"clone",regex_clone,                   1)
+        define_method(@@lc_regexp,"inspect",lc_regex_inspect,              0)
+        define_method(@@lc_regexp,"match",lc_regex_match,                 -2)
+        define_method(@@lc_regexp,"+",lc_regex_sum,                        1)
+        define_method(@@lc_regexp,"==",lc_regex_eq,                        1)
+        define_method(@@lc_regexp,"name_table",lc_regex_name_table,        0)
+        define_method(@@lc_regexp,"clone",lc_obj_self,                     0)
     end
     
     

@@ -15,19 +15,6 @@
 
 module LinCAS::Internal
 
-
-  private def self.lc_undef_method(name,owner : LcClass)
-    m     = LinCAS::LcMethod.new(name.as(String),FuncVisib::UNDEFINED)
-    m.code  = nil
-    m.arity = 0
-    m.owner = owner
-    return m
-  end
-
-  macro new_lc_method(name,visib)
-    LcMethod.new({{name}},{{visib}})
-  end
-
   macro set_default(m,owner,code,arity)
     {{m}}.flags   = MethodFlags::INTERNAL
     {{m}}.owner  = {{owner}}
@@ -40,99 +27,142 @@ module LinCAS::Internal
        ({{strucure}}.type == SType::PyCLASS)
   end
 
-  def self.pymethod_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = true)
-    m     = new_lc_method(name,FuncVisib::PUBLIC)
-    m.flags  = MethodFlags::PYTHON
-    m.pyobj   = pyobj 
-    m.arity   = -1 # get_pymethod_argc(pyobj,name)
-    m.owner   = owner if owner
-    return m
+  def self.new_pymethod(name : String, code : PyObject, owner : LcClass? = nil)
+    return LcMethod.new(name, code, owner, FuncVisib::PUBLIC)
   end
 
-  def self.pystatic_method_new(name : String,pyobj : PyObject,owner : LcClass? = nil,temp = false)
-    return pymethod_new(name,pyobj,owner,temp)
+  def self.new_pystatic_method(name : String,pyobj : PyObject, owner : LcClass? = nil)
+    return new_pymethod(name,pyobj,owner,temp)
   end
 
-  def self.lc_def_method(name : String, code : ISeq, visib : FuncVisib = FuncVisib::PUBLIC)
-    m     = LcMethod.new(name,visib, code)
-    m.flags  = MethodFlags::USER
-    return m
+  ##
+  # It adds a method to an object.
+  # Usage example:
+  #   lc_add_method(obj.klass, "my_method", method)
+  @[AlwaysInline]
+  def self.lc_add_method(klass : LcClass, name : String, method : LcMethod)
+    klass.methods[name] = method
   end
 
-  def self.lc_def_method(name : String, code : String, owner : LcClass, arity : IntnumR, type : MethodFlags, visib : FuncVisib = FuncVisib::PUBLIC)
-    return LcMethod.new(name, visib, code, arity, type, owner)
+  @[AlwaysInline]
+  def self.lc_add_method_with_owner(klass : LcClass, name : String, method : LcMethod)
+    method.owner = klass
+    invalidate_cc_by_class(klass, name)
+    lc_add_method(klass, name, method)
   end
 
-  # def self.lc_def_static_method(name : String, args : FuncArgSet, 
-  #                 arity : Intnum,code : Bytecode,visib : FuncVisib = FuncVisib::PUBLIC)
-  #   m    = lc_def_method(name,args,arity,code,visib)
-  #   m.static = true
-  #   return m 
-  # end
-
-  def self.lc_define_internal_method(name, owner : LinCAS::LcClass, code, arity : Intnum)
-    m      = new_lc_method(name, FuncVisib::PUBLIC)
-    set_default(m,owner,code,arity)
-    return m
+  ##
+  # It defines an internal method (call to crystal)
+  @[AlwaysInline]
+  def self.lc_define_imethod(klass : LcClass, name : String, proc : LcProc, arity : Intnum, visib = FuncVisib::PUBLIC)
+    m = LcMethod.new(name, proc, arity, klass, visib)
+    lc_add_method(klass, name, m)
   end
 
-  def self.lc_define_protected_internal_method(name : String, owner : LcClass, code, arity)
-    m = new_lc_method(name,FuncVisib::PROTECTED)
-    set_default(m,owner,code,arity)
-    return m
+  ##
+  # it defines a user method (call to ISeq)
+  def self.lc_define_umethod(klass : LcClass, name : String, code : ISeq, visib = FuncVisib::PUBLIC)
+    m = LcMethod.new(name, code, klass, visib)
+    lc_add_method(klass, name, m)
   end
 
-  def self.lc_define_internal_static_method(name, owner : LinCAS::LcClass, code, arity)
-    return lc_define_internal_method(name,owner,code,arity)
+  ##
+  # it defines a python method (call to python)
+  def self.lc_define_pymethod(klass : LcClass, name : String, code : Python::PyObject, visib = FuncVisib::PUBLIC)
+    m = LcMethod.new(name, code, klass, visib)
+    lc_add_method(klass, name, m)
   end
 
-  def self.lc_undef_usr_method(name,owner : LcClass)
-    return lc_undef_method(name,owner)
+  ##
+  # it defines an attribute method (getter / setter)
+  def self.lc_define_attr_method(klass : LcClass, name : String, code : String, arity : IntnumR, flags : MethodFlags, visib = FuncVisib::PUBLIC)
+    m = LcMethod.new(
+      name,
+      code,
+      arity,
+      klass,
+      visib,
+      flags
+    )
+    lc_add_method(klass, name, m)
   end
 
-  # def self.lc_undef_usr_static_method(name,owner : LcClass)
-  #   m = lc_undef_usr_method(name,owner)
-  #   m.static = true 
-  #   return m 
-  # end
+  ##
+  # Defines an internal singleton method  in the given class. 
+  def self.lc_define_singleton_imethod(klass : LcClass, name : String, proc : LcProc, arity : Intnum, visib = FuncVisib::PUBLIC)
+    lc_define_imethod(metaclass_of(klass), name, proc, arity, visib)
+  end
 
-  def self.lc_undef_internal_method(name,owner : LinCAS::LcClass)
-    m = lc_undef_method(name,owner)
-    m.flags = MethodFlags::INTERNAL 
-    return m
-  end 
+  ##
+  # Defines a user singleton method  in the given class. 
+  def self.lc_define_singleton_imethod(klass : LcClass, name : String, code : ISeq, visib = FuncVisib::PUBLIC)
+    lc_define_umethod(metaclass_of(klass), name, code, visib)
+  end
 
-  # def self.lc_undef_internal_static(name,owner : LcClass)
-  #   m = lc_undef_internal_method(name,owner)
-  #   m.static = true 
-  #   return m
-  # end
+  def self.lc_undef_method(receiver : LcClass,name : String)
+    m = LcMethod.new(name)
+    lc_add_method(receiver, name, m)
+  end
 
-  macro define_method(name,owner,code,arity)
-    internal.lc_define_internal_method(
-      {{name}},{{owner}},{{code}},{{arity}}
+  def self.lc_class_define_method(klass : LcClass, name : String, proc : LcProc, arity : Intnum)
+    lc_define_imethod(klass, name, proc, arity)
+    lc_define_singleton_imethod(klass, name, proc, arity)
+  end
+
+  macro wrap(name,argc)
+    LcProc.new do |args|
+      next {{name.id}}(*args.as(T{{argc.id}}))
+    end
+  end
+
+  macro define_method(klass, name, f_name, argc)
+    lc_define_imethod(
+      {{klass}},
+      {{name}},
+      LcProc.new do |args|
+        {% if argc >= 0 %}
+          {{ tmp = argc + 1}}
+          {{f_name}}(*args.as(T{{tmp}}))
+        {% else %}
+          {{f_name}}(*args.as(T2))
+        {% end %}
+      end,
+      {{argc}}
     )
   end
 
-  macro define_protected_method(name,owner,code,arity)
-    internal.lc_define_protected_internal_method(
-      {{name}},{{owner}},{{code}},{{arity}}
+  macro define_protected_method(klass, name, f_name, argc)
+    lc_define_imethod(
+      {{klass}},
+      {{name}},
+      LcProc.new do |args|
+        {% if argc >= 0 %}
+          {{ tmp = argc + 1}}
+          {{f_name}}(*args.as(T{{tmp}}))
+        {% else %}
+          {{f_name}}(*args.as(T2))
+        {% end %}
+      end,
+      {{argc}},
+      FuncVisib::PROTECTED
+    )
+    end
+
+  macro define_singleton_method(klass,name,f_name,argc)
+    lc_define_singleton_imethod(
+      {{klass}},
+      {{name}},
+      LcProc.new do |args|
+        {% if argc >= 0 %}
+          {% tmp = argc + 1%}
+          {{f_name}}(*args.as(T{{tmp}}))
+        {% else %}
+          {{f_name}}(*args.as(T2))
+        {% end %}
+      end,
+      {{argc}}
     )
   end
-
-  macro undef_method(name,owner)
-    internal.lc_undef_internal_method({{name}},{{owner}})
-  end 
-
-  macro define_static(name,owner,code,arity)
-    internal.lc_define_internal_static_method(
-      {{name}},{{owner}},{{code}},{{arity}}
-    )
-  end
-
-  # macro undef_static(name,owner)
-  #   internal.lc_undef_internal_static({{name}},{{owner}})
-  # end
 
   def self.seek_method(receiver : LcClass, name : String, explicit : Bool, ignore_visib = false)
     klass = receiver
@@ -151,7 +181,7 @@ module LinCAS::Internal
             m_missing_reason = 0 
           elsif type_of(receiver).metaclass? && is_pycallable(method) && !is_pytype(method) &&
             (is_pyclass_method(method) || !is_pyimethod(method))
-            method = pystatic_method_new(name,method,receiver)
+            method = new_pystatic_method(name, method, receiver)
           else
             pyobj_decref(method)
             m_missing_reason = 0
@@ -305,10 +335,10 @@ module LinCAS::Internal
     @@lc_method = lc_build_internal_class("Method")
     lc_undef_allocator(@@lc_method)
 
-    add_method(@@lc_method,"call",lc_method_call,         -1)
-    add_method(@@lc_method,"receiver",lc_method_receiver,    0)
-    add_method(@@lc_method,"name",lc_method_name,        0)
-    add_method(@@lc_method,"owner",lc_method_owner,               0)
+    define_method(@@lc_method,"call",lc_method_call,         -1)
+    define_method(@@lc_method,"receiver",lc_method_receiver,    0)
+    define_method(@@lc_method,"name",lc_method_name,        0)
+    define_method(@@lc_method,"owner",lc_method_owner,               0)
 
   end
 

@@ -177,15 +177,15 @@ module LinCAS::Internal
         @@lc_range = internal.lc_build_internal_class("Range")
         define_allocator(@@lc_range,lc_range_allocate)
     
-        add_method(@@lc_range,"include?",lc_range_include,  1)
-        add_method(@@lc_range,"to_s",lc_range_to_s,         0)
-        add_method(@@lc_range,"size",lc_range_size,         0)
-        add_method(@@lc_range,"length",lc_range_size,       0)
-        add_method(@@lc_range,"each",lc_range_each,         0)
-        add_method(@@lc_range,"map",lc_range_map,           0)
-        add_method(@@lc_range,"==",lc_range_eq,             1)
-        add_method(@@lc_range,"defrost",lc_obj_defrost,     0)
-        add_method(@@lc_range,"hash",lc_range_hash,         0)
+        define_method(@@lc_range,"include?",lc_range_include,  1)
+        define_method(@@lc_range,"to_s",lc_range_to_s,         0)
+        define_method(@@lc_range,"size",lc_range_size,         0)
+        define_method(@@lc_range,"length",lc_range_size,       0)
+        define_method(@@lc_range,"each",lc_range_each,         0)
+        define_method(@@lc_range,"map",lc_range_map,           0)
+        define_method(@@lc_range,"==",lc_range_eq,             1)
+        define_method(@@lc_range,"defrost",lc_obj_defrost,     0)
+        define_method(@@lc_range,"hash",lc_range_hash,         0)
     end
 
 

@@ -103,11 +103,6 @@ module LinCAS::Internal
       return tmp
     end
 
-    def self.lc_module_add_internal(mod : LcClass, name : String, method : LcProc, arity : Int32)
-      internal.lc_add_internal(mod,name,method,arity)
-      internal.lc_add_static(mod,name,method,arity)
-    end
-
     def self.lc_include_module(receiver : LcClass, mod : LcClass)
       if receiver.methods.object_id == mod.methods.object_id
         lc_raise(lc_arg_err, "Cyclic include detected")
@@ -139,7 +134,7 @@ module LinCAS::Internal
         return lcfalse 
       else 
         invalidate_cc_by_class(obj.klass, sname)
-        lc_remove_internal(obj.klass,sname)
+        lc_undef_method(obj.klass,sname)
         return lctrue  
       end
     end
@@ -167,13 +162,10 @@ module LinCAS::Internal
 
     def self.lc_attr(klass : LcClass, id : String, read : Bool, write : Bool)
       if read
-        reader = lc_def_method(id, "@#{id}", klass, 0, MethodFlags::ATTR_READER)
-        lc_add_method(klass, id, reader)
+        lc_define_attr_method(klass, id, "@#{id}", 0, MethodFlags::ATTR_READER)
       end
       if write
-        name = "#{id}="
-        writer = lc_def_method(name, "@#{id}", klass, 1, MethodFlags::ATTR_WRITER)
-        lc_add_method(klass, name, writer)
+        lc_define_attr_method(klass, "#{id}=", "@#{id}", 1, MethodFlags::ATTR_WRITER)
       end
     end
 
@@ -232,18 +224,18 @@ module LinCAS::Internal
     def self.init_module
       @@lc_module = lc_build_module_class
 
-      add_method(@@lc_module,"to_s", lc_class_to_s,       0)
-      add_method(@@lc_module,"name", lc_class_to_s,       0)
-      add_method(@@lc_module,"inspect",lc_class_inspect,  0)
-      add_method(@@lc_module,"defrost",lc_class_defrost,  0)
-      add_method(@@lc_module,"instance_method",lc_instance_method,       1)
-      add_method(@@lc_module,"ancestors", lc_mod_ancestors,              0)
-      add_method(@@lc_module,"alias",lc_alias_method,                    2)
-      add_method(@@lc_module,"remove_method",lc_module_rm_method,        1)
-      add_method(@@lc_module,"delete_method",lc_module_delete_method,    1)
-      add_method(@@lc_module,"property",lc_module_property,             -2)
-      add_method(@@lc_module,"getter",lc_module_getter,                 -2)
-      add_method(@@lc_module,"setter",lc_module_setter,                 -2)
+      define_method(@@lc_module,"to_s", lc_class_to_s,       0)
+      define_method(@@lc_module,"name", lc_class_to_s,       0)
+      define_method(@@lc_module,"inspect",lc_class_inspect,  0)
+      define_method(@@lc_module,"defrost",lc_class_defrost,  0)
+      define_method(@@lc_module,"instance_method",lc_instance_method,       1)
+      define_method(@@lc_module,"ancestors", lc_mod_ancestors,              0)
+      define_method(@@lc_module,"alias",lc_alias_method,                    2)
+      define_method(@@lc_module,"remove_method",lc_module_rm_method,        1)
+      define_method(@@lc_module,"delete_method",lc_module_delete_method,    1)
+      define_method(@@lc_module,"property",lc_module_property,             -2)
+      define_method(@@lc_module,"getter",lc_module_getter,                 -2)
+      define_method(@@lc_module,"setter",lc_module_setter,                 -2)
     end
 
 end

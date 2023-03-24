@@ -219,16 +219,16 @@ module LinCAS::Internal
         @@lc_pyobject = lc_build_internal_class("PyObject",@@lc_object)
         define_allocator(@@lc_pyobject,lc_obj_allocate)
 
-        add_method(@@lc_pyobject,"init",lc_pyobj_init,         -1)
-        add_method(@@lc_pyobject,"to_s",lc_pyobj_to_s,          0)
-        add_method(@@lc_pyobject,"pycall",lc_pyobject_call,    -2)
-        add_method(@@lc_pyobject,"+",lc_pyobj_sum,              1)
-        add_method(@@lc_pyobject,"-",lc_pyobj_sub,              1)
-        add_method(@@lc_pyobject,"*",lc_pyobj_mul,              1)
-        add_method(@@lc_pyobject,"/",lc_pyobj_div,              1)
-        add_method(@@lc_pyobject,"**",lc_pyobj_pow,             1)
-        add_method(@@lc_pyobject,"[]",lc_pyobj_at_index,        1)
-        add_method(@@lc_pyobject,"[]=",lc_pyobj_set_index,      2)
+        define_protected_method(@@lc_pyobject,"init",lc_pyobj_init,         -1)
+        define_method(@@lc_pyobject,"to_s",lc_pyobj_to_s,          0)
+        define_method(@@lc_pyobject,"pycall",lc_pyobject_call,    -2)
+        define_method(@@lc_pyobject,"+",lc_pyobj_sum,              1)
+        define_method(@@lc_pyobject,"-",lc_pyobj_sub,              1)
+        define_method(@@lc_pyobject,"*",lc_pyobj_mul,              1)
+        define_method(@@lc_pyobject,"/",lc_pyobj_div,              1)
+        define_method(@@lc_pyobject,"**",lc_pyobj_pow,             1)
+        define_method(@@lc_pyobject,"[]",lc_pyobj_at_index,        1)
+        define_method(@@lc_pyobject,"[]=",lc_pyobj_set_index,      2)
     end
 
 

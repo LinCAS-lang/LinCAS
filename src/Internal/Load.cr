@@ -80,9 +80,9 @@ module LinCAS::Internal
     @@dirlib   = build_string(ENV["libDir"])
     @@ext      = build_string(".lc")
     @@sep      = build_string("/")
-    lc_add_internal(@@lc_kernel,"require",wrap(lc_require_file,2),             1)
-    lc_add_internal(@@lc_kernel,"import",wrap(lc_import_file,2),               1)
-    lc_add_internal(@@lc_kernel,"require_relative",wrap(lc_require_relative,2),1)
+    define_method(@@lc_kernel,"require", lc_require_file,              1)
+    define_method(@@lc_kernel,"import", lc_import_file,                1)
+    define_method(@@lc_kernel,"require_relative", lc_require_relative, 1)
   end
 
 end

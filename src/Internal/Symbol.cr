@@ -138,13 +138,13 @@ module LinCAS::Internal
         lc_undef_allocator(@@lc_symbol)
 
 
-        add_method(@@lc_symbol,"inspect",lc_sym_inspect,          0)
-        add_method(@@lc_symbol,"to_s",lc_sym_to_s,                0)
-        add_method(@@lc_symbol,"hash",lc_sym_hash,                0)
-        add_method(@@lc_symbol,"==",lc_sym_eq,                    1)
-        add_method(@@lc_symbol,"capitalize",lc_sym_capitalize,    0)
-        add_method(@@lc_symbol,"lowcase",lc_sym_downcase,         0)
-        add_method(@@lc_symbol,"size",lc_sym_size,                0)
+        define_method(@@lc_symbol,"inspect",lc_sym_inspect,          0)
+        define_method(@@lc_symbol,"to_s",lc_sym_to_s,                0)
+        define_method(@@lc_symbol,"hash",lc_sym_hash,                0)
+        define_method(@@lc_symbol,"==",lc_sym_eq,                    1)
+        define_method(@@lc_symbol,"capitalize",lc_sym_capitalize,    0)
+        define_method(@@lc_symbol,"lowcase",lc_sym_downcase,         0)
+        define_method(@@lc_symbol,"size",lc_sym_size,                0)
         alias_method_str(@@lc_symbol,"size","length")
         #lc_add_internal(@@lc_symbol,"swapcase",sym_swapcase,        0)
     end

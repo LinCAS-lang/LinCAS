@@ -30,7 +30,7 @@ module LinCAS
         if !(tmp = Python.PyObject_GetAttrString(@py_obj.not_nil!,name)).null?
           if Internal.is_pycallable(tmp) && !Internal.is_pytype(tmp)
             {% if V == LcMethod %}
-              tmp = Internal.pymethod_new(name, @py_obj.not_nil!, nil, false)
+              tmp = Internal.new_pymethod(name, @py_obj.not_nil!, nil)
             {% else %}
               Internal.pyobj_decref(tmp)
               return nil 
@@ -156,25 +156,44 @@ module LinCAS
   class LcMethod
     @@global_serial : Serial = 0
 
-    @code      : ISeq | LcProc | String | ::Nil
-    @owner     : LcClass? = nil
+    @code      : ISeq | LcProc | String | Python::PyObject | ::Nil
+    @owner     : LcClass?
     @arity     : IntnumR  = 0 # used for internal methods
-    @pyobj     : Python::PyObject = Python::PyObject.null
-    @flags     : MethodFlags = MethodFlags::INTERNAL
+    @flags     : MethodFlags
     @needs_gc  = false
     @gc_ref    : Internal::PyGC::Ref? = nil
     @serial    : Serial
 
-    def initialize(@name : String, @visib : FuncVisib)
-      @code = nil
+    def initialize(@name : String)
+      @code = @owner = nil
+      @flags = MethodFlags::INTERNAL
+      @visib = FuncVisib::UNDEFINED
       @serial = next_serial
     end
 
-    def initialize(@name : String, @visib : FuncVisib, @code : ISeq)
+    def initialize(@name : String, @code : LcProc, @arity : IntnumR, @owner : LcClass, @visib : FuncVisib)
+      @flags = MethodFlags::INTERNAL
       @serial = next_serial
     end
 
-    def initialize(@name : String, @visib : FuncVisib, @code, @arity : IntnumR, @flags : MethodFlags, @owner : LcClass)
+    def initialize(@name : String, @code : ISeq, @owner : LcClass, @visib : FuncVisib)
+      @flags  = MethodFlags::USER
+      @serial = next_serial
+    end
+
+    def initialize(@name : String, @code : Python::PyObject, @owner : LcClass?, @visib : FuncVisib)
+      @flags = MethodFlags::PYTHON
+      @serial = next_serial
+    end
+
+    def initialize(
+      @name : String, 
+      @code : String, 
+      @arity : IntnumR, 
+      @owner : LcClass, 
+      @visib : FuncVisib, 
+      @flags : MethodFlags
+    )
       @serial = next_serial
     end
 
@@ -204,10 +223,10 @@ module LinCAS
       @flags &= MethodFlags::CACHED
     end
 
-    property name, args, code, arity, pyobj,
-             flags, visib, needs_gc
+    getter name, args, code, arity, pyobj,
+           visib, serial
+    property flags, needs_gs
     property! owner
-    getter serial
   end
 
 end

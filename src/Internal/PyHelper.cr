@@ -213,7 +213,7 @@ module LinCAS::Internal
         Python.PyCFunction_NewEx({{method}},{{rec}},{{mod}})
     end
 
-    macro pymethod_new(func,rec)
+    macro new_pymethod(func,rec)
         Python.PyMethod_New({{func}},{{rec}})
     end
 

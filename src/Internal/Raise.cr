@@ -110,15 +110,15 @@ module LinCAS
             @@lc_error = internal.lc_build_internal_class("Error")
             define_allocator(@@lc_error,lc_err_allocate)
         
-            add_method(@@lc_error,"init",lc_err_init,          1)
-            add_method(@@lc_error,"to_s",lc_err_msg,           0)
+            define_protected_method(@@lc_error,"init",lc_err_init,          1)
+            define_method(@@lc_error,"to_s",lc_err_msg,           0)
             alias_method_str(@@lc_error,"to_s","message"           )
-            add_method(@@lc_error,"backtrace",lc_err_backtrace,0)
-            add_method(@@lc_error,"full_msg",lc_err_full_msg,  0)
-            add_method(@@lc_error,"defrost",lc_obj_defrost,    0)
+            define_method(@@lc_error,"backtrace",lc_err_backtrace,0)
+            define_method(@@lc_error,"full_msg",lc_err_full_msg,  0)
+            define_method(@@lc_error,"defrost",lc_obj_defrost,    0)
 
 
-            add_method(@@lc_kernel,"raise",lc_raise_err, 1)
+            define_method(@@lc_kernel,"raise",lc_raise_err, 1)
 
             @@lc_type_err    = lc_build_internal_class("TypeError",@@lc_error     )
             @@lc_arg_err     = lc_build_internal_class("ArgumentError",@@lc_error )

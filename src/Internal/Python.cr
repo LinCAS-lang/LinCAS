@@ -121,7 +121,7 @@ module LinCAS::Internal
     def self.init_pymodule
         @@lc_pymodule = lc_build_internal_module("Python")
     
-        lc_module_add_internal(@@lc_pymodule,"pyimport",wrap(lc_pyimport,3),   2)
+        lc_class_define_method(@@lc_pymodule,"pyimport",wrap(lc_pyimport,3),   2)
     end
     
 end

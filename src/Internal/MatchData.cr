@@ -234,27 +234,27 @@ module LinCAS::Internal
         return match.null? ? Null : build_string_with_ptr(match)
     end
 
+    @[AlwaysInline]
+    def self.lc_mdata_regexp(mdata : LcVal)
+        mdata_regexp(mdata)
+    end
+
 
     def self.init_match_data
         @@lc_match_data = internal.lc_build_internal_class("MatchData")
 
         lc_undef_allocator(@@lc_match_data)
     
-        add_method(@@lc_match_data,"inspect",lc_mdata_inspect,   0)
-        add_method(@@lc_match_data,"to_s",lc_mdata_to_s,         0)
-        add_method(@@lc_match_data,"size",lc_mdata_size,         0)
-        add_method(@@lc_match_data,"group_size",lc_mdata_gsize,  0)
-        add_method(@@lc_match_data,"[]",lc_mdata_index,          1)
-        add_method(@@lc_match_data,"captured_names",lc_mdata_captured_names,0)
-        add_method(@@lc_match_data,"to_h",lc_mdata_to_h,         0)
-        add_method(@@lc_match_data,"to_a",lc_mdata_to_a,         0)
-        add_method(@@lc_match_data,"string",lc_mdata_string,     0)
-
-        mdata_regex = LcProc.new do |args|
-            next mdata_regexp(lc_cast(args,T1)[0])
-        end
-
-        lc_add_internal(@@lc_match_data,"regexp",mdata_regex,      0)
+        define_method(@@lc_match_data,"inspect",lc_mdata_inspect,                0)
+        define_method(@@lc_match_data,"to_s",lc_mdata_to_s,                      0)
+        define_method(@@lc_match_data,"size",lc_mdata_size,                      0)
+        define_method(@@lc_match_data,"group_size",lc_mdata_gsize,               0)
+        define_method(@@lc_match_data,"[]",lc_mdata_index,                       1)
+        define_method(@@lc_match_data,"captured_names", lc_mdata_captured_names, 0)
+        define_method(@@lc_match_data,"to_h",lc_mdata_to_h,                      0)
+        define_method(@@lc_match_data,"to_a",lc_mdata_to_a,                      0)
+        define_method(@@lc_match_data,"string",lc_mdata_string,                  0)
+        define_method(@@lc_match_data,"regexp",lc_mdata_regexp,                  0)
     end
     
     

@@ -543,11 +543,11 @@ module LinCAS
         me = @current_frame.me
         receiver = me.is_a?(LcClass) ? me : me.klass
       else
-        receiver = receiver.not_nil!.klass # Todo: ensure not frozen class
+        receiver = receiver.not_nil!.klass
       end
       debug("Defining method '#{name}' in #{receiver.name}")
-      method = Internal.lc_def_method(name, iseq, visibility)
-      Internal.lc_add_method_with_owner(receiver, name, method)
+      vm_check_frozen_object receiver
+      Internal.lc_define_umethod(receiver, name, iseq, visibility)
       push LcTrue
     end
 

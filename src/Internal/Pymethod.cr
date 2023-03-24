@@ -78,7 +78,7 @@ module LinCAS::Internal
             return nil 
         end
         if is_pyimethod(method) && is_pycallable(method) && !is_pytype_abs(method)
-            return pymethod_new(name,method,obj.klass)
+            return new_pymethod(name,method,obj.klass)
         else
             pyobj_decref(method)
             return nil

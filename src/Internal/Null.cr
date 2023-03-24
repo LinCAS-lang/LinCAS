@@ -69,21 +69,16 @@ module LinCAS::Internal
     @@lc_null = internal.lc_build_internal_class("Null")
         lc_undef_allocator(@@lc_null)
 
-        lc_remove_internal(@@lc_null,"defrost")
+        lc_undef_method(@@lc_null,"defrost")
 
-        add_method(@@lc_null,"&&",lc_null_and,      1)
-        add_method(@@lc_null,"||",lc_null_or,       1)
-        add_method(@@lc_null,"!",lc_null_not,       0)
-        add_method(@@lc_null,"==",lc_null_eq,       1)
-        add_method(@@lc_null,"!=",lc_null_ne,       1)
-        add_method(@@lc_null,"to_s",lc_null_to_s,   0)
+        define_method(@@lc_null,"&&",lc_null_and,      1)
+        define_method(@@lc_null,"||",lc_null_or,       1)
+        define_method(@@lc_null,"!",lc_null_not,       0)
+        define_method(@@lc_null,"==",lc_null_eq,       1)
+        define_method(@@lc_null,"!=",lc_null_ne,       1)
+        define_method(@@lc_null,"to_s",lc_null_to_s,   0)
         alias_method_str(@@lc_null,"to_s","inspect"     )
-
-        null_clone = LcProc.new do |args|
-            next args.as(T1)[0]
-        end
-
-        lc_add_internal(@@lc_null,"clone",null_clone, 0)
+        define_method(@@lc_null,"clone",lc_obj_self, 0)
         lincas_init_lazy_const(Null,@@lc_null)
     end
 

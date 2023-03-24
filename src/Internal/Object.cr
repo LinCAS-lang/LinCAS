@@ -198,6 +198,11 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
+    def self.lc_obj_not(obj : LcVal)
+        return lcfalse
+    end
+
+    @[AlwaysInline]
     def self.lc_obj_defrost(obj :  LcVal)
         obj.flags &= ~ObjectFlags::FROZEN 
         return obj
@@ -245,49 +250,22 @@ module LinCAS::Internal
         # Initialising the inheritance chain of objects
         lincas_init_chain
         
-        add_method(@@lc_object,"init",lc_obj_init,     0)
-        add_method(@@lc_object,"==",lc_obj_eq,         1)
-
-        obj_ne = LcProc.new do |args|
-            res = fast_compare(*args.as(T2))
-            next val2bool(!res)
-        end
-
-        lc_add_internal(@@lc_object,"!=",obj_ne,           1)
-        add_method(@@lc_object,"freeze",lc_obj_freeze,  0)
-        add_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
-        add_method(@@lc_object,"is_null",lc_obj_null,   0)
-        add_method(@@lc_object,"inspect",lc_obj_to_s,   0)
-        alias_method_str(@@lc_object,"inspect","to_s"    )
-        add_method(@@lc_object,"to_m",lc_obj_to_m,      0)
-
-        obj_and = LcProc.new do |args|
-            next args.as(T2)[1]
-        end
-    
-        obj_or = LcProc.new do |args|
-            next args.as(T2)[0]
-        end
-    
-        obj_not = LcProc.new do |args|
-            next lcfalse
-        end
-
-        lc_add_internal(@@lc_object,"||",obj_or,           1)
-        lc_add_internal(@@lc_object,"&&",obj_and,          1)
-        lc_add_internal(@@lc_object,"!",obj_not,           0)
-        add_method(@@lc_object,"to_a",lc_obj_to_a,    0)
-
-        add_static_method(@@lc_class,"freeze",lc_obj_freeze,   0)
-        add_static_method(@@lc_class,"defrost",lc_obj_defrost, 0)
-        add_static_method(@@lc_class,"frozen?",lc_obj_frozen,  0)
-        add_static_method(@@lc_class,"null?",lc_obj_null,      0)
-        add_static_method(@@lc_class,"to_a",lc_obj_to_a,       0)
-        lc_add_static(@@lc_class,"||",obj_or,              1)
-        lc_add_static(@@lc_class,"&&",obj_and,             1)
-        lc_add_static(@@lc_class,"!",obj_not,              0)
-
-        add_method(@@lc_class,"hash",lc_obj_hash,               0)
+        define_protected_method(@@lc_object,"init",lc_obj_init,     0)
+        define_method(@@lc_object,"==",lc_obj_eq,          1)
+        define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
+        define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
+        define_method(@@lc_object,"is_null",lc_obj_null,   0)
+        define_method(@@lc_object,"inspect",lc_obj_to_s,   0)
+        alias_method_str(@@lc_object,"inspect","to_s"       )
+        define_method(@@lc_object,"to_m",lc_obj_to_m,      0)
+        define_method(@@lc_object,"!",lc_obj_not,          0)
+        define_method(@@lc_object,"t_o_a",lc_obj_to_a,     0)
+        define_method(@@lc_class,"freeze",lc_obj_freeze,   0)
+        define_method(@@lc_class,"hash",lc_obj_hash,       0)
+        # add_static_method(@@lc_class,"defrost",lc_obj_defrost, 0)
+        # add_static_method(@@lc_class,"frozen?",lc_obj_frozen,  0)
+        # add_static_method(@@lc_class,"null?",lc_obj_null,      0)
+        # add_static_method(@@lc_class,"to_a",lc_obj_to_a,       0)
         
     end
 

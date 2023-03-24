@@ -66,11 +66,9 @@ module LinCAS::Internal
     end
 
     @[AlwaysInline]
-    def self.num_hash(n :  LcVal)
+    def self.lc_num_hash(n :  LcVal)
         return num2int(num2num(n).hash.to_i64)
     end
-
-
 
     def self.lc_num_coerce(v1 :  LcVal,v2 :  LcVal,method : String)
         if v1.is_a? NumType && v2.is_a? NumType
@@ -149,14 +147,15 @@ module LinCAS::Internal
         @@lc_number = internal.lc_build_internal_class("Number")
         define_allocator(@@lc_number,lc_number_allocate)
 
-        lc_remove_internal(@@lc_number,"defrost")
+        lc_undef_method(@@lc_number,"defrost")
 
-        add_method(@@lc_number,">",lc_num_gr,            1)
-        add_method(@@lc_number,"<",lc_num_sm,            1)
-        add_method(@@lc_number,">=",lc_num_ge,           1)
-        add_method(@@lc_number,"<=",lc_num_se,           1)
-        add_method(@@lc_number,"zero?",lc_num_is_zero,   0)
-        add_method(@@lc_number,"coerce",lc_num_coerce,   1)
+        define_method(@@lc_number,">",lc_num_gr,            1)
+        define_method(@@lc_number,"<",lc_num_sm,            1)
+        define_method(@@lc_number,">=",lc_num_ge,           1)
+        define_method(@@lc_number,"<=",lc_num_se,           1)
+        define_method(@@lc_number,"zero?",lc_num_is_zero,   0)
+        define_method(@@lc_number,"coerce",lc_num_coerce,   1)
+        define_method(@@lc_number,"hash",lc_num_hash,       0)
     end
 
     

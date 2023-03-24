@@ -103,8 +103,8 @@ module LinCAS::Internal
         @@lc_file = internal.lc_build_internal_class("File")
         lc_undef_allocator(@@lc_file)
    
-        add_method(@@lc_file,"exist?", lc_file_exist,             1)
-        add_method(@@lc_file,"expand_path",lc_file_expand_path,  -1)
+        define_method(@@lc_file,"exist?", lc_file_exist,             1)
+        define_method(@@lc_file,"expand_path",lc_file_expand_path,  -1)
     end
     
 
