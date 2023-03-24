@@ -335,6 +335,18 @@ module LinCAS
     def_equals exps
   end
 
+  class HashLiteral < Node
+    def initialize(@entries : Array(Entry))
+    end
+    getter entries
+
+    class Entry
+      def initialize(@key : Node, @value : Node)
+      end
+      getter key, value
+    end
+  end
+
   class Self < Node 
   end
 
