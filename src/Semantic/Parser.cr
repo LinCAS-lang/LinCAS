@@ -437,6 +437,19 @@ module LinCAS
           disable_regex
           next_token
           Self.new
+        when :__FILE__
+          disable_regex
+          next_token
+          StringLiteral.new [@filename] of (String | Node), false
+        when :__LINE__
+          location = @token.location
+          disable_regex
+          next_token
+          NumberLiteral.new(location.line.to_s, :INT)
+        when :__DIR__
+          disable_regex
+          next_token
+          StringLiteral.new [Dir.current] of (String | Node), false
         when :new
           parse_new_statement
         when :yield
