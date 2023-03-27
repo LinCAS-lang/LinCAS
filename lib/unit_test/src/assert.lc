@@ -10,23 +10,23 @@ module Test {
     
     let assert(val) {
       assert_block(
-        "Expected truthy value but #{val} found"
+        "Expected truthy value but '#{val}' found"
       ) { !!val }
     }
   
     let refute(val) {
       assert_block(
-        "Expected falsey value but #{val} found"
+        "Expected falsey value but '#{val}' found"
       ) { !val }
     }
   
-    let assert_eq(given,expected, msg := null) {
-      msg ||= "#{expected} was expected but #{given} was given"
+    let assert_eq(expected, given, msg := null) {
+      msg ||= "'#{expected}' was expected but '#{given}' was given"
       assert_block(msg) { expected == given }
     }
   
     let assert_not_eq(val1, val2, msg := null) {
-      msg ||= "#{val1} was not expected to be #{val2}"
+      msg ||= "#{val1} was not expected to be '#{val2}'"
       assert_block(msg) { val1 != val2 }
     }
   
@@ -54,7 +54,7 @@ module Test {
       catch => e {
         error := e
         assert_block(
-          "Raised error should be #{error_cls} not #{error.class()}"
+          "Raised error should be '#{error_cls}' not '#{error.class()}'"
         ) { error_cls == error.class() }
         return
       }

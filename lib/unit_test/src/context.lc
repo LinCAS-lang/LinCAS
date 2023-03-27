@@ -82,7 +82,7 @@ module Test {
 
             printl "   #{error.message}"
             if !error.is_a? AssertionError then {
-              error.backtrace.split("\n").each do { |file|
+              error.backtrace.split("\n").reverse!.each do { |file|
                 print "   "
                 printl file
               }
