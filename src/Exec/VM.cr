@@ -408,7 +408,7 @@ module LinCAS
     # We expect calls and block invoking to be quite frequent,
     # therefore it is quite inefficient to allocate CallingInfo objects
     # every time, and a struct doesn't fit as we may need to modify some
-    # member of cCallingInfo.
+    # member of CallingInfo.
     # So we can collect some stack memory through a static array, and cast
     # its pointer to CallingInfo. This solution can be unsafe
     @[AlwaysInline]
@@ -417,6 +417,16 @@ module LinCAS
       calling_info = dont_touch_me.to_unsafe.as(CallingInfo)
       calling_info.unsafe_init(**args)
       yield calling_info
+    end
+
+    ##
+    # Same as 'with_calling_info'
+    @[AlwaysInline]
+    def with_call_info(**args)
+      dont_touch_me = uninitialized UInt8[instance_sizeof(CallInfo)]
+      call_info = dont_touch_me.to_unsafe.as(CallInfo)
+      call_info.unsafe_init(**args)
+      yield call_info
     end
 
     @[AlwaysInline]

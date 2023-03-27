@@ -878,36 +878,39 @@ module LinCAS
 
     def call_proc(proc : Internal::LCProc, argv : Ary)
       argv.each { |arg| push arg}
-      ci = CallInfo.new(
+      with_call_info(
         name: "",
         argc: argv.size.to_i32,
         splat: false,
         dbl_splat: @current_frame.flags.includes?(VM::VmFrame::FLAG_KEYWORDS),
         kwarg: nil
-      )
-      with_calling_info(me: proc.me, argc: ci.argc) do |calling|
-        vm_invoke_block_or_proc(proc, ci, calling, VM::VmFrame.flags(PROC_FRAME, FLAG_LOCAL, FLAG_FINISH))
+      ) do |ci|
+        with_calling_info(me: proc.me, argc: ci.argc) do |calling|
+         vm_invoke_block_or_proc(proc, ci, calling, VM::VmFrame.flags(PROC_FRAME, FLAG_LOCAL, FLAG_FINISH))
+        end
       end
       return exec
     end
 
     def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
       method_entry = method.method
-      ci = CallInfo.new(
+      push method.receiver
+      argv.each { |arg| push arg }
+      with_call_info(
         name: method_entry.name,
         argc: argv.size.to_i32,
         splat: false,
         dbl_splat: @current_frame.flags.includes?(VM::VmFrame::FLAG_KEYWORDS),
         kwarg: nil
-      )
-      calling = VM::CallingInfo.new(
-        me: method.receiver, 
-        argc: ci.argc, 
-        block: vm_get_block
-      )
-      push method.receiver
-      argv.each { |arg| push arg }
-      return call_method_with_handled_return(method_entry, ci, calling)
+      ) do |ci|
+        with_calling_info(
+          me: method.receiver, 
+          argc: ci.argc, 
+          block: vm_get_block
+        ) do |calling|
+          return call_method_with_handled_return(method_entry, ci, calling)
+        end
+      end
     end
 
     @[AlwaysInline]
@@ -925,21 +928,21 @@ module LinCAS
     end
 
     def lc_call_fun(receiver :  LcVal, method : String, *argv)
-      ci = CallInfo.new(
+      push receiver
+      argv.each { |arg| push arg }
+
+      type = MethodFlags::None
+      with_call_info(
         name: method,
         argc: argv.size.to_i32,
         splat: false,
         dbl_splat: false,
         kwarg: nil
-      )
-      calling = VM::CallingInfo.new(
-        me: receiver, 
-        argc: ci.argc, 
-        block: nil
-      )
-      push receiver
-      argv.each { |arg| push arg }
-      type = vm_call(ci, calling, VM::VmFrame::FLAG_FINISH)
+      ) do |ci|
+        with_calling_info(me: receiver, argc: ci.argc) do |calling|
+          type = vm_call(ci, calling, VM::VmFrame::FLAG_FINISH)
+        end
+      end
       case type
       when .user?, .proc?
         return exec
@@ -950,19 +953,21 @@ module LinCAS
 
     def lc_yield(*argv :  LcVal)
       argv.each { |arg| push arg }
-      ci = CallInfo.new(
+      with_call_info(
         name: "",
         argc: argv.size.to_i32,
         splat: false,
         dbl_splat: false,
         kwarg: nil
-      )
-      calling = VM::CallingInfo.new(
-        me: @current_frame.me, 
-        argc: ci.argc, 
-        block: nil
-      )
-      vm_invoke_block(ci, calling, VM::VmFrame::FLAG_FINISH)
+      ) do |ci|
+        with_calling_info(
+          me: @current_frame.me, 
+          argc: ci.argc, 
+          block: nil
+        ) do |calling|
+          vm_invoke_block(ci, calling, VM::VmFrame::FLAG_FINISH)
+        end
+      end
       return exec
     end
 

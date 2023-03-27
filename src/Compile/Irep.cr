@@ -118,19 +118,21 @@ module LinCAS
     getter argc, name, explicit, block, splat, dbl_splat, block_param
     getter! kwarg
     property cc
-
-    def initialize(
-      @name : String, 
-      @argc : Int32, 
-      @splat : Bool,
-      @dbl_splat : Bool, 
-      @kwarg : Array(String)?, 
-      @explicit : Bool = true, 
-      @block : ISeq? = nil,
-      @block_param = false
-     )
-     @cc = nil.as(VM::CallCache?)
-    end
+    
+    {%for name in {:initialize, :unsafe_init}%}
+      def {{name.id}}(
+        @name : String, 
+        @argc : Int32, 
+        @splat : Bool,
+        @dbl_splat : Bool, 
+        @kwarg : Array(String)?, 
+        @explicit : Bool = true, 
+        @block : ISeq? = nil,
+        @block_param = false
+       )
+       @cc = nil.as(VM::CallCache?)
+      end
+    {% end %}
 
     @[AlwaysInline]
     def has_kwargs?
