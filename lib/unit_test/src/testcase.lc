@@ -1,0 +1,15 @@
+
+module Test {
+  const Letters := {
+    success: "."
+    fail:    "F"
+    error:   "E"
+  }
+
+  let self.run_before_each_hooks {}
+  let self.run_after_each_hoooks {}
+
+  at_exit {
+    Test::Context.finish
+  }
+}

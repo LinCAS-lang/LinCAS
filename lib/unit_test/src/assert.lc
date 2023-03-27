@@ -1,0 +1,64 @@
+module Test {
+
+  class AssertionError inherits RuntimeError {}
+  
+  module Assert {
+  
+    let assert_block(message := "block assertion failed") {
+      if !(yield) { raise new AssertionError(message) }
+    }
+    
+    let assert(val) {
+      assert_block(
+        "Expected truthy value but #{val} found"
+      ) { !!val }
+    }
+  
+    let refute(val) {
+      assert_block(
+        "Expected falsey value but #{val} found"
+      ) { !val }
+    }
+  
+    let assert_eq(given,expected, msg := null) {
+      msg ||= "#{expected} was expected but #{given} was given"
+      assert_block(msg) { expected == given }
+    }
+  
+    let assert_not_eq(val1, val2, msg := null) {
+      msg ||= "#{val1} was not expected to be #{val2}"
+      assert_block(msg) { val1 != val2 }
+    }
+  
+    let assert_true(val) { 
+      assert_block(
+        "#{val} was expected to be true"
+      ) { val == true } 
+    }
+  
+    let assert_false(val) { 
+      assert_block(
+        "#{val} was expected to be false"
+      ) { val == false } 
+    }
+  
+    let assert_null(val) {
+      assert_block(
+        "#{val} was expected to be null"
+      ) { val == null }
+    }
+  
+    let assert_raise(error_cls) {
+      try
+        yield
+      catch => e {
+        error := e
+        assert_block(
+          "Raised error should be #{error_cls} not #{error.class()}"
+        ) { error_cls == error.class() }
+        return
+      }
+      raise new AssertionError("No error rised")
+    }
+  }
+}

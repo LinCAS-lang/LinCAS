@@ -1,0 +1,21 @@
+module Test {
+  module Methods {
+    let describe(desc, file := __FILE__, line := __LINE__, &block) {
+      Test::Context.describe desc, file, line, &block
+    }
+
+    let it(desc := "assert", file := __FILE__, line := __LINE__) {
+      try {
+        Test.run_before_each_hooks
+        yield
+        Test::Context.report(:success, desc, file, line, null)
+      }
+      catch AssertionError => e
+        Test::Context.report(:fail, desc, file, line, e)
+      catch => e
+        Test::Context.report(:error, desc, file, line, e)
+
+      Test.run_after_each_hoooks
+    }
+  }
+}

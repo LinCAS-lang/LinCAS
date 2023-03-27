@@ -1,0 +1,20 @@
+module Test {
+  class Formatter {
+    let push contect               {}
+    let pop                        {}
+    let before_example description {}
+    let report result              {}
+    let finish                     {}
+    let print_results              {}
+  }
+
+  class DotFormatter inherits Formatter {
+    let report result { print Letters[result.kind] }
+    let finish { print "\n" }
+    let print_results { Test::Context.print_results }
+  }
+
+  @@formatters := [new DotFormatter]
+
+  let self.formatters { @@formatters }
+}

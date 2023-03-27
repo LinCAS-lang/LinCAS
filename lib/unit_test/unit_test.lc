@@ -1,0 +1,14 @@
+[
+  "assert",
+  "context",
+  "formatter",
+  "methods",
+  "testcase"
+].each { |name|
+  require_relative("./src/#{name}.lc")
+}
+
+class Object {
+  include Test::Methods
+  include Test::Assert
+}

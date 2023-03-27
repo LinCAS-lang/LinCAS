@@ -1,0 +1,127 @@
+module Test {
+
+  class Result {
+    let init(kind, desc, file, line, exception) {
+      @kind := kind
+      @desc := desc
+      @file := file
+      @line := line
+      @exception := exception
+    }
+
+    property :kind, :desc, :file,
+             :line, :exception
+  }
+
+  class Context {
+
+    let self.describe(desc, file, line) {
+      describe := new NestedContext(desc, file, line, @@context_stack.last)
+      @@context_stack << describe
+      Test.formatters.each &.push describe
+      yield
+      Test.formatters.each &:pop
+      @@context_stack.pop
+    }
+
+    let self.report(kind, full_description, file, line, exception) {
+      result := new Result kind, full_description, file, line, exception
+      @@context_stack.last.report result
+    }
+
+    let self.print_results {
+      @@instance.print_results
+    }
+
+    let self.suceeded? {
+      return @@instance.succeeded?
+    }
+
+    let self.finish {
+      @@instance.finish
+    }
+    
+    let init {
+      @results := {
+        success: [],
+        fail:    [],
+        error:   [],
+      }
+    }
+
+    @@instance      := new Context
+    @@context_stack := [@@instance]
+    @@cumulated     := []
+
+    let report result {
+      Test.formatters.each &.report result
+      @results[result.kind] << result
+    }
+
+    let succeeded? {
+      @results[:fail].empty? && @results[:error].empty?
+    }
+
+    let finish {
+      Test.formatters.each do { |f|
+        f.finish
+        f.print_results
+      } 
+    }
+
+    let print_results {
+      failures := @results[:fail]
+      errors   := @results[:error]
+      f_and_e  := failures + errors
+      
+      if !f_and_e.empty? then {
+        printl "\nFailures"
+        f_and_e.each_with_index do { |fail, i|
+          if error := fail.exception then {
+            printl "\n#{i + 1}) #{fail.desc}"
+
+            printl "   #{error.message}"
+            if !error.is_a? AssertionError then {
+              error.backtrace.split("\n").each do { |file|
+                print "   "
+                printl file
+              }
+            }
+          }
+        }
+      }
+
+      success := @results[:success]
+      total   := failures.size + errors.size + success.size
+      status  := (failures.size + errors.size) > 0 ? :fail : :sucess
+
+      printl "\n#{total} examples, #{failures.size} failures, #{errors.size} errors"
+
+      if !f_and_e.empty? then {
+        printl "\nFailed examples:\n"
+        f_and_e.each do { |fail|
+          printl "lincas test #{fail.file}:#{fail.line} -> #{fail.desc}"
+        }
+      }
+    }
+
+    class NestedContext inherits Context {
+      let init(desc, file, line, parent) {
+        @desc   := desc
+        @file   := file
+        @line   := line
+        @parent := parent
+      }
+
+      let report result {
+        @parent.report new Result(
+          result.kind, 
+          "#{@desc} #{result.desc}",
+          result.file,
+          result.line,
+          result.exception
+        )
+      }
+    }
+  }
+}
