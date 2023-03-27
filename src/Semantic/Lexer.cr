@@ -779,6 +779,10 @@ module LinCAS
             if (next_char == 'I') && (next_char == 'R') && (next_char == '_') && (next_char == '_')
               return check_kw start, :__DIR__ 
             end
+          when 'L'
+            if (next_char == 'I') && (next_char == 'N') && (next_char == 'E') && (next_char == '_') && (next_char == '_')
+              return check_kw start, :__LINE__ 
+            end
           end
         end
       end
