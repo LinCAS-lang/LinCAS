@@ -376,6 +376,9 @@ module LinCAS
             when .throw?
               vm_throw(op, pop)
             when .leave?
+              if @current_frame.flags.main_frame?
+                Internal.invoke_at_exit_procs
+              end
               if vm_pop_control_frame
                 return pop
               end
