@@ -457,24 +457,29 @@ module LinCAS
     private def vm_call_python()
     end
 
+    @[AlwaysInline]
     protected def vm_invoke_block(ci : CallInfo, calling : VM::CallingInfo, flags = VM::VmFrame::FLAG_NONE)
       block = vm_get_block
       if block
-        p_env = block.env
-        env = vm_new_env(block.iseq, p_env.context, calling, p_env, VM::VmFrame::BLOCK_FRAME | flags)
-        iseq_offset = vm_setup_block_args(env, block.iseq.arg_info, ci, calling)
-        
-        set_stack_consistency_trace(calling.argc)
-        vm_push_control_frame(
-          block.me,
-          block.iseq,
-          env,
-          env.frame_type
-        )
-        @pc += iseq_offset
+        vm_invoke_block_or_proc(block, ci, calling, VM::VmFrame::BLOCK_FRAME | flags)
       else
         lc_raise(Internal.lc_localjmp_err, "No block given (yield)")
       end
+    end
+
+    private def vm_invoke_block_or_proc(block, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
+      p_env = block.env
+      env = vm_new_env(block.iseq, p_env.context, calling, p_env, flags)
+      iseq_offset = vm_setup_block_args(env, block.iseq.arg_info, ci, calling)
+      
+      set_stack_consistency_trace(calling.argc)
+      vm_push_control_frame(
+        block.me,
+        block.iseq,
+        env,
+        env.frame_type
+      )
+      @pc += iseq_offset
     end
 
     protected def vm_call_or_const(ci : CallInfo, calling : VM::CallingInfo, is : IS)
@@ -872,7 +877,18 @@ module LinCAS
     ####################################### 
 
     def call_proc(proc : Internal::LCProc, argv : Ary)
-      return Null
+      argv.each { |arg| push arg}
+      ci = CallInfo.new(
+        name: "",
+        argc: argv.size.to_i32,
+        splat: false,
+        dbl_splat: @current_frame.flags.includes?(VM::VmFrame::FLAG_KEYWORDS),
+        kwarg: nil
+      )
+      with_calling_info(me: proc.me, argc: ci.argc) do |calling|
+        vm_invoke_block_or_proc(proc, ci, calling, VM::VmFrame.flags(PROC_FRAME, FLAG_LOCAL, FLAG_FINISH))
+      end
+      return exec
     end
 
     def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
