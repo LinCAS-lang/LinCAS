@@ -17,7 +17,7 @@ class Queens
     let get_solution() { return @sol  }
     let get_size()     { return @size }
 
-    let init(size := 8, queens := 8)
+    let initialize(size := 8, queens := 8)
     { 
         if !(size.is_a? (Integer))
         { raise new ArgumentError("Size must be an integer")   }

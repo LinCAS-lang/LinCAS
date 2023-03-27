@@ -1,7 +1,7 @@
 module Test {
 
   class Result {
-    let init(kind, desc, file, line, exception) {
+    let initialize(kind, desc, file, line, exception) {
       @kind := kind
       @desc := desc
       @file := file
@@ -41,7 +41,7 @@ module Test {
       @@instance.finish
     }
     
-    let init {
+    let initialize {
       @results := {
         success: [],
         fail:    [],
@@ -106,7 +106,7 @@ module Test {
     }
 
     class NestedContext inherits Context {
-      let init(desc, file, line, parent) {
+      let initialize(desc, file, line, parent) {
         @desc   := desc
         @file   := file
         @line   := line

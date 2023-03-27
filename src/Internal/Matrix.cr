@@ -124,9 +124,9 @@ module LinCAS::Internal
         return matrix.as( LcVal)
     end 
     
-    #$I init
-    #$U init(rows,cols)        -> matrix
-    #$U init(rows,cols,&block) -> matrix
+    #$I initialize
+    #$U initialize(rows,cols)        -> matrix
+    #$U initialize(rows,cols,&block) -> matrix
     # Initializes a matrix instance given the number of rows and columns.
     # If a block is provided, each component will be set to block return
     # value, else `null` will be used.
@@ -868,7 +868,7 @@ module LinCAS::Internal
         define_allocator(@@lc_matrix,lc_matrix_allocate)
 
         define_singleton_method(@@lc_matrix,"identity",lc_matrix_id,             1)
-        define_protected_method(@@lc_matrix,"init",lc_matrix_init,               2)
+        define_protected_method(@@lc_matrix,"initialize",lc_matrix_init,               2)
         define_method(@@lc_matrix,"to_s",lc_matrix_to_s,                         0)
         define_method(@@lc_matrix,"==",lc_matrix_eq,                             1)
         define_method(@@lc_matrix,"[]",lc_matrix_index,                          2)

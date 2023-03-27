@@ -295,7 +295,7 @@ module LinCAS::Internal
         define_singleton_method(@@lc_regexp,"union",lc_regex_union,          -1)
         define_singleton_method(@@lc_regexp,"union_part",lc_regex_union_part, 1)
 
-        define_protected_method(@@lc_regexp,"init",lc_regex_initialize,              1)
+        define_protected_method(@@lc_regexp,"initialize",lc_regex_initialize,              1)
         define_method(@@lc_regexp,"to_s",lc_regex_to_s,                    0)
         alias_method_str(@@lc_regexp,"to_s","origin")
         define_method(@@lc_regexp,"inspect",lc_regex_inspect,              0)

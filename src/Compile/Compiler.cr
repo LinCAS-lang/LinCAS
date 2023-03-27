@@ -15,6 +15,8 @@
 module LinCAS
   class Compiler
 
+    IdInit = "initialize"
+
     @@instance = Compiler.new
 
     def self.compile(node : Program)
@@ -188,6 +190,10 @@ module LinCAS
       visibility = node.visibility
       receiver   = node.receiver
       name       = node.name
+
+      if name == IdInit
+        visibility = FuncVisib::PROTECTED
+      end
 
       set_line(iseq, node.location)
 
@@ -1029,7 +1035,7 @@ module LinCAS
       encoded << ((node.block || block_p) ? IS::NEW_OBJECT_WITH_BLOCK : IS::NEW_OBJECT)
       block = compile_block_any(iseq, block_param, node.block)
 
-      call_info = CallInfo.new("init", argc, splat, dblsplat, n_args, false, block, block_p)
+      call_info = CallInfo.new(IdInit, argc, splat, dblsplat, n_args, false, block, block_p)
       index = set_call_info(iseq, call_info)
       encoded[is_index] |= IS.new(index) 
     end

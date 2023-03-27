@@ -250,7 +250,7 @@ module LinCAS::Internal
         # Initialising the inheritance chain of objects
         lincas_init_chain
         
-        define_protected_method(@@lc_object,"init",lc_obj_init,     0)
+        define_protected_method(@@lc_object,"initialize",lc_obj_init,     0)
         define_method(@@lc_object,"==",lc_obj_eq,          1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
         define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)

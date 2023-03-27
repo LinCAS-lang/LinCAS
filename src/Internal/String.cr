@@ -268,11 +268,11 @@ module LinCAS::Internal
         return  lincas_obj_alloc LcString, lc_cast(klass, LcClass)
     end
     
-    #$I init
-    #$U init(string) -> new_string
+    #$I initialize
+    #$U initialize(string) -> new_string
     #
     # Initializes a new string through the keyword 'new' or just
-    # assigning it. This is the 'init' method of the class
+    # assigning it. This is the 'initialize' method of the class
     # ```coffee
     # str := "Foo"             #=> Foo
     # str := new String("Foo") #=> Foo

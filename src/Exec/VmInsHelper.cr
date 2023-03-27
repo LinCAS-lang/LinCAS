@@ -308,7 +308,7 @@ module LinCAS
         # The call is in the format `foo`. If this happens within a user method
         # scope, then we use such lexical scope to search the method. Otherwise,
         # we use the class of the object that is currently executing.
-        if ci.name != "init" && flags.includes? VM::VmFrame.flags(UCALL_FRAME)
+        if ci.name != Compiler::IdInit && flags.includes? VM::VmFrame.flags(UCALL_FRAME)
           debug("Dispatching method using context #{context.name}##{ci.name}")
           klass = context.is_class? ? context : find_included_module(_self.klass, context)
         else
