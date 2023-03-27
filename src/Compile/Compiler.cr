@@ -322,7 +322,7 @@ module LinCAS
       last = nodes.last
       nodes.each do |n|
         compile_each(iseq, n)
-        unless n == last
+        unless n.object_id == last.object_id # #== defined in node is not reliable
           encoded.push IS::POP
           stack_decrease
         end
