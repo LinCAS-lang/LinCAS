@@ -51,7 +51,7 @@ module LinCAS
     end
 
     def init
-      @stack = Ary[]
+      @stack = Ary.new 1000
       @initialized = true
     end
 
