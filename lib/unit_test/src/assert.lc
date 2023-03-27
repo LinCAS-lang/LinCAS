@@ -5,7 +5,7 @@ module Test {
   module Assert {
   
     let assert_block(message := "block assertion failed") {
-      if !(yield) { raise new AssertionError(message) }
+      if !yield then raise new AssertionError(message)
     }
     
     let assert(val) {
@@ -26,7 +26,7 @@ module Test {
     }
   
     let assert_not_eq(val1, val2, msg := null) {
-      msg ||= "#{val1} was not expected to be '#{val2}'"
+      msg ||= "'#{val1}' was not expected to be '#{val2}'"
       assert_block(msg) { val1 != val2 }
     }
   
@@ -51,14 +51,13 @@ module Test {
     let assert_raise(error_cls) {
       try
         yield
-      catch => e {
-        error := e
+      catch => error {
         assert_block(
           "Raised error should be '#{error_cls}' not '#{error.class()}'"
         ) { error_cls == error.class() }
         return
       }
-      raise new AssertionError("No error rised")
+      raise new AssertionError("No error raised")
     }
   }
 }
