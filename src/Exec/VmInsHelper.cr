@@ -302,14 +302,15 @@ module LinCAS
         return ci.cc.not_nil!
       end
       context = get_class_ref
-      _self = calling.me
+      _self   = calling.me
+      flags = @current_frame.flags
       if !(explicit = ci.explicit)
         # The call is in the format `foo`. If this happens within a user method
         # scope, then we use such lexical scope to search the method. Otherwise,
         # we use the class of the object that is currently executing.
-        if @current_frame.flags.includes? VM::VmFrame.flags(UCALL_FRAME)
+        if ci.name != "init" && flags.includes? VM::VmFrame.flags(UCALL_FRAME)
           debug("Dispatching method using context #{context.name}##{ci.name}")
-          klass = context
+          klass = context.is_class? ? context : find_included_module(_self.klass, context)
         else
           klass = _self.klass
           debug("Dispatching method in object class #{klass.name}##{ci.name}")
@@ -319,10 +320,34 @@ module LinCAS
         # the class of `a` and allows protected and private methods (explicit)only if
         # `a` is an instance or sub instance of the current lexical scope
         klass = _self.klass
-        explicit = !(_self == context || Internal.lincas_obj_is_a(_self, context))
+        explicit = !(_self == context || 
+                     (!flags.includes?(VM::VmFrame.flags(MAIN_FRAME, TOP_FRAME)) && 
+                      Internal.lincas_obj_is_a(_self, context)))
         debug("Dispatching #{klass.name}##{ci.name}; explicit: #{explicit} (orig: #{ci.explicit})")       
       end
       return Internal.seek_method(klass, ci.name, explicit)
+    end
+
+    # When we include a module, a shallow copy of the module is created
+    # and added as superclass. This means, the copy is referenced as
+    # suprclass and may have a parent too. We want to get such copy
+    # to use as a context for method dispatching, as the original
+    # module does not contain any references to the inheritance chain.
+    #
+    #   Object
+    #     |
+    #  (module) -> module (original)
+    #     |
+    #   (class)
+    private def find_included_module(klass : LcClass, mod : LcClass)
+      while klass
+        if Internal.lincas_class_compare(klass, mod)
+          return klass
+        end
+        klass = klass.parent
+      end
+      lc_bug("Unable to find included module #{Internal.class_path(mod)}")
+      mod
     end
 
     ##
