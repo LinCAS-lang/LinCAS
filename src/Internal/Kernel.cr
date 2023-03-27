@@ -34,11 +34,11 @@ module LinCAS::Internal
         if File.exists?(file = "/usr/local/lib/LinCAS/LinCAS/VERSION")
             version = File.read(file).chomp
             if version.empty?
-                LinCAS.lc_bug("Missing LinCAS verion")
+                LinCAS.lc_bug("Missing LinCAS version")
             end
             return version
         else
-            LinCAS.lc_bug("Missing LinCAS verion")
+            LinCAS.lc_bug("Missing LinCAS version")
         end
         # Unreachable
         ""
