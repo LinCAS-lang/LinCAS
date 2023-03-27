@@ -858,14 +858,11 @@ module LinCAS
       slash_is_regex!
       next_token_skip_space_or_newline
       condition = parse_op_assign_no_control allow_suffix: false, is_condition: true 
+      skip_space_or_newline
+      check :then, kw: true 
       slash_is_regex!
-      skip_space 
-      slash_is_regex!
-      if @token.keyword? :then
-        next_token_skip_space_or_newline
-      else 
-        skip_end
-      end
+      next_token_skip_space_or_newline
+      
       then_branch = @token.type == :"{" ? parse_body : parse_expression(in_if: true) 
       
       unless @token.type == :EOF
