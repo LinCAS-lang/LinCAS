@@ -15,7 +15,7 @@ module Test {
       catch => e
         Test::Context.report(:error, desc, file, line, e)
 
-      Test.run_after_each_hoooks
+      Test.run_after_each_hooks
     }
   }
 }
