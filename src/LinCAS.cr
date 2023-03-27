@@ -24,18 +24,7 @@ require "colorize"
   ENV["libDir"] = "/usr/local/lib/LinCAS/lib"
 {% end %}
 
-FFactory    = FrontendFactory.new
-Compile     = Compiler.new
 module LinCAS
-  EOF = "\u0003"
-  ALLOWED_FUNC_NAMES = 
-  {
-    TkType::PLUS, TkType::MINUS, TkType::STAR, TkType::SLASH, TkType::BSLASH,
-    TkType::MOD, TkType::POWER, TkType::AND, TkType::OR, TkType::NOT, TkType::L_BRACKET, 
-    TkType::EQ_EQ, TkType::GREATER, TkType::SMALLER, TkType::GREATER_EQ, 
-    TkType::NOT_EQ, TkType::SMALLER_EQ,
-    TkType::ASSIGN_INDEX, TkType::CLASS, TkType::UMINUS
-  }
   {% if flag?(:x86_64)%}
     alias IntD  = Int64
     alias FloatD = Float64
@@ -52,7 +41,6 @@ module LinCAS
   {% end %}
   alias Num  = Intnum  | Floatnum
   alias NumR = IntnumR | Floatnum
-
 end
 
 
