@@ -264,7 +264,13 @@ module LinCAS
           slash_is_regex!
           next_token_skip_space_or_newline
           exp = parse_assign
-          atomic = OpAssign.new(atomic, method, exp).at location  
+          if method =~ /&&/
+            atomic = Assign.new(atomic, And.new(atomic, exp))
+          elsif method =~ /\|\|/
+            atomic = Assign.new(atomic, Or.new(atomic, exp))
+          else
+            atomic = OpAssign.new(atomic, method, exp).at location
+          end
         else 
           break 
         end
