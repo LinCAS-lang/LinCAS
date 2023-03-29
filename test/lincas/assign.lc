@@ -1,0 +1,62 @@
+import "unit_test"
+
+describe :Assign do {
+  
+  it "assign simple" do {
+    a := null; assert_null(a)
+    a := 1; assert_eq(1, a)
+    a := []; assert_eq([], a)
+    a := b := :foo; assert_eq([:foo, :foo], [a, b])
+  }
+
+  class Foo {
+    property :a, :b, :c
+  }
+
+  it "assign through setter" do {
+    foo := new Foo
+    foo.a := 1; assert_eq(1, foo.a)
+    foo.b := :bar; assert_eq(:bar, foo.b)
+    foo.c := "bar"; assert_eq("bar", foo.c)
+  }
+
+  it "assign with op assign" do {
+    a := 1
+    a += 1; assert_eq(2, a)
+    a -= 1; assert_eq(1, a)
+    
+    a := 2
+    a *= 2;  assert_eq(4, a)
+    a /= 2;  assert_eq(2, a)
+    a **= 2; assert_eq(4, a)
+    a \= 2;  assert_eq(2, a)
+    
+    b:= null
+    b ||= :foo; assert_eq(:foo, b)
+    b &&= :bar; assert_eq(:bar, b)
+
+    # c := 2
+    # c |= 1; assert_eq(3, b)
+    # c &= 2; assert_eq(2, b)
+  }
+
+  it "assign block variables" do {
+    let f { yield null }; f { |a| assert_null a} #; delete_method :f
+    let f { yield      }; f { |a| assert_null a}
+    let f { yield 1 }; f { |a| assert_eq 1, a}
+    let f { yield [] }; f { |a| assert_eq [], a}
+    let f { yield *[1] }; f { |a| assert_eq 1, a}
+    let f { yield *[1, 2] }; f { |a| assert_eq 1, a}
+    let f { yield *[1, 2] }; f { |a, b| assert_eq [1, 2], [a, b]}
+  }
+
+  it "assign block variables" do {
+    let r { return null }; a := r(); assert_null a #; delete_method :f
+    let r { return 1    }; a := r(); assert_eq 1, a
+    let r { return []   }; a := r(); assert_eq [], a
+    let r { return [1]  }; a := r(); assert_eq [1], a
+    #let r { return *[]  }; a := r(); assert_eq [], a
+    #let r { return *[1] }; a := r(); assert_eq [1], a
+    #let r { return *[1, 2]   }; a := r(); assert_eq [1, 2], a
+  }
+}
