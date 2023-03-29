@@ -146,7 +146,7 @@ module LinCAS::Internal
       {{argc}},
       FuncVisib::PROTECTED
     )
-    end
+  end
 
   macro define_singleton_method(klass,name,f_name,argc)
     lc_define_singleton_imethod(
@@ -210,7 +210,7 @@ module LinCAS::Internal
   def self.invalidate_cc_by_class(klass, name)
     method = seek_method(klass, name, explicit: false, ignore_visib: true).method
     if method && method.cached?
-      if klass == method.owner
+      if lincas_class_compare(klass, method.owner)
         method.flags |= MethodFlags::INVALIDATED
       else
         method.clear_cache
