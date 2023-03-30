@@ -19,16 +19,16 @@ class Queens
 
     let initialize(size := 8, queens := 8)
     { 
-        if !(size.is_a? (Integer))
+        if !(size.is_a? (Integer)) then
         { raise new ArgumentError("Size must be an integer")   }
         
-        if size < 0
+        if size < 0 then 
         { raise new ArgumentError("Size must be positive")     }
 
-        if !(queens.is_a? (Integer))
+        if !(queens.is_a? (Integer)) then 
         { raise new ArgumentError("Queens must be an integer") }
 
-        if queens < 0
+        if queens < 0 then
         { raise new ArgumentError("Queens must be positive")   }
         
 
@@ -39,7 +39,7 @@ class Queens
 
     let solve()
     {
-        if self.place(0) {
+        if self.place(0) then {
             return @sol
         } else {
             raise "There is no solution"
@@ -49,12 +49,12 @@ class Queens
     let place(queen)
     {
     
-        if (@size <= 3) && (@size <= @queens) { return false }
-        if queen == @queens                   { return true  }
+        if (@size <= 3) && (@size <= @queens) then { return false }
+        if queen == @queens                   then { return true  }
 
         for row : 0 to (@size - 1)
         {
-            if self.place? (row,queen)
+            if self.place? (row,queen) then
             {
                 @sol[row,queen] := 1
                 if self.place(queen + 1) { return  true }
@@ -75,11 +75,11 @@ class Queens
         q2 := row + col 
         for i : 0 to (@size - 1)
         {
-            if (0...@size).include? (i + q1) 
+            if (0...@size).include? (i + q1) then
             { 
                 if @sol[i + q1,i] == 1 { return false } 
             }
-            if (0...@size).include? (i - q2)
+            if (0...@size).include? (i - q2) then
             {
                 if @sol[i - q2,i] == 1 { return false }
             }
