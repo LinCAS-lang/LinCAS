@@ -21,19 +21,19 @@ module LinCAS::Internal
     @@sym_dict = uninitialized Hash(SBaseC.class | SBaseS.class,LcClass)
     alias Symbolic_t =  LcVal | Symbolic 
 
-    class LcFunction < BaseC
+    class LcFunction < LcBase
         @func : Symbolic = NanC
         property func
     end
 
-    struct FakeFun < BaseS
+    class FakeFun < LcBase
         @func : Symbolic = NanC
         property func
     end
 
     macro check_fun(f,ret = true)
         if !({{f}}.is_a? LcFunction)
-            lc_raise(LcTypeError,"No implicit conversion of #{lc_typeof({{f}})} into Symbolic")
+            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{f}})} into Symbolic")
             {% if ret %}
                 return Null 
             {% else %}
@@ -332,13 +332,13 @@ module LinCAS::Internal
         # Class Variable
         var_class = lc_build_internal_class("Variable",@@lc_symbolic)
 
-        define_protected_method(var_class,"init",lc_var_init,           1)
+        define_protected_method(var_class,"initialize",lc_var_init,           1)
         define_method(var_class,"name",lc_var_name,           0)
 
         # Class Value
         num_class = lc_build_internal_class("Value",@@lc_symbolic)
 
-        define_protected_method(num_class,"init",lc_snum_init,         1)
+        define_protected_method(num_class,"initialize",lc_snum_init,         1)
         define_method(num_class,"value",lc_val_get_v,        0)
 
         # Class Constant
@@ -352,8 +352,8 @@ module LinCAS::Internal
         const_e_init  = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),EC)  }
         const_pi_init = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),PiC) }
 
-        lc_add_internal(e_class,"init",const_e_init,         0)
-        lc_add_internal(pi_class,"init",const_pi_init,       0)
+        lc_add_internal(e_class,"initialize",const_e_init,         0)
+        lc_add_internal(pi_class,"initialize",const_pi_init,       0)
 
         # Class Infinity, NegInfinity, NanClass
         inf_class    = lc_build_internal_class("Infinity",const_class)
@@ -364,13 +364,13 @@ module LinCAS::Internal
         const_ninf_init = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),NinfinityC) }    
         const_nan_init  = LcProc.new { |args| next lc_const_init(*lc_cast(args,T1),NanC)       }
 
-        lc_add_internal(inf_class,"init",const_inf_init,     0)
-        lc_add_internal(neginf_class,"init",const_ninf_init, 0)
-        lc_add_internal(nan_class,"init",const_nan_init,     0)
+        lc_add_internal(inf_class,"initialize",const_inf_init,     0)
+        lc_add_internal(neginf_class,"initialize",const_ninf_init, 0)
+        lc_add_internal(nan_class,"initialize",const_nan_init,     0)
 
         # Class Negative
         neg_class = internal.lc_build_internal_class("Negative",@@lc_symbolic)
-        define_protected_method(neg_class,"init",lc_neg_init,           1)
+        define_protected_method(neg_class,"initialize",lc_neg_init,           1)
 
         # Class BinaryOp
         binary_op_class = lc_build_internal_class("BinaryOp",@@lc_symbolic)
@@ -379,23 +379,23 @@ module LinCAS::Internal
 
         # Class Sum
         sum_class  = lc_build_internal_class("Sum",binary_op_class)
-        define_protected_method(sum_class,"init",lc_sum_init,           2)
+        define_protected_method(sum_class,"initialize",lc_sum_init,           2)
 
         # Class Sub
         sub_class  = lc_build_internal_class("Sub",binary_op_class)
-        define_protected_method(sub_class,"init",lc_sub_init,           2)
+        define_protected_method(sub_class,"initialize",lc_sub_init,           2)
 
         # Class Product
         prod_class  = lc_build_internal_class("Product",binary_op_class)
-        define_protected_method(prod_class,"init",lc_product_init,      2)
+        define_protected_method(prod_class,"initialize",lc_product_init,      2)
     
         # Class Division
         div_class  = lc_build_internal_class("Division",binary_op_class)
-        define_protected_method(div_class,"init",lc_division_init,      2)
+        define_protected_method(div_class,"initialize",lc_division_init,      2)
 
         # Class Power
         pow_class  = lc_build_internal_class("Power",binary_op_class)
-        define_protected_method(pow_class,"init",lc_power_init,         2)
+        define_protected_method(pow_class,"initialize",lc_power_init,         2)
 
         # Class Function
         fun_class = lc_build_internal_class("Function",@@lc_symbolic)
@@ -404,47 +404,47 @@ module LinCAS::Internal
         # Class Log
         log_class = lc_build_internal_class("Log",fun_class)
         log_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Log) }
-        lc_add_internal(log_class,"init",log_init,           1)
+        lc_add_internal(log_class,"initialize",log_init,           1)
 
         # Class Exp
         exp_class = lc_build_internal_class("Exp",fun_class)
         exp_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Exp) }
-        lc_add_internal(exp_class,"init",exp_init,           1)
+        lc_add_internal(exp_class,"initialize",exp_init,           1)
 
         # Class Cos
         cos_class = lc_build_internal_class("Cos",fun_class)
         cos_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Cos) }
-        lc_add_internal(cos_class,"init",cos_init,           1)
+        lc_add_internal(cos_class,"initialize",cos_init,           1)
 
         # Class Acos
         acos_class = lc_build_internal_class("Acos",fun_class)
         acos_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Acos) }
-        lc_add_internal(acos_class,"init",acos_init,          1)
+        lc_add_internal(acos_class,"initialize",acos_init,          1)
 
         # Class Sin
         sin_class = lc_build_internal_class("Sin",fun_class)
         sin_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Sin) }
-        lc_add_internal(sin_class,"init",sin_init,            1)
+        lc_add_internal(sin_class,"initialize",sin_init,            1)
 
         #Class Asin
         asin_class = lc_build_internal_class("Asin",fun_class)
         asin_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Asin) }
-        lc_add_internal(asin_class,"init",asin_init,          1)
+        lc_add_internal(asin_class,"initialize",asin_init,          1)
 
         # Class Tan
         tan_class = lc_build_internal_class("Tan",fun_class)
         tan_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Tan) }
-        lc_add_internal(tan_class,"init",tan_init,            1)
+        lc_add_internal(tan_class,"initialize",tan_init,            1)
 
         # Class Atan
         atan_class = lc_build_internal_class("Atan",fun_class)
         atan_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Atan) }
-        lc_add_internal(atan_class,"init",atan_init,          1)
+        lc_add_internal(atan_class,"initialize",atan_init,          1)
 
         # Class Sqrt
         sqrt_class = lc_build_internal_class("Sqrt",fun_class)
         sqrt_init  = LcProc.new { |args| next lc_sfunc_init(*lc_cast(args,T2),Sqrt) }
-        lc_add_internal(sqrt_class,"init",sqrt_init,          1)
+        lc_add_internal(sqrt_class,"initialize",sqrt_init,          1)
 
 
         @@sym_dict = {
