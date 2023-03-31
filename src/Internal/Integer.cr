@@ -77,16 +77,22 @@ module LinCAS::Internal
     return Float64::INFINITY
   end
 
+  # Converts a crystal integer to a lincas integer
   @[AlwaysInline]
   def self.num2int(num : Intnum)
     return new_int(num)
   end
 
+  # Converts a lincas integer to a crystal integer
+  # (could either be amn int64 or a bigint)
   @[AlwaysInline]
   def self.int2num(int :  LcVal)
     return lc_cast(int, LcInt).val
   end 
 
+  # Converts a lincas integer or float to a crystal
+  # integer. It allows to specify the return type of
+  # the converted integer
   def self.lc_num_to_cr_i(value, r_type = nil)
     if !value.is_a? LcInt || value.is_a? LcFloat
       lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(value)} into Integer")
@@ -104,9 +110,15 @@ module LinCAS::Internal
 
   @[AlwaysInline]
   def self.opt_int(value)
-    return Pointer(Void).new(value.to_u64).as LcInt
+    return Pointer(Void).new((value.to_u64 << 1) | LC_INT_FLAG).as LcInt
   end
 
+  # It creates a new lincas integer from a crystal integer
+  # or bigint. There is a little optimization: if the int
+  # fits between LC_INT_MIN and LC_INT_MAX, we can create
+  # a pointer that has as address (int << 1 | LC_INT_FLAG).
+  # In this way we avoid memory allocation for common ints.
+  # This is unsafe as the pointer's address is actually invalid
   def self.new_int(value : Intnum)
     if LC_INT_MIN <= value <= LC_INT_MAX
       return opt_int(value)
@@ -118,16 +130,19 @@ module LinCAS::Internal
     return new_int value
   end
 
+  # It attempts to perform the operation passed in the block
+  # that may potentially cause  overflow. It the overflow happens,
+  # then the first number is converted to bigint and the operation
+  # is attempted one more time. In case of failures, it causes a bug  
   def self.rescue_overflow_error(a, b)
     retry = true
-    count = 0
-    while retry
+    while true
       begin
         return yield a, b
       rescue OverflowError
-        count += 1
+        break unless retry
         a = BigInt.new(a)
-        retry = !(count > 1)
+        retry = false
       end
     end
     lc_bug("Lincas cannot resolve overflow error (#{a}, #{b})")
@@ -144,7 +159,7 @@ module LinCAS::Internal
           return num2int(v)
         {% end %}
       else
-        return lc_num_coerce(n1,n2,"+")
+        return lc_num_coerce(n1, n2, {{op.stringify}})
       end
       # Should never get here
       return Null
@@ -152,6 +167,16 @@ module LinCAS::Internal
 
   {% end %}
 
+  # :call-seq: 
+  #   int \ other_int -> Integer
+  # It performs an integer division. It returns an
+  # integer. If ´other_int´ is zero, it raises an exception
+  # ´´´
+  # 4 \ 2 #=> 2
+  # 5 \ 2 #=> 2
+  # 3 \ 5 #=> 0
+  # 5 \ 0 #=> ZeroDivisionError
+  # ´´´
   def self.lc_int_idiv(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcInt 
       if int2num(n2).zero?
@@ -165,6 +190,17 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   int / other_int -> Float
+  # It performs an integer division. It returns a
+  # float. If ´other_int´ is zero, it returns ±INFINITY
+  # ´´´
+  # 4 / 2 #=> 2.0
+  # 5 / 2 #=> 2.5
+  # 3 / 5 #=> 0.6
+  # 3 / 0 #=> Infinity
+  # -3 / 0 #=> -Infinity
+  # ´´´
   def self.lc_int_fdiv(n1 : LcVal, n2 : LcVal)
     if n2.is_a? LcInt 
       if int2num(n1) == 0
@@ -178,6 +214,16 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   int % other_int -> Integer
+  # It performs modulo in ´int´. It returns an
+  # int. If ´other_int´ is zero, it raises an exception
+  # ´´´
+  # 4 % 2 #=> 0
+  # 3 % 5 #=> 3
+  # -3 % 5 #=> 2
+  # 3 % 0 #=> ZeroDivisionError
+  # ´´´
   def self.lc_int_modulo(n1 : LcVal, n2 : LcVal)
     if n2.is_a? LcInt
       if (v2 = int2num(n2)) == 0
