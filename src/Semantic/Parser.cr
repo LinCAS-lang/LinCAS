@@ -960,9 +960,15 @@ module LinCAS
 
       location   = @token.location
       is_capital = @token.type == :CAPITAL_VAR
-      name       = @token.value.to_s 
+      name       = @stringpool.get @token.value.to_s
+      is_var     = (var? name) >= 0
+
       disable_regex
       next_token
+
+      if @token.type == :SPACE?
+        @regex_enabled = !is_var
+      end
 
       call_args = preserve_stop_on_do(@stop_on_do) { parse_call_args stop_on_do_after_space: @stop_on_do }
       
@@ -998,7 +1004,7 @@ module LinCAS
         if args 
           if args.size == 0 
             node = new_var(name, is_capital)
-          elsif (args.size == 1)  &&  (arg = args[0]) && arg.is_a?(Call) && (arg.name == "-@" || arg.name == "+@")
+          elsif is_var && (args.size == 1)  &&  (arg = args[0]) && arg.is_a?(Call) && (arg.name == "-@" || arg.name == "+@")
             var = new_var(name, is_capital)
             receiver = arg.receiver 
             name = @stringpool.get (arg.name.rstrip "@")
