@@ -216,7 +216,7 @@ module LinCAS::Internal
 
   # :call-seq: 
   #   int % other_int -> Integer
-  # It performs modulo in ´int´. It returns an
+  # It performs modulo of ´int´. It returns an
   # int. If ´other_int´ is zero, it raises an exception
   # ´´´
   # 4 % 2 #=> 0
@@ -238,6 +238,16 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq: 
+  #   int ** other_int -> Integer
+  #   int ** -other_int -> Float
+  # It performs the power between two integers.
+  # ´´´
+  # 4 ** 2 #=> 8
+  # 3 ** 5 #=> 243
+  # -3 ** 5 #=> -243
+  # 6 ** -1 #=> 0.16666666666666666
+  # ´´´
   def self.lc_int_power(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcInt 
       int = int2num(n1)
@@ -263,6 +273,9 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   int.odd? -> true / false
+  # It returns true if ´int´ is odd
   def self.lc_int_odd(n :  LcVal)
     if int2num(n).odd? 
       return lctrue
@@ -271,16 +284,25 @@ module LinCAS::Internal
     end 
   end
 
+  # :call-seq: 
+  #   int.even? -> true / false
+  # It returns true if ´int´ is even
   @[AlwaysInline]
   def self.lc_int_even(n :  LcVal)
     return internal.lc_bool_invert(lc_int_odd(n))
   end
 
+  # :call-seq: 
+  #   int.to_s -> String
+  # It returns the string representation of ´int´
   @[AlwaysInline]
   def self.lc_int_to_s(n :  LcVal)
     return internal.build_string(int2num(n).to_s)
   end
 
+  # :call-seq: 
+  #   int.to_f -> Float
+  # It converts ´int´ into a float
   def self.lc_int_to_f(n :  LcVal)
     val = int2num(n)
     if val.is_a? BigInt
@@ -289,6 +311,9 @@ module LinCAS::Internal
     return internal.num2float(val.to_f64)
   end
 
+  # :call-seq: 
+  #   -int -> Integer
+  # It applies unary minus to 'int'
   def self.lc_int_minus(n :  LcVal)
     return internal.new_int( -int2num(n))
   end
@@ -301,6 +326,9 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   int.abs -> Integer
+  # It returns the absolute value on ´int´
   @[AlwaysInline]
   def self.lc_int_abs(n : LcVal)
       val = int2num(n)
