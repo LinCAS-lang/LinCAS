@@ -52,7 +52,14 @@ class Object
 
     def lc_bug(msg : String)
         print "Bug: ".colorize(:red)
-        puts "#{msg}\n","An internal error occourred.\n\
+        puts "#{msg}\n"
+        backtrace = caller
+        backtrace.shift
+        backtrace.each do |location|
+            print "    "
+            puts location
+        end
+        puts "An internal error occourred.\n\
         Please open an issue and report the code which caused this message".colorize(:yellow)
         exit 1
     end
