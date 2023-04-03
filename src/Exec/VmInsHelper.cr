@@ -59,7 +59,7 @@ module LinCAS
 
     @[AlwaysInline]
     def vm_check_frozen_object(obj : LcVal, msg : String)
-      if has_flag obj, FROZEN
+      if obj.is_a?(Internal::LcInt) || has_flag obj, FROZEN
         lc_raise(Internal.lc_frozen_err, msg)
       end
     end
