@@ -90,20 +90,20 @@ module LinCAS::Internal
     return lc_cast(int, LcInt).val
   end 
 
-  # Converts a lincas integer or float to a crystal
+  # Converts a lincas number or float to a crystal
   # integer. It allows to specify the return type of
   # the converted integer
-  def self.lc_num_to_cr_i(value, r_type = nil)
+  def self.lc_num_to_cr_i(value, r_type = Int64)
     if !value.is_a? LcInt || value.is_a? LcFloat
       lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(value)} into Integer")
     end
-    v = int2num(value)
-    return r_type ? i_to_t(v, r_type) : v
+    v = num2num(value)
+    return i_to_t(v, r_type)
   end
 
-  def self.i_to_t(int : Intnum, t : T) forall T
-    if int.is_a? BigInt && t != BigInt
-      lc_raise(lc_type_err,"Can't convert #{int.class} into #{t}")
+  def self.i_to_t(int, t : T.class) : T forall T
+    if int.is_a? BigInt && t != BigInt && !(T::MIN <= int <= T::MAX)
+      lc_raise(lc_type_err,"Can't convert #{int.class} into #{t} (value too big)")
     end
     return t.new(int)
   end
@@ -159,7 +159,7 @@ module LinCAS::Internal
           return num2int(v)
         {% end %}
       else
-        return lc_num_coerce(n1, n2, {{op.stringify}})
+        return lc_num_coerce_bin(n1, n2, {{op.stringify}})
       end
       # Should never get here
       return Null
@@ -184,7 +184,7 @@ module LinCAS::Internal
       end
       return num2int(int2num(n1) // int2num(n2))
     else
-      return internal.lc_num_coerce(n1,n2,"\\")
+      return lc_num_coerce_bin(n1,n2,"\\")
     end
     # Should never get here
     return Null
@@ -208,7 +208,7 @@ module LinCAS::Internal
       end
       return num2float((int2num(n1) / int2num(n2)).to_f64)
     else
-      return internal.lc_num_coerce(n1, n2, "/")
+      return lc_num_coerce_bin(n1, n2, "/")
     end
     # Should never get here
     return Null
@@ -234,7 +234,7 @@ module LinCAS::Internal
         return !v2.is_a?(BigInt) ? num2int(int2num(n1) % v2) : num2int(int2num(n1) % v2)
       end
     else
-      return internal.lc_num_coerce(n1, n2, "%")
+      return lc_num_coerce_bin(n1, n2, "%")
     end
   end
 
@@ -267,7 +267,7 @@ module LinCAS::Internal
         num2float(big_int_power(int, exp))
       end
     else
-      return internal.lc_num_coerce(n1,n2,"**")
+      return lc_num_coerce_bin(n1,n2,"**")
     end
     # Should never get here
     return Null
@@ -289,7 +289,7 @@ module LinCAS::Internal
   # It returns true if ´int´ is even
   @[AlwaysInline]
   def self.lc_int_even(n :  LcVal)
-    return internal.lc_bool_invert(lc_int_odd(n))
+    return lc_bool_invert(lc_int_odd(n))
   end
 
   # :call-seq: 
@@ -297,7 +297,7 @@ module LinCAS::Internal
   # It returns the string representation of ´int´
   @[AlwaysInline]
   def self.lc_int_to_s(n :  LcVal)
-    return internal.build_string(int2num(n).to_s)
+    return build_string(int2num(n).to_s)
   end
 
   # :call-seq: 
@@ -308,14 +308,14 @@ module LinCAS::Internal
     if val.is_a? BigInt
       return num2float(bigf2flo64(val.to_big_f))
     end
-    return internal.num2float(val.to_f64)
+    return num2float(val.to_f64)
   end
 
   # :call-seq: 
   #   -int -> Integer
   # It applies unary minus to 'int'
   def self.lc_int_minus(n :  LcVal)
-    return internal.new_int( -int2num(n))
+    return new_int( -int2num(n))
   end
 
   def self.lc_int_times(n :  LcVal)
@@ -343,10 +343,9 @@ module LinCAS::Internal
       return lc_compare(n, obj)
     end
   end
-
     
   def self.init_integer
-    @@lc_integer = internal.lc_build_internal_class("Integer",@@lc_number)
+    @@lc_integer = lc_build_internal_class("Integer",@@lc_number)
     lc_undef_allocator(@@lc_integer)
 
     define_method(@@lc_integer, "+",     lc_int_sum,        1)
@@ -357,6 +356,7 @@ module LinCAS::Internal
     define_method(@@lc_integer, "%",     lc_int_modulo,     1)
     define_method(@@lc_integer, "**",    lc_int_power,      1)
     define_method(@@lc_integer, "==",    lc_int_eq,         1)
+    define_method(@@lc_integer, "<=>",   lc_int_or_flo_cmp, 1)
     define_method(@@lc_number,  "odd?",  lc_int_odd,        0)
     define_method(@@lc_number,  "even?", lc_int_even,       0)
     define_method(@@lc_integer, "-@",    lc_int_minus,      0)
