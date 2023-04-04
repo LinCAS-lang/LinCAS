@@ -978,7 +978,7 @@ module LinCAS
         value = Internal.num2float(value.to_f64)
       when :COMPLEX 
         value = value.rstrip "i"
-        value = Internal.complex_new(0f64, value.to_f64)
+        value = Internal.new_complex(0f64, value.to_f64)
       end  
       index = set_obj_special(iseq, value.as(LcVal))
       is = IS::PUSHOBJ | IS.new(index)    
