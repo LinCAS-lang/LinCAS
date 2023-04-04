@@ -64,6 +64,14 @@ module LinCAS::Internal
     return lc_obj_freeze(flo)
   end
 
+  # :call-seq: 
+  #   float + other -> Float
+  # It returns a new Float that is the sum between `float`
+  # and `other`.
+  # ```
+  # 4.6 + 2.3 #=> 6.9
+  # 5.55 + 2 #=> 7.55
+  # ```
   def self.lc_float_sum(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       return num2float(float2num(n1) + float2num(n2))
@@ -72,6 +80,14 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq: 
+  #   float - other -> Float
+  # It returns a new Float that is the difference between `float`
+  # and `other`.
+  # ```
+  # 4.6 - 2.3 #=> 2.3
+  # 5.55 - 2 #=> 3.55
+  # ```
   def self.lc_float_sub(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       return num2float(float2num(n1) - float2num(n2))
@@ -82,6 +98,10 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   float * other -> Float
+  # It returns a new Float that is the product between `float`
+  # and `other`.
   def self.lc_float_mult(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       return num2float(float2num(n1) * float2num(n2))
@@ -92,6 +112,16 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   float \ other -> Float
+  # It returns a new Float that is the result of the integer
+  # division between `float` and `other`. If other is `0` it
+  # raises an error.
+  # ```
+  # 4.6 \ 2.3 #=> 2.0
+  # 5.55 \ 2 #=> 3.0
+  # 11.9 \ 0 #=> ZeroDivisionError
+  # ```
   def self.lc_float_idiv(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       if float2num(n2).zero?
@@ -105,6 +135,10 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   float / other -> Float
+  # It returns a new Float that is the result of the
+  # division between `float` and `other`.
   def self.lc_float_fdiv(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       return num2float(float2num(n1) / float2num(n2))
@@ -115,6 +149,10 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   float % other -> Float
+  # It returns a new Float that is the result of the
+  # division between `float` and `other`.
   def self.lc_float_modulo(n1 : LcVal, n2 : LcVal)
     if n2.is_a? LcFloat
       if (v2 = float2num(n2)) == 0
@@ -127,6 +165,12 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq: 
+  #   float ** other -> Float
+  # It raises `float` to the power of `other`.
+  # ```
+  # 2.0 ** 3 #=> 8.0
+  # ```
   def self.lc_float_power(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcFloat
       return num2float(float2num(n1) ** float2num(n2))
@@ -137,6 +181,9 @@ module LinCAS::Internal
     return Null
   end
 
+  # :call-seq: 
+  #   -float -> Float
+  # It returns `float`, negated.
   def self.lc_float_minus(n :  LcVal)
     return new_float(- float2num(n))
   end
