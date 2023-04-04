@@ -64,13 +64,13 @@ module LinCAS::Internal
   end
 
   def self.do_coerce(v1 :  LcVal, v2 :  LcVal, error : Bool)
-    if !lc_obj_responds_to? v2,"coerce"
+    if !lc_obj_responds_to? v2, "coerce"
       if error
         lc_raise(lc_type_err, "Cant't coerce #{lc_typeof(v2)} into ,#{lc_typeof(v1)}")
       end
       return nil
     end
-    ary = Exec.lc_call_fun(v2,"coerce",v1)
+    ary = Exec.lc_call_fun(v2, "coerce", v1)
     
     if !error && ary == Null
       return nil
@@ -85,11 +85,11 @@ module LinCAS::Internal
     if v1.is_a? NumType && v2.is_a? NumType
       v1 = num2float(num2num(v1).to_f)
       v2 = num2float(num2num(v2).to_f)
-      Exec.lc_call_fun(v1, method, v2)
+      return Exec.lc_call_fun(v1, method, v2)
     end
     # We can safely use #not_nil! because `do_coerce` raises
     # an exception instead of returning `nil` in this case
-    c = do_coerce(v1,v2, true).not_nil!
+    c = do_coerce(v1, v2, true).not_nil!
     return Exec.lc_call_fun(
       lc_ary_index(c, num2int(0)),
       method,
@@ -198,13 +198,9 @@ module LinCAS::Internal
   def self.lc_num_coerce(n1 :  LcVal, n2 :  LcVal)
     tmp = num2int(0)
     v1  = lc_num_to_cr_f(n1)
-    return tuple2array(tmp,tmp) unless v1
     v2  = lc_num_to_cr_f(n2)
-    return tuple2array(tmp,tmp) unless v2
-    return tuple2array(num2float(v2),num2float(v1))
+    return tuple2array(num2float(v2), num2float(v1))
   end
-
-  
 
   def self.init_number
     @@lc_number = internal.lc_build_internal_class("Number")
