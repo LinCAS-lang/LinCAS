@@ -171,12 +171,12 @@ module LinCAS::Internal
   #   int \ other_int -> Integer
   # It performs an integer division. It returns an
   # integer. If ´other_int´ is zero, it raises an exception
-  # ´´´
+  # ```
   # 4 \ 2 #=> 2
   # 5 \ 2 #=> 2
   # 3 \ 5 #=> 0
   # 5 \ 0 #=> ZeroDivisionError
-  # ´´´
+  # ```
   def self.lc_int_idiv(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcInt 
       if int2num(n2).zero?
@@ -194,13 +194,13 @@ module LinCAS::Internal
   #   int / other_int -> Float
   # It performs an integer division. It returns a
   # float. If ´other_int´ is zero, it returns ±INFINITY
-  # ´´´
+  # ```
   # 4 / 2 #=> 2.0
   # 5 / 2 #=> 2.5
   # 3 / 5 #=> 0.6
   # 3 / 0 #=> Infinity
   # -3 / 0 #=> -Infinity
-  # ´´´
+  # ```
   def self.lc_int_fdiv(n1 : LcVal, n2 : LcVal)
     if n2.is_a? LcInt 
       if int2num(n1) == 0
@@ -218,12 +218,12 @@ module LinCAS::Internal
   #   int % other_int -> Integer
   # It performs modulo of ´int´. It returns an
   # int. If ´other_int´ is zero, it raises an exception
-  # ´´´
+  # ```
   # 4 % 2 #=> 0
   # 3 % 5 #=> 3
   # -3 % 5 #=> 2
   # 3 % 0 #=> ZeroDivisionError
-  # ´´´
+  # ```
   def self.lc_int_modulo(n1 : LcVal, n2 : LcVal)
     if n2.is_a? LcInt
       if (v2 = int2num(n2)) == 0
@@ -242,12 +242,12 @@ module LinCAS::Internal
   #   int ** other_int -> Integer
   #   int ** -other_int -> Float
   # It performs the power between two integers.
-  # ´´´
+  # ```
   # 4 ** 2 #=> 8
   # 3 ** 5 #=> 243
   # -3 ** 5 #=> -243
   # 6 ** -1 #=> 0.16666666666666666
-  # ´´´
+  # ```
   def self.lc_int_power(n1 :  LcVal, n2 :  LcVal)
     if n2.is_a? LcInt 
       int = int2num(n1)
