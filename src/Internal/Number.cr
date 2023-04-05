@@ -142,8 +142,14 @@ module LinCAS::Internal
     return num2int(num2num(n).hash.to_i64)
   end
 
+  # :call-seq:
+  #   number <=> other -> -1, 0, +1 or `null`
+  # It returns -1, 0, +1 according to whether
+  # `number` is less, equal or greated than `other`.
+  #
+  # It returns `null` if the two entities are incomparable
   def self.lc_int_or_flo_cmp(n : LcVal, obj : LcVal)
-    if obj.is_a? LcNum
+    if obj.is_a? NumType
       x = num2num(n)
       y = num2num(obj)
       if x == y
@@ -157,6 +163,10 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq:
+  #   number > other -> true or false
+  # It returns true if and only if `float` is greater
+  # than `other`.
   def self.lc_num_gr(n1 :  LcVal, n2 :  LcVal)
     if n1.is_a? NumType && n2.is_a? NumType
       return val2bool(num2num(n1) > num2num(n2))
@@ -165,6 +175,10 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq:
+  #   number < other -> true or false
+  # It returns true if and only if `float` is less
+  # than `other`.
   def self.lc_num_sm(n1 :  LcVal, n2 :  LcVal)
     if n1.is_a? NumType && n2.is_a? NumType
       return val2bool(num2num(n1) < num2num(n2))
@@ -173,6 +187,10 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq:
+  #   number >= other -> true or false
+  # It returns true if and only if `float` is greater
+  # than or equal to `other`.
   def self.lc_num_ge(n1 :  LcVal, n2 :  LcVal)
     if n1.is_a? NumType && n2.is_a? NumType  
       return val2bool(num2num(n1) >= num2num(n2))
@@ -181,6 +199,10 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq:
+  #   number <= other -> true or false
+  # It returns true if and only if `float` is less
+  # than or equal to `other`.
   def self.lc_num_se(n1 :  LcVal, n2 :  LcVal)
     if n1.is_a? NumType && n2.is_a? NumType
       return val2bool(num2num(n1) <= num2num(n2))
@@ -189,12 +211,23 @@ module LinCAS::Internal
     end
   end
 
+  # :call-seq:
+  #   zero? -> true or false
+  # It returns true if and only if `float` zero.
   @[AlwaysInline]
   def self.lc_num_is_zero(num :  LcVal)
     return lcfalse unless num.is_a? NumType
     return val2bool(num2num(num) == 0)
   end
 
+  # :call-seq:
+  #   coerce(numeric) -> Array
+  # It returns an array with `numeric` and `float`
+  # converted to a Float object
+  # ```
+  # 3.6.coerce(8) #=> [8.0, 3.6]
+  # 3.6.coerce(8.1) #=> [8.1, 3.6]
+  # ```
   def self.lc_num_coerce(n1 :  LcVal, n2 :  LcVal)
     tmp = num2int(0)
     v1  = lc_num_to_cr_f(n1)
@@ -203,7 +236,7 @@ module LinCAS::Internal
   end
 
   def self.init_number
-    @@lc_number = internal.lc_build_internal_class("Number")
+    @@lc_number = lc_build_internal_class("Number")
     define_allocator(@@lc_number,lc_number_allocate)
 
     lc_undef_method(@@lc_number,"defrost")

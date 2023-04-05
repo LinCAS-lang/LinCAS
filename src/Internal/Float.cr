@@ -188,20 +188,33 @@ module LinCAS::Internal
     return new_float(- float2num(n))
   end
 
+  # :call-seq: 
+  #   to_s -> Float
+  # It returns a string representation of `float`.
   def self.lc_float_to_s(n :  LcVal)
     return build_string(float2num(n).to_s)
   end
 
+  # :call-seq: 
+  #   to_i -> Integer
+  # It returns `float` truncated to an integer.
   def self.lc_float_to_i(n :  LcVal)
     return num2int(float2num(n).to_i)
   end
 
+  # :call-seq: 
+  #   abs -> Float
+  # It returns the absolute value of `float`.
   @[AlwaysInline]
   def self.lc_float_abs(n : LcVal)
     val = lc_num_to_cr_f(n)
     return num2float(val.abs)
   end
 
+  # :call-seq: 
+  #   round([digits]) -> Float
+  # It rounds `float` to a given precision.
+  # Default precision is 1.
   def self.lc_float_round(flo : LcVal, argv : LcVal)
     argv  = argv.as(Ary)
     float = float2num(flo)
@@ -212,22 +225,32 @@ module LinCAS::Internal
     return num2float(float.round(num))
   end
 
+  # :call-seq: 
+  #   ceil -> Float
   def self.lc_float_ceil(n : LcVal)
     float = lc_num_to_cr_f(n)
     return num2float(LibM.ceil_f64(float))
   end
 
+  # :call-seq: 
+  #   floor -> Float
   @[AlwaysInline]
   def self.lc_float_floor(n : LcVal)
     float = lc_num_to_cr_f(n)
     return num2float(LibM.floor_f64(float))
   end
 
+  # :call-seq: 
+  #   trunc -> Float
   def self.lc_float_trunc(n : LcVal)
     float = internal.lc_num_to_cr_f(n) 
     return num2float(LibM.trunc_f64(float))
   end
 
+  # :call-seq: 
+  #   float == other -> true or false
+  # it returns true if and only if `other` has the
+  # same value of `self`.
   def self.lc_float_eq(n :  LcVal, obj :  LcVal)
     if obj.is_a? LcFloat
       return val2bool(float2num(n) == float2num(obj))
