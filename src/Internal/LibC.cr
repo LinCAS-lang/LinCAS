@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-@[Link(ldflags: "#{__DIR__}/LibC/libc.o")]
 lib LibC
   fun strstr(str1 : Char*, str2 : Char*) : Char*
   fun printf(format : Char*, ... ) : Int 
