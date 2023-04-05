@@ -94,7 +94,7 @@ module LinCAS::Internal
   # integer. It allows to specify the return type of
   # the converted integer
   def self.lc_num_to_cr_i(value, r_type = Int64)
-    if !value.is_a? LcInt || value.is_a? LcFloat
+    if !value.is_a? NumType
       lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(value)} into Integer")
     end
     v = num2num(value)
