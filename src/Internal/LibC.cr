@@ -15,20 +15,13 @@
 
 @[Link(ldflags: "#{__DIR__}/LibC/libc.o")]
 lib LibC
-    fun strstr(str1 : Char*, str2 : Char*) : Char*
-    fun printf(format : Char*, ... ) : Int 
-    fun toupper(str : Char*) : Char*
-    fun strlwr(str : Char*) : Char*
-    fun strlen(str : Char*) : SizeT
-    fun strtok(str : Char*, delimiter : Char*) : Char*
-    fun strtol(str : Char*, endptr : Char*, base : Int) : Int
-    fun strtod(str : Char*, endptr : Char**) : Double
-    fun strcmp(str1 : Char*, str2 : Char*) : Int
-
-    fun add_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
-    fun add_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
-    fun sub_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
-    fun sub_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
-    fun mul_overflow_i(n1 : Int, n2 : Int, var : Int*) : Int
-    fun mul_overflow_l(n1 : Int64, n2 : Int64, var : Int64*) : Int
+  fun strstr(str1 : Char*, str2 : Char*) : Char*
+  fun printf(format : Char*, ... ) : Int 
+  fun toupper(str : Char*) : Char*
+  fun strlwr(str : Char*) : Char*
+  fun strlen(str : Char*) : SizeT
+  fun strtok(str : Char*, delimiter : Char*) : Char*
+  fun strtol(str : Char*, endptr : Char*, base : Int) : Int
+  fun strtod(str : Char*, endptr : Char**) : Double
+  fun strcmp(str1 : Char*, str2 : Char*) : Int
 end
