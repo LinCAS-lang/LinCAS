@@ -244,7 +244,7 @@ module LinCAS::Internal
     end
 
     def self.init_object
-        @@lc_object = lc_build_object_class
+        @@lc_object = lc_build_internal_class("Object") { lc_build_object_class }
         define_allocator(@@lc_object,lc_obj_allocate)
 
         # Initialising the inheritance chain of objects

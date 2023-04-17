@@ -107,8 +107,16 @@ module LinCAS::Internal
     return klass
   end
 
+  @[AlwaysInline]
   def self.lc_build_internal_class(name, parent : LcClass = @@lc_object)
     return lc_build_user_class(name, @@lc_object.namespace, parent)
+  end
+
+  # Wraps special class builder methods for doc generation
+  # purposes.
+  @[AlwaysInline]
+  def self.lc_build_internal_class(name, parent = nil)
+    yield
   end
 
   def self.lc_build_unregistered_pyclass(name : String,obj : PyObject, parent : LcClass)
@@ -400,7 +408,7 @@ module LinCAS::Internal
 
 
   def self.init_class
-    @@lc_class  = lc_build_class_class
+    @@lc_class  = lc_build_internal_class("Class", @@lc_module) { lc_build_class_class }
     define_method(@@lc_class,"parent",lc_class_parent,    0)
     # add_static_method(@@lc_class,"remove_instance_method",lc_class_rm_instance_method,     1)
     # add_static_method(@@lc_class,"remove_static_method",lc_class_rm_static_method,         1)

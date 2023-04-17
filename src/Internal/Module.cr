@@ -222,7 +222,7 @@ module LinCAS::Internal
     end
 
     def self.init_module
-      @@lc_module = lc_build_module_class
+      @@lc_module = lc_build_internal_class("Module", @@lc_object) { lc_build_module_class }
 
       define_method(@@lc_module,"to_s", lc_class_to_s,       0)
       define_method(@@lc_module,"name", lc_class_to_s,       0)
