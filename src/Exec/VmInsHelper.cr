@@ -844,7 +844,6 @@ module LinCAS
         # Next statement causes a throw only when used in blocks.
         # Therefore, the current frame is a block/proc frame. We just
         # need to set pc to the proper instruction
-        restore_regs
         @pc = @current_frame.pc_bottom + ct_entry.cont
         push value
       end
