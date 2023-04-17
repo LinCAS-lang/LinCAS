@@ -76,6 +76,7 @@ module LinCAS
       pattern = "#{@ident}%04d %-13s %-51s%10s"
       line_pattern = "(%4s)[Li]"
       callinfo_pattern = "<ci!name:%s, argc:%s, kwarg:%s, explict:%s, %s>"
+      new_obj_pattern = "<argc:%s, kwarg:%s, %s>"
       i = -1
       size = encoded.size
       while (i += 1) < size
@@ -126,6 +127,16 @@ module LinCAS
           mid = "#{name}:#{FuncVisib.new(op.to_i32)} at #{op3}"
           # Counter i is adjusted to the real instruction count
           pattern % {i - 1, ins, mid, line}
+        when .new_object?
+          ci = @iseq.call_info[op]
+          ci_str = new_obj_pattern % {ci.argc, ci.kwarg?, "null"}
+          pattern % {i - 1, ins, ci_str, line}
+        when .new_object_with_block?
+          ci = @iseq.call_info[op]
+          block = ci.block || "null"
+          ci_str = new_obj_pattern % {ci.argc, ci.kwarg?, block}
+          @stack << {block, "block"} if !block.is_a? String
+          pattern % {i - 1, ins, ci_str, line}
         else
           pattern % {i, ins, op, line}
         end
