@@ -837,7 +837,7 @@ module LinCAS
       compile_each(iseq, left)
       compile_each(iseq, right)
       flag = inclusive ? 1u64 : 0u64
-      set_line(iseq, node)
+      set_line(iseq, node.location)
       stack_decrease
       iseq.encoded << (IS::MAKE_RANGE | IS.new(flag))
     end 
@@ -860,6 +860,7 @@ module LinCAS
       compile_control_exp_arg iseq, node
       state = @compiler_state.last
       encoded = iseq.encoded
+      set_line(iseq, node.location)
       case state.state
       in .loop?
         (type == :break ? state.breaks : state.nexts) << encoded.size
@@ -1096,6 +1097,11 @@ module LinCAS
       return index.to_u64
     end 
 
+    @[AlwaysInline]
+    def set_line(iseq, node : Node)
+      set_line(iseq, node.location)
+    end
+
     def set_line(iseq, location : Location)
       line_ref   = iseq.line 
       if line_ref.empty? || line_ref.last.line != location.line
@@ -1103,7 +1109,7 @@ module LinCAS
       end
     end
 
-    def set_line(iseq, location)
+    def set_line(iseq, location : Nil)
     end
 
     def stack_increase
