@@ -149,7 +149,7 @@ module LinCAS
       return exp
     end
 
-    def parse_expression(node = nil, in_if = false)
+    def parse_expression(in_if = false)
       location = @token.location
       exp = parse_op_assign is_condition: in_if
       parse_expression_suffix(exp, location) 
@@ -1841,12 +1841,12 @@ module LinCAS
         if args.size == 1 && !args.first.is_a? Splat
           node = ControlExpression.new(type, args.first)
         else
-          node = ControlExpression.new(type, ArrayLiteral.new(args).at(args.last.location)).at location
+          node = ControlExpression.new(type, ArrayLiteral.new(args).at(args.last.location))
         end
       else
-        node = ControlExpression.new(type, ).at location
+        node = ControlExpression.new(type)
       end
-      return node
+      return node.at location
     end
 
     def named_args_start?
