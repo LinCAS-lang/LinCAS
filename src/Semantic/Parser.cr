@@ -1716,7 +1716,7 @@ module LinCAS
         next_token_skip_space_or_newline
         while @token.type != :"|" && @token.type != :EOF 
           if @token.type == :"*"
-            if splat_index
+            if splat_index >= 0
               parser_raise "Splat block argument already defined", @token.location
             end 
             splat_index = index 
