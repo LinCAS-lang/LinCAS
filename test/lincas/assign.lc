@@ -50,7 +50,7 @@ describe :Assign do {
     let f { yield *[1, 2] }; f { |a, b| assert_eq [1, 2], [a, b]}
   }
 
-  it "assign block variables" do {
+  it "assign return value" do {
     let r { return null }; a := r(); assert_null a #; delete_method :f
     let r { return 1    }; a := r(); assert_eq 1, a
     let r { return []   }; a := r(); assert_eq [], a
@@ -58,5 +58,61 @@ describe :Assign do {
     #let r { return *[]  }; a := r(); assert_eq [], a
     #let r { return *[1] }; a := r(); assert_eq [1], a
     #let r { return *[1, 2]   }; a := r(); assert_eq [1, 2], a
+  }
+
+  it "assign params in proc" do {
+    f := new Proc { |r| assert_eq([], r) }
+    f.call []
+    
+    f := new Proc { |r, *l| assert_eq([], r); assert_eq([1], l) }
+    f.call([], *[1])
+
+    f := new Proc { |x| x}
+    assert_eq(42, f.call(42))
+    assert_eq([42], f.call([42]))
+    assert_eq([[42]], f.call([[42]]))
+    assert_eq([42, 55], f.call([42, 55]))
+
+    f := new Proc { |x, *any| x}
+    assert_eq(42, f.call(42))
+    assert_eq([42], f.call([42]))
+    assert_eq([[42]], f.call([[42]]))
+    assert_eq([42, 55], f.call([42, 55]))
+
+    f := new Proc { |*x| x}
+    assert_eq([42], f.call(42))
+    assert_eq([[42]], f.call([42]))
+    assert_eq([[[42]]], f.call([[42]]))
+    assert_eq([[42, 55]], f.call([42, 55]))
+  }
+
+  let loop {
+    while true {
+      yield
+    }
+  }
+
+  it "assign through break" do {
+    a := loop do { break }; assert_null(a)
+    a := loop do { break null }; assert_null(a)
+    a := loop do { break 1}; assert_eq(1, a)
+    a := loop do { break [] }; assert_eq([], a)
+    a := loop do { break [1] }; assert_eq([1], a)
+    a := loop do { break [null] }; assert_eq([null], a)
+    a := loop do { break [[1]] }; assert_eq([[1]], a)
+    a := loop do { break [*[1]] }; assert_eq([1], a)
+  }
+
+  it "assign through next" do {
+    let r(val) { a := yield; assert_eq(val, a) }
+    r(null) { next }
+    r(null) { next null}
+    r(1) { next 1 }
+    r([]) { next [] }
+    r([1]) { next [1] }
+    r([null]) { next [null] }
+    r([[]]) { next [[]]}
+    r([1]) { next [*[1]]}
+    r([1, 2]) {next [*[1, 2]]}
   }
 }
