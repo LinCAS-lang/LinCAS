@@ -999,11 +999,35 @@ module LinCAS
       end
     end 
 
+    def compile_array_atomic(iseq, node)
+      size = 0
+      if node.is_a? Splat 
+        if (ary = node.exp).is_a? ArrayLiteral
+          tmp = uninitialized Node[0]
+          exps = ary.exps || tmp
+          exps.each { |exp|
+            size += compile_array_atomic(iseq, exp)
+          }
+        else
+          compile_each(iseq, node.exp)
+        end
+      else
+        compile_each(iseq, node) 
+      end
+      if size == 0 && !node.nil?
+        size = 1
+      end
+      return size
+    end
+
     def compile_array(iseq, node : ArrayLiteral)
       tmp = uninitialized Node[0]
       exps = node.exps || tmp
-      exps.each { |exp| compile_each(iseq, exp) }
-      iseq.encoded << (IS::NEW_ARRAY | IS.new(exps.size.to_u64))
+      size = 0
+      exps.each { |exp| 
+        size += compile_array_atomic(iseq, exp)
+      }
+      iseq.encoded << (IS::NEW_ARRAY | IS.new(size.to_u64))
     end
 
     def compile_hash(iseq, node : HashLiteral)
