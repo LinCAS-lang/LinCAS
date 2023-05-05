@@ -27,7 +27,7 @@ module LinCAS::Internal
         if compare_by_type?(obj1, obj2)
             return val2bool(num2num(obj1) == num2num(obj2))
         end
-        if (lc_obj_has_internal_m? obj2,"==") == 1
+        if (lc_obj_responds_to? obj2,"==")
             return Exec.lc_call_fun(obj2,"==",obj1)
         end
         return lcfalse
