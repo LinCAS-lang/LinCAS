@@ -55,9 +55,9 @@ describe :Assign do {
     let r { return 1    }; a := r(); assert_eq 1, a
     let r { return []   }; a := r(); assert_eq [], a
     let r { return [1]  }; a := r(); assert_eq [1], a
-    #let r { return *[]  }; a := r(); assert_eq [], a
-    #let r { return *[1] }; a := r(); assert_eq [1], a
-    #let r { return *[1, 2]   }; a := r(); assert_eq [1, 2], a
+    let r { return *[]  }; a := r(); assert_eq [], a
+    let r { return *[1] }; a := r(); assert_eq [1], a
+    let r { return *[1, 2]   }; a := r(); assert_eq [1, 2], a
   }
 
   it "assign params in proc" do {
@@ -101,6 +101,13 @@ describe :Assign do {
     a := loop do { break [null] }; assert_eq([null], a)
     a := loop do { break [[1]] }; assert_eq([[1]], a)
     a := loop do { break [*[1]] }; assert_eq([1], a)
+    
+    a := loop do { break *1 }; assert_eq([1], a)
+    a := loop do { break *[] }; assert_eq([], a)
+    a := loop do { break *[1] }; assert_eq([1], a)
+    a := loop do { break *[null] }; assert_eq([null], a)
+    a := loop do { break *[[1]] }; assert_eq([[1]], a)
+    a := loop do { break *[*[1]] }; assert_eq([1], a)
   }
 
   it "assign through next" do {
