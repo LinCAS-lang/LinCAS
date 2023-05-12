@@ -135,6 +135,7 @@ end
             pyimport_err
             not_impl_err
             localjmp_err
+            range_err
         |}}
 
         {% for name in built_in + extra_v %}
