@@ -1009,15 +1009,18 @@ module LinCAS
             size += compile_array_atomic(iseq, exp)
           }
         else
+          size = 1
           compile_each(iseq, node.exp)
         end
       else
+        size = 1
         compile_each(iseq, node) 
       end
-      if size == 0 && !node.nil?
-        size = 1
-      end
       return size
+    end
+
+    def emit_new_array(iseq, size)
+      iseq.encoded << (IS::NEW_ARRAY | IS.new(size.to_u64))
     end
 
     def compile_array(iseq, node : ArrayLiteral)
@@ -1025,9 +1028,19 @@ module LinCAS
       exps = node.exps || tmp
       size = 0
       exps.each { |exp| 
-        size += compile_array_atomic(iseq, exp)
+        if exp.is_a? Splat
+          emit_new_array(iseq, size)
+          size = 0
+          compile_each(iseq, exp.exp)
+          iseq.encoded << IS::SPLAT_ARRAY << IS::CONCAT_ARRAY
+        else
+          compile_each(iseq, exp)
+          size += 1
+        end
       }
-      iseq.encoded << (IS::NEW_ARRAY | IS.new(size.to_u64))
+      unless !exps.empty? && size == 0
+        emit_new_array(iseq, size)
+      end
     end
 
     def compile_hash(iseq, node : HashLiteral)
