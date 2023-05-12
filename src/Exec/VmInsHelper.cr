@@ -620,7 +620,7 @@ module LinCAS
         return Internal.lc_ary_clone(value)
       else
         # TODO: check if value implements to_a
-        return Internal.build_ary(1, value)
+        return Internal.tuple2array(value)
       end
     end
 
@@ -630,7 +630,7 @@ module LinCAS
       # so we must be sure the compiler instructions place a real
       # array as first argument
       vm_ensure_type a1, Internal::LcArray
-      lc_bug "Missing implementation of Array#concat!" # TODO
+      Internal.lc_ary_concat(a1, a2)
     end
 
     protected def vm_array_append(array : LcVal, value : LcVal)
@@ -691,7 +691,7 @@ module LinCAS
     @[AlwaysInline]
     protected def vm_new_array(size : UInt64)
       size = size.to_i64
-      array = Internal.build_ary(size).as(Internal::LcArray)
+      array = Internal.new_array_size(size).as(Internal::LcArray)
       @sp -= size
       array.ptr.copy_from(@stack.ptr + @sp, size)
       array.size = size

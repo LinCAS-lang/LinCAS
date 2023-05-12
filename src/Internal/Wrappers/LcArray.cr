@@ -71,7 +71,7 @@ module LinCAS
             if index < 0
                 raise IndexError.new("index out of bounds (Ary)")
             end
-            Internal.lc_ary_index_assign(self,Internal.build_fake_int(index),val)
+            Internal.lc_ary_set(self,Internal.build_fake_int(index),val)
         end
 
         def shared_copy(from : IntnumR, count : IntnumR)

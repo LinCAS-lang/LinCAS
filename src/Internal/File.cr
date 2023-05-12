@@ -71,7 +71,7 @@ module LinCAS::Internal
         tmp_a    = Ary.new(1) 
         tmp_a[0] = tmp_s
         pieces   = lc_str_split(path_,tmp_a)
-        elem     = build_ary_new
+        elem     = new_array
         ary_iterate(pieces) do |e|
             e_ptr = pointer_of(e)
             if strcmp(e_ptr,"..") == 0

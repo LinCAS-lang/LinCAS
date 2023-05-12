@@ -220,7 +220,7 @@ module LinCAS::Internal
     end
 
     def self.lc_mdata_to_a(mdata :  LcVal)
-        ary  = build_ary_new
+        ary  = new_array
         size = get_mdata_size(mdata)
         size.times do |i|
             matched = matched_data(lc_cast(mdata,LcMatchData),i)

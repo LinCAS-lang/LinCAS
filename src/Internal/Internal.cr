@@ -103,6 +103,14 @@ module LinCAS::Internal
       return tmp
     end
 
+    def self.lincas_alloc(type, size)
+      type.new(size)
+    end
+
+    def self.lincas_realloc(ptr, size)
+      ptr.realloc size
+    end
+
     def self.lincas_obj_alloc(type : LcVal.class,klass : LcClass, *args, **opt)
       tmp       = type.new(*args)
       tmp.klass = klass

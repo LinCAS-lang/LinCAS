@@ -91,18 +91,18 @@ module LinCAS::Internal
     # an exception instead of returning `nil` in this case
     c = do_coerce(v1, v2, true).not_nil!
     return Exec.lc_call_fun(
-      lc_ary_index(c, num2int(0)),
+      lc_ary_get(c, num2int(0)),
       method,
-      lc_ary_index(c, num2int(1))
+      lc_ary_get(c, num2int(1))
     )
   end
 
   def self.lc_num_coerce_cmp(v1 :  LcVal, v2 :  LcVal, method : String)
     if (c = do_coerce(v1, v2, false))
       return Exec.lc_call_fun(
-        lc_ary_index(c, num2int(0)),
+        lc_ary_get(c, num2int(0)),
         method,
-        lc_ary_index(c, num2int(1))
+        lc_ary_get(c, num2int(1))
       )
     end
     return Null
@@ -114,9 +114,9 @@ module LinCAS::Internal
     else
       ensure_cmp(
         Exec.lc_call_fun(
-          lc_ary_index(c, num2int(0)), 
+          lc_ary_get(c, num2int(0)), 
           method, 
-          lc_ary_index(c, num2int(2))
+          lc_ary_get(c, num2int(2))
         ), 
         v1, 
         v2

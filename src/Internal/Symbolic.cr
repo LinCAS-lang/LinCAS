@@ -155,7 +155,7 @@ module LinCAS::Internal
     def self.lc_func_vars(f :  LcVal)
         func = get_function(f)
         tmp  = [] of Variable
-        ary  = build_ary_new
+        ary  = new_array
         func.get_params(tmp)
         tmp.each do |param|
             lc_ary_push(ary,build_function(param))

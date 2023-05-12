@@ -38,7 +38,7 @@ module LinCAS::Internal
             end
             return version
         else
-            LinCAS.lc_bug("Missing LinCAS version")
+            # LinCAS.lc_bug("Missing LinCAS version")
         end
         # Unreachable
         ""
@@ -193,7 +193,7 @@ module LinCAS::Internal
     end
 
     private def self.define_argv
-        ary = build_ary_new
+        ary = new_array
         (1...ARGV.size).each do |i|
             lc_ary_push(ary,build_string(ARGV[i]))
         end

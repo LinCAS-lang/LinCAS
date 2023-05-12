@@ -51,6 +51,28 @@ module LinCAS::Internal
         return i_to_t(size,IntD) || 0
     end
 
+    def self.range_start_and_len(range, len, error)
+        raise_ = false
+        inc = inclusive(range) ? 1 : 0
+        beg = i_to_t(r_left(range), Int64)
+        end_ = i_to_t(r_right(range) + inc, Int64)
+        if beg < 0
+            beg += len
+            raise_ = true if beg < 0
+        end
+        end_ += len if end_ < 0
+        if error
+            raise_ = true if beg > len
+            end_ = len if end_ > len
+        end
+        size = end_ - beg
+        size = 0i64 if size < 0
+        if error && raise_
+            lc_raise(@@lc_range_err, "#{beg}..#{inc ? "" : '.'}#{end_} out of range")
+        end
+        return {beg, size}
+    end
+
     @[AlwaysInline]
     def self.range2py(range :  LcVal)
         lft = r_left(range)
@@ -145,7 +167,7 @@ module LinCAS::Internal
     end
 
     def self.lc_range_map(range)
-        ary = build_ary_new
+        ary = new_array
         lft = r_left(range)
         rht = r_right(range)
         lft,rht = rht,lft unless lft < rht

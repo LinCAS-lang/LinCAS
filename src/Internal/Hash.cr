@@ -481,7 +481,7 @@ module LinCAS::Internal
     end
 
     def self.lc_hash_keys(hash :  LcVal)
-        ary = build_ary_new
+        ary = new_array
         hash_each_key(hash) do |key|
             lc_ary_push(ary,key)
         end
@@ -558,9 +558,9 @@ module LinCAS::Internal
     end
 
     def self.lc_hash_to_a(hash :  LcVal)
-        ary = build_ary_new
+        ary = new_array
         hash_iterate(hash) do |entry|
-            tmp = build_ary_new
+            tmp = new_array
             lc_ary_push(tmp,entry.key)
             lc_ary_push(tmp,entry.value)
             lc_ary_push(ary,tmp)

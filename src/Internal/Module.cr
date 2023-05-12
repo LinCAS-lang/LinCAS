@@ -118,7 +118,7 @@ module LinCAS::Internal
 
     
     def self.lc_mod_ancestors(klass :  LcVal)
-      ary = build_ary_new
+      ary = new_array
       while klass 
         lc_ary_push(ary,klass)
         klass = lc_cast(klass, LcClass).parent
@@ -172,7 +172,7 @@ module LinCAS::Internal
     def self.lc_module_property(klass : LcVal, argv : LcVal)
       if klass.is_a? LcClass
         argv  = lc_recast(argv, Ary)
-        names = build_ary argv.size * 2
+        names = new_array_size argv.size * 2
         argv.each do |name|
           id = id2string(name)
           lincas_attr? id
@@ -190,7 +190,7 @@ module LinCAS::Internal
     def self.lc_module_getter(klass : LcVal, argv : LcVal)
       if klass.is_a? LcClass
         argv  = lc_recast(argv, Ary)
-        names = build_ary argv.size
+        names = new_array_size argv.size
         argv.each do |name|
           id = id2string(name)
           lincas_attr? id
@@ -207,7 +207,7 @@ module LinCAS::Internal
     def self.lc_module_setter(klass : LcVal, argv : LcVal)
       if klass.is_a? LcClass
         argv  = lc_recast(argv, Ary)
-        names = build_ary argv.size
+        names = new_array_size argv.size
         argv.each do |name|
           id = id2string(name)
           lincas_attr? id

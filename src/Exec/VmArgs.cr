@@ -358,9 +358,9 @@ module LinCAS
       orig = @stack.ptr + start
       if splat = args._splat
         splat_p = splat.ptr
-        if splat.size + rest > splat.total_size
-          splat.total_size = splat.size + rest
-          splat.ptr = splat_p = splat_p.realloc(splat.total_size)
+        if splat.size + rest > splat.capacity
+          splat.capacity = splat.size + rest
+          splat.ptr = splat_p = splat_p.realloc(splat.capacity)
         end
         (splat_p + rest).move_from(splat_p, splat.size)
         splat_p.copy_from(orig, rest)
@@ -435,7 +435,7 @@ module LinCAS
         env[args.env_count] = splat.as(LcVal)
         args._splat = nil
       else
-        env[args.env_count] = Internal.build_ary_new
+        env[args.env_count] = Internal.new_array
       end
       args.env_count += 1
     end

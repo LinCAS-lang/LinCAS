@@ -242,15 +242,13 @@ module LinCAS::Internal
             buffer_append(buffer,"null")
         elsif value.is_a? LcBool
             buffer_append(buffer,value == lctrue ? "true" : "false")
-        elsif value.is_a? LcArray
-            ary_append(buffer,value)
         elsif value.is_a? LcSymbol 
             buffer_append(buffer,get_sym_origin(value))
         elsif lc_obj_responds_to? value,"inspect"
             string = Exec.lc_call_fun(value,"inspect")
             string_append2(buffer,string)
         else 
-            string_append2(buffer,lc_obj_to_s(value))
+            string_append2(buffer, lc_obj_to_s(value))
         end
     end
 
@@ -694,7 +692,7 @@ module LinCAS::Internal
         end
         beg_ptr = pointer_of(str1)
         end_ptr = beg_ptr + str_size(str1)
-        ary     = build_ary_new
+        ary     = new_array
         i       = 0
         j       = 0
         while beg_ptr <= end_ptr
@@ -788,7 +786,7 @@ module LinCAS::Internal
     def self.lc_str_chars(str :  LcVal)
         strlen = str_size(str)
         ptr    = pointer_of(str)
-        ary    = build_ary(strlen)
+        ary    = new_array_size(strlen)
         (strlen).times do |i|
             lc_ary_push(ary,build_string(ptr[i]))
         end

@@ -60,7 +60,7 @@ module LinCAS::Internal
     {% for name in %w|cos sin acos asin tan atan cosh sinh asinh acosh gamma
                     exp log tanh atanh sqrt cbrt log10 |%}
         private def self.lc_{{name.id}}_ary(v :  LcVal)
-            new_ary = build_ary_new
+            new_ary = new_array
             ary_iterate(v) do |obj|
                 res = lc_{{name.id}}(obj)
                 if test(res)
@@ -79,7 +79,7 @@ module LinCAS::Internal
                 lc_raise(lc_arg_err,"(Array size missmatch)")
                 return Null 
             end
-            new_ary = build_ary_new
+            new_ary = new_array
             ary_iterate_with_index(a1) do |obj,i|
                 tmp = lc_{{name.id}}(obj,ary_at_index(a2,i))
                 if test(tmp)
