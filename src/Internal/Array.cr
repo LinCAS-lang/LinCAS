@@ -384,6 +384,37 @@ module LinCAS::Internal
     return build_string string
   end
 
+  def self.lc_ary_each(ary :  LcVal)
+    arylen = ary_size(ary) 
+    arylen.times do |i|
+      Exec.lc_yield(ary_at_index(ary, i))
+    end
+    Null 
+  end
+
+  def self.lc_ary_map(ary :  LcVal)
+    arylen = ary_size(ary)
+    tmp    = new_array_size arylen
+    arylen.times do |i|
+      ary_set_index(tmp, i, Exec.lc_yield(ary_at_index(ary, i)))
+    end
+    return tmp 
+  end
+
+  def self.lc_ary_map_bang(ary :  LcVal)
+    ary_size(ary).times do |i|
+      ary_set_index(ary,i,Exec.lc_yield(ary_at_index(ary,i)))
+    end
+    return ary 
+  end 
+
+  def self.lc_ary_each_with_index(ary :  LcVal)
+    ary_size(ary).times do |i|
+      Exec.lc_yield(ary_at_index(ary, i), num2int(i))
+    end
+    return Null 
+  end
+
   private def self.internal_ary_sort(ary :  LcVal*, size)
   end
 
@@ -407,6 +438,9 @@ module LinCAS::Internal
     define_method(@@lc_array, "empty?",         lc_ary_empty,           0)
     define_method(@@lc_array, "to_s",           lc_ary_to_s,            0)
     alias_method_str(@@lc_array, "to_s", "inspect"                       )
+    define_method(@@lc_array,"each",           lc_ary_each,             0)
+    define_method(@@lc_array,"map",            lc_ary_map,              0)
+    define_method(@@lc_array,"map!",           lc_ary_map_bang,         0)
 
     #lc_define_const(@@lc_kernel,"ARGV",define_argv)
   end
