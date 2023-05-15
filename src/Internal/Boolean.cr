@@ -115,6 +115,10 @@ module LinCAS::Internal
         return lcfalse 
     end
 
+    def self.lc_bool_to_s(val : LcVal)
+        return build_string(bool2val(val).to_s)
+    end
+
     def self.init_boolean
         @@lc_boolean = internal.lc_build_internal_class("Boolean")
         lc_undef_allocator(@@lc_boolean)
@@ -126,6 +130,8 @@ module LinCAS::Internal
         define_method(@@lc_boolean,"!=",lc_bool_ne,    1)
         define_method(@@lc_boolean,"&&",lc_bool_and,   1)
         define_method(@@lc_boolean,"||",lc_bool_or,    1)
+        define_method(@@lc_boolean,"to_s",lc_bool_to_s,0)
+        alias_method_str(@@lc_boolean, "to_s", "inspect")
 
         lincas_init_lazy_const(LcTrue,@@lc_boolean)
         lincas_init_lazy_const(LcFalse,@@lc_boolean)
