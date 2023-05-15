@@ -433,16 +433,19 @@ module LinCAS::Internal
         return internal.lc_str_include(str1,str2)
     end
     
-    # Same as lc_str_compare, but it checks if two strings are different
-    def self.lc_str_icompare(str1 :  LcVal, str2 :  LcVal)
-        unless str2.is_a? LcString
-            lc_raise(
-                lc_type_err,
-                "No implicit conversion of #{lc_typeof(str2)} into String"
-            )
-            return Null
+    
+    def self.lincas_str_cmp(str1 :  LcVal, str2 :  LcVal)
+        return lc_cmpint lc_str_cmp(str1, str2), str1, str2
+    end
+
+    def self.lc_str_cmp(str : LcVal, obj : LcVal)
+        if obj.is_a? LcString
+            ptr1 = pointer_of str
+            ptr2 = pointer_of obj
+            res = LibC.strcmp(ptr1,ptr2)
+            return num2int(res > 0 ? 1 : res < 0 ? -1 : res)
         end
-        return lc_bool_invert(internal.lc_str_compare(str1,str2))
+        return Null
     end
 
     #$I clone
@@ -996,7 +999,7 @@ module LinCAS::Internal
         define_method(@@lc_string,"*",       lc_str_multiply,   1)
         define_method(@@lc_string,"include?",lc_str_include,    1)
         define_method(@@lc_string,"==",      lc_str_compare,    1)
-        define_method(@@lc_string, "!=",     lc_str_icompare,   1)
+        define_method(@@lc_string, "<=>",     lc_str_cmp,   1)
         define_method(@@lc_string,"clone",   lc_str_clone,      0)
         define_method(@@lc_string,"[]",      lc_str_index,      1)
         define_method(@@lc_string,"[]=",     lc_str_set_index,  2)
