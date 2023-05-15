@@ -477,8 +477,8 @@ module LinCAS::Internal
 
   def self.lc_ary_flatten!(ary :  LcVal)
     tmp = lc_ary_flatten ary
-    lc_cast(ary, LcArray).ptr = ptr(ary)
-    set_size(ary, ary_size(tmp))
+    lc_cast(ary, LcArray).ptr = ptr(tmp)
+    set_ary_size(ary, ary_size(tmp))
     return ary
   end
 
@@ -561,14 +561,14 @@ module LinCAS::Internal
 
   def self.lc_ary_reverse(ary : LcVal)
     tmp = lc_ary_clone ary
-    return lc_ary_reverse tmp
+    return lc_ary_reverse! tmp
   end
 
   def self.lc_ary_reverse!(ary :  LcVal)
     size  = ary_size(ary)
     ptr   = ptr(ary)
-    (arylen // 2).times do |i|
-      ptr.swap(i, arylen - i - 1)
+    (size // 2).times do |i|
+      ptr.swap(i, size - i - 1)
     end
     return ary 
   end
@@ -600,7 +600,7 @@ module LinCAS::Internal
     define_method(@@lc_array,"map_with_index", lc_ary_map_with_index,   0)
     define_method(@@lc_array,"map_with_index!",lc_ary_map_with_index!,  0)
     define_method(@@lc_array,"flatten",        lc_ary_flatten,          0)
-    define_method(@@lc_array,"flatten",        lc_ary_flatten!,         0)
+    define_method(@@lc_array,"flatten!",        lc_ary_flatten!,        0)
     define_method(@@lc_array,"insert",         lc_ary_insert,          -3)
     define_method(@@lc_array,"==",             lc_ary_eq,               1)
     define_method(@@lc_array,"swap",           lc_ary_swap,             2)
