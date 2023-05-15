@@ -137,9 +137,27 @@ module LinCAS::Internal
     return res
   end
 
+  def self.lc_cmpint(value : LcVal, v1 : LcVal, v2 : LcVal)
+    if value == Null
+      lc_comp_err(v1, v2)
+    end
+    if value.is_a? NumType
+      t = num2num(value)
+      return t > 0 ? 1 : t == 0 ? 0 : -1
+    else
+      return 1 if test(Exec.lc_call_fun(value, ">", num2int(0)))
+      return -1 if test(Exec.lc_call_fun(value, "<", num2int(0)))
+      return 0
+    end
+  end
+
   @[AlwaysInline]
   def self.lc_num_hash(n :  LcVal)
     return num2int(num2num(n).hash.to_i64)
+  end
+
+  def self.lincas_int_or_flo_cmp(n : LcVal, obj : LcVal)
+    return lc_cmpint ensure_cmp(lc_int_or_flo_cmp(n, obj), n, obj), n, obj
   end
 
   # :call-seq:
