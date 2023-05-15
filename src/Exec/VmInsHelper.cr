@@ -403,7 +403,7 @@ module LinCAS
       if (arity = method.arity) >= 0 # Likely
         min_argc = max_argc = arity
       else
-        min_argc = arity - 1
+        min_argc = arity.abs - 1
         max_argc = UNLIMITED_ARGUMENTS
       end
       vm_check_arity(min_argc, max_argc, calling.argc)
