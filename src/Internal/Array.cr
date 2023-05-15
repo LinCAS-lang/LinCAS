@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "set"
+
 module LinCAS::Internal
   MIN_ARY_CAPA = 3u32
   MAX_ARY_CAPA = UInt32::MAX
@@ -27,11 +29,11 @@ module LinCAS::Internal
     property capacity : Int64, size : Int64, ptr
 
     def size=(value : Int32)
-      size = value.to_i64
+      @size = value.to_i64
     end
 
     def capacity=(value : Int32)
-      capacity = value.to_i64
+      @capacity = value.to_i64
     end
   end
 
@@ -392,6 +394,13 @@ module LinCAS::Internal
     Null 
   end
 
+  def self.lc_ary_each_with_index(ary :  LcVal)
+    ary_size(ary).times do |i|
+      Exec.lc_yield(ary_at_index(ary, i), num2int(i))
+    end
+    return Null 
+  end
+
   def self.lc_ary_map(ary :  LcVal)
     arylen = ary_size(ary)
     tmp    = new_array_size arylen
@@ -401,21 +410,167 @@ module LinCAS::Internal
     return tmp 
   end
 
-  def self.lc_ary_map_bang(ary :  LcVal)
+  def self.lc_ary_map!(ary :  LcVal)
     ary_size(ary).times do |i|
       ary_set_index(ary,i,Exec.lc_yield(ary_at_index(ary,i)))
     end
     return ary 
   end 
 
-  def self.lc_ary_each_with_index(ary :  LcVal)
-    ary_size(ary).times do |i|
-      Exec.lc_yield(ary_at_index(ary, i), num2int(i))
+  def self.lc_ary_map_with_index(ary :  LcVal)
+    size = ary_size(ary)
+    tmp  = new_array_size(size)
+    size.times do |i|
+      value = Exec.lc_yield(ary_at_index(ary, i), num2int(i)).as( LcVal)
+      ary_set_index(tmp, i, value)
     end
-    return Null 
+    return tmp
+  end 
+
+  def self.lc_ary_map_with_index!(ary :  LcVal)
+    size = ary_size(ary)
+    ptr(ary).map_with_index!(size) do |value, i|
+      next Exec.lc_yield(value, num2int(i))
+    end
+    return ary 
   end
 
+  record FlatEntry,
+    array : LcVal,
+    index : Int64
+
+  def self.lc_ary_flatten(ary :  LcVal)
+    guard = Set(UInt64).new
+    result = new_array_with_capa(ary_size(ary))
+    stack = Array(FlatEntry).new
+    current = ary
+    i       = 0i64
+    guard << ary.object_id
+    loop do
+      while i < ary_size(current)
+        tmp = ary_at_index(current, i)
+        i += 1
+        if !tmp.is_a? LcArray
+          lc_ary_push(result, tmp)
+        else
+          if !guard.includes? tmp.object_id
+            stack.push FlatEntry.new current, i
+            current = tmp
+            i = 0i64
+            guard << tmp.object_id
+          else
+            lc_raise(lc_arg_err, "Tried to flatten recursive array")
+          end
+        end
+      end
+      
+      break if stack.empty?
+
+      guard.delete current.object_id
+
+      entry = stack.pop
+      current = entry.array
+      i = entry.index
+    end
+    return result
+  end
+
+  def self.lc_ary_flatten!(ary :  LcVal)
+    tmp = lc_ary_flatten ary
+    lc_cast(ary, LcArray).ptr = ptr(ary)
+    set_size(ary, ary_size(tmp))
+    return ary
+  end
+
+  def self.lc_ary_insert(ary :  LcVal, argv :  LcVal)
+    argv = lc_cast(argv, Ary)
+    i = lc_num_to_cr_i(argv[0])
+    size = ary_size(ary)
+    n = argv.size - 1 # we don't count the index
+    if i < 0
+      i += size
+    end
+
+    unless 0 <= i <= size
+      lc_raise(lc_index_err, "(Index #{i} out of bounds)")
+    end
+
+    check_capacity lc_cast(ary, LcArray), n
+    buffer = ptr(ary)
+    (buffer + i + n).move_from (buffer + i), size - i
+    (buffer + i).copy_from (argv.ptr + 1), n
+    set_ary_size(ary, size + n)
+
+    return ary
+  end
+
+  def self.lc_ary_eq(ary1 :  LcVal, ary2 :  LcVal)
+    return lcfalse unless ary2.is_a? LcArray
+    return lcfalse if ary_size(ary1) != ary_size(ary2)
+    return lctrue if ary1.object_id == ary2.object_id
+    arylen = ary_size(ary1)
+    arylen.times do |i|
+      return lcfalse unless lc_obj_compare(
+        ary_at_index(ary1,i),
+        ary_at_index(ary2,i)
+      ) == lctrue 
+    end
+    return lctrue 
+  end
+
+  def self.lc_ary_swap(ary :  LcVal, i1 :  LcVal, i2 :  LcVal)
+    x = lc_num_to_cr_i(i1)
+    y = lc_num_to_cr_i(i2)
+    size = ary_size(ary)
+    unless 0 <= x < size && 0 <= x < size
+      lc_raise(lc_index_err, "(Indexes out of bounds)")
+    end 
+    ptr = ptr(ary)
+    ptr.swap(x, y)
+    return Null 
+  end 
+
   private def self.internal_ary_sort(ary :  LcVal*, size)
+  end
+
+  private def self.compare_with_block(a : LcVal, b : LcVal)
+    return lc_cmpint(Exec.lc_yield(a, b), a, b)
+  end
+
+  private def self.compare(a : LcVal, b : LcVal)
+    if a.is_a?(NumType) && b.is_a? NumType
+      res = lincas_int_or_flo_cmp a, b
+    elsif a.is_a?(LcString) && b.is_a? LcString 
+      res = lincas_str_cmp(a, b)
+    else
+      res = lc_cmpint Exec.lc_call_fun(a, "<=>", b), a, b
+    end
+    return res
+  end
+
+  def self.lc_ary_sort(ary :  LcVal)
+    tmp = lc_ary_clone ary
+    lc_ary_sort! tmp
+  end
+
+  def self.lc_ary_sort!(ary :  LcVal)
+    comp = Exec.block_given? ? ->compare_with_block(LcVal, LcVal) : ->compare(LcVal, LcVal)
+    lc_heap_sort ptr(ary), ary_size(ary), &comp
+    return ary
+  end
+
+  def self.lc_ary_reverse(ary : LcVal)
+    tmp = lc_ary_clone ary
+    return lc_ary_reverse tmp
+  end
+
+  def self.lc_ary_reverse!(ary :  LcVal)
+    size  = ary_size(ary)
+    ptr   = ptr(ary)
+    (arylen // 2).times do |i|
+      ptr.swap(i, arylen - i - 1)
+    end
+    return ary 
   end
 
   def self.init_array
@@ -439,8 +594,20 @@ module LinCAS::Internal
     define_method(@@lc_array, "to_s",           lc_ary_to_s,            0)
     alias_method_str(@@lc_array, "to_s", "inspect"                       )
     define_method(@@lc_array,"each",           lc_ary_each,             0)
+    define_method(@@lc_array,"each_with_index",lc_ary_each_with_index,  0)
     define_method(@@lc_array,"map",            lc_ary_map,              0)
-    define_method(@@lc_array,"map!",           lc_ary_map_bang,         0)
+    define_method(@@lc_array,"map!",           lc_ary_map!,             0)
+    define_method(@@lc_array,"map_with_index", lc_ary_map_with_index,   0)
+    define_method(@@lc_array,"map_with_index!",lc_ary_map_with_index!,  0)
+    define_method(@@lc_array,"flatten",        lc_ary_flatten,          0)
+    define_method(@@lc_array,"flatten",        lc_ary_flatten!,         0)
+    define_method(@@lc_array,"insert",         lc_ary_insert,          -3)
+    define_method(@@lc_array,"==",             lc_ary_eq,               1)
+    define_method(@@lc_array,"swap",           lc_ary_swap,             2)
+    define_method(@@lc_array,"sort",           lc_ary_sort,             0)
+    define_method(@@lc_array,"sort!",          lc_ary_sort!,            0)
+    define_method(@@lc_array,"reverse",        lc_ary_reverse,          0)
+    define_method(@@lc_array,"reverse!",       lc_ary_reverse!,         0)
 
     #lc_define_const(@@lc_kernel,"ARGV",define_argv)
   end
