@@ -17,7 +17,7 @@ require "set"
 
 module LinCAS::Internal
   MIN_ARY_CAPA = 3u32
-  MAX_ARY_CAPA = UInt32::MAX
+  MAX_ARY_CAPA = Int64::MAX
   CAPACITY_THRESHOLD = 256u32
 
   class LcArray < LcBase
@@ -77,7 +77,11 @@ module LinCAS::Internal
     elsif current < CAPACITY_THRESHOLD
       return current * 2
     end
-    return current + (current + 3 * CAPACITY_THRESHOLD) // 4
+    new_c = current + (current + 3 * CAPACITY_THRESHOLD) // 4
+    if new_c > MAX_ARY_CAPA
+      lc_raise(lc_runtime_err, "Array capacity too big")
+    end
+    return new_c
   end
 
   def self.calculate_new_capa(current, new)
