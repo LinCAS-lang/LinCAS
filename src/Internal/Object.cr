@@ -172,6 +172,11 @@ module LinCAS::Internal
         return val2bool(obj1.object_id == obj2.object_id)
     end
 
+    def self.lc_obj_neq(obj1 :  LcVal, obj2 :  LcVal)
+        res = Exec.lc_call_fun(obj1, "==", obj2)
+        return val2bool !test(res)
+    end
+
     def self.lc_obj_freeze(obj :  LcVal)
         set_flag obj, FROZEN 
         return obj 
@@ -252,6 +257,7 @@ module LinCAS::Internal
         
         define_protected_method(@@lc_object,"initialize",lc_obj_init,     0)
         define_method(@@lc_object,"==",lc_obj_eq,          1)
+        define_method(@@lc_object,"!=",lc_obj_neq,         1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
         define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
         define_method(@@lc_object,"is_null",lc_obj_null,   0)
