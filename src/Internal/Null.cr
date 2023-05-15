@@ -66,7 +66,7 @@ module LinCAS::Internal
     end
 
     def self.init_null
-    @@lc_null = internal.lc_build_internal_class("Null")
+        @@lc_null = internal.lc_build_internal_class("Null")
         lc_undef_allocator(@@lc_null)
 
         lc_undef_method(@@lc_null,"defrost")
