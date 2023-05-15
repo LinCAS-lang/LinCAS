@@ -288,6 +288,7 @@ module LinCAS::Internal
     define_method(@@lc_float,"floor",lc_float_floor,   0)
     define_method(@@lc_float,"ceil",lc_float_ceil,     0)
     define_method(@@lc_float,"trunc",lc_float_trunc,   0)
+    define_method(@@lc_float, "<=>",lc_int_or_flo_cmp, 1)
     
     lc_define_const(@@lc_float,"INFINITY",@@lc_infinity)
     lc_define_const(@@lc_float,"NAN",@@lc_nanobj)
