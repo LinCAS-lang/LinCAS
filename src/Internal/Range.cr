@@ -34,7 +34,6 @@ module LinCAS::Internal
     macro check_range(range)
         if !({{range}}.is_a? LcRange)
             lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{range}})} into Range")
-            return Null 
         end
     end
 
@@ -107,17 +106,16 @@ module LinCAS::Internal
 
     def self.build_range(v1 : Num, v2 : Num, inclusive = true)
         range       = range_new 
-        range.left  = v1.to_i 
-        range.right = v2.to_i
+        range.left  = v1 
+        range.right = v2
         range.inclusive = inclusive
         return range.as( LcVal)
     end
 
     def self.build_range(v1 :  LcVal, v2 :  LcVal, inclusive : Bool)
-        n1 = lc_num_to_cr_i(v1)
-        n2 = lc_num_to_cr_i(v2)
-        return Null unless n1 && n2
-        return build_range(n1,n2,inclusive)
+        n1 = lc_num_to_cr_i2(v1)
+        n2 = lc_num_to_cr_i2(v2)
+        return build_range(n1, n2, inclusive)
     end
 
     def self.lc_range_include(range :  LcVal, item :  LcVal)
