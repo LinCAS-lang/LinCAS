@@ -181,7 +181,6 @@ module LinCAS::Internal
     return ary
   end
 
-
   def self.new_array
     return new_array_with_capa MIN_ARY_CAPA
   end
@@ -211,6 +210,33 @@ module LinCAS::Internal
     set_ary_size(ary, x)
     Null
   end
+
+  def self.lc_ary_from_range(unused, argv : LcVal)
+    argv  = argv.as(Ary)
+    range = argv[0]
+    step  = argv[1]?
+    check_range(range)
+    if test(step)
+      step = lc_num_to_cr_f(step)
+    else
+      step = 1.0 
+    end
+    r_beg = r_left(range)
+    r_end = r_right(range)
+    if r_beg.is_a? BigInt || r_end.is_a? BigInt
+      lc_raise(lc_not_supp_err,"BigInt range is not supported yet")
+    end
+    ary  = new_array 
+    if r_beg > r_end 
+        return ary
+    end 
+    tmp       = r_beg
+    while tmp <= r_end 
+      lc_ary_push(ary, num_auto(tmp))
+      tmp += step
+    end
+    return ary
+  end 
 
   def self.lc_ary_push(ary :  LcVal, value :  LcVal)
     check_capacity lc_cast(ary, LcArray)
@@ -716,6 +742,8 @@ module LinCAS::Internal
   def self.init_array
     @@lc_array = internal.lc_build_internal_class("Array")
     define_allocator(@@lc_array,lc_ary_allocate)
+
+    define_singleton_method(@@lc_array,"from_range", lc_ary_from_range, -2)
     
     define_protected_method(@@lc_array, "initialize", lc_ary_init,      1)
     define_method(@@lc_array, "+",              lc_ary_add,             1)
@@ -758,7 +786,7 @@ module LinCAS::Internal
     define_method(@@lc_array,"sort_by!",       lc_ary_sort_by!,         0)
     define_method(@@lc_array,"join",           lc_ary_join,            -1)
 
-    #lc_define_const(@@lc_kernel,"ARGV",define_argv)
+    lc_define_const(@@lc_kernel, "ARGV", define_argv)
   end
 end
 
