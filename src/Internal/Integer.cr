@@ -90,15 +90,31 @@ module LinCAS::Internal
     return lc_cast(int, LcInt).val
   end 
 
-  # Converts a lincas number or float to a crystal
+  # It safely converts a lincas number or float to a crystal
   # integer. It allows to specify the return type of
-  # the converted integer
+  # the converted integer. The default conversion is into
+  # Int64. 
   def self.lc_num_to_cr_i(value, r_type = Int64)
     if !value.is_a? NumType
       lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(value)} into Integer")
     end
     v = num2num(value)
     return i_to_t(v, r_type)
+  end
+
+  # It safely converts a lincas number or float to a crystal
+  # integer. If `value` is a Float, it is converted into an 
+  # Int64. Otherwise, the type is left unchanged.
+  def self.lc_num_to_cr_i2(value)
+    if !value.is_a? NumType
+      lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(value)} into Integer")
+    end
+    v = num2num(value)
+    if v.is_a? Float
+      return i_to_t v, Int64
+    else
+      return v
+    end
   end
 
   def self.i_to_t(int, t : T.class) : T forall T
