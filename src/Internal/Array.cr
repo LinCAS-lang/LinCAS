@@ -223,15 +223,16 @@ module LinCAS::Internal
     end
     r_beg = r_left(range)
     r_end = r_right(range)
-    if r_beg.is_a? BigInt || r_end.is_a? BigInt
+    if r_beg.is_a?(BigInt) || r_end.is_a? BigInt
       lc_raise(lc_not_supp_err,"BigInt range is not supported yet")
     end
     ary  = new_array 
     if r_beg > r_end 
         return ary
     end 
-    tmp       = r_beg
-    while tmp <= r_end 
+    inclusive = inclusive(range) ? 0 : -1
+    tmp       = i_to_t(r_beg, Int64)
+    while tmp <= r_end + inclusive
       lc_ary_push(ary, num_auto(tmp))
       tmp += step
     end
