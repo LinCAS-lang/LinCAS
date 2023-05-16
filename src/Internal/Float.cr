@@ -281,6 +281,7 @@ module LinCAS::Internal
     define_method(@@lc_float,"**",lc_float_power,      1)
     define_method(@@lc_float,"-@",lc_float_minus,      0)
     define_method(@@lc_float,"to_s",lc_float_to_s,     0)
+    alias_method_str(@@lc_float,"to_s", "inspect")
     define_method(@@lc_float,"to_i",lc_float_to_i,     0)
     define_method(@@lc_float,"to_f",lc_obj_self,       0)
     define_method(@@lc_float,"abs",lc_float_abs,       0)

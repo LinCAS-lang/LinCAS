@@ -361,6 +361,7 @@ module LinCAS::Internal
     define_method(@@lc_number,  "even?", lc_int_even,       0)
     define_method(@@lc_integer, "-@",    lc_int_minus,      0)
     define_method(@@lc_integer, "to_s",  lc_int_to_s,       0)
+    alias_method_str(@@lc_integer, "to_s", "inspect")
     define_method(@@lc_integer, "to_f",  lc_int_to_f,       0)
     define_method(@@lc_integer, "to_i",  lc_obj_self,       0)
     define_method(@@lc_integer, "times", lc_int_times,      0)
