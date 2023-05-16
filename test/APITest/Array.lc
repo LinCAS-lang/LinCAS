@@ -19,34 +19,60 @@ describe Array do {
     b.each { |e| assert_eq(e, null) }
   }
 
+  it "::from_range" do {
+    ary := Array.from_range 0...4; assert_eq([0, 1, 2, 3], ary)
+    ary := Array.from_range 0..4; assert_eq([0, 1, 2, 3, 4], ary)
+    ary := Array.from_range 0..2, 0.5; assert_eq([0, 0.5, 1, 1.5, 2], ary)
+    x := 1000 ** 10
+    assert_raise(NotSupportedError) { Array.from_range 0..x }
+  }
+
   it "#push" do {
     a := []
     a << 12
     a.push 15
-    assert_eq([12,15], a)
+    assert_eq([12, 15], a)
   }
 
   it "#pop" do {
-    a := [12,15]
+    a := [12, 15]
     r := a.pop
     assert_eq(15, r)
     assert_eq([12], a)
+    assert_eq(null, [].pop)
+  }
+
+  it "#concat" {
+    a := [1, 2, 3]
+    a.concat [4, 5, 6]
+    assert_eq([1, 2, 3, 4, 5, 6], a)
+    assert_raise(TypeError) { a.concat 7 }
+  } 
+
+  it "#+" do {
+    a := [1, 2, 3]
+    b := [4, 5, 6]
+    assert_eq([1, 2, 3, 4, 5, 6], a + b)
   }
 
   it "#[]" do {
-    a := [1,2,3,4,5,6,7]
+    a := [1, 2, 3, 4, 5, 6, 7]
     assert_eq(2, a[1])
-    assert_eq([1,2,3,4,5], a[0..4])
+    assert_eq([1, 2, 3, 4, 5], a[0..4])
+    assert_eq(7, a[-1])
+    assert_eq(6, a[-2])
+    assert_eq(null, a[7])
+    assert_eq(null, a[-8])
   }
 
   it "#[]=" do {
     a  := [1]
-    a[1] := 2
-    assert_eq([1,2], a)
+    a[1] := 2; assert_eq([1, 2], a)
+    a[0] := 8; assert_eq([8, 2], a)
   }
 
   it "#include?" do {
-    a := [10,"bar",:k]
+    a := [10, "bar", :k]
     assert_true(a.include? 10)
     assert_true(a.include? :k)
   }
@@ -77,10 +103,14 @@ describe Array do {
 
   it "#empty?" do {
     assert([].empty?)
+    assert_false([1].empty?)
   }
 
   it "#to_s" do {
-    assert_eq("[1, 2, 3]", [1,2,3].to_s)
+    a := [1, 2, 3]
+    assert_eq("[1, 2, 3]", a.to_s)
+    a << a
+    assert_eq("[1, 2, 3, [...]]", a.to_s)
   }
 
   it "#each" do {
@@ -104,13 +134,15 @@ describe Array do {
     a.map! { |v| v * 2 }
     assert(a.is_a? Array)
     assert_eq([2,4,6], a)
-  }
+  } 
 
   it "#flatten" do {
-    a := [1,[2,[3]]]
-    c := a.flatten()
+    a := [1, [2, [3]]]
+    c := a.flatten
     assert(c.is_a? Array)
-    assert_eq([1,2,3], c)
+    assert_eq([1, 2, 3], c)
+    a << a
+    assert_raise(ArgumentError) { a.flatten }
   }
 
   it "#insert" do {
@@ -120,7 +152,8 @@ describe Array do {
     assert_eq([0,1,2,3], b)
     b := [1,2,3].insert(1,-1,-2)
     assert(b.is_a? Array)  
-    assert_eq([1,-1,-2,2,3], b)    
+    assert_eq([1,-1,-2,2,3], b)
+    assert_raise(IndexError) { a.insert a.size + 1, 0 }  
   }
 
   it "#==" do {
@@ -138,12 +171,15 @@ describe Array do {
   it "#sort" do {
     a := [2,6,1,8,9,3,0,4,7,5]
     assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort)
+    assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort { |a, b| a < b ? 0 : 1 })
   }
 
   it "#sort!" do {
     a := [2,6,1,8,9,3,0,4,7,5]
-    a.sort!
-    assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort)
+    b := a.clone
+    a.sort!; b.sort! { |a, b| a < b ? 0 : 1 }
+    assert_eq([0,1,2,3,4,5,6,7,8,9], a)
+    assert_eq([0,1,2,3,4,5,6,7,8,9], b)
   }
 
   it "#max" do {
@@ -185,17 +221,22 @@ describe Array do {
     a.last.push([:a,:b,:c])
     assert_eq("12341234:a:b:c", a.join)
     assert_eq("1,2,3,4,1,2,3,4,:a,:b,:c", a.join(","))
+
+    a << a
+    assert_raise(ArgumentError) { a.join }
   }
 
   it "#sort_by" do {
     a := [:b, :n, :k, :c, :a]
     assert_eq([:a, :b, :c, :k, :n], a.sort_by { |v| v.to_s } )
+    assert_raise(ArgumentError) { a.sort_by }
   }
 
   it "#sort_by!" do {
     a := [:b, :n, :k, :c, :a]
     a.sort_by! { |v| v.to_s }
     assert_eq([:a, :b, :c, :k, :n], a)
+    assert_raise(ArgumentError) { a.sort_by! }
   }
 
   it "#delete_at" do {
@@ -206,6 +247,7 @@ describe Array do {
     assert_eq([2,4], a)
     assert_eq(4, a.delete_at(1))
     assert_eq([2], a)
+    assert_null(a.delete_at a.size + 1)
   }
 
   it "#each_with_index" do {
