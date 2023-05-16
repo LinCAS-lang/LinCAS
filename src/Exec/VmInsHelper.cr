@@ -325,7 +325,9 @@ module LinCAS
                       Internal.lincas_obj_is_a(_self, context)))
         debug("Dispatching #{klass.name}##{ci.name}; explicit: #{explicit} (orig: #{ci.explicit})")       
       end
-      return Internal.seek_method(klass, ci.name, explicit)
+      cc = Internal.seek_method(klass, ci.name, explicit)
+      cc.klass = calling.me.klass
+      return cc
     end
 
     # When we include a module, a shallow copy of the module is created
@@ -360,7 +362,6 @@ module LinCAS
       vm_no_method_found(ci, calling, cc) if cc.method.nil?
       method = cc.method.not_nil!
       unless ci.cc == cc
-        cc.klass = calling.me.klass
         ci.cc  = cc # store the call cache for next call
         method.cached!
       end
