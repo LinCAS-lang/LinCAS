@@ -20,8 +20,7 @@ The idea is to unify a general purpose language with a computer algebra system, 
   * Garbage collection (inherited from Crystal)
 
 ## Requiremets
-  * gcc compiler >= 5.0
-  * Crystal compiler version >= 0.24.0 ( 0.25.0 and 0.25.1 versions are not working for this project due to a recent type inference changement fixed in bug [#6349](https://github.com/crystal-lang/crystal/issues/6349))
+  * Crystal compiler version >= 2.6.0
   * gsl library and python3.5-dev to be installed
 
 ## Portability
@@ -40,15 +39,16 @@ See [SampleTests](https://github.com/max-codeware/crLinCAS/tree/master/test/Samp
   * [ ] Code cleanup
   * [x] Unit Test library
   * [ ] Core API documentation
-  * [ ] Improving parsing time. Maybe using a Bison-generated parser
+  * [x] Improving parsing time. Maybe using a Bison-generated parser
   * [ ] Compile time optimizations
   * [ ] Speeding up the VM
-  * [ ] Inline caches
-  * [ ] Integer optimization (avoiding object allocation for ints)
+  * [x] Inline caches
+  * [x] Integer optimization (avoiding object allocation for ints)
   * [ ] String API optimization
-  * [ ] String interpolation & encoding
-  * [ ] BigInt conversion from string
-  * [ ] Adding a 'break' statement for loops
+  * [x] String interpolation
+  * [ ] String encoding
+  * [x] BigInt conversion from string
+  * [x] Adding a 'break' statement for loops
   * [ ] File IO (The classes are in a primitive status)
   * [x] Symbols
   * [ ] Plot module
