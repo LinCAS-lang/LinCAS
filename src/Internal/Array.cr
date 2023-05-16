@@ -577,6 +577,142 @@ module LinCAS::Internal
     return ary 
   end
 
+  def self.lincas_ary_max_min(ary :  LcVal)
+    result = Null
+    if Exec.block_given?
+      ary_iterate ary do |v|
+        if result == Null || yield lc_cmpint(Exec.lc_yield(v, result), v, result)
+          result = v
+        end
+      end
+    else
+      size = ary_size(ary)
+      id_cmp = "<=>"
+      if size > 0
+        result = ary_at_index ary, 0
+        ary_iterate ary do |v|
+          if yield compare(v, result)
+            result = v
+          end
+        end
+      end
+    end
+    return result
+  end
+
+  def self.lc_ary_max(ary : LcVal)
+    return lincas_ary_max_min ary, &.>(0)
+  end
+
+  def self.lc_ary_min(ary : LcVal)
+    return lincas_ary_max_min ary, &.<(0)
+  end
+
+  def self.lc_ary_delete_at(ary :  LcVal, index :  LcVal)
+    i      = lc_num_to_cr_i(index)
+    size   = ary_size(ary)
+    result = Null
+    if 0 <= i < size
+      result = ary_at_index ary, i
+      ptr = ptr(ary)
+      (ptr + i).copy_from(ptr + (i + 1), size - i + 1)
+      set_ary_size(ary, size - 1)
+    end
+    return result
+  end
+
+  def self.lc_ary_compact(ary :  LcVal)
+    copy = lc_ary_clone(ary)
+    return lc_ary_compact!(copy)
+  end
+
+  def self.lc_ary_compact!(ary :  LcVal)
+    size = ary_size(ary)
+    c = f = ptr(ary)
+    p_end  = c + size
+    while c < p_end 
+      if c.value != Null 
+        f.value = c.value 
+        f += 1 
+      end 
+      c += 1
+    end
+    set_ary_size(ary, p_end - f + 1)
+    return ary 
+  end
+
+  def self.lc_ary_shift(ary :  LcVal)
+    size = ary_size(ary)
+    return Null if size == 0
+    ptr    = ptr(ary)
+    val    = ptr[0]
+    ptr.move_from(ptr + 1, size - 1)
+    set_ary_size(ary, size  -1)
+    return val
+  end
+
+  def self.lc_ary_sort_by(ary :  LcVal)
+    tmp = lc_ary_clone ary
+    return lc_ary_sort_by! tmp
+  end
+
+  def self.compare_by(a : LcVal, b : LcVal)
+    r1 = Exec.lc_yield(a)
+    r2 = Exec.lc_yield(b)
+    return compare r1, r2
+  end
+
+  def self.lc_ary_sort_by!(ary :  LcVal)
+    if !Exec.block_given?
+      lc_raise(lc_arg_err,"Expected block not found")
+    end
+    lc_heap_sort(ptr(ary), ary_size(ary), &->compare_by(LcVal, LcVal))
+    return ary
+  end
+
+  def self.lc_ary_join(ary :  LcVal, argv :  LcVal)
+    argv = argv.as(Ary)
+    if argv.empty?
+      separator = ""
+    else 
+      separator = string2cr(argv[0]) || ""
+    end 
+    processing = [{ary,ary_size(ary),0_i64}]
+    guard = Set(UInt64).new
+    guard << ary.object_id
+
+    string = String::Builder.build do |io|
+      while !processing.empty?
+        frame   = processing.pop
+        current = frame[0]  # Array pointer
+        size    = frame[1]  # Array size
+        i       = frame[2]  # Last index
+
+        while i < size
+          v = ary_at_index current, i
+          i += 1
+          if v.is_a? LcArray
+            if guard.includes? v.object_id
+              lc_raise(lc_arg_err,"Recursive array join") 
+            end 
+            processing << {current, size, i}
+            current = v
+            size    = ary_size(v)
+            i       = 0_i64
+            guard << v.object_id
+            io << separator unless current.size == 0
+          else
+            io << separator if i > 1
+            str = Exec.lc_call_fun(v, "inspect")
+            io.write_string pointer_of(str).to_slice(str_size(str))
+          end 
+        end
+        guard.delete current.object_id
+      end
+    end
+    return build_string(string)
+  end
+
   def self.init_array
     @@lc_array = internal.lc_build_internal_class("Array")
     define_allocator(@@lc_array,lc_ary_allocate)
@@ -604,7 +740,7 @@ module LinCAS::Internal
     define_method(@@lc_array,"map_with_index", lc_ary_map_with_index,   0)
     define_method(@@lc_array,"map_with_index!",lc_ary_map_with_index!,  0)
     define_method(@@lc_array,"flatten",        lc_ary_flatten,          0)
-    define_method(@@lc_array,"flatten!",        lc_ary_flatten!,        0)
+    define_method(@@lc_array,"flatten!",       lc_ary_flatten!,         0)
     define_method(@@lc_array,"insert",         lc_ary_insert,          -3)
     define_method(@@lc_array,"==",             lc_ary_eq,               1)
     define_method(@@lc_array,"swap",           lc_ary_swap,             2)
@@ -612,6 +748,15 @@ module LinCAS::Internal
     define_method(@@lc_array,"sort!",          lc_ary_sort!,            0)
     define_method(@@lc_array,"reverse",        lc_ary_reverse,          0)
     define_method(@@lc_array,"reverse!",       lc_ary_reverse!,         0)
+    define_method(@@lc_array,"max",            lc_ary_max,              0)
+    define_method(@@lc_array,"min",            lc_ary_min,              0)
+    define_method(@@lc_array,"delete_at",      lc_ary_delete_at,        1)
+    define_method(@@lc_array,"compact",        lc_ary_compact,          0)
+    define_method(@@lc_array,"compact!",       lc_ary_compact!,         0)
+    define_method(@@lc_array,"shift",          lc_ary_shift,            0)
+    define_method(@@lc_array,"sort_by",        lc_ary_sort_by,          0)
+    define_method(@@lc_array,"sort_by!",       lc_ary_sort_by!,         0)
+    define_method(@@lc_array,"join",           lc_ary_join,            -1)
 
     #lc_define_const(@@lc_kernel,"ARGV",define_argv)
   end
