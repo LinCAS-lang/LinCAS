@@ -14,6 +14,10 @@
 module LinCAS
   module Backtrace
 
+    def get_backtrace
+      return vm_get_backtrace
+    end
+
     protected def vm_get_backtrace
       return "" if @control_frames.empty?
       @control_frames[-1] = @current_frame.copy_with(pc: @pc - 1)

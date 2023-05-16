@@ -53,6 +53,10 @@ class Object
     def lc_bug(msg : String)
         print "Bug: ".colorize(:red)
         puts "#{msg}\n"
+        runtime_bt = Exec.get_backtrace
+        puts "Internal backtrace".colorize :yellow
+        puts runtime_bt.split('\n').join("   \n").colorize :yellow
+        puts
         backtrace = caller
         backtrace.shift
         backtrace.each do |location|
