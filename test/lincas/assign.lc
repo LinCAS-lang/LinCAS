@@ -121,5 +121,6 @@ describe :Assign do {
     r([[]]) { next [[]]}
     r([1]) { next [*[1]]}
     r([1, 2]) {next [*[1, 2]]}
+    r([1, 2]) {next *[*[1, 2]]}
   }
 }
