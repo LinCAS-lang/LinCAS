@@ -164,7 +164,7 @@ module LinCAS::Internal
     end
 
     def self.lc_obj_compare(obj1 :  LcVal, obj2 :  LcVal)
-        return lctrue if obj1.id == obj2.id
+        return lctrue if obj1.object_id == obj2.object_id
         return lc_compare(obj1,obj2)
     end
 
