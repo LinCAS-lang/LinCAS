@@ -747,6 +747,7 @@ module LinCAS::Internal
     define_singleton_method(@@lc_array,"from_range", lc_ary_from_range, -2)
     
     define_protected_method(@@lc_array, "initialize", lc_ary_init,      1)
+    define_method(@@lc_array, "concat",         lc_ary_concat,          1)
     define_method(@@lc_array, "+",              lc_ary_add,             1)
     define_method(@@lc_array, "push",           lc_ary_push,            1)
     alias_method_str(@@lc_array, "push","<<"                             )
