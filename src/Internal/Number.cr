@@ -151,6 +151,68 @@ module LinCAS::Internal
     end
   end
 
+  def self.float_step_size(a : Float64, b : Float64, step : Float64, inclusive : Bool)
+    if step == 0
+      return @@lc_infinity
+    end
+    n = (b - a) / step
+    error = (a.abs + b.abs + (b - a).abs) / step.abs * Float64::EPSILON
+    if step.infinite?
+      val = step > 0 ? (a <= b ? 1 : 0 ) : (a >= b ? 1 : 0)
+      return num2float(val)
+    end
+    error = 0.5 if error > 0.5
+    if !inclusive
+      return num2float 0.0 if n <= 0
+      if n < 1
+        n = 0.0
+      else
+        n = (n - error).floor
+      end
+    else
+      return num2float 0.0 if n < 0
+      n = (n + error).floor
+    end
+    return num2float n + 1
+  end
+
+  def self.lincas_num_interval_step_size(a : LcVal, b : LcVal, step : LcVal, inclusive : Bool)
+    if a.is_a?(LcInt) && b.is_a?(LcInt) && step.is_a?(LcInt)
+      st = int2num(step)
+      if st.zero?
+        return @@lc_infinity
+      end
+      delta = int2num(b) - int2num(a)
+      if st < 0
+        st = -st
+        delta = -delta
+      end
+      delta -= 1 if !inclusive
+      return num2int(0) if delta < 0
+      return num2int(delta // st + 1)
+    elsif a.is_a?(LcFloat) || b.is_a?(LcFloat) || step.is_a?(LcFloat)
+      a = lc_num_to_float a
+      b = lc_num_to_float b
+      step = lc_num_to_float step
+      return float_step_size a, b, step, inclusive
+    else
+      cmp = ">"
+      case lc_cmpint(lc_num_coerce_cmp(step, num2int(0), cmp), step, num2int(0))
+      when 0 then return @@lc_infinity
+      when -1 then cmp = "<"
+      end
+
+      return num2int(0) if test(Exec.lc_call_fun(a, cmp, b))
+      r = Exec.lc_call_fun(Exec.lc_call_fun(b, "-", a), "/", step)
+
+      # if inclusive || ((a + r * step) cmp b)
+      if inclusive || test(Exec.lc_call_fun(Exec.lc_call_fun(a, "+", Exec.lc_call_fun(r, "*", step)), cmp, b))
+        r = Exec.lc_call_fun(r, "+", num2int(1))
+      end
+      return r
+    end
+  end
+
   @[AlwaysInline]
   def self.lc_num_hash(n :  LcVal)
     return num2int(num2num(n).hash.to_i64)

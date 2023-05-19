@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2019 Massimiliano Dal Mas
+# Copyright (c) 2017-2023 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,195 +17,303 @@
 module LinCAS::Internal
 
     class LcRange < LcBase
-        @left  : Intnum = 0
-        @right : Intnum = 0
-        @inclusive = true
-        property left,right,inclusive
+      @left  : LcVal = Null
+      @right : LcVal = Null
+      @inclusive = true
+      property left, right, inclusive
     end    
 
     macro r_left(range)
-        {{range}}.as(LcRange).left
+      {{range}}.as(LcRange).left
     end 
 
     macro r_right(range)
-        {{range}}.as(LcRange).right
+      {{range}}.as(LcRange).right
     end
 
     macro check_range(range)
-        if !({{range}}.is_a? LcRange)
-            lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{range}})} into Range")
-        end
+      if !({{range}}.is_a? LcRange)
+        lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof({{range}})} into Range")
+      end
+    end
+
+    macro inclusive(range)
+      {{range}}.as(LcRange).inclusive 
     end
 
     @[AlwaysInline]
     def self.range_size(range)
-        lft = r_left(range)
-        rht = r_right(range)
-        inc = inclusive(range) ? 1 : 0
-        if lft > rht
-            size = lft - rht + inc 
-        else 
-            size = rht - lft + inc 
-        end
-        return i_to_t(size,IntD) || 0
+      size = lc_range_size range
+      if size != Null && size != @@lc_infinity
+        return lc_num_to_cr_i size
+      else
+        return 0
+      end
     end
 
     def self.range_start_and_len(range, len, error)
-        raise_ = false
-        inc = inclusive(range) ? 1 : 0
-        beg = i_to_t(r_left(range), Int64)
-        end_ = i_to_t(r_right(range) + inc, Int64)
-        if beg < 0
-            beg += len
-            raise_ = true if beg < 0
-        end
-        end_ += len if end_ < 0
-        if error
-            raise_ = true if beg > len
-            end_ = len if end_ > len
-        end
-        size = end_ - beg
-        size = 0i64 if size < 0
-        if error && raise_
-            lc_raise(@@lc_range_err, "#{beg}..#{inc ? "" : '.'}#{end_} out of range")
-        end
-        return {beg, size}
+      raise_ = false
+      inc = inclusive(range) ? 1 : 0
+      beg = lc_num_to_cr_i(r_left(range))
+      end_ = lc_num_to_cr_i(r_right(range)) + inc
+      if beg < 0
+        beg += len
+        raise_ = true if beg < 0
+      end
+      end_ += len if end_ < 0
+      if error
+        raise_ = true if beg > len
+        end_ = len if end_ > len
+      end
+      size = end_ - beg
+      size = 0i64 if size < 0
+      if error && raise_
+        lc_raise(@@lc_range_err, "#{beg}..#{inc ? "" : '.'}#{end_} out of range")
+      end
+      return {beg, size}
     end
 
     @[AlwaysInline]
     def self.range2py(range :  LcVal)
-        lft = r_left(range)
-        rht = r_right(range)
-        if lft.is_a? BigInt || rht.is_a? BigInt 
-            lc_raise(lc_not_impl_err,"No conversion of BigInt to python yet")
-            return nil 
-        end
-        inc = inclusive(range) ? 0 : -1
-        rht = rht + inc
-        lft = int2py(lft)
-        rht = int2py(rht)
-        tmp = pyslice_new(lft,rht + inc)
-        pyobj_decref_n(lft,rht)
-        return tmp
-    end
-
-    macro inclusive(range)
-        {{range}}.as(LcRange).inclusive 
+      lft = lc_num_to_cr_i r_left(range)
+      rht = lc_num_to_cr_i r_right(range)
+      if lft.is_a? BigInt || rht.is_a? BigInt 
+        lc_raise(lc_not_impl_err,"No conversion of BigInt to python yet")
+        return nil 
+      end
+      inc = inclusive(range) ? 0 : -1
+      rht = rht + inc
+      lft = int2py(lft)
+      rht = int2py(rht)
+      tmp = pyslice_new(lft,rht + inc)
+      pyobj_decref_n(lft,rht)
+      return tmp
     end
 
     def self.lc_range_allocate(klass :  LcVal)
-        klass = klass.as(LcClass)
-        range = lincas_obj_alloc LcRange, klass
-        return range.as( LcVal)
+      klass = klass.as(LcClass)
+      range = lincas_obj_alloc LcRange, klass
+      return range.as( LcVal)
     end
 
-    def self.range_new
-        range = lincas_obj_alloc LcRange, @@lc_range
-        return range 
+    def self.new_range
+      range = lincas_obj_alloc LcRange, @@lc_range
+      return range 
     end
 
-    def self.build_range(v1 : Num, v2 : Num, inclusive = true)
-        range       = range_new 
-        range.left  = v1 
-        range.right = v2
-        range.inclusive = inclusive
-        return range.as( LcVal)
+    @[AlwaysInline] 
+    def self.new_range(v1 : Num, v2 : Num, inclusive = true)
+      return new_range num_auto(v1), num_auto(v2)
     end
 
-    def self.build_range(v1 :  LcVal, v2 :  LcVal, inclusive : Bool)
-        n1 = lc_num_to_cr_i2(v1)
-        n2 = lc_num_to_cr_i2(v2)
-        return build_range(n1, n2, inclusive)
+    @[AlwaysInline]
+    def self.assert_valid_range(v1 : LcVal, v2 : LcVal)
+      if Exec.lc_call_fun(v1, "<=>", v2) == Null
+        lc_raise(lc_type_err, "Bad range type")
+      end
+    end
+
+    def self.new_range(v1 :  LcVal, v2 :  LcVal, inclusive : Bool)
+      assert_valid_range v1, v2
+      range       = new_range
+      range.left  = v1
+      range.right = v2
+      range.inclusive = inclusive
+      return range.as(LcVal)
+    end
+
+    def self.lc_range_initialize(range : LcVal, argv : LcVal)
+      argv = argv.as(Ary)
+      range = lc_cast(range, LcRange)
+      _beg = argv[0]
+      _end = argv[1]
+      assert_valid_range _beg, _end
+      range.left  = _beg
+      range.right = _end
+      if argv.size == 3
+        inclusive = test(argv[2])
+      else
+        inclusive = true
+      end
+      range.inclusive = inclusive
+      return range
+    end
+
+    def self.lc_cover(range : LcVal, _beg : LcVal, _end : LcVal, item : LcVal)
+      if _beg == Null || compare(_beg, item) <= 0
+        inclusive = inclusive(range) ? 0 : -1
+        if _end == Null || compare(item, _end) <= inclusive
+          return lctrue
+        end
+      end
+      return lcfalse
+    end
+
+    def self.lc_compare_single(a : LcVal, b : LcVal)
+      v = Exec.lc_call_fun(a, "<=>", b)
+      return lcfalse if v = Null
+      if v != Null && lc_cmpint(v, a, b) <= 0
+        return lctrue
+      end
+      return lcfalse
     end
 
     def self.lc_range_include(range :  LcVal, item :  LcVal)
-        return lcfalse unless item.is_a? LcNum 
-        lft = r_left(range)
-        rht = r_right(range)
-        if lft > rht 
-            lft,rht = rht,lft 
+      lft = r_left(range)
+      rht = r_right(range)
+      if lft.is_a?(NumType) && rht.is_a?(NumType)
+        return lc_cover(range, lft, rht, item)
+      elsif lft.is_a?(LcString) && rht.is_a?(LcString)
+        return lc_cover(range, lft, rht, item)
+      end
+      if lft != Null && rht != Null
+        if bool2val(lc_compare_single(lft, item))
+          return lc_compare_single(item, rht)
         end
-        itemv = num2num(item)
-        if lft <= itemv && itemv <= rht 
-            return lctrue 
-        end 
-        return lcfalse
+      else
+        if lft == Null
+          return lc_compare_single(item, rht)
+        else rht == Null
+          return lc_compare_single(lft, item)
+        end  
+      end
+      return lcfalse
     end
 
     def self.lc_range_to_s(range :  LcVal)
-        lft = r_left(range)
-        rht = r_right(range)
-        string = String.build do |io|
-            io << lft 
-            io << (inclusive(range) ? ".." : "...")
-            io << rht
-        end
-        return build_string(string)
+      lft = r_left(range)
+      rht = r_right(range)
+      string = String.build do |io|
+        str = lc_obj_any_to_s(lft)
+        io.write_string(pointer_of(str).to_slice(str_size(str)))
+
+        io << (inclusive(range) ? ".." : "...")
+        
+        str = lc_obj_any_to_s(rht)
+        io.write_string(pointer_of(str).to_slice(str_size(str)))
+      end
+      return build_string(string)
     end
 
     def self.lc_range_size(range)
-        return num2int(range_size(range))
+      lft = r_left(range)
+      rht = r_right(range)
+      if lft.is_a? LcNum
+        if rht.is_a? LcNum
+          return lincas_num_interval_step_size(lft, rht, num2int(1), inclusive(range))
+        end
+        if rht == Null
+          return @@lc_infinity
+        end
+      elsif lft == Null
+        return @@lc_infinity
+      end
+      return Null
     end
 
-    def self.lc_range_each(range)
-        lft = r_left(range)
-        rht = r_right(range)
-        if lft > rht 
-            rht += 1 unless inclusive(range)
-            lft.downto rht do |i|
-                Exec.lc_yield(num2int(i))
-            end
-        else 
-            rht -= 1 unless inclusive(range)
-            (lft..rht).each do |i|
-                Exec.lc_yield(num2int(i))
-            end
+    @[AlwaysInline]   
+    def self.discrete_obj(obj : LcVal)
+      return lc_obj_responds_to? obj, "succ"
+    end
+
+    def self.lincas_infinite_num_each(num : NumType)
+      i = num
+      while true
+        yield i
+        # We need to take care of the overflow
+        i = i.is_a?(LcFloat) ? lc_float_sum(i, num2int(1)) : lc_int_sum(i, num2int(1))
+      end
+    end
+
+    def self.lincas_num_each(_beg : NumType, _end : NumType, inclusive : Bool)
+      cmp = inclusive ? ->lc_num_se(LcVal, LcVal) : ->lc_num_sm(LcVal, LcVal)
+      i = _beg
+      while test(cmp.call(i, _end))
+        yield i
+        # We need to take care of the overflow
+        i = i.is_a?(Float) ? lc_float_sum(i, num2int(1)) : lc_int_sum(i, num2int(1))
+      end
+    end
+
+    def self.lincas_range_any_each(_beg : LcVal, _end : LcVal, inclusive : Bool)
+      comp = inclusive ? 1 : 0
+      i = _beg
+      while compare(i, _end) < comp
+        yield i
+        i = Exec.lc_call_fun(i, "succ")
+      end
+    end
+
+    def self.lincas_range_each(range : LcVal, &block : LcVal ->)
+      lft = r_left(range)
+      rht = r_right(range)
+      if lft.is_a? NumType && rht == Null
+        lincas_infinite_num_each lft, &block
+      elsif lft.is_a?(NumType) && rht.is_a? NumType
+        lincas_num_each lft, rht, inclusive(range), &block
+      else
+        if !discrete_obj(lft)
+          lc_raise(lc_type_err, "Can't iterate from #{lc_typeof(lft)}")
         end
-        Null
+        if rht != Null
+          lincas_range_any_each lft, rht, inclusive(range), &block
+        else
+          beg = lft
+          while beg = Exec.lc_call_fun(beg, "succ")
+            yield beg
+          end
+        end
+      end
+    end
+
+    def self.lc_range_each(range : LcVal)
+      lincas_range_each(range) do |value|
+        Exec.lc_yield value
+      end
+      return range
     end
 
     def self.lc_range_map(range)
-        ary = new_array
-        lft = r_left(range)
-        rht = r_right(range)
-        lft,rht = rht,lft unless lft < rht
-        rht -= 1 unless inclusive(range)
-        (lft..rht).each do |i|
-            lc_ary_push(ary,Exec.lc_yield(num2int(i)))
-        end
-        return ary
+      ary = new_array
+      lincas_range_each range do |value|
+        lc_ary_push ary, Exec.lc_yield value
+      end
+      return ary
     end
 
     def self.lc_range_eq(range1 :  LcVal,range2 :  LcVal)
-        return lcfalse unless range2.is_a? LcRange
-        return lctrue if r_left(range1) == r_left(range2) &&
-                         r_right(range1) == r_right(range2) &&
-                         inclusive(range1) == inclusive(range2)
-        return lcfalse 
+      return lcfalse unless range2.is_a? LcRange
+      return lctrue if test(lc_obj_compare(r_left(range1), r_left(range2))) &&
+                       test(lc_obj_compare(r_right(range1), r_right(range2))) &&
+                       inclusive(range1) == inclusive(range2)
+      return lcfalse 
     end
 
+    
     def self.lc_range_hash(range :  LcVal)
-        inc = inclusive(range)
-        h   = inc.hash(HASHER)
-        h   = r_left(range).hash(h)
-        h   = r_right(range).hash(h)
-        return num2int(h.result.to_i64)
+      inc = inclusive(range)
+      h   = inc.hash(HASHER)
+      h   = r_left(range).object_id.hash(h) # This needs some fixing!
+      h   = r_right(range).object_id.hash(h)
+      return num2int(h.result.to_i64)
     end
 
 
     def self.init_range
-        @@lc_range = internal.lc_build_internal_class("Range")
-        define_allocator(@@lc_range,lc_range_allocate)
-    
-        define_method(@@lc_range,"include?",lc_range_include,  1)
-        define_method(@@lc_range,"to_s",lc_range_to_s,         0)
-        define_method(@@lc_range,"size",lc_range_size,         0)
-        define_method(@@lc_range,"length",lc_range_size,       0)
-        define_method(@@lc_range,"each",lc_range_each,         0)
-        define_method(@@lc_range,"map",lc_range_map,           0)
-        define_method(@@lc_range,"==",lc_range_eq,             1)
-        define_method(@@lc_range,"defrost",lc_obj_defrost,     0)
-        define_method(@@lc_range,"hash",lc_range_hash,         0)
+      @@lc_range = internal.lc_build_internal_class("Range")
+      define_allocator(@@lc_range,lc_range_allocate)
+  
+      define_protected_method(@@lc_range, "initialize", lc_range_initialize, -3)
+
+      define_method(@@lc_range,"include?",lc_range_include,  1)
+      define_method(@@lc_range,"to_s",lc_range_to_s,         0)
+      define_method(@@lc_range,"size",lc_range_size,         0)
+      define_method(@@lc_range,"length",lc_range_size,       0)
+      define_method(@@lc_range,"each",lc_range_each,         0)
+      define_method(@@lc_range,"map",lc_range_map,           0)
+      define_method(@@lc_range,"==",lc_range_eq,             1)
+      define_method(@@lc_range,"defrost",lc_obj_defrost,     0)
+      define_method(@@lc_range,"hash",lc_range_hash,         0)
     end
 
 

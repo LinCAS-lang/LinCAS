@@ -498,8 +498,8 @@ module LinCAS::Internal
     # * argument:: index
     def self.lc_str_index(str :  LcVal, index :  LcVal)
         if index.is_a? LcRange
-            left    = index.left 
-            right   = index.right
+            left    = lc_num_to_cr_i index.left 
+            right   = lc_num_to_cr_i index.right
             return Null if left > right 
             ptr = str_index_range(lc_cast(str,LcString),left,right,index.inclusive)
             return ptr if ptr.is_a?  LcVal 

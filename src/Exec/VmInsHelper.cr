@@ -674,7 +674,7 @@ module LinCAS
     @[AlwaysInline]
     protected def vm_make_range(v1 : LcVal, v2 : LcVal, inclusive : UInt64)
       inc = !(inclusive & 0x01).zero?
-      return Internal.build_range(v1, v2, inc)
+      return Internal.new_range(v1, v2, inc)
     end
 
     @[AlwaysInline]
