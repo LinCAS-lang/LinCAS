@@ -16,11 +16,28 @@
 require "./Number"
 module LinCAS::Internal
 
+  # It implicitly converts a lincas number to a Float64.
+  # It ensures the return type.
   def self.lc_num_to_cr_f(num :  LcVal)
     unless num.is_a? LcInt || num.is_a? LcFloat
       lc_raise(lc_type_err,"No implicit conversion of #{lc_typeof(num)} into Float")
     end 
     return num2num(num).to_f64
+  end
+
+  # It attempts to convert a lincas number to a Float64.
+  # It ensures the return type.
+  def self.lc_num_to_float(num : LcVal)
+    error = false
+    if !num.is_a? NumType
+      if lc_obj_responds_to? num, "to_f"
+        num = Exec.lc_call_fun(num, "to_f")
+      end
+      if !num.is_a? NumType
+        lc_raise(lc_type_err, "Can't convert #{lc_typeof(num)} to Float")
+      end
+    end
+    return lc_num_to_cr_f(num)
   end
 
   def self.float2cr(*values)
