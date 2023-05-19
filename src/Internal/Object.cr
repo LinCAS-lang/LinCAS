@@ -125,6 +125,16 @@ module LinCAS::Internal
         return obj 
     end
 
+    # It ensures a conversion of any object to
+    # a lincas string
+    def self.lc_obj_any_to_s(obj : LcVal)
+        str = Exec.lc_call_fun(obj, "to_s")
+        if str.is_a? LcString
+            return str
+        end
+        return lc_obj_to_s(obj)
+    end
+
     def self.lincas_obj_to_s(obj :  LcVal)
         string = String.build do |io|
             lc_obj_to_s(obj,io)
@@ -175,6 +185,11 @@ module LinCAS::Internal
     def self.lc_obj_neq(obj1 :  LcVal, obj2 :  LcVal)
         res = Exec.lc_call_fun(obj1, "==", obj2)
         return val2bool !test(res)
+    end
+
+    @[AlwaysInline]
+    def self.lc_obj_cmp(obj1 : LcVal, obj2 : LcVal)
+        return Null
     end
 
     def self.lc_obj_freeze(obj :  LcVal)
@@ -258,6 +273,7 @@ module LinCAS::Internal
         define_protected_method(@@lc_object,"initialize",lc_obj_init,     0)
         define_method(@@lc_object,"==",lc_obj_eq,          1)
         define_method(@@lc_object,"!=",lc_obj_neq,         1)
+        define_method(@@lc_object,"<=>",lc_obj_cmp,         1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
         define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
         define_method(@@lc_object,"is_null",lc_obj_null,   0)
@@ -265,7 +281,8 @@ module LinCAS::Internal
         alias_method_str(@@lc_object,"inspect","to_s"       )
         define_method(@@lc_object,"to_m",lc_obj_to_m,      0)
         define_method(@@lc_object,"!",lc_obj_not,          0)
-        define_method(@@lc_object,"t_o_a",lc_obj_to_a,     0)
+        define_method(@@lc_object,"to_a",lc_obj_to_a,      0)
+        
         define_method(@@lc_class,"freeze",lc_obj_freeze,   0)
         define_method(@@lc_class,"hash",lc_obj_hash,       0)
         # add_static_method(@@lc_class,"defrost",lc_obj_defrost, 0)
