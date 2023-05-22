@@ -232,7 +232,11 @@ module LinCAS
       when '<'
         case next_char
         when '='
-          next_char_and_token :"<="
+          if next_char == '>'
+            next_char_and_token :"<=>"
+          else
+            @token.type = :"<="
+          end
         when '<'
           next_char_and_token :"<<"
         else 
@@ -308,7 +312,13 @@ module LinCAS
           end
         when '<'
           char = next_char
-          if (char == '=') || (char == '<')
+          if (char == '=') 
+            if next_char == '>'
+              next_char_and_symbol start
+            else
+              symbol start
+            end
+          elsif (char == '<')
             next_char_and_symbol start
           else 
             symbol start

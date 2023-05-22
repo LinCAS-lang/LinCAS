@@ -346,7 +346,7 @@ module LinCAS
 
     def_op_parsing :or, :and, "Or.new(left,right)", %(:"||")
     def_op_parsing :and, :equal, "And.new(left,right)", %(:"&&")
-    def_op_parsing :equal, :comp, "Call.new(left, method, [right] of Node)", %(:"<", :"<=", :">", :">=")
+    def_op_parsing :equal, :comp, "Call.new(left, method, [right] of Node)", %(:"<", :"<=", :">", :">=", :"<=>")
     def_op_parsing :comp, :bin_or, "Call.new(left, method, [right] of Node)", %(:"=", :"==", :"!=", :"===", :"=~")
     def_op_parsing :bin_or, :bin_and, "Call.new(left, method, [right] of Node)", %(:"|", :"^")
     def_op_parsing :bin_and, :shift, "Call.new(left, method, [right] of Node)", %(:"&")
@@ -1946,6 +1946,7 @@ module LinCAS
         :">=",
         :"<",
         :"<=",
+        :"<=>",
         :"=",
         :"==",
         :"===",
@@ -1979,6 +1980,7 @@ module LinCAS
         :">=",
         :"<",
         :"<=",
+        :"<=>",
         :"=",
         :"==",
         :"===",
