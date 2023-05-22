@@ -216,25 +216,26 @@ module LinCAS::Internal
     range = argv[0]
     step  = argv[1]?
     check_range(range)
-    if test(step)
-      step = lc_num_to_cr_f(step)
+    r_beg = to_number r_left(range)
+    r_end = to_number r_right(range)
+    ary  = new_array
+    if !r_beg.is_a?(BigInt) && !r_end.is_a? BigInt 
+      if test(step)
+        step = lc_num_to_cr_f(step)
+      else
+        step = r_beg.class.new 1
+      end
+      if r_beg > r_end 
+          return ary
+      end 
+      inclusive = inclusive(range) ? 0 : -1
+      tmp = r_beg
+      while tmp <= r_end + inclusive
+        lc_ary_push(ary, num_auto(tmp))
+        tmp += step
+      end
     else
-      step = 1.0 
-    end
-    r_beg = r_left(range)
-    r_end = r_right(range)
-    if r_beg.is_a?(BigInt) || r_end.is_a? BigInt
       lc_raise(lc_not_supp_err,"BigInt range is not supported yet")
-    end
-    ary  = new_array 
-    if r_beg > r_end 
-        return ary
-    end 
-    inclusive = inclusive(range) ? 0 : -1
-    tmp       = i_to_t(r_beg, Int64)
-    while tmp <= r_end + inclusive
-      lc_ary_push(ary, num_auto(tmp))
-      tmp += step
     end
     return ary
   end 
@@ -397,7 +398,7 @@ module LinCAS::Internal
       size = ary_size(ary) - 1
       ary_iterate_with_index ary do |value, i|
         if !value.is_a? LcArray
-          str = Exec.lc_call_fun(value, "to_s")
+          str = lc_obj_any_to_s(value)
           buffer.write_string(pointer_of(str).to_slice(str_size(str)))
         else
           ary_to_s_recursive(buffer, value, previous)

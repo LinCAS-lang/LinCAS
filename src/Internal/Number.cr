@@ -40,6 +40,14 @@ module LinCAS::Internal
   end
 
   @[AlwaysInline]
+  def self.to_number(n : LcVal)
+    if n.is_a? NumType
+      return num2num n
+    end
+    return lc_num_to_float n
+  end
+
+  @[AlwaysInline]
   protected def self.num_append(buffer : String_buffer,value :  LcVal)
     buffer_append(buffer,num2num(value).to_s)
   end
