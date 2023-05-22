@@ -139,6 +139,21 @@ module LinCAS::Internal
       return range
     end
 
+    @[AlwaysInline]
+    def self.lc_range_beg(range : LcVal)
+      return r_left range
+    end
+
+    @[AlwaysInline]
+    def self.lc_range_end(range : LcVal)
+      return r_right range
+    end
+
+    @[AlwaysInline]
+    def self.lc_range_inclusive(range : LcVal)
+      return val2bool(inclusive(range))
+    end
+
     def self.lc_cover(range : LcVal, _beg : LcVal, _end : LcVal, item : LcVal)
       if _beg == Null || compare(_beg, item) <= 0
         inclusive = inclusive(range) ? 0 : -1
@@ -151,8 +166,8 @@ module LinCAS::Internal
 
     def self.lc_compare_single(a : LcVal, b : LcVal)
       v = Exec.lc_call_fun(a, "<=>", b)
-      return lcfalse if v = Null
-      if v != Null && lc_cmpint(v, a, b) <= 0
+      return lcfalse if v == Null
+      if v != Null && yield lc_cmpint(v, a, b)
         return lctrue
       end
       return lcfalse
@@ -166,15 +181,16 @@ module LinCAS::Internal
       elsif lft.is_a?(LcString) && rht.is_a?(LcString)
         return lc_cover(range, lft, rht, item)
       end
+      comp = ->(v : Int32) { inclusive(range) ? v <= 0 : v < 0 }
       if lft != Null && rht != Null
-        if bool2val(lc_compare_single(lft, item))
-          return lc_compare_single(item, rht)
+        if bool2val(lc_compare_single(lft, item, &.<=(0)))
+          return lc_compare_single(item, rht, &comp)
         end
       else
         if lft == Null
-          return lc_compare_single(item, rht)
+          return lc_compare_single(item, rht, &comp)
         else rht == Null
-          return lc_compare_single(lft, item)
+          return lc_compare_single(lft, item, &.<=(0))
         end  
       end
       return lcfalse
@@ -238,8 +254,9 @@ module LinCAS::Internal
     def self.lincas_range_any_each(_beg : LcVal, _end : LcVal, inclusive : Bool)
       comp = inclusive ? 1 : 0
       i = _beg
-      while compare(i, _end) < comp
+      while (c = compare(i, _end)) < comp
         yield i
+        break if inclusive && c.zero?
         i = Exec.lc_call_fun(i, "succ")
       end
     end
@@ -259,8 +276,9 @@ module LinCAS::Internal
           lincas_range_any_each lft, rht, inclusive(range), &block
         else
           beg = lft
-          while beg = Exec.lc_call_fun(beg, "succ")
+          while beg
             yield beg
+            beg = Exec.lc_call_fun(beg, "succ")
           end
         end
       end
@@ -305,14 +323,16 @@ module LinCAS::Internal
   
       define_protected_method(@@lc_range, "initialize", lc_range_initialize, -3)
 
+      define_method(@@lc_range,"begin",lc_range_beg,         0)
+      define_method(@@lc_range,"end",lc_range_end,           0)
+      define_method(@@lc_range,"inclusive?",lc_range_inclusive,0)
       define_method(@@lc_range,"include?",lc_range_include,  1)
       define_method(@@lc_range,"to_s",lc_range_to_s,         0)
       define_method(@@lc_range,"size",lc_range_size,         0)
-      define_method(@@lc_range,"length",lc_range_size,       0)
+      alias_method_str(@@lc_range,"size", "length",           )
       define_method(@@lc_range,"each",lc_range_each,         0)
       define_method(@@lc_range,"map",lc_range_map,           0)
       define_method(@@lc_range,"==",lc_range_eq,             1)
-      define_method(@@lc_range,"defrost",lc_obj_defrost,     0)
       define_method(@@lc_range,"hash",lc_range_hash,         0)
     end
 
