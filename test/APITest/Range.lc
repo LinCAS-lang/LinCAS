@@ -1,0 +1,169 @@
+import "unit_test"
+
+describe Range do {
+
+  let assert_range(r, begin, end, inclusive) {
+    assert_block("Wrong initialization of range literal") { r.is_a? Range }
+    assert_eq begin, r.begin
+    assert_eq end, r.end
+    assert_eq inclusive, r.inclusive?
+  }
+
+  describe "Literal" do {
+    it "Creates an inclusive range literal" do {
+      r := 1..5; assert_range r, 1, 5, true
+    }
+
+    it "Creates an exclusive range literal" do {
+      r := 1...5; assert_range r, 1, 5, false
+    }
+
+    it "Raises a TypeError" do {
+      assert_raise(TypeError) { new Object...new Object }
+    }
+  }
+
+  describe "#nitialize" {
+    it "Creates an inclusive range" do {
+      r := new Range 1, 5; assert_range r, 1, 5, true
+    }
+
+    it "Creates an exclusive range" do {
+      r := new Range 1, 5, false; assert_range r, 1, 5, false
+    }
+
+    it "Raises a TypeError" do {
+      assert_raise(TypeError) { new Range(new Object, new Object) }
+    }
+  }
+
+  class DiscreteObject {
+    property :cmp, :succ
+
+    let <=>(other) { return cmp }
+  }
+
+  describe "#include?" do {
+    it "Checks in a numeric range" do {
+      r := 0..10; 
+      assert_true r.include? 0
+      assert_true r.include? 5
+      assert_true r.include? 10
+
+      r := 0...10
+      assert_true r.include? 0
+      assert_true r.include? 5
+      assert_false r.include? 10
+    }
+
+    it "Checks in a string range" do {
+      r := "aa".."cc"
+      assert_true r.include? "aa"
+      assert_true r.include? "bb"
+      assert_true r.include? "cc"
+
+      r := "aa"..."cc"
+      assert_true r.include? "aa"
+      assert_true r.include? "bb"
+      assert_false r.include? "cc"
+    }
+
+    it "Checks in custom object range" do {
+      a := new DiscreteObject; a.cmp := -1
+      b := new DiscreteObject; b.cmp := 0
+
+      assert_true((a..b).include? b)
+      assert_false((a...b).include? b)
+    }
+
+    it "Checks in an endless range" do {
+
+    }
+  }
+
+  describe "#to_s" do {
+    it "Returns a string representation of a range" do {
+      assert_eq("1...5", (1...5).to_s)
+      assert_eq("1..5", (1..5).to_s)
+    }
+  }
+
+  describe "#size" do {
+    it "Returns the size of a numeric range" do {
+      assert_eq(5, (1..5).size)
+      assert_eq(4, (1...5).size)
+      assert_eq(0, (5..0).size)
+      assert_eq(4, (1.6..5).size)
+      assert_eq(4, (1.6...5).size)
+      assert_eq(0, (5...0).size)
+      # Missing: generic numeric values 
+    }
+
+    it "Returns null for non-numeric range" do {
+      assert_null ("a".."c").size
+    }
+  }
+
+  describe "#each" do {
+    it "Iterates over an endless range" do {
+
+    }
+
+    it "Iterates over a numeric range" do {
+      a := []
+      (0..5).each { |v| a << v }
+      assert_eq([0, 1, 2, 3, 4, 5], a)
+
+      a := []
+      (0...5).each { |v| a << v }
+      assert_eq([0, 1, 2, 3, 4], a)
+    }
+
+    it "iterates over a discrete object range" do {
+      a := new DiscreteObject
+      b := new DiscreteObject
+      a.cmp := -1; b.cmp := 0
+      a.succ := b.succ := b
+
+      r1 := a..b
+      r2 := a...b
+
+      cont := []
+      r1.each { |x| cont << x }
+      assert_eq([a, b], cont)
+
+      cont := []
+      r2.each { |x| cont << x }
+      assert_eq([a], cont)
+      
+      assert_raise(ArgumentError) do {
+        a.cmp := null
+        r2.each {}
+      }
+    }
+
+    class DuckObject {
+      let <=> other {}
+    }
+
+    it "raises a type error" do {
+      a := new DuckObject
+      b := new DuckObject
+
+      assert_raise(TypeError) do {
+        (a..b).each {}
+      }
+    }
+  }
+
+  describe "#==" do {
+    it "compares two ranges" {
+      assert_eq(1..2, 1..2)
+      assert_eq(1.7...9.2, 1.7...9.2)
+
+      a := new DiscreteObject; a.cmp := -1
+      b := new DiscreteObject
+      assert_eq(a..b, a..b)
+    }
+  }
+}
