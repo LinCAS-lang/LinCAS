@@ -130,7 +130,7 @@ describe Parser do
   it_parses_single "a := //", Assign.new("a".variable, regex(""))
   it_parses_single2 "/ /; / /", [regex(" "), regex(" ")]
   it_parses_multiple ["if / / then / / elsif / / then / / else / /",
-                      "if / /; / / elsif / /; / / else / /"], If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
+                      "if / / then / / elsif / / then / / else / /"], If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
   it_parses_single "[/ /, / /]", ArrayLiteral.new([regex(" "), regex(" ")] of Node)
   it_parses_single "/ / / / /", Call.new(regex(" "), "/", [regex(" ")] of Node)
 
@@ -193,10 +193,10 @@ describe Parser do
   it_parses_multiple ["foo {}", "foo do {}"], Call.new(nil, "foo", block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
   it_parses_multiple ["foo(1, a: 10, &block)", "foo 1, a: 10, &block"], Call.new(nil, "foo", [1.int] of Node, [NamedArg.new("a", 10.int)], "block".variable)
   it_parses_multiple ["foo a: 10, b: 9", "foo(a: 10, b: 9)"], Call.new(nil, "foo", named_args: [NamedArg.new("a", 10.int), NamedArg.new("b", 9.int)])
-  it_parses_single "foo -2", Call.new("foo".variable, "-", [2.int] of Node)
-  it_parses_single "foo +2", Call.new("foo".variable, "+", [2.int] of Node)
-  it_parses_single "foo +b", Call.new("foo".variable, "+", ["b".variable] of Node)
-  it_parses_single "foo -b", Call.new("foo".variable, "-", ["b".variable] of Node)
+  it_parses_single "foo -2", Call.new(nil, "foo", [Call.new(2.int, "-@")] of Node)
+  it_parses_single "foo +2", Call.new(nil, "foo", [Call.new(2.int, "+@")] of Node)
+  it_parses_single "foo +b", Call.new(nil, "foo", [Call.new("b".variable, "+@")] of Node)
+  it_parses_single "foo -b", Call.new(nil, "foo", [Call.new("b".variable, "-@")] of Node)
   it_parses_single "foo !b", Call.new(nil, "foo", [Call.new("b".variable, "!")] of Node)
   it_parses_single "foo a do {}", Call.new(nil, "foo", ["a".variable] of Node, block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
   it_parses_single "foo a {} do {}", Call.new(nil, "foo", [Call.new(nil, "a", block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))] of Node, block: Block.new(nil, Body.new, symtab(SymType::BLOCK)))
@@ -224,24 +224,24 @@ describe Parser do
   it_parses_single "a ^= b", OpAssign.new("a".variable, "^", "b".variable)
   it_parses_single "a |= b", OpAssign.new("a".variable, "|", "b".variable)
   it_parses_single "a &= b", OpAssign.new("a".variable, "&", "b".variable)
-  it_parses_single "a ||= b", OpAssign.new("a".variable, "||", "b".variable)
-  it_parses_single "a &&= b", OpAssign.new("a".variable, "&&", "b".variable)
+  it_parses_single "a ||= b", Assign.new("a".variable, Or.new("a".variable, "b".variable))
+  it_parses_single "a &&= b", Assign.new("a".variable, And.new("a".variable, "b".variable))
   it_parses_single "a := b |= c", Assign.new("a".variable, OpAssign.new("b".variable, "|", "c".variable))
   it_parses_single "a := b += c := 10", Assign.new("a".variable, OpAssign.new("b".variable, "+", Assign.new("c".variable, 10.int)))
 
   it_parses_single "const A := 10", ConstDef.new("A", 10.int)
   it_parses_single "const A := b + 2", ConstDef.new("A", Call.new("b".variable, "+", [2.int] of Node))
 
-  it_parses_multiple ["if a then 1 else 2", "if a then\n 1 else\n 2", "if a\n 1\n else\n 2"], If.new("a".variable, 1.int, 2.int)
+  it_parses_multiple ["if a then 1 else 2", "if a then\n 1 else\n 2", "if a\n then 1\n else\n 2"], If.new("a".variable, 1.int, 2.int)
   it_parses_multiple ["if a then { 1 } else { 2 }",
                       "if a then {\n 1 } else {\n 2 }",
-                      "if a\n {\n 1 }\n else {\n 2 }",
+                      "if a\n then {\n 1 }\n else {\n 2 }",
                       "if a then \n\n{\n\n 1 \n}\n\n else \n\n{\n 2 \n}"], If.new("a".variable, Body.new << 1.int, Body.new << 2.int)
-  it_parses_multiple ["if a then 2", "if a then\n 2", "if a\n2", "if a\n2\n\n"], If.new("a".variable, 2.int)
-  it_parses_multiple ["if true {1\n2\n3}", "if true {1;2;3}"], If.new(true.bool, Body.new << 1.int << 2.int << 3.int)
+  it_parses_multiple ["if a then 2", "if a then\n 2", "if a then\n2\n\n"], If.new("a".variable, 2.int)
+  it_parses_multiple ["if true then{1\n2\n3}", "if true then {1;2;3}"], If.new(true.bool, Body.new << 1.int << 2.int << 3.int)
   it_parses_single "if foo 1 then {}", If.new(Call.new(nil, "foo", [1.int] of Node), Body.new)
   it_parses_single "if foo 1, 2 then {}", If.new(Call.new(nil, "foo", [1.int, 2.int] of Node), Body.new)
-  it_parses_multiple ["if a then b elsif c then d", "if a\n b\n elsif c\n d"], If.new("a".variable, "b".variable, If.new("c".variable, "d".variable))
+  it_parses_multiple ["if a then b elsif c then d", "if a then\n b\n elsif c\n then d"], If.new("a".variable, "b".variable, If.new("c".variable, "d".variable))
 
   it_parses_multiple ["while a\n 1", "do while a\n 1"], While.new("a".variable, 1.int)
   it_parses_multiple ["while a \n{ 1 }", "do while a \n{ 1 }"], While.new("a".variable, Body.new << 1.int)
