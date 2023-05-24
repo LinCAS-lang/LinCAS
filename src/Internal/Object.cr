@@ -273,7 +273,7 @@ module LinCAS::Internal
         define_protected_method(@@lc_object,"initialize",lc_obj_init,     0)
         define_method(@@lc_object,"==",lc_obj_eq,          1)
         define_method(@@lc_object,"!=",lc_obj_neq,         1)
-        define_method(@@lc_object,"<=>",lc_obj_cmp,         1)
+        define_method(@@lc_object,"<=>",lc_obj_cmp,        1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
         define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
         define_method(@@lc_object,"is_null",lc_obj_null,   0)
