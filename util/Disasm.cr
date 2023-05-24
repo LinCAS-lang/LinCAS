@@ -166,6 +166,8 @@ module LinCAS
       case obj
       when LcInt, LcFloat
         Internal.num2num(obj).to_s
+      when LcString
+        String.new obj.str_ptr
       else 
         "at:#{offset}" 
       end
