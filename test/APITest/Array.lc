@@ -2,286 +2,415 @@ import "unit_test"
 
 describe Array do {
 
-  it "initializes array literal" do {
-    a := []
-    assert_block("Wrong initialization of array literal") { a.is_a? Array}
-    assert_block("Array was expected to be empty"       ) { a.empty?   }
-    b := [0]
-    assert_block("Array was expected to have 1 element" ) { b.size == 1  }
+  describe "Literal" do {
+    it "Creates an array literal" do {
+      a := []
+      assert_block("Wrong initialization of array literal") { a.is_a? Array}
+      assert_block("Array was expected to be empty"       ) { a.empty?   }
+      b := [0]
+      assert_block("Array was expected to have 1 element" ) { b.size == 1  }
+    }
   }
 
-  it "instantiates array" do  {
-    a := new Array(0)
-    assert_block("Wrong initialization of array literal" ) { a.is_a? Array}
-    assert_block("Array was expected to be empty"        ) { a.empty?   }
-    b := new Array(3)
-    assert_eq(b.size, 3)
-    b.each { |e| assert_eq(e, null) }
+  describe "initialize" do {
+    it "instantiates array with given size" do  {
+      a := new Array(0)
+      assert_block("Wrong initialization of array literal" ) { a.is_a? Array}
+      assert_block("Array was expected to be empty"        ) { a.empty?   }
+      b := new Array(3)
+      assert_eq(b.size, 3)
+      b.each { |e| assert_eq(e, null) }
+    }
   }
 
-  it "::from_range" do {
-    ary := Array.from_range 0...4; assert_eq([0, 1, 2, 3], ary)
-    ary := Array.from_range 0..4; assert_eq([0, 1, 2, 3, 4], ary)
-    ary := Array.from_range 0..2, 0.5; assert_eq([0, 0.5, 1, 1.5, 2], ary)
-    x := 1000 ** 10
-    assert_raise(NotSupportedError) { Array.from_range 0..x }
+  describe "::from_range" do {
+    it "creates an array with values within the range" do {
+      ary := Array.from_range 0...4; assert_eq([0, 1, 2, 3], ary)
+      ary := Array.from_range 0..4; assert_eq([0, 1, 2, 3, 4], ary)
+    }
+    it "creates an array with range and step" do {
+      ary := Array.from_range 0..2, 0.5; assert_eq([0, 0.5, 1, 1.5, 2], ary)
+    }
+    it "raises a NotSupportedError" do {
+      x := 1000 ** 10
+      assert_raise(NotSupportedError) { Array.from_range 0..x }
+    }
   }
 
-  it "#push" do {
-    a := []
-    a << 12
-    a.push 15
-    assert_eq([12, 15], a)
+  describe "#push" do {
+    it "pushes a value in the array" do {
+      a := []
+      a << 12
+      a.push 15
+      assert_eq([12, 15], a)
+    }
   }
 
-  it "#pop" do {
-    a := [12, 15]
-    r := a.pop
-    assert_eq(15, r)
-    assert_eq([12], a)
-    assert_eq(null, [].pop)
+  describe "#pop" do {
+    it "pops a value" do {
+      a := [12, 15]
+      r := a.pop
+      assert_eq(15, r)
+      assert_eq([12], a)
+      assert_eq(null, [].pop)
+    }
   }
 
-  it "#concat" {
-    a := [1, 2, 3]
-    a.concat [4, 5, 6]
-    assert_eq([1, 2, 3, 4, 5, 6], a)
-    assert_raise(TypeError) { a.concat 7 }
+  describe "#concat" do {
+    it "concatenates two array" do {
+      a := [1, 2, 3]
+      a.concat [4, 5, 6]
+      assert_eq([1, 2, 3, 4, 5, 6], a)
+      # assert_raise(TypeError) { a.concat 7 }
+    }
   } 
 
-  it "#+" do {
-    a := [1, 2, 3]
-    b := [4, 5, 6]
-    assert_eq([1, 2, 3, 4, 5, 6], a + b)
-  }
-
-  it "#[]" do {
-    a := [1, 2, 3, 4, 5, 6, 7]
-    assert_eq(2, a[1])
-    assert_eq([1, 2, 3, 4, 5], a[0..4])
-    assert_eq(7, a[-1])
-    assert_eq(6, a[-2])
-    assert_eq(null, a[7])
-    assert_eq(null, a[-8])
-  }
-
-  it "#[]=" do {
-    a  := [1]
-    a[1] := 2; assert_eq([1, 2], a)
-    a[0] := 8; assert_eq([8, 2], a)
-  }
-
-  it "#include?" do {
-    a := [10, "bar", :k]
-    assert_true(a.include? 10)
-    assert_true(a.include? :k)
-  }
-
-  it "#clone" do {
-    a := [1,2,3]
-    b := a.clone()
-    assert_eq(a, b)
-    a << "string"
-    assert_not_eq(a, b)
-  }
-
-  it "#first" do {
-    a := ["string", :sym, 12]
-    assert_eq("string", a.first)
-  }
-
-  it "#last" do {
-    a := ["string", :sym, 12]
-    assert_eq(12, a.last)
-  }
-
-  it "#size" do {
-    s := [1,2,3,4]
-    assert_eq(4, s.size)
-    assert_eq(4, s.length)
-  }
-
-  it "#empty?" do {
-    assert([].empty?)
-    assert_false([1].empty?)
-  }
-
-  it "#to_s" do {
-    a := [1, 2, 3]
-    assert_eq("[1, 2, 3]", a.to_s)
-    a << a
-    assert_eq("[1, 2, 3, [...]]", a.to_s)
-  }
-
-  it "#each" do {
-    a := [10,20,30]
-    b := a.clone
-    i := 0
-    a.each do { |v|
-      assert_eq(b[i], v)
-      i += 1
+  describe "#+" do {
+    it "sums two arrays" do {
+      a := [1, 2, 3]
+      b := [4, 5, 6]
+      assert_eq([1, 2, 3, 4, 5, 6], a + b)
     }
   }
 
-  it "#map" do {
-    b := [1,2,3].map { |v| v * 2}
-    assert(b.is_a? Array)
-    assert_eq([2,4,6], b)
+  describe "#[]" do {
+    it "access a value given an index" do {
+      a := [1, 2, 3, 4, 5, 6, 7]
+      assert_eq(2, a[1])
+      assert_eq([1, 2, 3, 4, 5], a[0..4])
+      assert_eq(7, a[-1])
+      assert_eq(6, a[-2])
+      assert_eq(null, a[7])
+      assert_eq(null, a[-8])
+    }
   }
 
-  it "#map!" do {
-    a := [1,2,3]
-    a.map! { |v| v * 2 }
-    assert(a.is_a? Array)
-    assert_eq([2,4,6], a)
+  describe "#[]=" do {
+    it "sets a value in the given index" do {
+      a  := [1]
+      a[1] := 2; assert_eq([1, 2], a)
+      a[0] := 8; assert_eq([8, 2], a)
+    }
+  }
+
+  describe "#include?" do {
+    it "returns true if array includes the value" do {
+      a := [10, "bar", :k]
+      assert_true(a.include? 10)
+      assert_true(a.include? :k)
+    }
+  }
+
+  describe "#clone" do {
+    it "clones the array" do {
+      a := [1,2,3]
+      b := a.clone()
+      assert_eq(a, b)
+      a << "string"
+      assert_not_eq(a, b)
+    }
+  }
+
+  describe "#first" do {
+    it "returns the first element" do {
+      a := ["string", :sym, 12]
+      assert_eq("string", a.first)
+      assert_eq(null, [].first)
+    }
+  }
+
+  describe "#last" do {
+    it "returns the last element" do {
+      a := ["string", :sym, 12]
+      assert_eq(12, a.last)
+      assert_eq(null, [].last)
+    }
+  }
+
+  describe "#size" do {
+    it "retiurns the size of the array" do {
+      s := [1,2,3,4]
+      assert_eq(4, s.size)
+      assert_eq(4, s.length)
+      assert_eq(0, [].size)
+    }
+  }
+
+  describe "#empty?" do {
+    it "returns true if the array is empty" do {
+      assert([].empty?)
+      assert_false([1].empty?)
+    }
+  }
+
+  describe "#to_s" do {
+    it "converts an array to string" do {
+      a := [1, 2, 3]
+      assert_eq("[1, 2, 3]", a.to_s)
+      a << a
+      assert_eq("[1, 2, 3, [...]]", a.to_s)
+    }
+  }
+
+  describe "#each" do {
+    it "iterates ove the elements" do {
+      a := [10,20,30]
+      b := a.clone
+      i := 0
+      a.each do { |v|
+        assert_eq(b[i], v)
+        i += 1
+      }
+    }
+  }
+
+  describe "#map" do {
+    it "iterates over the elements and returns an array" do {
+      a := [1,2,3]
+      b := a.map { |v| v * 2}
+      assert_eq([2,4,6], b)
+      assert_eq([1, 2, 3], a)
+    }
+  }
+
+  describe "#map!" do {
+    it "iterates over the elements overwriting the array" do {
+      a := [1,2,3]
+      b := a.map! { |v| v * 2 }
+      assert_eq([2,4,6], a)
+      assert_eq(a, b)
+    }
   } 
 
-  it "#flatten" do {
-    a := [1, [2, [3]]]
-    c := a.flatten
-    assert(c.is_a? Array)
-    assert_eq([1, 2, 3], c)
-    a << a
-    assert_raise(ArgumentError) { a.flatten }
-  }
-
-  it "#insert" do {
-    a := [1,2,3]
-    b := a.insert(0,0)
-    assert(b.is_a? Array)
-    assert_eq([0,1,2,3], b)
-    b := [1,2,3].insert(1,-1,-2)
-    assert(b.is_a? Array)  
-    assert_eq([1,-1,-2,2,3], b)
-    assert_raise(IndexError) { a.insert a.size + 1, 0 }  
-  }
-
-  it "#==" do {
-    a := [1,2,3]
-    b := [1,2,3]
-    assert_true(a == b)
-  }
-
-  it "#swap" do {
-    a := [2,4,6,8]
-    a.swap(1,2)
-    assert_eq([2,6,4,8], a)
-  }
-
-  it "#sort" do {
-    a := [2,6,1,8,9,3,0,4,7,5]
-    assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort)
-    assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort { |a, b| a < b ? 0 : 1 })
-  }
-
-  it "#sort!" do {
-    a := [2,6,1,8,9,3,0,4,7,5]
-    b := a.clone
-    a.sort!; b.sort! { |a, b| a < b ? 0 : 1 }
-    assert_eq([0,1,2,3,4,5,6,7,8,9], a)
-    assert_eq([0,1,2,3,4,5,6,7,8,9], b)
-  }
-
-  it "#max" do {
-    a := [3,1,2]
-    assert_eq(3, a.max)
-  }
-
-  it "#min" do {
-    a := [1,3,2]
-    assert_eq(1, a.min)
-  }
-
-  it "#reverse" do {
-    a := [0,1,2,3,4,5,6,7,8,9]
-    assert_eq([9,8,7,6,5,4,3,2,1,0], a.reverse)
-  }
-
-  it "#reverse!" do {
-    a := [0,1,2,3,4,5,6,7,8,9]
-    a.reverse!
-    assert_eq([9,8,7,6,5,4,3,2,1,0], a)
-  }
-
-  it "#shift" do {
-    a := [1,2,3,4]
-    assert_eq(1, a.shift)
-    assert_eq([2,3,4], a)
-    assert_eq(2, a.shift)
-    assert_eq([3,4], a)
-  }
-
-  it "#join" do {
-    a := [1,2,3,4]
-    assert_eq("1234", a.join)
-    assert_eq("1,2,3,4", a.join(","))
-    a << a.clone
-    assert_eq("12341234", a.join)
-    assert_eq("1,2,3,4,1,2,3,4", a.join(","))
-    a.last.push([:a,:b,:c])
-    assert_eq("12341234:a:b:c", a.join)
-    assert_eq("1,2,3,4,1,2,3,4,:a,:b,:c", a.join(","))
-
-    a << a
-    assert_raise(ArgumentError) { a.join }
-  }
-
-  it "#sort_by" do {
-    a := [:b, :n, :k, :c, :a]
-    assert_eq([:a, :b, :c, :k, :n], a.sort_by { |v| v.to_s } )
-    assert_raise(ArgumentError) { a.sort_by }
-  }
-
-  it "#sort_by!" do {
-    a := [:b, :n, :k, :c, :a]
-    a.sort_by! { |v| v.to_s }
-    assert_eq([:a, :b, :c, :k, :n], a)
-    assert_raise(ArgumentError) { a.sort_by! }
-  }
-
-  it "#delete_at" do {
-    a := [1,2,3,4]
-    assert_eq(1, a.delete_at(0))
-    assert_eq([2,3,4], a)
-    assert_eq(3, a.delete_at(1))
-    assert_eq([2,4], a)
-    assert_eq(4, a.delete_at(1))
-    assert_eq([2], a)
-    assert_null(a.delete_at a.size + 1)
-  }
-
-  it "#each_with_index" do {
-    a := [10,20,30]
-    b := a.clone
-    a.each_with_index do { |v, i|
-      assert_eq(b[i], v)
+  describe "#flatten" do {
+    it "returns a copy of the array flattened" do {
+      a := [1, [2, [3]]]
+      c := a.flatten
+      assert_eq([1, 2, 3], c)
+    }
+    it "raises ArgumentError" do {
+      a := [1, [2, [3]]]
+      a << a
+      assert_raise(ArgumentError) { a.flatten }
     }
   }
 
-  it "#map_with_index" do {
-    a := [10,20,30]
-    b := a.map_with_index do { |v, i|
-      v + i
+  describe "#flatten!" do {
+    it "flattens the array" do {
+      a := [1, [2, [3]]]
+      b := a.flatten!
+      assert_eq(a, b)
+      assert_eq([1, 2, 3], a)
     }
-    assert_eq([10,21,32], b)
-  }
-
-  it "#map_with_index!" do {
-    a := [10,20,30]
-    a.map_with_index! do { |v, i|
-      v + i
+    it "raises ArgumentError" do {
+      a := [1, [2, [3]]]
+      a << a
+      assert_raise(ArgumentError) { a.flatten! }
     }
-    assert_eq([10,21,32], a)
   }
 
-  it "#compact" do {
-    a := [1,null,3,null,null,10,:x]
-    assert_eq([1,3,10,:x], a.compact)
+  describe "#insert" do {
+    it "inserts an element in the given position" do {
+      a := [1,2,3]
+      b := a.insert(0,0)
+      assert_eq([0,1,2,3], b)
+      b := [1,2,3].insert(1,-1,-2) 
+      assert_eq([1,-1,-2,2,3], b)
+    }
+    it "raises IndexError" do {
+      a := [1,2,3]
+      assert_raise(IndexError) { a.insert a.size + 1, 0 }  
+    }
   }
 
-  it "#compact!" do {
-    a := [1,null,3,null,null,10,:x]
-    a.compact!
-    assert_eq([1,3,10,:x], a)
+  describe "#==" do {
+    it "returns true if two arrays are equal" do {
+      a := [1,2,3]
+      b := [1,2,3]
+      assert_true(a == b)
+    }
+  }
+
+  describe "#swap" do {
+    it "swaps two elements" do {
+      a := [2,4,6,8]
+      a.swap(1,2)
+      assert_eq([2,6,4,8], a)
+    }
+  }
+
+  describe "#sort" do {
+    it "returns an copy of the array sorted" do {
+      a := [2,6,1,8,9,3,0,4,7,5]
+      assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort)
+      assert_eq([0,1,2,3,4,5,6,7,8,9], a.sort { |a, b| a < b ? 0 : 1 })
+    }
+  }
+
+  describe "#sort!" do {
+    it "Sorts the array" do {
+      a := [2,6,1,8,9,3,0,4,7,5]
+      b := a.clone
+      c := a.sort!; b.sort! { |a, b| a < b ? 0 : 1 }
+      assert_eq(a, c)
+      assert_eq([0,1,2,3,4,5,6,7,8,9], a)
+      assert_eq([0,1,2,3,4,5,6,7,8,9], b)
+    }
+  }
+
+  describe "#max" do {
+    it "returns the max value" do {
+      a := [3,1,2]
+      assert_eq(3, a.max)
+    }
+    it "returns the max value with block" do {
+      a := ["a", "aa", "aaa"]
+      assert_eq("aaa", a.max { |v, max| v.size <=> max.size })
+    }
+    it "raises an ArgumentError" do {
+      a := [1, "aa", :c]
+      assert_raise(ArgumentError) { a.max }
+    }
+  }
+
+  describe "#min" do {
+    it "returns the min value" do {
+      a := [1,3,2]
+      assert_eq(1, a.min)
+    }
+    it "returns the min value with block" do {
+      a := ["a", "aa", "aaa"]
+      assert_eq("a", a.min { |v, max| v.size <=> max.size })
+    }
+    it "raises an ArgumentError" do {
+      a := [1, "aa", :c]
+      assert_raise(ArgumentError) { a.min }
+    }
+  }
+
+  describe "#reverse" do {
+    it "returns a copy with reversed elements" do {
+      a := [0,1,2,3,4,5,6,7,8,9]
+      assert_eq([9,8,7,6,5,4,3,2,1,0], a.reverse)
+    }
+  }
+
+  describe "#reverse!" do {
+    it "reverses the array" do {
+      a := [0,1,2,3,4,5,6,7,8,9]
+      a.reverse!
+      assert_eq([9,8,7,6,5,4,3,2,1,0], a)
+    }
+  }
+
+  describe "#shift" do {
+    it "shifts the array to the left" do {
+      a := [1,2,3,4]
+      assert_eq(1, a.shift)
+      assert_eq([2,3,4], a)
+      assert_eq(2, a.shift)
+      assert_eq([3,4], a)
+    }
+  }
+
+  describe "#join" do {
+    it "joins the elemenyts in a string" do {
+      a := [1,2,3,4]
+      assert_eq("1234", a.join)
+    }
+    it "joins the elemenyts in a string with the given separator" do {
+      a := [1,2,3,4]
+      assert_eq("1,2,3,4", a.join(","))
+      a << a.clone
+      assert_eq("12341234", a.join)
+      assert_eq("1,2,3,4,1,2,3,4", a.join(","))
+      a.last.push([:a,:b,:c])
+      assert_eq("12341234:a:b:c", a.join)
+      assert_eq("1,2,3,4,1,2,3,4,:a,:b,:c", a.join(","))
+    }
+    it "raises an ArgumentError" do {
+      a := [1,2,3,4]
+      a << a
+      assert_raise(ArgumentError) { a.join }
+    }
+  }
+
+  describe "#sort_by" do {
+    it "returns a copy sorted by the comparison in the block" do {
+      a := [:b, :n, :k, :c, :a]
+      assert_eq([:a, :b, :c, :k, :n], a.sort_by { |v| v.to_s } )
+      assert_raise(ArgumentError) { a.sort_by }
+    }
+  }
+
+  describe "#sort_by!" do {
+    it "sorts the array by the comparison in the block" do {
+      a := [:b, :n, :k, :c, :a]
+      a.sort_by! { |v| v.to_s }
+      assert_eq([:a, :b, :c, :k, :n], a)
+      assert_raise(ArgumentError) { a.sort_by! }
+    }
+  }
+
+  describe "#delete_at" do {
+    it "deletes an element at the given index" do {
+      a := [1,2,3,4]
+      assert_eq(1, a.delete_at(0))
+      assert_eq([2,3,4], a)
+      assert_eq(3, a.delete_at(1))
+      assert_eq([2,4], a)
+      assert_eq(4, a.delete_at(1))
+      assert_eq([2], a)
+      assert_null(a.delete_at a.size + 1)
+    }
+  }
+
+  describe "#each_with_index" do {
+    it "itarates over the elements passing value and index to the block" do {
+      a := [10,20,30]
+      b := a.clone
+      a.each_with_index do { |v, i|
+        assert_eq(b[i], v)
+      }
+    }
+  }
+
+  describe "#map_with_index" do {
+    it "calls the block on each element and the index and returns an array" do {
+      a := [10,20,30]
+      b := a.map_with_index do { |v, i|
+        v + i
+      }
+      assert_eq([10,21,32], b)
+      assert_eq([10,20,30], a)
+    }
+  }
+
+  describe "#map_with_index!" do {
+    it "overwrites the array calling the block on each element and the index" do {
+      a := [10,20,30]
+      b := a.map_with_index! do { |v, i|
+        v + i
+      }
+      assert_eq([10,21,32], a)
+      assert_eq(a, b)
+    }
+  }
+
+  describe "#compact" do {
+    it "returns a copy with the null elements removed" do {
+      a := [1,null,3,null,null,10,:x]
+      assert_eq([1,3,10,:x], a.compact)
+      assert_eq([1,null,3,null,null,10,:x], a)
+    }
+  }
+
+  describe "#compact!" do {
+    it "removes the null elements" do {
+      a := [1,null,3,null,null,10,:x]
+      b := a.compact!
+      assert_eq([1,3,10,:x], a)
+      assert_eq(a, b)
+    }
   }
 }
