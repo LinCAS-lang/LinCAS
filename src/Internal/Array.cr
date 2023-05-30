@@ -206,8 +206,12 @@ module LinCAS::Internal
   def self.lc_ary_init(ary :  LcVal, size :  LcVal)
     x = lc_num_to_cr_i(size)
     check_capacity(lc_cast(ary, LcArray), x)
-    ary_range_to_null(ary, 0, x)
     set_ary_size(ary, x)
+    if Exec.block_given? 
+      lc_ary_map!(ary)
+    else
+      ary_range_to_null(ary, 0, x)
+    end
     Null
   end
 
@@ -433,15 +437,12 @@ module LinCAS::Internal
     return Null 
   end
 
+  @[AlwaysInline]
   def self.lc_ary_map(ary :  LcVal)
-    arylen = ary_size(ary)
-    tmp    = new_array_size arylen
-    arylen.times do |i|
-      ary_set_index(tmp, i, Exec.lc_yield(ary_at_index(ary, i)))
-    end
-    return tmp 
+    return lc_ary_map! lc_ary_clone(ary)
   end
 
+  @[AlwaysInline]
   def self.lc_ary_map!(ary :  LcVal)
     ary_size(ary).times do |i|
       ary_set_index(ary,i,Exec.lc_yield(ary_at_index(ary,i)))
@@ -450,13 +451,7 @@ module LinCAS::Internal
   end 
 
   def self.lc_ary_map_with_index(ary :  LcVal)
-    size = ary_size(ary)
-    tmp  = new_array_size(size)
-    size.times do |i|
-      value = Exec.lc_yield(ary_at_index(ary, i), num2int(i)).as( LcVal)
-      ary_set_index(tmp, i, value)
-    end
-    return tmp
+    return lc_ary_map_with_index! lc_ary_clone(ary)
   end 
 
   def self.lc_ary_map_with_index!(ary :  LcVal)
