@@ -10,16 +10,13 @@
 * ...
 **/
 
-let fibonacci(n)
-{
+let fibonacci(n) {
     a := 1
     b := 1
-    if n <= 0 {
+    if n <= 0 then
         return 1
-    } 
-    elsif n <= 1 {
+    elsif n <= 1 then
         return 1
-    } 
     else {
         for i : 2 to n {
             t := a 
@@ -37,19 +34,15 @@ printl fibonacci(4)
 printl ""
 
 /**
-* Making a recoursive one
+* Making a recursive one
 */
-let fibonacci_r(n,a := 0, b := 1)
-{
-    if n <= 0 {
+let fibonacci_r(n,a := 0, b := 1) {
+    if n <= 0 then
         return 1
-    }
-    elsif n <= 1 {
+    elsif n <= 1 then
         return a + b
-    } 
-    else {
+    else
         return fibonacci_r(n - 1, b, a + b)
-    }
 }
 
 printl fibonacci_r(0)

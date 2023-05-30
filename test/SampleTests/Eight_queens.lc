@@ -10,7 +10,7 @@
 * diagonal
 *
 * Taken and adapted from https://www.ragni.me/ncalc/solutions/regine
-**/
+'**/
 
 class Queens
 {   
@@ -20,45 +20,42 @@ class Queens
     let initialize(size := 8, queens := 8)
     { 
         if !(size.is_a? (Integer)) then
-        { raise new ArgumentError("Size must be an integer")   }
+            raise new ArgumentError("Size must be an integer")   
         
         if size < 0 then 
-        { raise new ArgumentError("Size must be positive")     }
+            raise new ArgumentError("Size must be positive")     
 
         if !(queens.is_a? (Integer)) then 
-        { raise new ArgumentError("Queens must be an integer") }
+            raise new ArgumentError("Queens must be an integer") 
 
         if queens < 0 then
-        { raise new ArgumentError("Queens must be positive")   }
+            raise new ArgumentError("Queens must be positive")   
         
 
         @size   := size 
         @queens := queens 
-        @sol    := new Matrix(@size,@size) { next 0 }
+        @sol    := new Array(@size) { new Array(@size) { 0 } }
     }
 
     let solve()
     {
-        if self.place(0) then {
+        if self.place(0) then
             return @sol
-        } else {
+        else 
             raise "There is no solution"
-        }
     }
 
     let place(queen)
     {
-    
-        if (@size <= 3) && (@size <= @queens) then { return false }
-        if queen == @queens                   then { return true  }
+        return false if (@size <= 3) && (@size <= @queens)
+        return true  if queen == @queens
 
-        for row : 0 to (@size - 1)
-        {
-            if self.place? (row,queen) then
+        (0...@size).each do { |row|
+            if self.place? row, queen then
             {
-                @sol[row,queen] := 1
-                if self.place(queen + 1) { return  true }
-                @sol[row,queen] := 0
+                @sol[row][queen] := 1
+                return  true if self.place(queen + 1)
+                @sol[row][queen] := 0
             }
         }
         return false
@@ -66,34 +63,37 @@ class Queens
 
     let place?(row,col)
     {
-        for i : 0 to (@size - 1)
-        {
-            if @sol[row,i] == 1 { return false }
+        (0...@size).each do { |i|
+            return false if @sol[row][i] == 1
         }
 
         q1 := row - col 
         q2 := row + col 
-        for i : 0 to (@size - 1)
-        {
+        (0...@size).each do { |i|
             if (0...@size).include? (i + q1) then
-            { 
-                if @sol[i + q1,i] == 1 { return false } 
-            }
+                return false if @sol[i + q1][i] == 1
+
             if (0...@size).include? (i - q2) then
-            {
-                if @sol[i - q2,i] == 1 { return false }
-            }
+                return false if @sol[i - q2][i] == 1
         }
         return true
     }
 
 } /* end Queens */
 
-const queens := 9
+const queens := 8
 
 r := new Queens(queens,queens).solve()
 
-printl r.map!() { (el) if (el == 1) { next "Q" } else { next "*" } }
+r.each() { |row|
+    row.map! { |el| 
+        if el == 1 then 
+            next "Q" 
+        else 
+            next "*"
+    }
+    printl row.join(",")
+}
 
 
 
