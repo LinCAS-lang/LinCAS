@@ -774,6 +774,7 @@ module LinCAS
         @control_frames.delete_at(i, @control_frames.size - i)
         restore_regs
         push obj
+        raise VM::LongJump.new
       else
         lc_bug("Invalid or unhandled throw state (#{state})")
       end
