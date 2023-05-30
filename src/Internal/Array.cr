@@ -731,7 +731,7 @@ module LinCAS::Internal
             io << separator unless current.size == 0
           else
             io << separator if i > 1
-            str = Exec.lc_call_fun(v, "inspect")
+            str = lc_obj_any_to_s v
             io.write_string pointer_of(str).to_slice(str_size(str))
           end 
         end
