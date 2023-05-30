@@ -250,6 +250,11 @@ module LinCAS::Internal
             return Null 
         end
     end
+
+    @[AlwaysInline]
+    def self.lc_block_given(unised)
+        return val2bool(Exec.caller_block_given?)
+    end
     
 
     
@@ -268,6 +273,7 @@ module LinCAS::Internal
         define_method(@@lc_kernel,"is_a?", lc_is_a,            1)
         define_method(@@lc_kernel,"send",lc_obj_send,          -3)
         define_method(@@lc_kernel,"respond_to?",lc_obj_responds_to, 1)
+        define_method(@@lc_kernel,"block_given?",lc_block_given,0)
     
         lc_include_module(@@lc_object,@@lc_kernel)
     end

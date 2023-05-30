@@ -430,8 +430,7 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    def vm_get_block
-      env = @current_frame.env
+    def seek_block(env)
       while env && env.frame_type.includes? VmFrame::BLOCK_FRAME
         env = env.previous 
       end
@@ -439,8 +438,21 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    def vm_get_block
+      return seek_block @current_frame.env
+    end
+
+    @[AlwaysInline]
     def block_given?
       return !!vm_get_block 
+    end
+
+    # This method is used by `Kernel#block_given?`.
+    # We need to check in the caller frame if the block
+    # is given
+    @[AlwaysInline]
+    def caller_block_given?
+      return !!seek_block @control_frames[-2].env
     end
     
     @[AlwaysInline]
