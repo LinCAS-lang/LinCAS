@@ -325,8 +325,8 @@ describe Array do {
       assert_eq("12341234", a.join)
       assert_eq("1,2,3,4,1,2,3,4", a.join(","))
       a.last.push([:a,:b,:c])
-      assert_eq("12341234:a:b:c", a.join)
-      assert_eq("1,2,3,4,1,2,3,4,:a,:b,:c", a.join(","))
+      assert_eq("12341234abc", a.join)
+      assert_eq("1,2,3,4,1,2,3,4,a,b,c", a.join(","))
     }
     it "raises an ArgumentError" do {
       a := [1,2,3,4]
