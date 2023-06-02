@@ -65,22 +65,22 @@ module LinCAS
     end
 
     private def get_name(env, io)
-        case env.frame_type
-        when .main_frame?, .class_frame?
-          base_env_or_cref_name env, io
-        when .block_frame?, .proc_frame?
-          base_env = env.previous
-          level = 0
-          while base_env && base_env.frame_type.includes? (VM::VmFrame.flags(BLOCK_FRAME, PROC_FRAME))
-            base_env = base_env.previous
-            level += 1
-          end
-          io << "block "
-          io << (level > 0 ? "(#{level + 1} levels) in " : "in ")
-          base_env_or_cref_name base_env.not_nil!, io
-        else
-          io << env.context.name
+      case env.frame_type
+      when .main_frame?, .class_frame?
+        base_env_or_cref_name env, io
+      when .block_frame?, .proc_frame?
+        base_env = env.previous
+        level = 0
+        while base_env && base_env.frame_type.includes? (VM::VmFrame.flags(BLOCK_FRAME, PROC_FRAME))
+          base_env = base_env.previous
+          level += 1
         end
+        io << "block "
+        io << (level > 0 ? "(#{level + 1} levels) in " : "in ")
+        base_env_or_cref_name base_env.not_nil!, io
+      else
+        io << env.context.name
+      end
     end
 
     @[AlwaysInline]
@@ -92,13 +92,13 @@ module LinCAS
 
     @[AlwaysInline]
     private def base_env_or_cref_name(env : VM::Environment, io)
-      if env.frame_type.main_frame?
+      tmp = if env.frame_type.main_frame?
         io << "<main>"
       elsif env.frame_type.top_frame?
         io << "<top (required)>"
       else
         context = env.context
-        io << (context.is_a?(LcMethod) ? context.name : class_or_module_name(context, io))
+        (context.is_a?(LcMethod) ? io << context.name : class_or_module_name(context, io))
       end
     end
 
