@@ -1,0 +1,32 @@
+import "unit_test"
+
+describe :Call do {
+  let foo(a, b := 100, *rest) {
+    return [a, b, *rest]
+  }
+
+  it "calls foo", __FILE__, __LINE__ do {
+    assert_raise(ArgumentError) { foo() }
+    assert_raise(ArgumentError) { foo   }
+
+    assert_eq([1, 100], foo(1))
+    assert_eq([1, 2], foo(1, 2))
+    assert_eq([1, 2, 3, 4], foo(1, 2, 3, 4))
+    assert_eq([1, 2, 3, 4], foo(1, *[2, 3, 4]))
+  }
+
+  let bar(a:, b: 100, **kwrest) {
+    return [a, b, kwrest]
+  }
+
+  it "calls with keyword args", __FILE__, __LINE__ do {
+    assert_raise(ArgumentError) { bar() }
+    assert_raise(ArgumentError) { bar   }
+
+    assert_eq([1, 100, {}], bar(a: 1))
+    assert_eq([1, 2, {}], bar(a: 1, b: 2))
+    assert_eq([1, 2, {c: 3, d: 4}], bar(a: 1, b: 2, c: 3, d: 4))
+    assert_eq([1, 2, {c: 3, d: 4}], bar(**{a: 1, b: 2, c: 3, d: 4}))
+    assert_eq([1, 2, {c: 3, d: 4}], bar(**{a: 1, b: 2}, c: 3, d: 4))
+  }
+}
