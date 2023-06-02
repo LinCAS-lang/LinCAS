@@ -353,11 +353,18 @@ module LinCAS::Internal
         return fetch_entry_in_bucket(entry,key)
     end
 
-    def self.hash_fetch(hash :  LcVal,key :  LcVal,default :  LcVal)
-        return Null if hash_empty?(hash)
-        h_key   = fast_hash(key)
-        entry = get_entry(hash,h_key,key)
-        return entry ? entry.value : default
+    @[AlwaysInline]
+    def self.hash_fetch(hash :  LcVal, key :  LcVal)
+        if !hash_empty?(hash)
+            h_key   = fast_hash(key)
+            return get_entry(hash,h_key,key).try &.value
+        end 
+        return nil
+    end
+
+    @[AlwaysInline]
+    def self.hash_fetch(hash :  LcVal, key :  LcVal, default :  LcVal)
+        return hash_fetch(hash, key) || default
     end
 
     def self.lc_hash_fetch(hash :  LcVal, key : Slice)
@@ -580,6 +587,19 @@ module LinCAS::Internal
         end
         return num2int(res.hash(hasher).result.to_i64)
     end
+
+    def self.lc_hash_eq(hash1 : LcVal, hash2 : LcVal)
+        if hash2.is_a?(LcHash) && hash_size(hash1) == hash_size(hash2)
+            return lctrue if hash1.object_id == hash2.object_id
+            hash_iterate hash1 do |entry|
+                value1 = entry.value
+                value2 = hash_fetch(hash2, entry.key)
+                return lcfalse unless value2 && test(lc_obj_compare(value1, value2))
+            end
+            return lctrue
+        end
+        return lcfalse
+    end
     
 
     def self.init_hash
@@ -607,6 +627,7 @@ module LinCAS::Internal
         alias_method_str(@@lc_hash,"size","length"             )
         define_method(@@lc_hash,"to_a",lc_hash_to_a,             0)
         define_method(@@lc_hash,"hash",lc_hash_hash,             0)
+        define_method(@@lc_hash,"==",lc_hash_eq,                 1)
 
         lc_define_const(@@lc_kernel,"ENV", define_env)
     end
