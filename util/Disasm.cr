@@ -167,7 +167,11 @@ module LinCAS
       when LcInt, LcFloat
         Internal.num2num(obj).to_s
       when LcString
-        String.new obj.str_ptr
+        String.build do |io|
+          io << '"'
+          io.write_string(obj.str_ptr.to_slice(obj.size))
+          io << '"'
+        end
       else 
         "at:#{offset}" 
       end
