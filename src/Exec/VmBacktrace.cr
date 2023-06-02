@@ -92,7 +92,7 @@ module LinCAS
 
     @[AlwaysInline]
     private def base_env_or_cref_name(env : VM::Environment, io)
-      tmp = if env.frame_type.main_frame?
+      if env.frame_type.main_frame?
         io << "<main>"
       elsif env.frame_type.top_frame?
         io << "<top (required)>"
