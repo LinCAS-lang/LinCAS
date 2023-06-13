@@ -916,16 +916,18 @@ module LinCAS
       name  = node.name
       encoded = iseq.encoded 
       set_line(iseq, node.location)
-      ci = CallInfo.new(
-        name: name,
-        argc: 0,
-        splat: false,
-        dbl_splat: false,
-        kwarg: nil,
-        explicit: false
-      )
-      ci_index = IS.new(set_call_info iseq, ci)
+
       if node.type.unknown?
+        ci = CallInfo.new(
+          name: name,
+          argc: 0,
+          splat: false,
+          dbl_splat: false,
+          kwarg: nil,
+          explicit: false
+        )
+        ci_index = IS.new(set_call_info iseq, ci)
+      
         if node.is_capital
           # Constant or call
           encoded << (IS::CONST_OR_CALL | ci_index)
