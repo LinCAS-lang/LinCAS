@@ -318,11 +318,12 @@ module LinCAS
       else
         # In this case the call is in the format `a.foo`. The method is searched from
         # the class of `a` and allows protected and private methods (explicit)only if
-        # `a` is an instance or sub instance of the current lexical scope
+        # `a` is `self`
         klass = _self.klass
-        explicit = !(_self == context || 
-                     (!flags.includes?(VM::VmFrame.flags(MAIN_FRAME, TOP_FRAME)) && 
-                      Internal.lincas_obj_is_a(_self, context)))
+        # explicit = !(_self == context || 
+        #              (!flags.includes?(VM::VmFrame.flags(MAIN_FRAME, TOP_FRAME)) && 
+        #               Internal.lincas_obj_is_a(_self, context)))
+        explicit = !(_self == context || _self == @current_frame.me)
         debug("Dispatching #{klass.name}##{ci.name}; explicit: #{explicit} (orig: #{ci.explicit})")       
       end
       cc = Internal.seek_method(klass, ci.name, explicit)
