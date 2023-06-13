@@ -220,7 +220,7 @@ module LinCAS
     end
 
     def cached?
-      @flags &= MethodFlags::CACHED
+      @flags & MethodFlags::CACHED
     end
 
     getter name, args, code, arity, pyobj,

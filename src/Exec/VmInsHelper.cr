@@ -579,6 +579,7 @@ module LinCAS
       end
       debug("Defining method '#{name}' in #{receiver.name}")
       vm_check_frozen_object receiver
+      Internal.invalidate_cc_by_class(receiver, name)
       Internal.lc_define_umethod(receiver, name, iseq, visibility)
       push LcTrue
     end
