@@ -29,4 +29,62 @@ describe :Call do {
     assert_eq([1, 2, {c: 3, d: 4}], bar(**{a: 1, b: 2, c: 3, d: 4}))
     assert_eq([1, 2, {c: 3, d: 4}], bar(**{a: 1, b: 2}, c: 3, d: 4))
   }
+
+  # Call dispatching
+
+  class A {
+    private let priv_method { :private }
+    protected let prot_method { :protected }
+
+    let call_private1 { priv_method }
+    let call_protected1 { prot_method }
+
+    let call_private2 { self.priv_method }
+    let call_protected2 { self.prot_method }
+  }
+
+  class B inherits A {
+    let call_private_A1 { priv_method }
+    let call_private_A2 { self.priv_method }
+    let call_private_A3 { call_private1 }
+
+    let call_protected_A { prot_method }
+  }
+
+  it "raises an error", __FILE__, __LINE__ do {
+    a := new A
+    b := new B
+    assert_raise(NoMethodError) { a.priv_method }
+    assert_raise(NoMethodError) { a.prot_method }
+    assert_raise(NameError) { b.call_private_A1 }
+    assert_raise(NoMethodError) { b.call_private_A2 }
+  }
+
+  it "dispatches a private sub-method", __FILE__, __LINE__ do {
+    a := new A
+    b := new B
+    assert_eq(:private, a.call_private1)
+    assert_eq(:private, a.call_private2)
+    assert_eq(:private, b.call_private_A3)
+  }
+
+  it "dispatches a protected sub-method", __FILE__, __LINE__ do {
+    a := new A
+    b := new B
+    assert_eq(:protected, a.call_protected1)
+    assert_eq(:protected, a.call_protected2)
+    assert_eq(:protected, b.call_protected_A)
+    assert_eq(:protected, b.call_protected1)
+    assert_eq(:protected, b.call_protected2)
+  }
+
+  class B {
+    protected let prot_method { :redefined }
+  }
+
+  it "dispatches a protected method according to definition",  __FILE__, __LINE__ do {
+    b := new B
+    assert_eq(:protected, b.call_protected1)
+    assert_eq(:redefined, b.call_protected2)
+  }
 }
