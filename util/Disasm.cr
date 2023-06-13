@@ -86,7 +86,7 @@ module LinCAS
         ins  = get_instruction(is)
         op   = get_operand(is)
         puts case ins
-        when .pop?, .leave?, .noop?, .push_true?, .push_false?, .push_self?, .push_null?
+        when .pop?, .leave?, .noop?, .push_true?, .push_false?, .push_self?, .push_null?, .dup?
           pattern % {i, ins, nil, line}
         when .setinstance_v?, .setclass_v?,
              .getconst?, .storeconst?
@@ -130,13 +130,15 @@ module LinCAS
         when .new_object?
           ci = @iseq.call_info[op]
           ci_str = new_obj_pattern % {ci.argc, ci.kwarg?, "null"}
-          pattern % {i - 1, ins, ci_str, line}
+          pattern % {i, ins, ci_str, line}
         when .new_object_with_block?
           ci = @iseq.call_info[op]
           block = ci.block || "null"
           ci_str = new_obj_pattern % {ci.argc, ci.kwarg?, block}
           @stack << {block, "block"} if !block.is_a? String
-          pattern % {i - 1, ins, ci_str, line}
+          pattern % {i, ins, ci_str, line}
+        when .throw?
+          pattern % {i, ins, VM::ThrowState.new(op), line}
         else
           pattern % {i, ins, op, line}
         end
