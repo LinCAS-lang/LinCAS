@@ -252,6 +252,7 @@ module LinCAS::Internal
     return !!class_search_ancestor(obj.klass, c)
   end
   
+  @[AlwaysInline]
   def self.lc_is_a(obj :  LcVal, c :  LcVal)
     return val2bool(lincas_obj_is_a(obj, c))
   end

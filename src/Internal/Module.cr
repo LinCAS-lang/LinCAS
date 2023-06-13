@@ -221,13 +221,18 @@ module LinCAS::Internal
       end
     end
 
+    @[AlwaysInline]
+    def self.lc_module_eqq(klass : LcVal, other : LcVal)
+      return lc_is_a other, klass
+    end
+
     def self.init_module
       @@lc_module = lc_build_internal_class("Module", @@lc_object) { lc_build_module_class }
 
-      define_method(@@lc_module,"to_s", lc_class_to_s,       0)
-      define_method(@@lc_module,"name", lc_class_to_s,       0)
-      define_method(@@lc_module,"inspect",lc_class_inspect,  0)
-      define_method(@@lc_module,"defrost",lc_class_defrost,  0)
+      define_method(@@lc_module,"to_s", lc_class_to_s,                      0)
+      define_method(@@lc_module,"name", lc_class_to_s,                      0)
+      define_method(@@lc_module,"inspect",lc_class_inspect,                 0)
+      define_method(@@lc_module,"defrost",lc_class_defrost,                 0)
       define_method(@@lc_module,"instance_method",lc_instance_method,       1)
       define_method(@@lc_module,"ancestors", lc_mod_ancestors,              0)
       define_method(@@lc_module,"alias",lc_alias_method,                    2)
@@ -236,6 +241,7 @@ module LinCAS::Internal
       define_method(@@lc_module,"property",lc_module_property,             -2)
       define_method(@@lc_module,"getter",lc_module_getter,                 -2)
       define_method(@@lc_module,"setter",lc_module_setter,                 -2)
+      define_method(@@lc_module,"===",lc_module_eqq,                        1)
     end
 
 end

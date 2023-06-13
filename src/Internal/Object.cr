@@ -178,13 +178,19 @@ module LinCAS::Internal
         return lc_compare(obj1,obj2)
     end
 
+    @[AlwaysInline]
     def self.lc_obj_eq(obj1 :  LcVal, obj2 :  LcVal)
         return val2bool(obj1.object_id == obj2.object_id)
     end
 
+    @[AlwaysInline]
+    def self.lc_obj_eqq(obj1 :  LcVal, obj2 :  LcVal)
+        return Exec.lc_call_fun(obj1, "==", obj2)
+    end
+
+    @[AlwaysInline]
     def self.lc_obj_neq(obj1 :  LcVal, obj2 :  LcVal)
-        res = Exec.lc_call_fun(obj1, "==", obj2)
-        return val2bool !test(res)
+        return val2bool !Exec.lc_call_fun(obj1, "==", obj2)
     end
 
     @[AlwaysInline]
@@ -272,6 +278,7 @@ module LinCAS::Internal
         
         define_protected_method(@@lc_object,"initialize",lc_obj_init,     0)
         define_method(@@lc_object,"==",lc_obj_eq,          1)
+        define_method(@@lc_object, "===", lc_obj_eqq,      1)
         define_method(@@lc_object,"!=",lc_obj_neq,         1)
         define_method(@@lc_object,"<=>",lc_obj_cmp,        1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
