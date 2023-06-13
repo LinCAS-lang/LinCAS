@@ -1,0 +1,53 @@
+import "unit_test"
+
+describe :Select do {
+  
+  it "selects an option given the condition", __FILE__, __LINE__ do {
+    select 5:
+    {
+      case 1, 2, 3, 4, 6, 7, 8: assert false
+      case 5: assert true
+    }
+
+    select 5:
+    {
+      case 5: assert true
+      case 1..10: assert false
+    }
+
+    select 5:
+    {
+      case 5: assert true
+      else assert false
+    }
+
+    select 5:
+    {
+      case Integer: assert true
+      else assert false
+    }
+  }
+
+  it "selects an option without condition", __FILE__, __LINE__  do {
+    select: 
+    {
+      case true: assert true
+      case false, nil: assert false
+      else assert false 
+    }
+
+    select: 
+    {
+      case false, null: assert false
+      case true: assert true
+      else assert false 
+    }
+
+    select: 
+    {
+      case 1, []: assert true
+      case 3, 4: assert false
+      else assert false 
+    }
+  }
+}
