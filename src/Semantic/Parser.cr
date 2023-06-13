@@ -422,7 +422,8 @@ module LinCAS
         when :do, :while
           parse_loop
         # when :for
-        # when :select
+        when :select
+          parse_select
         when :break, :next, :return
           parse_control_expression @token.value.as(Symbol)
         when :const
@@ -936,7 +937,63 @@ module LinCAS
     def parse_for 
     end
 
-    def parse_select 
+    def parse_select
+      slash_is_regex!
+      next_token_skip_space
+      condition = nil
+      if !{:EOL, :"{", :":"}.includes?(@token.type)
+        @stop_on_do = true
+        condition = parse_op_assign_no_control
+        skip_space
+      else
+        skip_space_or_newline
+      end
+      if condition
+        check :":"
+        next_token_skip_space_or_newline
+      elsif @token.type == :":"
+        next_token_skip_space_or_newline
+      end
+      check :"{"
+      next_token_skip_space_or_newline
+      entries = [] of CaseEntry
+      check :case, kw: true
+      while @token.keyword? :case
+        entries << parse_case_entry
+        skip_end
+      end
+      skip_space_or_newline
+      _else = nil
+      if @token.keyword? :else
+        slash_is_regex!
+        next_token_skip_space_or_newline
+        _else = @token.type == :"{" ? parse_body : Body.new << parse_op_assign
+        skip_end
+      end
+      check :"}"
+      next_token
+      return Select.new condition, entries, _else
+    end
+
+    def parse_case_entry
+      slash_is_regex!
+      next_token_skip_space_or_newline
+      conditions = [] of Node
+      loop do 
+        conditions << parse_op_assign_no_control
+        skip_space
+        if @token.type == :","
+          slash_is_regex!
+          next_token_skip_space_or_newline
+        else
+          break
+        end
+      end
+      check :":"
+      slash_is_regex!
+      next_token_skip_space_or_newline
+      body = @token.type == :"{" ? parse_body : Body.new << parse_op_assign
+      return CaseEntry.new conditions, body
     end
 
     def parse_const 
@@ -2005,18 +2062,23 @@ module LinCAS
         io << "Unexpected "
         if @token.is_kw
           io << "keyword "
-          io << @token.value.inspect 
+          io << '\'' << @token.value << '\'' 
         elsif @token.type == :EOF 
           io << "end of file"
         else 
           io << "token '"
           io << @token.type
-          io << "'"
+          io << '\''
         end 
 
         if !args.empty? 
           io << ", expecting: "
-          io << args.join(", ")
+          args.each_with_index do |arg, i|
+            io <<  '\'' << arg <<  '\''
+            unless i == args.size - 1 # a bit unsafe
+              io << ','
+            end
+          end
         end
       end 
       if @spec_mode

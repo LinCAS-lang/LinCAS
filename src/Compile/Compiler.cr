@@ -443,7 +443,68 @@ module LinCAS
     end 
 
     def compile_select(iseq, node : Select)
+      if condition = !!node.condition
+        compile_each(iseq, node.condition.not_nil!)
+      end
+      jumps = [] of Array(Int32)
+
+      # We can compile all the conditions first, so that we minimize
+      # the jumps
+      node.entries.each do |entry|
+        compile_case_entry_condition iseq, entry, condition, jumps
+      end
+
+      encoded = iseq.encoded
+      ujumps = [] of Int32
+
+      encoded << IS::POP if condition
+      if (_else = node._else)
+        compile_body(iseq, _else)
+      else
+        encoded << IS::PUSH_NULL
+      end
+      ujumps << encoded.size
+      encoded << IS::JUMP
+
+      # Now we can compile the case bodies
+      node.entries.each_with_index do |entry, i|
+        jump_is = encoded.size
+        jumps[i].each do |offset|
+          ensure_is encoded[offset], IS::JUMPT
+          encoded[offset] |= IS.new(jump_is.to_u64)
+        end
+
+        encoded << IS::POP if condition
+        compile_each iseq, entry.body
+        unless entry.object_id == node.entries.last.object_id
+          ujumps << encoded.size
+          encoded << IS::JUMP
+        end
+      end
+
+      jump_is = encoded.size
+      ujumps.each do |offset|
+        ensure_is encoded[offset], IS::JUMP
+        encoded[offset] |= IS.new(jump_is.to_u64)
+      end
     end 
+
+    def compile_case_entry_condition(iseq, entry, condition, jumps)
+      jump_set = [] of Int32
+      encoded = iseq.encoded
+      entry.conditions.each do |cond|
+        if condition
+          encoded << IS::DUP
+          compile_each iseq, cond
+          encoded << (IS::CHECK_MATCH | IS.new(1))
+        else
+          compile_each iseq, cond
+        end
+        jump_set << encoded.size
+        encoded << IS::JUMPT
+      end
+      jumps << jump_set
+    end
 
     def compile_try(iseq, node)
       encoded = iseq.encoded

@@ -653,6 +653,8 @@ module LinCAS
           lc_raise(Internal.lc_type_err, "Class or module required for catch statement")
         end
         return Internal.val2bool(Internal.lincas_obj_is_a(a, b))
+      when 1 # case
+        return lc_call_fun(b, "===", a)
       else
         LcFalse
       end
