@@ -942,7 +942,6 @@ module LinCAS
       next_token_skip_space
       condition = nil
       if !{:EOL, :"{", :":"}.includes?(@token.type)
-        @stop_on_do = true
         condition = parse_op_assign_no_control
         skip_space
       else
