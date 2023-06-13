@@ -79,6 +79,7 @@ def assert_syntax_error(string, msg)
 end
 
 describe Parser do
+
   it "Parses an empty program" do
     parser = Parser.new(__FILE__, "")
     prog = parser.parse
@@ -350,4 +351,20 @@ describe Parser do
   it_parses_single "new Array(1, a: 2)", NewObject.new(Namespace.new(["Array"]), [1.int] of Node, [NamedArg.new("a", 2.int)], nil, nil)
   it_parses_single "new Array &block", NewObject.new(Namespace.new(["Array"]), nil, nil, "block".variable, nil)
   it_parses_single "new Array {}", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, Block.new(nil, Body.new, symtab(SymType::BLOCK)))
+
+  it_parses_multiple ["select a :\n{\ncase b, c: d; case 2, 3: {e}}",
+                      "select a:\n{\ncase b, c: d\ncase 2, 3: {e}}"], Select.new("a".variable, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], nil)
+  it_parses_multiple ["select \n{\ncase b, c : d; case 2, 3 : {e}}",
+                      "select :\n{\ncase b, c : d\ncase 2, 3 : {e}}",
+                      "select :\n{\ncase b, c : d\ncase 2, 3 : e}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], nil)
+  it_parses_multiple ["select \n{\ncase b, c : d; else {e}}",
+                      "select :\n{\ncase b, c : d\n else e}",
+                      "select :\n{\ncase b, c : d; else\ne}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], Body.new << "e".variable)
+
+  assert_syntax_error "select a {}", "Unexpected end of file, expecting: ':'"
+  assert_syntax_error "select a: {}", "Unexpected token '}', expecting: 'case'"
+  assert_syntax_error "select a: { else 2}", "Unexpected keyword 'else', expecting: 'case'"
+  assert_syntax_error "select a : { case 1 {} }", "Unexpected token '{', expecting: ':'"
+  assert_syntax_error "select a : { case 1 :{} else {} case b: {}}", "Unexpected keyword 'case', expecting: '}'"
+
 end
