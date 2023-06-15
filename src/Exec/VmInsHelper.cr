@@ -391,7 +391,6 @@ module LinCAS
 
     private def vm_call_internal(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo, flags : VM::VmFrame)
       vm_setup_args_internal_or_python(ci, calling, method.arity)
-      argv = vm_collect_args(method.arity, calling)
       flags |= VM::VmFrame.flags(ICALL_FRAME, FLAG_LOCAL)
       if ci.has_kwargs? || ci.dbl_splat
         flags |= VM::VmFrame::FLAG_KEYWORDS
@@ -409,7 +408,7 @@ module LinCAS
         max_argc = UNLIMITED_ARGUMENTS
       end
       vm_check_arity(min_argc, max_argc, calling.argc)
-
+      argv = vm_collect_args(method.arity, calling)
       val = call_internal_special(method, argv)
 
       push val
