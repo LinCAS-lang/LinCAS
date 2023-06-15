@@ -15,129 +15,129 @@
 
 module LinCAS::Internal
 
-    abstract class LcBool < LcBase
+  abstract class LcBool < LcBase
+  end
+
+  class LcBTrue  < LcBool
+    def to_s 
+      return "true"
     end
+  end
 
-    class LcBTrue  < LcBool
-        def to_s 
-            return "true"
-        end
+  class LcBFalse  < LcBool 
+    def to_s 
+      return "false"
     end
+  end
 
-    class LcBFalse  < LcBool 
-        def to_s 
-            return "false"
-        end
+  @[AlwaysInline]
+  def self.val2bool(value : Bool)
+    return lctrue if value 
+    return lcfalse 
+  end
+
+  @[AlwaysInline]
+  def self.bool2val(value :  LcVal)
+    return value == lctrue ? true : false
+  end
+
+  def self.build_true
+    lcTrue = lincas_obj_alloc LcBTrue, @@lc_boolean
+    set_flag lcTrue, FROZEN
+    return lcTrue.as( LcVal)
+  end
+
+  def self.lazy_build_true
+    lcTrue      = LcBTrue.new
+    lcTrue.flags |= ObjectFlags::FROZEN
+    return lcTrue.as( LcVal)
+  end
+
+  def self.build_false
+    lcFalse = lincas_obj_alloc LcBFalse, @@lc_boolean
+    set_flag lcFalse, FROZEN
+    return lcFalse.as( LcVal)
+  end
+
+  def self.lazy_build_false
+    lcFalse      = LcBFalse.new
+    lcFalse.flags |= ObjectFlags::FROZEN
+    return lcFalse.as( LcVal)
+  end
+
+  def self.lc_bool_invert(value)
+    if value.is_a? LcBTrue
+      return lcfalse
+    elsif value.is_a? LcBFalse
+      return lctrue
+    else 
+      #internal.raise()
+      return Null
     end
+  end
 
-    @[AlwaysInline]
-    def self.val2bool(value : Bool)
-        return lctrue if value 
-        return lcfalse 
-    end
+  def self.lc_bool_eq(val1, val2)
+    return lctrue if val1 == val2
+    return lcfalse
+  end
 
-    @[AlwaysInline]
-    def self.bool2val(value :  LcVal)
-        return value == lctrue ? true : false
-    end
+  def self.lc_bool_gr(val1, val2)
+    return lctrue if val1 == lctrue && val2 == lcfalse
+    return lcfalse
+  end 
 
-    def self.build_true
-        lcTrue = lincas_obj_alloc LcBTrue, @@lc_boolean
-        set_flag lcTrue, FROZEN
-        return lcTrue.as( LcVal)
-    end
+  def self.lc_bool_sm(val1, val2)
+    return lctrue if val1 == lcfalse && val2 == lctrue
+    return lcfalse 
+  end
 
-    def self.lazy_build_true
-        lcTrue        = LcBTrue.new
-        lcTrue.flags |= ObjectFlags::FROZEN
-        return lcTrue.as( LcVal)
-    end
+  def self.lc_bool_ge(val1, val2)
+    return internal.lc_bool_gr(val1,val2)
+  end 
 
-    def self.build_false
-        lcFalse = lincas_obj_alloc LcBFalse, @@lc_boolean
-        set_flag lcFalse, FROZEN
-        return lcFalse.as( LcVal)
-    end
+  def self.lc_bool_se(val1, val2)
+    return internal.lc_bool_sm(val1,val2)
+  end
 
-    def self.lazy_build_false
-        lcFalse        = LcBFalse.new
-        lcFalse.flags |= ObjectFlags::FROZEN
-        return lcFalse.as( LcVal)
-    end
+  def self.lc_bool_ne(val1, val2)
+    return internal.lc_bool_invert(
+      internal.lc_bool_eq(val1,val2)
+    )
+  end
 
-    def self.lc_bool_invert(value)
-        if value.is_a? LcBTrue
-            return lcfalse
-        elsif value.is_a? LcBFalse
-            return lctrue
-        else 
-            #internal.raise()
-            return Null
-        end
-    end
+  def self.lc_bool_and(val1, val2)
+    return lctrue if val1 == lctrue && val2 == lctrue
+    return lcfalse
+  end
 
-    def self.lc_bool_eq(val1, val2)
-        return lctrue if val1 == val2
-        return lcfalse
-    end
+  def self.lc_bool_or(val1, val2)
+    return lctrue if val1 == lctrue || val2 == lctrue
+    return lcfalse 
+  end
 
-    def self.lc_bool_gr(val1, val2)
-        return lctrue if val1 == lctrue && val2 == lcfalse
-        return lcfalse
-    end 
+  def self.lc_bool_to_s(val : LcVal)
+    return build_string(bool2val(val).to_s)
+  end
 
-    def self.lc_bool_sm(val1, val2)
-        return lctrue if val1 == lcfalse && val2 == lctrue
-        return lcfalse 
-    end
+  def self.init_boolean
+    @@lc_boolean = internal.lc_build_internal_class("Boolean")
+    
+    lc_undef_allocator(@@lc_boolean)
+    lc_undef_method(@@lc_boolean,"defrost")
 
-    def self.lc_bool_ge(val1, val2)
-        return internal.lc_bool_gr(val1,val2)
-    end 
+    define_method(@@lc_boolean,"!", lc_bool_invert,0)
+    define_method(@@lc_boolean,"==",lc_bool_eq,  1)
+    define_method(@@lc_boolean,"!=",lc_bool_ne,  1)
+    define_method(@@lc_boolean,"&&",lc_bool_and,   1)
+    define_method(@@lc_boolean,"||",lc_bool_or,  1)
+    define_method(@@lc_boolean,"to_s",lc_bool_to_s,0)
+    alias_method_str(@@lc_boolean, "to_s", "inspect")
 
-    def self.lc_bool_se(val1, val2)
-        return internal.lc_bool_sm(val1,val2)
-    end
+    lincas_init_lazy_const(LcTrue,@@lc_boolean)
+    lincas_init_lazy_const(LcFalse,@@lc_boolean)
+  end
 
-    def self.lc_bool_ne(val1, val2)
-        return internal.lc_bool_invert(
-            internal.lc_bool_eq(val1,val2)
-        )
-    end
-
-    def self.lc_bool_and(val1, val2)
-        return lctrue if val1 == lctrue && val2 == lctrue
-        return lcfalse
-    end
-
-    def self.lc_bool_or(val1, val2)
-        return lctrue if val1 == lctrue || val2 == lctrue
-        return lcfalse 
-    end
-
-    def self.lc_bool_to_s(val : LcVal)
-        return build_string(bool2val(val).to_s)
-    end
-
-    def self.init_boolean
-        @@lc_boolean = internal.lc_build_internal_class("Boolean")
-        lc_undef_allocator(@@lc_boolean)
-
-        lc_undef_method(@@lc_boolean,"defrost")
-
-        define_method(@@lc_boolean,"!", lc_bool_invert,0)
-        define_method(@@lc_boolean,"==",lc_bool_eq,    1)
-        define_method(@@lc_boolean,"!=",lc_bool_ne,    1)
-        define_method(@@lc_boolean,"&&",lc_bool_and,   1)
-        define_method(@@lc_boolean,"||",lc_bool_or,    1)
-        define_method(@@lc_boolean,"to_s",lc_bool_to_s,0)
-        alias_method_str(@@lc_boolean, "to_s", "inspect")
-
-        lincas_init_lazy_const(LcTrue,@@lc_boolean)
-        lincas_init_lazy_const(LcFalse,@@lc_boolean)
-    end
-
-    global LcTrue  = Internal.lazy_build_true
-    global LcFalse = Internal.lazy_build_false
+  global LcTrue  = Internal.lazy_build_true
+  global LcFalse = Internal.lazy_build_false
 
 end
