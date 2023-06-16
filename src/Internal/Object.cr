@@ -47,44 +47,44 @@ module LinCAS::Internal
         return internal.lc_obj_allocate(@@lc_object)
     end
 
-    def self.obj2py(obj :  LcVal, ref = false)
-        if obj.is_a? LcInt 
-            value = int2num(obj)
-            {%if !flag?(:fast_m)%}
-                if value.is_a? BigInt 
-                    lc_raise(lc_not_impl_err,"No conversion of big ints to python yet")
-                    return nil 
-                end
-            {% end %}
-            return int2py(value)
-        elsif obj.is_a? LcFloat 
-            return float2py(float2num(obj))
-        elsif obj.is_a? LcString
-            return str2py(obj)
-        elsif obj.is_a? LcClass
-            if is_pyembedded(obj)
-                return obj.namespace.py_obj.not_nil! 
-            else
-                lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
-                return nil
-            end
-        elsif obj.is_a? LcArray
-            ary2py(obj)
-        elsif obj.is_a? LcPyObject
-            tmp =  pyobj_get_obj(obj)
-            pyobj_incref(tmp) if ref 
-            return tmp
-        elsif obj == Null 
-            return_pynone
-        elsif obj.is_a? Method 
-            return method_to_py(obj)
-        elsif obj.is_a? LcRange
-            return range2py(obj)
-        else
-            lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
-            return nil 
-        end
-    end
+    # def self.obj2py(obj :  LcVal, ref = false)
+    #     if obj.is_a? LcInt 
+    #         value = int2num(obj)
+    #         {%if !flag?(:fast_m)%}
+    #             if value.is_a? BigInt 
+    #                 lc_raise(lc_not_impl_err,"No conversion of big ints to python yet")
+    #                 return nil 
+    #             end
+    #         {% end %}
+    #         return int2py(value)
+    #     elsif obj.is_a? LcFloat 
+    #         return float2py(float2num(obj))
+    #     elsif obj.is_a? LcString
+    #         return str2py(obj)
+    #     elsif obj.is_a? LcClass
+    #         if is_pyembedded(obj)
+    #             return obj.namespace.py_obj.not_nil! 
+    #         else
+    #             lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
+    #             return nil
+    #         end
+    #     elsif obj.is_a? LcArray
+    #         ary2py(obj)
+    #     elsif obj.is_a? LcPyObject
+    #         tmp =  pyobj_get_obj(obj)
+    #         pyobj_incref(tmp) if ref 
+    #         return tmp
+    #     elsif obj == Null 
+    #         return_pynone
+    #     elsif obj.is_a? Method 
+    #         return method_to_py(obj)
+    #     elsif obj.is_a? LcRange
+    #         return range2py(obj)
+    #     else
+    #         lc_raise(lc_not_impl_err,"No conversion of #{lc_typeof(obj)} to python yet")
+    #         return nil 
+    #     end
+    # end
 
     def self.lc_build_object_class
         klass = LcClass.new(SType::CLASS, "Object", nil)
@@ -94,7 +94,7 @@ module LinCAS::Internal
     def self.lc_new_object(klass :  LcVal)
         klass = klass.as(LcClass)
         if klass.type == SType::PyCLASS
-            return build_pyobj(klass)
+            return new_pyobj(klass)
         end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
