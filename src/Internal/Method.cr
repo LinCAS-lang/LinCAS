@@ -27,13 +27,13 @@ module LinCAS::Internal
        ({{strucure}}.type == SType::PyCLASS)
   end
 
-  def self.new_pymethod(name : String, code : PyObject, owner : LcClass? = nil)
+  def self.new_pymethod(name : String, code : PyObject*, owner : LcClass? = nil)
     return LcMethod.new(name, code, owner, FuncVisib::PUBLIC)
   end
 
-  def self.new_pystatic_method(name : String,pyobj : PyObject, owner : LcClass? = nil)
-    return new_pymethod(name,pyobj,owner,temp)
-  end
+  # def self.new_pystatic_method(name : String,pyobj : PyObject, owner : LcClass? = nil)
+  #   return new_pymethod(name,pyobj,owner,temp)
+  # end
 
   ##
   # It adds a method to an object.
@@ -175,7 +175,7 @@ module LinCAS::Internal
       if method
         if method.is_a? PyObject # TO Fix
           if method.null?
-            pyerr_clear
+            Python.clear_error
             method = nil
             m_missing_reason = 0 
           elsif type_of(receiver).metaclass? && is_pycallable(method) && !is_pytype(method) &&
@@ -255,7 +255,7 @@ module LinCAS::Internal
 
   class Method < LcBase
     def initialize(@receiver : LcVal, @method : LcMethod)
-      @pym_def  = Pointer(Python::PyMethodDef).null
+      @pym_def  = Pointer(Python::PyObject).null
     end
     getter method, receiver
     property pym_def

@@ -119,26 +119,26 @@ module LinCAS::Internal
     yield
   end
 
-  def self.lc_build_unregistered_pyclass(name : String,obj : PyObject, parent : LcClass)
-    gc_ref    = PyGC.track(obj)
-    namespace = NameTable.new(obj)
-    methods   = MethodTable.new(obj)
-    klass     = LcClass.new(SType::PyCLASS, name, parent, methods, namespace)
-    klass.gc_ref = gc_ref
-    lc_attach_metaclass(klass)
-    return klass
-  end
+  # def self.lc_build_unregistered_pyclass(name : String,obj : PyObject, parent : LcClass)
+  #   gc_ref    = PyGC.track(obj)
+  #   namespace = NameTable.new(obj)
+  #   methods   = MethodTable.new(obj)
+  #   klass     = LcClass.new(SType::PyCLASS, name, parent, methods, namespace)
+  #   klass.gc_ref = gc_ref
+  #   lc_attach_metaclass(klass)
+  #   return klass
+  # end
 
   ##
   # It creates a python class embedding it with the definition of
   # a LinCAS class
-  def self.lc_build_pyclass(name : String,obj : PyObject, namespace : NameTable)
-    klass = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
-    klass.namespace.parent = namespace
-    namespace[name]        = klass
-    klass.flags |= ObjectFlags::REG_CLASS
-    return klass
-  end
+  # def self.lc_build_pyclass(name : String,obj : PyObject, namespace : NameTable)
+  #   klass = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
+  #   klass.namespace.parent = namespace
+  #   namespace[name]        = klass
+  #   klass.flags |= ObjectFlags::REG_CLASS
+  #   return klass
+  # end
 
   @[AlwaysInline]
   def self.lc_set_parent_class(klass : LcClass,parent : LcClass)
@@ -210,15 +210,15 @@ module LinCAS::Internal
     return nil 
   end
 
-  @[AlwaysInline]
-  private def self.fetch_pystruct(name : String)
-    name = "_#{name}"
-    tmp = @@lc_object.namespace.find(name)
-    if !tmp || !(tmp.is_a? LcClass)
-      lc_bug("Previously declared Python Class/Module not found") 
-    end
-    return tmp.as(LcClass)
-  end
+  # @[AlwaysInline]
+  # private def self.fetch_pystruct(name : String)
+  #   name = "_#{name}"
+  #   tmp = @@lc_object.namespace.find(name)
+  #   if !tmp || !(tmp.is_a? LcClass)
+  #     lc_bug("Previously declared Python Class/Module not found") 
+  #   end
+  #   return tmp.as(LcClass)
+  # end
 
   ######################################
   #  ____ _____ ____    _     _ _      #
@@ -303,56 +303,6 @@ module LinCAS::Internal
     return build_string(name)
   end
 
-  # def self.lc_class_rm_static_method(klass :  LcVal, name :  LcVal)
-  #   sname = id2string(name)
-  #   return lcfalse unless sname
-  #   unless lc_obj_responds_to? klass,sname
-  #     lc_raise(LcNoMethodError, "Can't find static method '%s' for %s" % {sname,lc_typeof(klass)})
-  #     return lcfalse 
-  #   else 
-  #     lc_remove_static(klass.as(LcClass),sname)
-  #     return lctrue 
-  #   end 
-  # end
-
-  # def self.lc_class_rm_instance_method(klass :  LcVal,name :  LcVal)
-  #   sname = id2string(name)
-  #   return lcfalse unless sname
-  #   unless lc_obj_responds_to? klass,sname,false
-  #     lc_raise(LcNoMethodError,"Can't find instance method '%s' for %s" % {sname,lc_typeof(klass)})
-  #     return lcfalse 
-  #   else 
-  #     lc_remove_internal(klass.as(LcClass),sname)
-  #     return lctrue  
-  #   end
-  # end
-
-  # def self.lc_class_delete_instance_method(klass :  LcVal,name :  LcVal)
-  #     sname = id2string(name)
-  #     return lcfalse unless sname
-  #     klass = klass.as(LcClass)
-  #     if klass.methods.lookUp(sname)
-  #         klass.methods.removeEntry(sname)
-  #         return lctrue
-  #     else 
-  #         lc_raise(LcNoMethodError,"Instance method '%s' not defined in %s" % {sname,lc_typeof(klass)})
-  #     end 
-  #     return lcfalse 
-  # end
-
-  # def self.lc_class_delete_static_method(klass :  LcVal, name :  LcVal)
-  #     sname = id2string(name)
-  #     return lcfalse unless sname
-  #     klass = klass.as(LcClass)
-  #     if klass.statics.lookUp(sname)
-  #         klass.statics.removeEntry(sname)
-  #         return lctrue
-  #     else
-  #         lc_raise(LcNoMethodError,"Static method '%s' not defined in %s" % {sname,lc_typeof(klass)})
-  #     end 
-  #     return lcfalse 
-  # end 
-
   def self.lc_class_parent(klass :  LcVal)
     s_klass = lc_cast(klass, LcClass).parent
     return s_klass if s_klass
@@ -411,10 +361,6 @@ module LinCAS::Internal
   def self.init_class
     @@lc_class  = lc_build_internal_class("Class", @@lc_module) { lc_build_class_class }
     define_method(@@lc_class,"parent",lc_class_parent,    0)
-    # add_static_method(@@lc_class,"remove_instance_method",lc_class_rm_instance_method,     1)
-    # add_static_method(@@lc_class,"remove_static_method",lc_class_rm_static_method,         1)
-    # add_static_method(@@lc_class,"delete_static_method",lc_class_delete_static_method,     1)
-    # add_static_method(@@lc_class,"delete_instance_method",lc_class_delete_instance_method, 1)
   end
 
 end

@@ -146,34 +146,34 @@ module LinCAS::Internal
   # Python object reference (PyObject).
   # No check is performed on the passed argument (ary), so
   # be sure of what you're doing
-  def self.ary2py(ary :  LcVal)
-    size  = ary_size(ary)
-    pyary = pyary_new(size)
-    size.times do |i|
-      item = ary_at_index(ary,i)
-      res  = pyary_set_item(pyary,i,obj2py(item, ref: true).not_nil!)
-      if res != 0 || pyerr_occurred
-        lc_raise_py_error
-      end
-    end
-    return pyary
-  end
+  # def self.ary2py(ary :  LcVal)
+  #   size  = ary_size(ary)
+  #   pyary = pyary_new(size)
+  #   size.times do |i|
+  #     item = ary_at_index(ary,i)
+  #     res  = pyary_set_item(pyary,i,obj2py(item, ref: true).not_nil!)
+  #     if res != 0 || pyerr_occurred
+  #       lc_raise_py_error
+  #     end
+  #   end
+  #   return pyary
+  # end
 
   # This functions converts a Python list to a LinCAS array.
   # It takes as argument a reference to a Python object and
   # it returns a LinCAS one.
   # Python object count reference is decreased.
   # No check is performed on the passed python object
-  def self.pyary2ary(pyary : PyObject)
-    ary  = new_array
-    size = pyary_size(pyary)
-    size.times do |i|
-      item = pyary_get_item(pyary,i)
-      lc_ary_push(ary,pyobj2lc(item, borrowed_ref: true))
-    end
-    pyobj_decref(pyary)
-    return ary
-  end
+  # def self.pyary2ary(pyary : PyObject)
+  #   ary  = new_array
+  #   size = pyary_size(pyary)
+  #   size.times do |i|
+  #     item = pyary_get_item(pyary,i)
+  #     lc_ary_push(ary,pyobj2lc(item, borrowed_ref: true))
+  #   end
+  #   pyobj_decref(pyary)
+  #   return ary
+  # end
 
   def self.new_ary_wrapper
     ary = lincas_obj_alloc Ary, @@lc_array
