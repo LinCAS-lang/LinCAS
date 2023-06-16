@@ -353,13 +353,13 @@ describe Parser do
   it_parses_single "new Array {}", NewObject.new(Namespace.new(["Array"]), nil, nil, nil, Block.new(nil, Body.new, symtab(SymType::BLOCK)))
 
   it_parses_multiple ["select a :\n{\ncase b, c: d; case 2, 3: {e}}",
-                      "select a:\n{\ncase b, c: d\ncase 2, 3: {e}}"], Select.new("a".variable, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], nil)
+                      "select a:\n{\ncase b, c: d\ncase 2, 3: {e}}"], Select.new("a".variable, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([2.int, 3.int] of Node, Body.new << "e".variable)], nil)
   it_parses_multiple ["select \n{\ncase b, c : d; case 2, 3 : {e}}",
                       "select :\n{\ncase b, c : d\ncase 2, 3 : {e}}",
-                      "select :\n{\ncase b, c : d\ncase 2, 3 : e}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], nil)
+                      "select :\n{\ncase b, c : d\ncase 2, 3 : e}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([2.int, 3.int] of Node, Body.new << "e".variable)], nil)
   it_parses_multiple ["select \n{\ncase b, c : d; else {e}}",
                       "select :\n{\ncase b, c : d\n else e}",
-                      "select :\n{\ncase b, c : d; else\ne}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable), CaseEntry.new([1.int, 2.int] of Node, Body.new << "e".variable)], Body.new << "e".variable)
+                      "select :\n{\ncase b, c : d; else\ne}"], Select.new(nil, [CaseEntry.new(["b".variable, "c".variable] of Node, Body.new << "d".variable)], Body.new << "e".variable)
 
   assert_syntax_error "select a {}", "Unexpected end of file, expecting: ':'"
   assert_syntax_error "select a: {}", "Unexpected token '}', expecting: 'case'"

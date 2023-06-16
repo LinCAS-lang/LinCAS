@@ -147,12 +147,15 @@ module LinCAS
     def initialize(@condition : Node?, @entries : Array(CaseEntry), @_else : Body?)
     end
     getter condition, entries, _else
+    def_equals condition, entries, _else
   end
 
   class CaseEntry
     def initialize(@conditions : Array(Node), @body : Body)
     end
     getter conditions, body
+
+    def_equals conditions, body
   end
 
   class Loop < Node
