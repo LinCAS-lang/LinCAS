@@ -20,27 +20,27 @@ module LinCAS
     property parent
     getter   py_obj
 
-    def initialize(@py_obj : Python::PyObject? = nil)
+    def initialize(@py_obj : Python::PyObject* = Pointer(Python::PyObject).null)
       super()
     end
 
     def find(name : String, const = false) : V?
       tmp = self[name]? 
-      if !tmp && @py_obj
-        if !(tmp = Python.PyObject_GetAttrString(@py_obj.not_nil!,name)).null?
+      if !tmp && !@py_obj.null?
+        if !(tmp = Python.get_obj_attr(@py_obj.not_nil!,name)).null?
           if Internal.is_pycallable(tmp) && !Internal.is_pytype(tmp)
             {% if V == LcMethod %}
-              tmp = Internal.new_pymethod(name, @py_obj.not_nil!, nil)
+              tmp = Internal.new_pymethod(name, @py_obj, nil)
             {% else %}
-              Internal.pyobj_decref(tmp)
+              Python.decref(tmp)
               return nil 
             {% end %}
           end
           {% if V != LcMethod %}
-            tmp = Internal.build_pyobj(tmp)
+            tmp = Internal.new_pyobj(tmp)
           {% end %}
         else
-          Python.PyErr_Clear
+          Python.clear_error
         end 
       end
       return tmp.as(V?)
@@ -86,7 +86,6 @@ module LinCAS
     @id     = 0_u64
     @data   = nil.as IvarTable?
     @flags  : ObjectFlags = ObjectFlags::NONE
-    @gc_ref : Internal::PyGC::Ref? = nil
     property id, flags, gc_ref
     property! klass, data
   end
@@ -122,6 +121,12 @@ module LinCAS
     def is_module?
       @type.module? || @type.py_module?
     end
+
+    def finalize
+      if @type.py_class? || @type.py_module?
+        Python.decref(@namespace.py_obj)
+      end
+    end
   end
 
   # struct LcBlock
@@ -156,12 +161,10 @@ module LinCAS
   class LcMethod
     @@global_serial : Serial = 0
 
-    @code      : ISeq | LcProc | String | Python::PyObject | ::Nil
+    @code      : ISeq | LcProc | String | Python::PyObject* | ::Nil
     @owner     : LcClass?
     @arity     : IntnumR  = 0 # used for internal methods
     @flags     : MethodFlags
-    @needs_gc  = false
-    @gc_ref    : Internal::PyGC::Ref? = nil
     @serial    : Serial
 
     def initialize(@name : String)
@@ -181,7 +184,7 @@ module LinCAS
       @serial = next_serial
     end
 
-    def initialize(@name : String, @code : Python::PyObject, @owner : LcClass?, @visib : FuncVisib)
+    def initialize(@name : String, @code : Python::PyObject*, @owner : LcClass?, @visib : FuncVisib)
       @flags = MethodFlags::PYTHON
       @serial = next_serial
     end
@@ -195,10 +198,6 @@ module LinCAS
       @flags : MethodFlags
     )
       @serial = next_serial
-    end
-
-    def finalize 
-      Internal::PyGC.dispose(@gc_ref)
     end
 
     def next_serial
@@ -221,6 +220,9 @@ module LinCAS
 
     def cached?
       @flags & MethodFlags::CACHED
+    end
+
+    def finalize 
     end
 
     getter name, args, code, arity, pyobj,

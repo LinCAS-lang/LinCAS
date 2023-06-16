@@ -1,5 +1,4 @@
-
-# Copyright (c) 2017-2018 Massimiliano Dal Mas
+# Copyright (c) 2017-2023 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,115 +12,62 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "./Pythonlib"
+
 module LinCAS::Internal
 
-    alias PyObject = Python::PyObject
-    PYPATTERN      = /'.+'/
-    #@@types_m          = pyimport("types")
+  alias PyObject = Python::PyObject
 
-    macro check_pyerror(ptr)
-        if {{ptr}}.null? || pyerr_occurred
-            lc_raise_py_error
-            return Null 
-        end
-    end
+  # Taken from the CPython source code
+  @[AlwaysInline]
+  def self.pytype_fast_subclass(type : Python::PyType*, flags : Python::TpFlags)
+    return (Python.get_flags(type) & flags) == 0
+  end
 
-    macro return_pynone
-        pyobj_incref(@@pynone)
-        return @@pynone 
-    end
+  def self.is_pycallable(*any)
+  end
 
-    @[AlwaysInline]
-    def self.pyinit
-        Python.Py_Initialize
-    end
+  # Taken from the CPython source code
+  @[AlwaysInline]
+  def self.is_pytype(obj : PyObject*)
+    return pytype_fast_subclass(obj.value.ob_type, Python::TpFlags::TYPE_SUBCLASS)
+  end
 
-    @[AlwaysInline]
-    def self.pyfinalize
-        Python.Py_Finalize 
-    end
+  # Taken from the CPython source code
+  def self.is_pymodule(obj : PyObject*)
+    type_ptr = pointerof(Python.py_module_type)
+    return obj.value.ob_type == type_ptr ||
+           Python.is_subtype(obj.as(Python::PyType*), type_ptr)
+  end
 
-    @[AlwaysInline]
-    def self.pyobj_decref_n(*obj)
-        obj.each do |item|
-            pyobj_decref(item)
-        end
+  def self.lc_pyimport(unused, argv :  LcVal)
+    argv = argv.as Ary
+    name = id2string(argv[0])
+    if argv.size > 1
+      import_name = id2string(argv.as(Ary)[1])
     end
+    str = Python.new_string(name)
+    obj = Python.import(str)
+    Python.decref(str)
+    puts "OK!"
+    if !obj.null?
+      _name = import_name || name.split('.').last
+      if is_pymodule obj
+        import =  lc_new_pymodule _name, obj, @@lc_pymodule.namespace
+      elsif is_pytype obj
+        import = Null
+      else
+        lc_raise(lc_pyimport_err,"Invalid import object")
+        Python.decref(obj)
+        import = Null
+      end
+      return import
+    end
+    return Null
+  end
 
-    @[AlwaysInline]
-    private def self.exception_name(str : String)
-        tmp = str.scan(PYPATTERN)
-        if tmp.size == 0
-            return ""
-        else
-            tmp = tmp[0][0]?
-            return tmp if tmp 
-            return ""
-        end
-    end
-
-    def self.lc_raise_py_error
-        type = PyObject.null 
-        val  = PyObject.null 
-        tr   = PyObject.null 
-        py_fetch_error(pointerof(type),pointerof(val),pointerof(tr))
-        type_ = pyobj2string(type)
-        val_  = pyobj2string(val)
-        return lc_raise(lc_pyexception," #{exception_name(type_)}: #{val_}")
-        pyobj_decref_n(type,val,tr)
-    end
-
-    private def self.pyimport(name : String,import_name : String)
-        p_name = string2py(name)
-        check_pyerror(p_name)
-        p_module = pyimport0(p_name)
-        pyobj_decref(p_name)
-        if !p_module.null?
-            namespace = @@lc_object.namespace
-            if is_pymodule(p_module)
-                import = lc_build_pymodule(import_name,p_module, namespace)
-            elsif is_pytype(p_module)
-                import = lc_build_pyclass(import_name,p_module, namespace)
-            else
-                lc_raise(lc_pyimport_err,"Invalid import object")
-                pyobj_decref(p_module)
-                import = Null
-            end
-            return import
-        else
-            pyobj_decref(p_module)
-            lc_raise_py_error
-            return Null
-        end
-    end
-
-    def self.lc_pyimport(unused,name :  LcVal, import_name :  LcVal)
-        name = id2string(name)
-        return Null unless name
-        import_name = id2string(import_name)
-        return Null unless import_name
-        return pyimport(name,import_name)
-    end
-
-    def self.pytuple2ary(tuple : PyObject)
-        ary  = [] of  LcVal
-        size = pytuple_size(tuple)
-        size.times do |i|
-            item = pytuple_at_index(tuple,i)
-            if item.null? && pyerr_occurred 
-                lc_raise_py_error
-                return nil 
-            end
-            pyobj_incref(item)
-            ary << pyobj2lc(item)
-        end
-        return ary
-    end
-
-    def self.init_pymodule
-        @@lc_pymodule = lc_build_internal_module("Python")
-    
-        lc_class_define_method(@@lc_pymodule,"pyimport",wrap(lc_pyimport,3),   2)
-    end
-    
+  def self.init_pymodule
+    @@lc_pymodule = lc_build_internal_module("Python")
+    define_singleton_method(@@lc_pymodule,"pyimport", lc_pyimport,   -2)
+  end
 end

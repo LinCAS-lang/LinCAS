@@ -18,7 +18,7 @@ require "./Internal/Internal"
 require "./Internal/Base"
 require "./Internal/LibC"
 require "./Internal/Pythonlib"
-require "./Internal/PyHelper"
+# require "./Internal/PyHelper"
 require "./Internal/Overload.cr"
 require "./Internal/Sort"
 require "./Internal/Internal"
@@ -53,15 +53,15 @@ require "./Internal/Integrals"
 require "./Internal/GSL"
 require "./Internal/Complex"
 require "./Internal/Python"
-require "./Internal/Pymethod"
-require "./Internal/PyGC"
+# require "./Internal/Pymethod"
+# require "./Internal/PyGC"
 require "./Internal/PyObject"
 require "./Internal/Proc"
 
 module LinCAS::Internal
 
     def self.lc_initialize
-        Python.Py_Initialize
+        Python.initialize
         # These three initializers must always be called first and in the 
         # following order
         init_class
@@ -76,8 +76,7 @@ module LinCAS::Internal
     end
 
     def self.lc_finalize
-        PyGC.clear_all
-        Python.Py_Finalize 
+        Python.finalize if Python.initialized?
     end
 end
 

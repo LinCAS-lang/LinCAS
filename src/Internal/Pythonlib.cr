@@ -13,116 +13,61 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-@[Link("python3.5m")]
+@[Link(ldflags: "~/.pyenv/versions/3.7-dev/lib/python3.7/config-3.7m-darwin/libpython3.7m.a")]
 lib Python
-    {% if flag?(:x86_64) %}
-        alias PyLong = Int64 
-    {% else %}
-        alias PyLong = Int32 
-    {% end %}
+  alias Chr = LibC::Char
 
-    alias PyObject = Void*
-    alias Chr = LibC::Char
+  @[Flags]
+  enum TpFlags : LibC::ULong
+    LIST_SUBCLASS    = 1 << 25
+    UNICODE_SUBCLASS = 1 << 28
+    TYPE_SUBCLASS    = 1 << 31
+  end 
 
-    struct PyComplex 
-        real : Float64 
-        imag : Float64
-    end
+  struct PyObject
+    ref_count : LibC::Long
+    ob_type : PyType*
+  end
 
-    struct PyMethodDef
-        name  : Chr*
-        func  : Void*
-        flags : LibC::Int
-        doc   : Chr*
-    end
+  struct PyVarObject 
+    ob_base : PyObject
+    ob_size : LibC::Long
+  end
 
-    # Python builders
-    fun Py_Initialize
-    fun Py_Finalize
-    fun Py_IsInitialized
+  # This is just the head of the struct
+  struct PyType
+    head : PyVarObject
+    name : Chr* 
+  end
 
-    # GC 
-    fun Py_IncRef(obj : PyObject)
-    fun Py_DecRef(obj : PyObject)
+  $py_module_type = PyModule_Type : PyType
 
-    # Errors
-    fun PyErr_Fetch(pType : PyObject*, value : PyObject*, traceback : PyObject*)
-    fun PyErr_Restore(pType : PyObject, value : PyObject, traceback : PyObject)
-    fun PyErr_Occurred : PyObject
-    fun PyErr_Clear
+  # Python builders
+  fun initialize = Py_Initialize
+  fun finalize = Py_Finalize
+  fun initialized? = Py_IsInitialized
 
-    # Strings 
-    fun PyUnicode_AsUTF8(obj : PyObject)                       : Chr*
-    fun PyUnicode_AsUTF8AndSize(obj : PyObject,size : PyLong*) : Chr*
-    fun PyUnicode_DecodeFSDefault(str : Chr*)                  : PyObject
+  # GC 
+  fun incref = Py_IncRef(obj : PyObject*)
+  fun decref = Py_DecRef(obj : PyObject*)
 
-    # Numbers
-    fun PyLong_FromLong(n : Int64)                            : PyObject
-    fun PyLong_AsLong(n : PyObject)                           : PyLong
-    fun PyLong_FromUnsignedLong(n : UInt32)                   : PyObject
-    fun PyLong_FromUnsignedLongLong(n : UInt64)               : PyObject 
-    fun PyLong_AsUnsignedLong(n : PyObject)                   : UInt32 
-    fun PyLong_AsUnsignedLongLong(n : PyObject)               : UInt64
-    fun PyFloat_FromDouble(d : Float64)                       : PyObject
-    fun PyFloat_AsDouble(f : PyObject)                        : Float64
-    fun PyComplex_FromCComplex(z : PyComplex)                 : PyObject
-    fun PyComplex_FromDoubles(real : Float64, imag : Float64) : PyObject
-    fun PyComplex_AsCComplex(z : PyObject)                    : PyComplex
+  # Object
+  fun to_s = PyObject_Str(obj : PyObject*)                                      : PyObject*
+  fun get_obj_attr = PyObject_GetAttrString(module : PyObject*, funname : Chr*) : PyObject*   # New reference
 
-    # Object
-    fun PyObject_Str(obj : PyObject)                              : PyObject
-    fun PyObject_GetAttrString(module : PyObject, funname : Chr*) : PyObject   # New reference
-    fun PyObject_GetAttr(obj : PyObject, attr : PyObject)         : PyObject   # New reference
-    fun PyObject_CallObject(func : PyObject, args : PyObject)     : PyObject
-    fun PyObject_Type(obj : PyObject)                             : PyObject
-    fun PyObject_IsTrue(obj : PyObject)                           : Int32 
-    fun PyObject_IsInstance(obj : PyObject, klass : PyObject)     : Int32
-    
-    # Modules
-    fun PyImport_Import(name : PyObject) : PyObject
-    fun PyImport_ImportModuleEx(name : Chr*, globals : PyObject, locals : PyObject, fromlist : PyObject) : PyObject
-    fun PyModule_GetDict(obj : PyObject) : PyObject
-    fun PyModule_New(name : Chr*) : PyObject
-        
-    
-    # Tuple
-    fun PyTuple_New(length : LibC::Int)                                    : PyObject
-    fun PyTuple_SetItem(tuple : PyObject, ref : LibC::Int, val : PyObject) : LibC::Int
-    fun PyTuple_Size(tuple : PyObject)                                     : PyLong
-    fun PyTuple_GetItem(tuple : PyObject,index : PyLong)                   : PyObject 
-    
+  # Errors
+  # fun PyErr_Fetch(pType : PyObject*, value : PyObject*, traceback : PyObject*)
+  # fun PyErr_Restore(pType : PyObject, value : PyObject, traceback : PyObject)
+  # fun PyErr_Occurred : PyObject
+  fun clear_error = PyErr_Clear
 
-    # Functions 
-    fun PyInstanceMethod_Function(m : PyObject)                                         : PyObject
-    fun PyMethod_Function(m : PyObject)                                                 : PyObject
-    fun PyMethod_Self(m : PyObject)                                                     : PyObject
-    fun PyMethod_New(func : PyObject, _self_ : PyObject)                                : PyObject
-    fun PyCFunction_NewEx(method : PyMethodDef*, _self_ : PyObject, module : PyObject ) : PyObject
-    fun PyCFunction_New(method : PyMethodDef*,_self_ : PyObject)                        : PyObject
+  # Modules
+  fun import = PyImport_Import(name : PyObject*) : PyObject*
 
-    # Dictionary
-    fun PyDict_GetItem(dict : PyObject, name : PyObject)   : PyObject
-    fun PyDict_GetItemString(dict : PyObject, name : Chr*) : PyObject
-    
-    # Type
-    fun PyType_IsSubtype(a : PyObject, b : PyObject) : Int32
-    fun PyType_GetFlags(t : PyObject) : PyLong
+  # String
+  fun new_string = PyUnicode_DecodeFSDefault(str : Chr*) : PyObject*
 
-    # List
-    fun PyList_New(size : PyLong)                                      : PyObject
-    fun PyList_Size(list : PyObject)                                   : PyLong
-    fun PyList_GetItem(list : PyObject, pos : PyLong)                  : PyObject
-    fun PyList_SetItem(list : PyObject, pos : PyLong, item : PyObject) : LibC::Int    
-      
-    # Slices
-    fun PySlice_New(start : PyObject,stop : PyObject, step : PyObject) : PyObject
-
-    # Eval
-    fun PyEval_GetBuiltins           : PyObject
-    fun Py_BuildValue(string : Chr*) : PyObject
-
-    # Other
-    fun PyCallable_Check(obj : PyObject) : Int32
-    
+  # Type
+  fun is_subtype = PyType_IsSubtype(a : PyType*, b : PyType*) : Int32
+  fun get_flags = PyType_GetFlags(t : PyType*) : TpFlags
 end
-
