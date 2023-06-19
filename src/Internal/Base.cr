@@ -21,14 +21,15 @@ module LinCAS
     getter   py_obj
 
     def initialize(@py_obj : Python::PyObject* = Pointer(Python::PyObject).null)
+      Python.incref @py_obj
       super()
     end
 
     def find(name : String, const = false) : V?
       tmp = self[name]? 
-      if !tmp && !@py_obj.null?
-        if !(tmp = Python.get_obj_attr(@py_obj.not_nil!,name)).null?
-          if Internal.is_pycallable(tmp) && !Internal.is_pytype(tmp)
+      if !tmp && !@py_obj.null? 
+        if !(tmp = Python.get_obj_attr(@py_obj, name)).null?
+          if Python.is_callable(tmp) && !Internal.is_pytype(tmp)
             {% if V == LcMethod %}
               tmp = Internal.new_pymethod(name, @py_obj, nil)
             {% else %}
@@ -53,6 +54,7 @@ module LinCAS
     end
 
     def finalize 
+      Python.decref @py_obj
     end
 
     def ==(other)
@@ -104,6 +106,12 @@ module LinCAS
     def initialize(@type, @name, @parent = nil)
       @methods   = MethodTable.new 
       @namespace = NameTable.new
+      @data      = IvarTable.new
+    end
+
+    def initialize(@type, @name, py_obj : Python::PyObject*, @parent = nil)
+      @methods   = MethodTable.new py_obj
+      @namespace = NameTable.new py_obj
       @data      = IvarTable.new
     end
 
