@@ -66,6 +66,13 @@ module LinCAS::Internal
     return metaclass
   end
 
+  @[AlwaysInline]
+  def self.lc_build_metaclass(klass : LcClass, py_obj : PyObject*, parent : LcClass?)
+    metaclass = LcClass.new(SType::METACLASS, "#<Class:#{class_path(klass)}>", py_obj, parent)
+    metaclass.klass = @@lc_class
+    return metaclass
+  end
+
   ##
   # This method attaches a metaclass to a class `k`.
   # The class of the metaclass is `Class`, and its

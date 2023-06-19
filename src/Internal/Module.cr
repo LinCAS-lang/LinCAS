@@ -20,14 +20,14 @@ module LinCAS::Internal
       {{mod}}.allocator = Allocator::UNDEF
     end
 
-    @[AlwaysInline]
-    def self.module_init(mod : LcClass)
-      module_initializer(mod)
+    macro pymodule_init(mod, py_obj)
+      {{mod}}.klass     = lc_build_metaclass(mod, {{py_obj}}, @@lc_module)
+      {{mod}}.allocator = Allocator::UNDEF
     end
 
     @[AlwaysInline]
-    def self.pymodule_init(mod : LcClass)
-      module_init(mod)
+    def self.module_init(mod : LcClass)
+      module_initializer(mod)
     end
 
     def module_included()
@@ -56,12 +56,6 @@ module LinCAS::Internal
       # :::
     end
 
-    # def self.lc_build_module(name : String, path : Path)
-    #   mod = LcModule.new(name,path)
-    #   module_init(mod)
-    #   return mod
-    # end
-
     def self.lc_build_user_module(name : String, namespace : NameTable)
       mod = lc_build_module(name)
       mod.namespace.parent = namespace 
@@ -73,29 +67,19 @@ module LinCAS::Internal
       return lc_build_user_module(name, @@lc_object.namespace)
     end
 
-    def self.lc_build_unregistered_pymodule(name : String,obj : PyObject)
-      gc_ref = PyGC.track(obj)
-      namespace = NameTable.new(obj)
-      methods   = MethodTable.new(obj)
-      mod       = LcClass.new(SType::PyMODULE, name, nil, methods, namespace)
-      pymodule_init(mod)
-      mod.gc_ref = gc_ref
+    def self.lc_new_pymodule(name : String, obj : PyObject*, context : NameTable)
+      mod       = LcClass.new(SType::PyMODULE, name, obj, nil)
+      pymodule_init(mod, obj)
+      mod.namespace.parent = context
+      context[name] = mod
       return mod
-    end
-
-    def self.lc_build_pymodule(name : String,obj : PyObject, namespace : NameTable)
-      tmp = lc_build_unregistered_pymodule(name,obj)
-      tmp.namespace.parent = namespace
-      namespace[name] = tmp
-      tmp.flags |= ObjectFlags::REG_CLASS
-      return tmp
     end
 
     @[AlwaysInline]
     def self.lc_make_shared_module(mod : LcClass)
       tmp = LcClass.new(mod.type, mod.name, nil, mod.methods, mod.namespace, mod.data)
-      if mod.type == SType::PyMODULE
-        pymodule_init(tmp)
+      if mod.type.py_module?
+        pymodule_init(tmp, mod.methods.py_obj)
       else
         module_init(tmp)
       end
