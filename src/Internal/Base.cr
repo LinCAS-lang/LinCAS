@@ -21,28 +21,26 @@ module LinCAS
     getter   py_obj
 
     def initialize(@py_obj : Python::PyObject* = Pointer(Python::PyObject).null)
-      Python.incref @py_obj
+      Python.incref @py_obj if !@py_obj.null?
       super()
     end
 
     def find(name : String, const = false) : V?
       tmp = self[name]? 
       if !tmp && !@py_obj.null? 
-        if !(tmp = Python.get_obj_attr(@py_obj, name)).null?
-          if Python.is_callable(tmp) && !Internal.is_pytype(tmp)
-            {% if V == LcMethod %}
-              tmp = Internal.new_pymethod(name, @py_obj, nil)
-            {% else %}
-              Python.decref(tmp)
-              return nil 
-            {% end %}
+        {% if V == LcMethod %}
+          tmp = Internal.seek_pymethod(@py_obj, name)
+        {% else %}
+          if !(py = Python.get_obj_attr(@py_obj, name)).null? 
+            if !Internal.is_any_method? py
+              tmp = Internal.new_pyobj(py)
+            else
+              Python.decref(py)
+            end
+          else
+            Python.clear_error
           end
-          {% if V != LcMethod %}
-            tmp = Internal.new_pyobj(tmp)
-          {% end %}
-        else
-          Python.clear_error
-        end 
+        {% end %}
       end
       return tmp.as(V?)
     end
@@ -54,7 +52,7 @@ module LinCAS
     end
 
     def finalize 
-      Python.decref @py_obj
+      Python.decref @py_obj unless @py_obj.null?
     end
 
     def ==(other)
@@ -68,11 +66,12 @@ module LinCAS
 
   @[Flags]
   enum SType
+    PyEMBEDDED
     METACLASS
     CLASS 
     MODULE 
-    PyMODULE
-    PyCLASS
+    # PyMODULE
+    # PyCLASS
   end
   
   alias IvarTable = Hash(String, LcVal)
@@ -127,11 +126,11 @@ module LinCAS
     end
 
     def is_module?
-      @type.module? || @type.py_module?
+      @type.module?
     end
 
     def finalize
-      if @type.py_class? || @type.py_module?
+      if @type.py_embedded?
         Python.decref(@namespace.py_obj)
       end
     end
@@ -155,9 +154,19 @@ module LinCAS
 
   @[Flags]
   enum MethodFlags
+    # Inline cache
     CACHED
     INVALIDATED
 
+    # Python method type
+    FUNCTION
+    STATICMETHOD
+    CLASSMETHOD
+
+    # Python instance method
+    WANTS_SELF
+
+    # Call convention
     INTERNAL
     USER
     PYTHON 
@@ -192,8 +201,8 @@ module LinCAS
       @serial = next_serial
     end
 
-    def initialize(@name : String, @code : Python::PyObject*, @owner : LcClass?, @visib : FuncVisib)
-      @flags = MethodFlags::PYTHON
+    def initialize(@name : String, @code : Python::PyObject*, @owner : LcClass?, @visib : FuncVisib, flags : MethodFlags)
+      @flags = MethodFlags::PYTHON | flags
       @serial = next_serial
     end
 
@@ -230,12 +239,15 @@ module LinCAS
       @flags & MethodFlags::CACHED
     end
 
-    def finalize 
+    def finalize
+      if (obj = @code).is_a? Python::PyObject*
+        Python.decref(obj)
+      end
     end
 
     getter name, args, code, arity, pyobj,
            visib, serial
-    property flags, needs_gs
+    property flags
     property! owner
   end
 
