@@ -67,8 +67,8 @@ module LinCAS::Internal
       return lc_build_user_module(name, @@lc_object.namespace)
     end
 
-    def self.lc_new_pymodule(name : String, obj : PyObject*, context : NameTable)
-      mod       = LcClass.new(SType::PyMODULE, name, obj, nil)
+    def self.lc_build_pymodule(name : String, obj : PyObject*, context : NameTable)
+      mod = LcClass.new(SType.flags(MODULE, PyEMBEDDED), name)
       pymodule_init(mod, obj)
       mod.namespace.parent = context
       context[name] = mod
@@ -78,7 +78,7 @@ module LinCAS::Internal
     @[AlwaysInline]
     def self.lc_make_shared_module(mod : LcClass)
       tmp = LcClass.new(mod.type, mod.name, nil, mod.methods, mod.namespace, mod.data)
-      if mod.type.py_module?
+      if mod.type.py_embedded?
         pymodule_init(tmp, mod.methods.py_obj)
       else
         module_init(tmp)
