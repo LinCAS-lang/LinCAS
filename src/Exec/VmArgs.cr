@@ -62,6 +62,21 @@ module LinCAS
       end
     end
 
+    protected def vm_check_arity(func : Python::PyObject*, ci : CallInfo, calling : VM::CallingInfo)
+      if !Internal.is_pyfunction(func)
+        lc_bug("Python object is not a function")
+      end
+      func = func.as(Python::PyFunctionObject*)
+      co   = func.value.func_code
+      nd = 0
+      if !(defaults = func.value.func_defaults).null?
+        nd = Python.tuple_size(defaults)
+      end
+      max = !co.value.co_flags.includes?(Python::CoFlags::CO_VARARGS) ? co.value.co_argcount : UNLIMITED_ARGUMENTS
+      min = co.value.co_argcount - nd
+      vm_check_arity(min, max, calling.argc)
+    end
+
     @[AlwaysInline]
     protected def argument_kwerror(env : VM::Environment, reason : String, kws : Array(String))
       msg = "#{reason} keyword(s) #{kws}"
