@@ -38,7 +38,7 @@ module LinCAS
         iseq = frame.iseq
         filename = iseq.filename
         line = iseq.start_location
-      elsif !frame.flags.icall_frame?
+      elsif !frame.flags.includes? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME)
         dist = frame.pc - frame.pc_bottom
         iseq = frame.iseq
         filename = iseq.filename
@@ -86,7 +86,7 @@ module LinCAS
     @[AlwaysInline]
     private def class_or_module_name(klass : LcClass, io)
       name = klass.name
-      io << (klass.type.in?({SType::CLASS, SType::PyCLASS}) ? 
+      io << (klass.type.class? ? 
                               "<class:#{name}>" : "<module:#{name}>")
     end
 
