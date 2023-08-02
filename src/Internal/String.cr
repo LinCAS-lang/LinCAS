@@ -987,6 +987,11 @@ module LinCAS::Internal
         return num2int(string2slice(str).hash.to_i64)
     end
 
+    def self.lc_str_to_py(str : LcVal)
+        str = Python.new_string(pointer_of(str))
+        return new_pyobj(str)
+    end
+
         
 
     def self.init_string
@@ -1022,6 +1027,7 @@ module LinCAS::Internal
         define_method(@@lc_string,"compact!",lc_str_o_compact,  0)
         define_method(@@lc_string,"gsub",    lc_str_gsub,       2)
         define_method(@@lc_string,"starts_with",lc_str_starts_with, 1)
+        define_method(@@lc_string,"to_py",   lc_str_to_py,      0)
         
         lc_define_const(@@lc_kernel,"VERSION", define_version)
     end
