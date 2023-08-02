@@ -381,10 +381,11 @@ module LinCAS
         vm_call_getter(method, ci, calling)
       when .attr_writer?
         vm_call_setter(method, ci, calling)
-      # when .python?
+      when .python?
+        vm_call_python(method, ci, calling)
       # when .proc?
       else
-        lc_bug("Invalid method type received (#{typeof(method.flags)})")
+        lc_bug("Invalid method type received (#{method.flags})")
         Null
       end
     end
@@ -455,7 +456,15 @@ module LinCAS
       vm_setinstance_v(method.code.as(String), calling.me, topn(0))
     end
 
-    private def vm_call_python()
+    private def vm_call_python(method : LcMethod, ci : CallInfo, calling : VM::CallingInfo)
+      argc  = calling.argc
+      flags = VM::VmFrame.flags(PCALL_FRAME, FLAG_LOCAL)
+      vm_setup_args_internal_or_python(ci, calling, method.arity)
+      set_stack_consistency_trace(argc + 1)
+      vm_push_control_frame(calling.me, method, nil, flags)
+      vm_check_arity(method.code.unsafe_as(Pointer(Python::PyObject)), ci, calling)
+      push Internal.lincas_call_python(method, topn(argc), @stack.shared_copy(@sp - argc, argc))
+      vm_pop_control_frame
     end
 
     @[AlwaysInline]
