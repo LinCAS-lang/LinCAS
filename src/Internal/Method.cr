@@ -22,18 +22,37 @@ module LinCAS::Internal
     {{m}}.arity  = {{arity}}
   end 
 
-  macro is_pyembedded(strucure)
-    ({{strucure}}.type == SType::PyMODULE) || 
-       ({{strucure}}.type == SType::PyCLASS)
+  # macro is_pyembedded(strucure)
+  #   ({{strucure}}.type == SType::PyMODULE) || 
+  #      ({{strucure}}.type == SType::PyCLASS)
+  # end
+
+  @[AlwaysInline]
+  def self.pymethod_type(method : PyObject*)
+    case method.value.ob_type
+    when pointerof(Python.py_function_type)
+      func = method
+      flags = MethodFlags::FUNCTION
+    when pointerof(Python.py_staticm_type)
+      func = method.as(Python::CallableM*).value.m_callable
+      flags = MethodFlags::STATICMETHOD
+    when pointerof(Python.py_classm_type)
+      func = method.as(Python::CallableM*).value.m_callable
+      flags = MethodFlags::CLASSMETHOD
+    else
+      lc_bug("Unrecognized python method type (#{String.new method.value.ob_type.value.name} found)")
+      # unreachable
+      func = method
+      flags = MethodFlags::None
+    end
+    Python.incref func
+    return {func, flags}
   end
 
   def self.new_pymethod(name : String, code : PyObject*, owner : LcClass? = nil)
-    return LcMethod.new(name, code, owner, FuncVisib::PUBLIC)
+    callable, flags = pymethod_type(code)
+    return LcMethod.new(name, callable, owner, FuncVisib::PUBLIC, flags)
   end
-
-  # def self.new_pystatic_method(name : String,pyobj : PyObject, owner : LcClass? = nil)
-  #   return new_pymethod(name,pyobj,owner,temp)
-  # end
 
   ##
   # It adds a method to an object.
@@ -170,37 +189,38 @@ module LinCAS::Internal
     # when reason = 1 -> protected method called
     # when reason = 2 -> private method called
     m_missing_reason = 0
+    method           = nil
     while klass && (i += 1)
       method = klass.methods.find(name)
-      if method
-        if method.is_a? PyObject # TO Fix
-          if method.null?
-            Python.clear_error
-            method = nil
-            m_missing_reason = 0 
-          elsif type_of(receiver).metaclass? && is_pycallable(method) && !is_pytype(method) &&
-            (is_pyclass_method(method) || !is_pyimethod(method))
-            method = new_pystatic_method(name, method, receiver)
-          else
-            pyobj_decref(method)
-            m_missing_reason = 0
-          end
-        else
-          case method.visib
-          when FuncVisib::PROTECTED
-            method = ignore_visib ? method : (!explicit ? method : nil)
-            m_missing_reason = 1
-          when FuncVisib::PRIVATE 
-            method = ignore_visib ? method : ((!explicit && i == 1) ? method : nil)
-            m_missing_reason = 2
-          when FuncVisib::UNDEFINED 
-            method = nil 
-            m_missing_reason = 0
-          end 
-        end
-        break
-      end
+      break if method
       klass = klass.parent
+    end
+    
+    if method && !method.flags.python? # likely
+      case method.visib
+      when FuncVisib::PROTECTED
+        method = ignore_visib ? method : (!explicit ? method : nil)
+        m_missing_reason = 1
+      when FuncVisib::PRIVATE 
+        method = ignore_visib ? method : ((!explicit && i == 1) ? method : nil)
+        m_missing_reason = 2
+      when FuncVisib::UNDEFINED 
+        method = nil 
+        m_missing_reason = 0
+      end 
+    elsif method && !method.owner?
+      klass = klass.not_nil!
+      case
+      when method.flags.includes?(MethodFlags.flags(CLASSMETHOD, STATICMETHOD)) && !klass.type.metaclass?
+        lc_add_method_with_owner(metaclass_of(klass), name, method)
+        method = nil
+        m_missing_reason = 0
+      when method.flags.function?
+        if klass.type.metaclass? && !class_search_ancestor(klass, @@lc_module)
+          method.flags |= MethodFlags::WANTS_SELF
+        end
+      end
+      lc_add_method_with_owner(klass, name, method) if method
     end
     serial = method ? method.serial : Serial.new(0)
     return VM::CallCache.new(method, m_missing_reason, serial)
