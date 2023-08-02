@@ -25,7 +25,7 @@ module LinCAS::Internal
 
   macro check_pystructs(scp,str)
     if {{str}}.is_a? LcClass && 
-      ({{str}}.type.py_class? || {{str}}.type.py_module?) &&
+      ({{str}}.type.includes? SType.flags(CLASS, MODULE, PyEMBEDDED)) &&
                                       ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
       {{str}}.namespace.parent = {{scp}}.namespace
       {{scp}}.namespace.[{{str}}.name] = {{str}}
@@ -35,7 +35,7 @@ module LinCAS::Internal
 
   macro check_pystructs2(scp,str)
     if {{str}}.is_a? LcClass && 
-      ({{str}}.type.py_class? || {{str}}.type.py_module?) &&
+      ({{str}}.type.includes? SType.flags(CLASS, MODULE, PyEMBEDDED)) &&
                                       ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
       {{str}}.namespace.parent = {{scp}}
       {{scp}}[{{str}}.name] = {{str}}
@@ -68,7 +68,7 @@ module LinCAS::Internal
 
   @[AlwaysInline]
   def self.lc_build_metaclass(klass : LcClass, py_obj : PyObject*, parent : LcClass?)
-    metaclass = LcClass.new(SType::METACLASS, "#<Class:#{class_path(klass)}>", py_obj, parent)
+    metaclass = LcClass.new(SType.flags(METACLASS, PyEMBEDDED), "#<Class:#{class_path(klass)}>", py_obj, parent)
     metaclass.klass = @@lc_class
     return metaclass
   end
@@ -85,7 +85,11 @@ module LinCAS::Internal
     else
       parent = @@lc_class
     end
-    klass.klass = lc_build_metaclass(klass, parent)
+    klass.klass = if !klass.type.py_embedded?
+      lc_build_metaclass(klass, parent)
+    else
+      lc_build_metaclass(klass, klass.namespace.py_obj, parent)
+    end
     return klass
   end
 
@@ -126,26 +130,23 @@ module LinCAS::Internal
     yield
   end
 
-  # def self.lc_build_unregistered_pyclass(name : String,obj : PyObject, parent : LcClass)
-  #   gc_ref    = PyGC.track(obj)
-  #   namespace = NameTable.new(obj)
-  #   methods   = MethodTable.new(obj)
-  #   klass     = LcClass.new(SType::PyCLASS, name, parent, methods, namespace)
-  #   klass.gc_ref = gc_ref
-  #   lc_attach_metaclass(klass)
-  #   return klass
-  # end
-
-  ##
-  # It creates a python class embedding it with the definition of
-  # a LinCAS class
-  # def self.lc_build_pyclass(name : String,obj : PyObject, namespace : NameTable)
-  #   klass = lc_build_unregistered_pyclass(name,obj,@@lc_pyobject)
-  #   klass.namespace.parent = namespace
-  #   namespace[name]        = klass
-  #   klass.flags |= ObjectFlags::REG_CLASS
-  #   return klass
-  # end
+  def self.lc_build_pyclass(name : String, obj : PyObject*, context : NameTable? = nil)
+    if obj.null?
+      lc_bug("Null python object received for class (#{name})")
+    end
+    if !(klass = IMPORTED_PYCLASSES[obj]?)
+      klass = LcClass.new(SType.flags(CLASS, PyEMBEDDED), name, obj, @@lc_pyobject)
+      lc_attach_metaclass(klass)
+      IMPORTED_PYCLASSES[obj] = klass
+    else
+      Python.decref obj # assumes always new reference
+    end
+    if context && !klass.namespace.parent
+      klass.namespace.parent = context
+      context[name] = klass
+    end
+    return klass
+  end
 
   @[AlwaysInline]
   def self.lc_set_parent_class(klass : LcClass,parent : LcClass)
