@@ -93,7 +93,7 @@ module LinCAS::Internal
 
     def self.lc_new_object(klass :  LcVal)
         klass = klass.as(LcClass)
-        if klass.type == SType::PyCLASS
+        if klass.type.py_embedded?
             return new_pyobj(klass)
         end
         allocator = lc_find_allocator(klass)
@@ -169,7 +169,7 @@ module LinCAS::Internal
             end
         end
         io << ":@0x"
-        obj.id.to_s(io, 16)
+        obj.object_id.to_s(io, 16)
         io << '>'
     end
 

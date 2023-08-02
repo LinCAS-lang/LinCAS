@@ -135,7 +135,7 @@ module LinCAS::Internal
 
     def self.lc_typeof(v :  LcVal)
       if v.is_a? LcClass 
-        if type_of(v).includes? SType.flags(MODULE, PyMODULE)
+        if type_of(v).module?
           return "#{class_path(lc_cast(v, LcClass))}:Module"
         else 
           return "#{class_path(lc_cast(v, LcClass))}:Class"
