@@ -325,7 +325,7 @@ module LinCAS::Internal
       lc_raise(lc_nomet_err,"Cannot alias protected methods")
       return false
     else
-      lc_raise(lc_nomet_err,convert(:no_method) % klass.name)
+      lc_raise(lc_nomet_err, "Undefined method #{m_name} for #{class_path(klass)}")
       return false
     end
     return true
