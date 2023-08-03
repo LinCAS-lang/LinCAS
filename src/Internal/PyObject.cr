@@ -34,13 +34,22 @@ module LinCAS::Internal
   end
 
   @[AlwaysInline]
-  def self.pyobject_any_to_s(obj : PyObject*)
-    if !is_pyunicode_obj(obj)
+  def self.pyobject_to_py_s(obj : PyObject*) : PyObject*
+    if !is_pyunicode_obj_ex(obj)
       str = Python.to_s(obj)
     else
       str = obj
     end
-    return String.new Python.to_cstr(str)
+    Python.incref str
+    return str
+  end
+
+  @[AlwaysInline]
+  def self.pyobject_any_to_s(obj : PyObject*)
+    str = pyobject_to_py_s obj
+    val = String.new Python.to_cstr(str)
+  ensure
+    Python.decref str.not_nil!
   end
 
   def self.object2python(obj : LcVal)
@@ -77,7 +86,17 @@ module LinCAS::Internal
     Null
   end
 
+  def self.lc_pyobj_to_s(obj : LcVal)
+    str = pyobject_to_py_s obj.as(LcPyObject).py_obj
+    v = build_string Python.to_cstr str
+    return v
+  ensure
+    Python.decref str.not_nil!
+  end
+
   def self.init_pyobject
     @@lc_pyobject = lc_build_internal_class("PyObject")
+
+    define_method(@@lc_pyobject, "to_s", lc_pyobj_to_s, 0)
   end
 end

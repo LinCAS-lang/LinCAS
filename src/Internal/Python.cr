@@ -46,6 +46,12 @@ module LinCAS::Internal
     pytype_fast_subclass(obj.value.ob_type, Python::TpFlags::UNICODE_SUBCLASS)
   end
 
+  # Taken from the CPython source code
+  @[AlwaysInline]
+  def self.is_pyunicode_obj_ex(obj : PyObject*)
+    obj.value.ob_type == pointerof(Python.py_unicode_type)
+  end
+
   def self.is_any_method?(obj : PyObject*)
     return {
       pointerof(Python.py_function_type), 
