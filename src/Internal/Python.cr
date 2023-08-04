@@ -91,7 +91,7 @@ module LinCAS::Internal
   end
 
   def self.get_python_method_class(obj : Python::PyType*, name : String)
-    str = Python.to_s obj.as(PyObject*)
+    str = Python.new_string name
     m = Python.type_lookup(obj, str)
     Python.decref str
     if !m.null? && is_any_method? m
