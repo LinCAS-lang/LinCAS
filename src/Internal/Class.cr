@@ -23,26 +23,6 @@ module LinCAS::Internal
     {{klass}}.as(LcClass).name 
   end
 
-  macro check_pystructs(scp,str)
-    if {{str}}.is_a? LcClass && 
-      ({{str}}.type.includes? SType.flags(CLASS, MODULE, PyEMBEDDED)) &&
-                                      ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-      {{str}}.namespace.parent = {{scp}}.namespace
-      {{scp}}.namespace.[{{str}}.name] = {{str}}
-      {{str}}.flags |= ObjectFlags::REG_CLASS
-    end
-  end
-
-  macro check_pystructs2(scp,str)
-    if {{str}}.is_a? LcClass && 
-      ({{str}}.type.includes? SType.flags(CLASS, MODULE, PyEMBEDDED)) &&
-                                      ({{str}}.flags & ObjectFlags::REG_CLASS == 0)
-      {{str}}.namespace.parent = {{scp}}
-      {{scp}}[{{str}}.name] = {{str}}
-      {{str}}.flags |= ObjectFlags::REG_CLASS
-    end
-  end
-
   def self.metaclass_of(klass : LcClass)
     m_class = klass.klass 
     if !type_of(m_class).metaclass?
@@ -182,7 +162,6 @@ module LinCAS::Internal
     while scp 
       const = scp.find(name, const: true)
       if const
-        check_pystructs2(scp,const)
         return const 
       end
       scp = scp.parent
@@ -197,7 +176,6 @@ module LinCAS::Internal
       break if exclude && parent == @@lc_object && str != @@lc_object
       const = parent.namespace.find(name, const: true)
       if const
-        check_pystructs(parent,const)
         return const
       end
       break unless recurse

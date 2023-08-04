@@ -33,7 +33,14 @@ module LinCAS
         {% else %}
           if !(py = Python.get_obj_attr(@py_obj, name)).null? 
             if !Internal.is_any_method? py
-              tmp = Internal.new_pyobj(py)
+              tmp = if Internal.is_pymodule py
+                Internal.lc_build_pymodule name, py, self
+              elsif Internal.is_pytype py
+                Internal.lc_build_pyclass name, py, self
+              else
+                Internal.new_pyobj(py)
+              end
+              self[name] = tmp.as V
             else
               Python.decref(py)
             end
