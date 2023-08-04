@@ -98,5 +98,6 @@ module LinCAS::Internal
     @@lc_pyobject = lc_build_internal_class("PyObject")
 
     define_method(@@lc_pyobject, "to_s", lc_pyobj_to_s, 0)
+    define_method(@@lc_pyobject, "to_py", lc_obj_self,  0)
   end
 end
