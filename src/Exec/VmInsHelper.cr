@@ -241,7 +241,7 @@ module LinCAS
     protected def vm_getconst(orig_class : LcVal, name : String, allow_null : Bool)
       const = vm_dispatch_const(orig_class, name, allow_null)
       return const if const
-      lc_raise(Internal.lc_name_err, "Uninitialized const #{name}")
+      lc_raise(Internal.lc_name_err, "Uninitialized constant #{name}")
     end
 
     protected def vm_capture_block(ci : CallInfo)
