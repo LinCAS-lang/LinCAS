@@ -359,6 +359,20 @@ module LinCAS::Internal
       return lc_compare(n, obj)
     end
   end
+
+  @[AlwaysInline]
+  def self.int_2_py(n : LcVal)
+    int = lc_num_to_cr_i n
+    Python.int_to_py int
+  end
+  
+  # :call-seq: 
+  #   int.to_py -> PyObject
+  # It returns int converted to Python
+  @[AlwaysInline]
+  def self.lc_int_to_py(n : LcVal)
+    return new_pyobj int_2_py n
+  end
     
   def self.init_integer
     @@lc_integer = lc_build_internal_class("Integer",@@lc_number)
@@ -382,6 +396,7 @@ module LinCAS::Internal
     define_method(@@lc_integer, "to_i",  lc_obj_self,       0)
     define_method(@@lc_integer, "times", lc_int_times,      0)
     define_method(@@lc_integer, "abs",   lc_int_abs,        0)
+    define_method(@@lc_integer, "to_py", lc_int_to_py,      0)
   end
     
 end

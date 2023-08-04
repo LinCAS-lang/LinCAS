@@ -276,6 +276,20 @@ module LinCAS::Internal
     end
   end
 
+  @[AlwaysInline]
+  def self.float_2_py(n : LcVal)
+    int = lc_num_to_cr_f n
+    Python.float_to_py int
+  end
+  
+  # :call-seq: 
+  #   float.to_py -> PyObject
+  # It returns float converted to Python
+  @[AlwaysInline]
+  def self.lc_float_to_py(n : LcVal)
+    return new_pyobj float_2_py n
+  end
+
   @@lc_infinity  = uninitialized LcVal
   @@lc_ninfinity = uninitialized LcVal
   @@lc_nanobj    = uninitialized LcVal
@@ -307,6 +321,7 @@ module LinCAS::Internal
     define_method(@@lc_float,"ceil",lc_float_ceil,     0)
     define_method(@@lc_float,"trunc",lc_float_trunc,   0)
     define_method(@@lc_float, "<=>",lc_int_or_flo_cmp, 1)
+    define_method(@@lc_float, "to_py",lc_float_to_py,  0)
     
     lc_define_const(@@lc_float,"INFINITY",@@lc_infinity)
     lc_define_const(@@lc_float,"NAN",@@lc_nanobj)
