@@ -62,7 +62,7 @@ module LinCAS
       end
     end
 
-    protected def vm_check_arity(func : Python::PyObject*, ci : CallInfo, calling : VM::CallingInfo)
+    protected def vm_check_arity(func : Python::PyObject*, ci : CallInfo, calling : VM::CallingInfo, wants_self : Bool)
       if !Internal.is_pyfunction(func)
         lc_bug("Python object is not a function")
       end
@@ -74,7 +74,7 @@ module LinCAS
       end
       max = !co.value.co_flags.includes?(Python::CoFlags::CO_VARARGS) ? co.value.co_argcount : UNLIMITED_ARGUMENTS
       min = co.value.co_argcount - nd
-      vm_check_arity(min, max, calling.argc)
+      vm_check_arity(min, max, calling.argc + wants_self.unsafe_as(UInt8))
     end
 
     @[AlwaysInline]

@@ -462,7 +462,7 @@ module LinCAS
       vm_setup_args_internal_or_python(ci, calling, method.arity)
       set_stack_consistency_trace(argc + 1)
       vm_push_control_frame(calling.me, method, nil, flags)
-      vm_check_arity(method.code.unsafe_as(Pointer(Python::PyObject)), ci, calling)
+      vm_check_arity(method.code.unsafe_as(Pointer(Python::PyObject)), ci, calling, method.flags.wants_self?)
       push Internal.lincas_call_python(method, topn(argc), @stack.shared_copy(@sp - argc, argc))
       vm_pop_control_frame
     end
