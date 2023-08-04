@@ -216,7 +216,7 @@ module LinCAS::Internal
         method = nil
         m_missing_reason = 0
       when method.flags.function?
-        if klass.type.metaclass? && !class_search_ancestor(klass, @@lc_module)
+        if !is_pymodule(receiver.methods.py_obj)
           method.flags |= MethodFlags::WANTS_SELF
         end
       end
