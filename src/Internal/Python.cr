@@ -158,13 +158,18 @@ module LinCAS::Internal
     tuple
   end
 
+  @[AlwaysInline]
+  def self.call_pycallable(callable : PyObject*, tuple : PyObject*)
+    value = Python.call(callable, tuple)
+    Python.decref tuple
+    check_pyerror
+    return value
+  end
+
   def self.lincas_call_python(method : LcMethod, obj : LcVal, args : Ary)
     tuple = pyarg_tuple(method.flags.wants_self? ? obj : nil, args)
     code = method.code.unsafe_as(Pointer(Python::PyObject))
-    value = Python.call(code, tuple)
-    Python.decref tuple
-    check_pyerror
-    return pyobj2lincas(value)
+    return pyobj2lincas call_pycallable(code, tuple)
   end
 
   def self.lc_pyimport(unused, argv :  LcVal)
