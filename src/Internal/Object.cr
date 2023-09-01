@@ -93,9 +93,6 @@ module LinCAS::Internal
 
     def self.lc_new_object(klass :  LcVal)
         klass = klass.as(LcClass)
-        if klass.type.py_embedded?
-            return new_pyobj(klass)
-        end
         allocator = lc_find_allocator(klass)
         if allocator == Allocator::UNDEF
             lc_raise(lc_instance_err,"Can't instantiate %s" % klass.name)
