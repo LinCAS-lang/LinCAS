@@ -215,7 +215,7 @@ module LinCAS::Internal
         lc_add_method_with_owner(metaclass_of(klass), name, method)
         method = nil
         m_missing_reason = 0
-      when method.flags.function?
+      when method.flags.function? || method.name == "__new__"
         if !is_pymodule(receiver.methods.py_obj)
           method.flags |= MethodFlags::WANTS_SELF
         end
