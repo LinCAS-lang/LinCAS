@@ -73,12 +73,13 @@ module LinCAS
 
   @[Flags]
   enum SType
+    # Flags
     PyEMBEDDED
+
+    # Type
     METACLASS
     CLASS 
-    MODULE 
-    # PyMODULE
-    # PyCLASS
+    MODULE
   end
   
   alias IvarTable = Hash(String, LcVal)
