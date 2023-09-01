@@ -718,6 +718,22 @@ module LinCAS
         lc_raise(Internal.lc_type_err, "Object type must be a class (#{Internal.lc_typeof(klass)} given)")
       end
 
+      if klass.type.py_embedded?
+        with_call_info(
+          name: "__new__",
+          argc: ci.argc,
+          splat: ci.splat,
+          dbl_splat: ci.dbl_splat,
+          kwarg: ci.kwarg?,
+          explicit: true,
+          block: ci.block,
+          block_param: ci.block_param
+        ) do |tmp_ci|
+          calling.me = klass
+          return vm_call(tmp_ci, calling)
+        end
+      end
+      
       obj = Internal.lc_new_object(klass)
       @stack[@sp - argc - 1] = calling.me = obj # we replace the class with the actual object
 
