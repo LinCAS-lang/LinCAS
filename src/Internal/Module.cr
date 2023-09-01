@@ -68,7 +68,7 @@ module LinCAS::Internal
     end
 
     def self.lc_build_pymodule(name : String, obj : PyObject*, context : NameTable)
-      mod = LcClass.new(SType.flags(MODULE, PyEMBEDDED), name)
+      mod = LcClass.new(SType.flags(MODULE, PyEMBEDDED), name, obj)
       pymodule_init(mod, obj)
       mod.namespace.parent = context
       context[name] = mod
