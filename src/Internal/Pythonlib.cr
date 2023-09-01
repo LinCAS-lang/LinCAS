@@ -138,6 +138,7 @@ lib Python
   $py_staticm_type = PyStaticMethod_Type  : PyType
   $py_string_type = PyString_Type         : PyType
   $py_tuple_type = PyTuple_Type           : PyType
+  $py_unicode_type = PyUnicode_Type       : PyType
 
   # Python builders
   fun initialize = Py_Initialize
@@ -180,6 +181,12 @@ lib Python
   fun new_tuple = PyTuple_New(length : LibC::Int) : PyObject*
   fun tuple_set_item = PyTuple_SetItem(tuple : PyObject*, ref : LibC::Int, val : PyObject*) : LibC::Int
   fun tuple_size = PyTuple_Size(tuple : PyObject*) : LibC::Long
+
+  # Numbers
+  fun int_to_py = PyLong_FromLong(n : Int64)            : PyObject*
+  fun pyint_2_c = PyLong_AsLong(n : PyObject*)          : Int64
+  fun float_to_py = PyFloat_FromDouble(d : Float64)     : PyObject*
+  fun pyfloat_2_c = PyFloat_AsDouble(f : PyObject*)     : Float64
 
   # Other
   fun is_callable = PyCallable_Check(obj : PyObject*) : Bool
