@@ -179,15 +179,15 @@ module LinCAS::Internal
     def self.lc_include(klass :  LcVal, mod :  LcVal)
         if !(mod.is_a? LcClass)
             lc_raise(lc_type_err,"Module expected (#{lc_typeof(mod)} given)")
-        elsif !(struct_type(mod.as(LcClass),SType::MODULE))
-            lc_raise(lc_type_err,"Module expected (#{lc_typeof(mod)} given)")
-        else
-            if !klass.is_a? LcClass
-                klass = class_of(klass)
-            end
-            internal.lc_include_module(klass.as(LcClass),mod.as(LcClass))
-            return lctrue
         end
+        if !mod.as(LcClass).is_module?
+            lc_raise(lc_type_err,"Module expected (#{lc_typeof(mod)} given)")
+        end
+        if !klass.is_a? LcClass
+            klass = class_of(klass)
+        end
+        internal.lc_include_module(klass.as(LcClass),mod.as(LcClass))
+        return lctrue
         return lcfalse
     end
 
