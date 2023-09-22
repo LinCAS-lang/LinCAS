@@ -87,7 +87,7 @@ module LinCAS::Internal
     end
 
     def self.lc_proc_allocate(klass :  LcVal)
-        block = Exec.get_block
+        block = VM.get_block
         proc = lc_proc_allocate_0(klass)
         if block
             if block.is_a? LCProc 
@@ -124,7 +124,7 @@ module LinCAS::Internal
     end
 
     def self.lc_proc_init(proc :  LcVal)
-        block      = Exec.get_block
+        block      = VM.get_block
         if block.is_a? LcBlock 
             proc_init(proc,block)
         elsif block.is_a? LCProc 
@@ -142,7 +142,7 @@ module LinCAS::Internal
     def self.lc_proc_call(proc :  LcVal,argv :  LcVal)
         check_proc(proc)
         argv = argv.as Ary
-        Exec.call_proc(lc_cast(proc,LCProc),argv)
+        VM.call_proc(lc_cast(proc,LCProc),argv)
     end
 
     private def self.clone_part(a : An)
@@ -158,7 +158,7 @@ module LinCAS::Internal
     def self.lc_proc_partial(proc :  LcVal, argv : An)
         proc_arity = get_proc_args(proc).size
         if argv.size >= proc_arity
-            return Exec.call_proc(lc_cast(proc,LCProc),argv)
+            return VM.call_proc(lc_cast(proc,LCProc),argv)
         end
         return proc if argv.empty?
         part = get_proc_part(proc)
@@ -168,7 +168,7 @@ module LinCAS::Internal
             diff.times do |i|
                 tmp << argv[i]
             end
-            return Exec.call_proc(lc_cast(proc,LCProc),tmp)
+            return VM.call_proc(lc_cast(proc,LCProc),tmp)
         else
             new_proc = lc_proc_clone(proc)
             part = get_proc_part(proc)

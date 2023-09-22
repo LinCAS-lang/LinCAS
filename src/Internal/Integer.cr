@@ -337,7 +337,7 @@ module LinCAS::Internal
   def self.lc_int_times(n :  LcVal)
     val = int2num(n)
     val.times do |i|
-      Exec.lc_yield(num2int(i))
+      VM.lc_yield(num2int(i))
     end
     return Null
   end

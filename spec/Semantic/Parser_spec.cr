@@ -20,7 +20,6 @@ class VM
   def lc_raise_syntax_error(*args)
   end
 end
-Exec = VM.new
 
 def symtab(type)
   return SymTable.new(type)

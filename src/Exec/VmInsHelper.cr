@@ -905,6 +905,7 @@ module LinCAS
     #    \_/  |_|  |_| /_/   \_\_|  |___| #
     ####################################### 
 
+    @[API]
     def call_proc(proc : Internal::LCProc, argv : Ary)
       argv.each { |arg| push arg}
       with_call_info(
@@ -921,6 +922,7 @@ module LinCAS
       return exec
     end
 
+    @[API]
     def call_method(method : Internal::Method, argv : Ary | Array(LcVal))
       method_entry = method.method
       push method.receiver
@@ -956,6 +958,7 @@ module LinCAS
       Null # unreachable
     end
 
+    @[API]
     def lc_call_fun(receiver :  LcVal, method : String, *argv)
       push receiver
       argv.each { |arg| push arg }
@@ -980,6 +983,7 @@ module LinCAS
       end
     end
 
+    @[API]
     def lc_yield(*argv :  LcVal)
       argv.each { |arg| push arg }
       with_call_info(
@@ -1000,6 +1004,7 @@ module LinCAS
       return exec
     end
 
+    @[API]
     @[AlwaysInline]
     def lc_raise(type, msg)
       error = Internal.build_error(
@@ -1010,6 +1015,7 @@ module LinCAS
       lc_raise(error)
     end
 
+    @[API]
     @[AlwaysInline]
     def lc_raise_syntax_error(msg, last_loc)
       error = Internal.build_error(
@@ -1020,6 +1026,7 @@ module LinCAS
       lc_raise(error)
     end
 
+    @[API]
     def lc_raise(error :  LcVal)
       error = error.as(Internal::LcError)
       if error.backtrace.empty?
@@ -1029,11 +1036,13 @@ module LinCAS
       error # Unreachable. For inference purposes only
     end 
 
+    @[API]
     @[AlwaysInline]
     def get_block 
       vm_get_block
     end
 
+    @[API]
     def get_current_namespace : NameTable
       main_namespace = @stack[0].klass.namespace
       @control_frames.reverse_each do |frame|
@@ -1051,6 +1060,7 @@ module LinCAS
       return main_namespace # Unreachable. Just for inference purposes
     end
 
+    @[API]
     def get_current_filedir
       @control_frames.reverse_each do |frame|
         if !(frame.flags.includes? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME, DUMMY_FRAME))
@@ -1060,6 +1070,7 @@ module LinCAS
       "" # unreachable
     end
 
+    @[API]
     def run(iseq : ISeq)
       obj = @control_frames.first.me
       set_stack_consistency_trace 0
@@ -1067,6 +1078,7 @@ module LinCAS
       return exec
     end
 
+    @[API]
     def error?
       lc_bug("Deprecated error handling used")
       false 

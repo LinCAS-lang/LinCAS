@@ -86,15 +86,15 @@ module LinCAS::Internal
     end
 
     macro current_filedir
-      Exec.get_current_filedir 
+      VM.get_current_filedir 
     end
 
     macro current_file 
-      Exec.get_current_filename 
+      VM.get_current_filename 
     end
 
     macro current_call_line
-      Exec.get_current_call_line
+      VM.get_current_call_line
     end
 
     def self.lincas_obj_alloc_fake(type : LcVal.class,klass : LcClass,*args,**opt)

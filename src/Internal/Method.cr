@@ -261,7 +261,7 @@ module LinCAS::Internal
     method = Pointer(Void).new(addr).as(Method)
     args   = pytuple2ary(argv)
     if args
-      val = Exec.call_method(method,args)
+      val = VM.call_method(method,args)
       obj = obj2py(val)
       if obj
         pyobj_incref(obj)
@@ -312,7 +312,7 @@ module LinCAS::Internal
   @[AlwaysInline]
   def self.lc_method_call(method :  LcVal, argv :  LcVal)
     argv = argv.as Ary
-    return Exec.call_method(lc_cast(method,Method), argv)
+    return VM.call_method(lc_cast(method,Method), argv)
   end
 
   def self.lc_method_to_proc(method :  LcVal)

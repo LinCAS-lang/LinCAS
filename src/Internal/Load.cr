@@ -47,7 +47,7 @@ module LinCAS::Internal
     str_check(path)
     iseq = require_file(path)
     if iseq 
-      Exec.run(iseq)
+      VM.run(iseq)
       return lctrue
     end
     return lcfalse
@@ -58,7 +58,7 @@ module LinCAS::Internal
     lc_str_concat(path,[@@sep,lc_str_clone(path),@@ext])
     iseq = require_file(path,@@dirlib)
     if iseq 
-      Exec.run(iseq)
+      VM.run(iseq)
       return lctrue
     end
     return lcfalse
@@ -70,7 +70,7 @@ module LinCAS::Internal
     dir  = build_string(dir)
     iseq = require_file(path,dir)
     if iseq
-      Exec.run(iseq)
+      VM.run(iseq)
       return lctrue
     end 
     return lcfalse

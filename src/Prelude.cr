@@ -72,7 +72,7 @@ module LinCAS::Internal
               {{name.id}}
             {% end %}
         {% end %}
-        Exec.init
+        VM.init
     end
 
     def self.lc_finalize

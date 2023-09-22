@@ -146,7 +146,7 @@ module LinCAS::Internal
     private def self.stringify(array : Array(LcVal))
         array.map! do |obj|
             if !obj.is_a? LcString
-                Exec.lc_call_fun(obj,"to_s")
+                VM.lc_call_fun(obj,"to_s")
             else
                 obj 
             end
@@ -245,7 +245,7 @@ module LinCAS::Internal
         elsif value.is_a? LcSymbol 
             buffer_append(buffer,get_sym_origin(value))
         elsif lc_obj_responds_to? value,"inspect"
-            string = Exec.lc_call_fun(value,"inspect")
+            string = VM.lc_call_fun(value,"inspect")
             string_append2(buffer,string)
         else 
             string_append2(buffer, lc_obj_to_s(value))
@@ -772,7 +772,7 @@ module LinCAS::Internal
         strlen = str_size(str)
         ptr    = pointer_of(str)
         strlen.times do |i|
-            Exec.lc_yield(build_string(ptr[i]))
+            VM.lc_yield(build_string(ptr[i]))
         end
         return str
     end

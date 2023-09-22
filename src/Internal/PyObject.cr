@@ -66,7 +66,7 @@ module LinCAS::Internal
     if !lc_obj_responds_to? obj, id
       lc_raise(lc_type_err, "Cannot convert #{lc_typeof(obj)} into PyObject")
     end
-    tmp = check_pyobject Exec.lc_call_fun(obj, id)
+    tmp = check_pyobject VM.lc_call_fun(obj, id)
     if tmp.py_obj.null?
       lc_raise(lc_runtime_err, "PyObject holds a null reference")
     end

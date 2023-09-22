@@ -14,6 +14,8 @@
 module LinCAS
   module Backtrace
 
+    @[API]
+    @[AlwaysInline]
     def get_backtrace
       return vm_get_backtrace
     end

@@ -150,10 +150,10 @@ module LinCAS::Internal
             return Null
         end
         resize_matrix_capa(matrix,r,c)
-        if Exec.block_given?
+        if VM.block_given?
             (0...r).each do |i|
                 (0...c).each do |j|
-                    set_matrix_index(matrix,i,j,Exec.lc_yield(num2int(i),num2int(j)))
+                    set_matrix_index(matrix,i,j,VM.lc_yield(num2int(i),num2int(j)))
                 end
             end
         else
@@ -367,8 +367,8 @@ module LinCAS::Internal
         m1_ptr = matrix_ptr(m1)
         m2_ptr = matrix_ptr(m2)
         matrix_ptr(tmp).map_with_index!(rws * cls) do |c,i|
-            value = Exec.lc_call_fun(m1_ptr[i],"+",m2_ptr[i]).as( LcVal)
-            break if Exec.error?
+            value = VM.lc_call_fun(m1_ptr[i],"+",m2_ptr[i]).as( LcVal)
+            break if VM.error?
             value
         end
         return tmp 
@@ -404,8 +404,8 @@ module LinCAS::Internal
         m1_ptr = matrix_ptr(m1)
         m2_ptr = matrix_ptr(m2)
         matrix_ptr(tmp).map_with_index!(rws * cls) do |c,i|
-            value = Exec.lc_call_fun(m1_ptr[i],"-",m2_ptr[i]).as( LcVal)
-            break if Exec.error?
+            value = VM.lc_call_fun(m1_ptr[i],"-",m2_ptr[i]).as( LcVal)
+            break if VM.error?
             value
         end
         return tmp 
@@ -441,8 +441,8 @@ module LinCAS::Internal
         tmp = build_matrix(rws,cls)
         ptr = matrix_ptr(m1)
         matrix_ptr(tmp).map_with_index! (rws * cls) do |c,i|
-            value = Exec.lc_call_fun(ptr[i],"*",num).as( LcVal)
-            break if Exec.error?
+            value = VM.lc_call_fun(ptr[i],"*",num).as( LcVal)
+            break if VM.error?
             value
         end
         return tmp 
@@ -466,23 +466,23 @@ module LinCAS::Internal
             (0...cls2).each do |j|
                 (0...cls1).each do |k|
                     if k == 0
-                        value = Exec.lc_call_fun(matrix_at_index(m1,i,k),
+                        value = VM.lc_call_fun(matrix_at_index(m1,i,k),
                                                         "*",matrix_at_index(m2,k,j)).as( LcVal)
-                        break if Exec.error?
+                        break if VM.error?
                         set_matrix_index(tmp,i,j,value)
                     else
                         tmp_val = matrix_at_index(tmp,i,j)
-                        value = Exec.lc_call_fun(matrix_at_index(m1,i,k),
+                        value = VM.lc_call_fun(matrix_at_index(m1,i,k),
                                                         "*",matrix_at_index(m2,k,j)).as( LcVal) 
-                        break if Exec.error?
-                        value = Exec.lc_call_fun(tmp_val,"+",value).as( LcVal)
-                        break if Exec.error?
+                        break if VM.error?
+                        value = VM.lc_call_fun(tmp_val,"+",value).as( LcVal)
+                        break if VM.error?
                         set_matrix_index(tmp,i,j,value) 
                     end
                 end
-                break if Exec.error?
+                break if VM.error?
             end
-            break if Exec.error?
+            break if VM.error?
         end
         return tmp
     end
@@ -529,8 +529,8 @@ module LinCAS::Internal
         ptr  = matrix_ptr(mx)
         size = rws * cls
         (0...size).each do |i|
-            Exec.lc_yield(ptr[i])
-            break if Exec.error?
+            VM.lc_yield(ptr[i])
+            break if VM.error?
         end
         return mx
     end
@@ -541,11 +541,11 @@ module LinCAS::Internal
         tmp  = build_matrix(rws,cls)
         (0...rws).each do |i|
             (0...cls).each do |j|
-                value = Exec.lc_yield(matrix_at_index(mx,i,j))
-                break if Exec.error?
+                value = VM.lc_yield(matrix_at_index(mx,i,j))
+                break if VM.error?
                 set_matrix_index(tmp,i,j,value)
             end
-            break if Exec.error?
+            break if VM.error?
         end
         return tmp 
     end
@@ -554,8 +554,8 @@ module LinCAS::Internal
         size = matrix_rws(mx) * matrix_cls(mx)
         ptr  = matrix_ptr(mx)
         ptr.map!(size) do |elem|
-            value = Exec.lc_yield(elem).as( LcVal)
-            break if Exec.error?
+            value = VM.lc_yield(elem).as( LcVal)
+            break if VM.error?
             value
         end
         return mx 
@@ -566,10 +566,10 @@ module LinCAS::Internal
         cls  = matrix_cls(mx)
         rws.times do |i|
             cls.times do |j|
-                Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j))
-                break if Exec.error?
+                VM.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j))
+                break if VM.error?
             end
-            break if Exec.error?
+            break if VM.error?
         end
         return Null 
     end
@@ -580,11 +580,11 @@ module LinCAS::Internal
         tmp = build_matrix(rws,cls)
         rws.times do |i|
             cls.times do |j|
-                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
-                break if Exec.error?
+                value = VM.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
+                break if VM.error?
                 set_matrix_index(tmp,i,j,value)
             end
-            break if Exec.error?
+            break if VM.error?
         end
         return tmp 
     end
@@ -594,11 +594,11 @@ module LinCAS::Internal
         cls  = matrix_cls(mx)
         rws.times do |i|
             cls.times do |j|
-                value = Exec.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
-                break if Exec.error?
+                value = VM.lc_yield(matrix_at_index(mx,i,j),num2int(i),num2int(j)).as( LcVal)
+                break if VM.error?
                 set_matrix_index(mx,i,j,value)
             end
-            break if Exec.error?
+            break if VM.error?
         end
         return mx 
     end

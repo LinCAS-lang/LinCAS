@@ -78,7 +78,7 @@ module LinCAS::Internal
       end
       return nil
     end
-    ary = Exec.lc_call_fun(v2, "coerce", v1)
+    ary = VM.lc_call_fun(v2, "coerce", v1)
     
     if !error && ary == Null
       return nil
@@ -93,12 +93,12 @@ module LinCAS::Internal
     if v1.is_a? NumType && v2.is_a? NumType
       v1 = num2float(num2num(v1).to_f)
       v2 = num2float(num2num(v2).to_f)
-      return Exec.lc_call_fun(v1, method, v2)
+      return VM.lc_call_fun(v1, method, v2)
     end
     # We can safely use #not_nil! because `do_coerce` raises
     # an exception instead of returning `nil` in this case
     c = do_coerce(v1, v2, true).not_nil!
-    return Exec.lc_call_fun(
+    return VM.lc_call_fun(
       lc_ary_get(c, num2int(0)),
       method,
       lc_ary_get(c, num2int(1))
@@ -107,7 +107,7 @@ module LinCAS::Internal
 
   def self.lc_num_coerce_cmp(v1 :  LcVal, v2 :  LcVal, method : String)
     if (c = do_coerce(v1, v2, false))
-      return Exec.lc_call_fun(
+      return VM.lc_call_fun(
         lc_ary_get(c, num2int(0)),
         method,
         lc_ary_get(c, num2int(1))
@@ -121,7 +121,7 @@ module LinCAS::Internal
       lc_comp_err(v1, v2)
     else
       ensure_cmp(
-        Exec.lc_call_fun(
+        VM.lc_call_fun(
           lc_ary_get(c, num2int(0)), 
           method, 
           lc_ary_get(c, num2int(2))
@@ -153,8 +153,8 @@ module LinCAS::Internal
       t = num2num(value)
       return t > 0 ? 1 : t == 0 ? 0 : -1
     else
-      return 1 if test(Exec.lc_call_fun(value, ">", num2int(0)))
-      return -1 if test(Exec.lc_call_fun(value, "<", num2int(0)))
+      return 1 if test(VM.lc_call_fun(value, ">", num2int(0)))
+      return -1 if test(VM.lc_call_fun(value, "<", num2int(0)))
       return 0
     end
   end
@@ -210,12 +210,12 @@ module LinCAS::Internal
       when -1 then cmp = "<"
       end
 
-      return num2int(0) if test(Exec.lc_call_fun(a, cmp, b))
-      r = Exec.lc_call_fun(Exec.lc_call_fun(b, "-", a), "/", step)
+      return num2int(0) if test(VM.lc_call_fun(a, cmp, b))
+      r = VM.lc_call_fun(VM.lc_call_fun(b, "-", a), "/", step)
 
       # if inclusive || ((a + r * step) cmp b)
-      if inclusive || test(Exec.lc_call_fun(Exec.lc_call_fun(a, "+", Exec.lc_call_fun(r, "*", step)), cmp, b))
-        r = Exec.lc_call_fun(r, "+", num2int(1))
+      if inclusive || test(VM.lc_call_fun(VM.lc_call_fun(a, "+", VM.lc_call_fun(r, "*", step)), cmp, b))
+        r = VM.lc_call_fun(r, "+", num2int(1))
       end
       return r
     end

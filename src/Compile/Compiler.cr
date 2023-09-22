@@ -1237,7 +1237,7 @@ module LinCAS
       if @compiler_state.empty?
         location = node.location.not_nil!
         last_location = "  from #{@filename}:#{location.line}:#{location.column} in <top (required)>"
-        Exec.lc_raise_syntax_error("Invalid #{type}", last_location)
+        VM.lc_raise_syntax_error("Invalid #{type}", last_location)
       end
     end
 

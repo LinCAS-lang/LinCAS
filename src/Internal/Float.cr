@@ -31,7 +31,7 @@ module LinCAS::Internal
     error = false
     if !num.is_a? NumType
       if lc_obj_responds_to? num, "to_f"
-        num = Exec.lc_call_fun(num, "to_f")
+        num = VM.lc_call_fun(num, "to_f")
       end
       if !num.is_a? NumType
         lc_raise(lc_type_err, "Can't convert #{lc_typeof(num)} to Float")

@@ -1034,7 +1034,7 @@ module LinCAS
         io << "Line:" << @line << ':' << @col << '\n'
         io << "In: " << @filename 
       end 
-      Exec.lc_raise(error, body)
+      VM.lc_raise(error, body)
     end
 
    end

@@ -124,7 +124,7 @@ module LinCAS::Internal
     if !obj.is_a? LcArray
       id = "to_a"
       if lc_obj_responds_to? obj, id
-        obj = Exec.lc_call_fun obj, id
+        obj = VM.lc_call_fun obj, id
       end
     end
     if !obj.is_a? LcArray
@@ -207,7 +207,7 @@ module LinCAS::Internal
     x = lc_num_to_cr_i(size)
     check_capacity(lc_cast(ary, LcArray), x)
     set_ary_size(ary, x)
-    if Exec.block_given? 
+    if VM.block_given? 
       lc_ary_map!(ary)
     else
       ary_range_to_null(ary, 0, x)
@@ -331,7 +331,7 @@ module LinCAS::Internal
 
   def self.lc_ary_include(ary :  LcVal, value :  LcVal)
     ary_iterate(ary) do |el|
-      if test Exec.lc_call_fun(el, "==", value)
+      if test VM.lc_call_fun(el, "==", value)
         return lctrue 
       end 
     end
@@ -425,14 +425,14 @@ module LinCAS::Internal
   def self.lc_ary_each(ary :  LcVal)
     arylen = ary_size(ary) 
     arylen.times do |i|
-      Exec.lc_yield(ary_at_index(ary, i))
+      VM.lc_yield(ary_at_index(ary, i))
     end
     Null 
   end
 
   def self.lc_ary_each_with_index(ary :  LcVal)
     ary_size(ary).times do |i|
-      Exec.lc_yield(ary_at_index(ary, i), num2int(i))
+      VM.lc_yield(ary_at_index(ary, i), num2int(i))
     end
     return Null 
   end
@@ -445,7 +445,7 @@ module LinCAS::Internal
   @[AlwaysInline]
   def self.lc_ary_map!(ary :  LcVal)
     ary_size(ary).times do |i|
-      ary_set_index(ary,i,Exec.lc_yield(ary_at_index(ary,i)))
+      ary_set_index(ary,i,VM.lc_yield(ary_at_index(ary,i)))
     end
     return ary 
   end 
@@ -457,7 +457,7 @@ module LinCAS::Internal
   def self.lc_ary_map_with_index!(ary :  LcVal)
     size = ary_size(ary)
     ptr(ary).map_with_index!(size) do |value, i|
-      next Exec.lc_yield(value, num2int(i))
+      next VM.lc_yield(value, num2int(i))
     end
     return ary 
   end
@@ -561,7 +561,7 @@ module LinCAS::Internal
   end
 
   private def self.compare_with_block(a : LcVal, b : LcVal)
-    return lc_cmpint(Exec.lc_yield(a, b), a, b)
+    return lc_cmpint(VM.lc_yield(a, b), a, b)
   end
 
   private def self.compare(a : LcVal, b : LcVal)
@@ -570,7 +570,7 @@ module LinCAS::Internal
     elsif a.is_a?(LcString) && b.is_a? LcString 
       res = lincas_str_cmp(a, b)
     else
-      res = lc_cmpint Exec.lc_call_fun(a, "<=>", b), a, b
+      res = lc_cmpint VM.lc_call_fun(a, "<=>", b), a, b
     end
     return res
   end
@@ -581,7 +581,7 @@ module LinCAS::Internal
   end
 
   def self.lc_ary_sort!(ary :  LcVal)
-    comp = Exec.block_given? ? ->compare_with_block(LcVal, LcVal) : ->compare(LcVal, LcVal)
+    comp = VM.block_given? ? ->compare_with_block(LcVal, LcVal) : ->compare(LcVal, LcVal)
     lc_heap_sort ptr(ary), ary_size(ary), &comp
     return ary
   end
@@ -602,9 +602,9 @@ module LinCAS::Internal
 
   def self.lincas_ary_max_min(ary :  LcVal)
     result = Null
-    if Exec.block_given?
+    if VM.block_given?
       ary_iterate ary do |v|
-        if result == Null || yield lc_cmpint(Exec.lc_yield(v, result), v, result)
+        if result == Null || yield lc_cmpint(VM.lc_yield(v, result), v, result)
           result = v
         end
       end
@@ -680,13 +680,13 @@ module LinCAS::Internal
   end
 
   def self.compare_by(a : LcVal, b : LcVal)
-    r1 = Exec.lc_yield(a)
-    r2 = Exec.lc_yield(b)
+    r1 = VM.lc_yield(a)
+    r2 = VM.lc_yield(b)
     return compare r1, r2
   end
 
   def self.lc_ary_sort_by!(ary :  LcVal)
-    if !Exec.block_given?
+    if !VM.block_given?
       lc_raise(lc_arg_err,"Expected block not found")
     end
     lc_heap_sort(ptr(ary), ary_size(ary), &->compare_by(LcVal, LcVal))

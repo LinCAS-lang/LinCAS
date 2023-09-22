@@ -108,7 +108,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.assert_valid_range(v1 : LcVal, v2 : LcVal)
-      if Exec.lc_call_fun(v1, "<=>", v2) == Null
+      if VM.lc_call_fun(v1, "<=>", v2) == Null
         lc_raise(lc_type_err, "Bad range type")
       end
     end
@@ -165,7 +165,7 @@ module LinCAS::Internal
     end
 
     def self.lc_compare_single(a : LcVal, b : LcVal)
-      v = Exec.lc_call_fun(a, "<=>", b)
+      v = VM.lc_call_fun(a, "<=>", b)
       return lcfalse if v == Null
       if v != Null && yield lc_cmpint(v, a, b)
         return lctrue
@@ -257,7 +257,7 @@ module LinCAS::Internal
       while (c = compare(i, _end)) < comp
         yield i
         break if inclusive && c.zero?
-        i = Exec.lc_call_fun(i, "succ")
+        i = VM.lc_call_fun(i, "succ")
       end
     end
 
@@ -278,7 +278,7 @@ module LinCAS::Internal
           beg = lft
           while beg
             yield beg
-            beg = Exec.lc_call_fun(beg, "succ")
+            beg = VM.lc_call_fun(beg, "succ")
           end
         end
       end
@@ -286,7 +286,7 @@ module LinCAS::Internal
 
     def self.lc_range_each(range : LcVal)
       lincas_range_each(range) do |value|
-        Exec.lc_yield value
+        VM.lc_yield value
       end
       return range
     end
@@ -294,7 +294,7 @@ module LinCAS::Internal
     def self.lc_range_map(range)
       ary = new_array
       lincas_range_each range do |value|
-        lc_ary_push ary, Exec.lc_yield value
+        lc_ary_push ary, VM.lc_yield value
       end
       return ary
     end

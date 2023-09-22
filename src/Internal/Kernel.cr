@@ -57,7 +57,7 @@ module LinCAS::Internal
         exitarg[0] = num2int(status)
         @@running = true 
         while proc = ExitProcs.pop?
-            Exec.call_proc(proc.as(LCProc),exitarg)
+            VM.call_proc(proc.as(LCProc),exitarg)
         end
         @@running = false
     end
@@ -118,7 +118,7 @@ module LinCAS::Internal
         else
             arg = arg.as( LcVal)
             if internal.lc_obj_responds_to? arg,"to_s"
-                self.lc_out(nil,Exec.lc_call_fun(arg,"to_s"))
+                self.lc_out(nil,VM.lc_call_fun(arg,"to_s"))
             else 
                 LibC.printf(internal.lc_typeof(arg))
             end
@@ -239,7 +239,7 @@ module LinCAS::Internal
     # ```
 
     def self.lc_at_exit(unused)
-        block = Exec.get_block
+        block = VM.get_block
         if block 
             proc = lincas_block_to_proc(block)
             set_at_exit_proc(proc)
@@ -252,7 +252,7 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_block_given(unised)
-        return val2bool(Exec.caller_block_given?)
+        return val2bool(VM.caller_block_given?)
     end
     
 

@@ -23,6 +23,8 @@ module LinCAS
     alias BlockHandler = LcBlock | LCProc
     alias Context = LcClass | LcMethod
 
+    @@vm : VM = self.new
+
     macro convert(err)
       LinCAS.convert_error({{err}})
     end
@@ -50,11 +52,13 @@ module LinCAS
       @initialized = false
     end
 
+    @[API]
     def init
       @stack = Ary.new 1000
       @initialized = true
     end
 
+    @[API]
     def setup_iseq(iseq : ISeq)
       if !@initialized
         lc_bug("Uninitialized VM")
@@ -174,6 +178,7 @@ module LinCAS
       return value
     end
     
+    @[API]
     def exec : LcVal
       cfp = @control_frames.size
       # this loop rescues a long jump after exception handling
@@ -430,7 +435,7 @@ module LinCAS
     end
 
     @[AlwaysInline]
-    def seek_block(env)
+    protected def seek_block(env)
       while env && env.frame_type.includes? VmFrame::BLOCK_FRAME
         env = env.previous 
       end
@@ -443,6 +448,11 @@ module LinCAS
     end
 
     @[AlwaysInline]
+    def self.block_given?
+      return !!@@vm.vm_get_block
+    end
+    
+    @[AlwaysInline]
     def block_given?
       return !!vm_get_block 
     end
@@ -450,16 +460,36 @@ module LinCAS
     # This method is used by `Kernel#block_given?`.
     # We need to check in the caller frame if the block
     # is given
+    @[API]
     @[AlwaysInline]
     def caller_block_given?
       return !!seek_block @control_frames[-2].env
     end
     
+    @[API]
     @[AlwaysInline]
     def get_class_ref
       context = @current_frame.env.context
       return context.is_a?(LcClass) ? context : context.owner
     end
+
+    # Generation of static VM API
+    {% for type in @type.ancestors << @type %}
+      {% for method in type.methods.select(&.annotation(API)) %}
+        @[AlwaysInline]
+        {% if method.args.empty?%}
+        def self.{{method.name.id}}
+          @@vm.{{method.name.id}}
+        {% elsif method.splat_index %}
+        def self.{{method.name.id}}(*args)
+          @@vm.{{method.name.id}}(*args)
+        {% else %}
+        def self.{{method.name.id}}({{method.args.splat}})
+          @@vm.{{method.name.id}}({{method.args.map(&.name).splat}})
+        {% end %}
+        end
+      {% end %}
+    {% end %}
 
     @[Flags]
     enum VmFrame : UInt32
@@ -597,5 +627,4 @@ module LinCAS
 
   end
   
-  Exec = VM.new
 end

@@ -198,8 +198,8 @@ module LinCAS::Internal
             end 
         end 
         if !res
-            value = Exec.lc_call_fun(item,"hash")
-            if !Exec.error?
+            value = VM.lc_call_fun(item,"hash")
+            if !VM.error?
                 value = lc_num_to_cr_i(value)
                 if value
                     res = value.to_u64!
@@ -242,7 +242,7 @@ module LinCAS::Internal
             #elsif v1.is_a? Matrix 
             #    return lc_matrix_eq(v1,v2)
             end
-            return (Exec.lc_call_fun(v1,"==",v2) == lctrue) ? true : false
+            return (VM.lc_call_fun(v1,"==",v2) == lctrue) ? true : false
         end
         return bool2val(lc_obj_compare(v1,v2))
     end
@@ -437,14 +437,14 @@ module LinCAS::Internal
 
     def self.lc_hash_each_key(hash :  LcVal)
         hash_each_key(hash) do |key|
-            Exec.lc_yield(key)
+            VM.lc_yield(key)
         end
         return Null
     end
 
     def self.lc_hash_each_value(hash :  LcVal)
         hash_each_value(hash) do |value|
-            Exec.lc_yield(value)
+            VM.lc_yield(value)
         end
         return Null
     end

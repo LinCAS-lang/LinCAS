@@ -95,8 +95,8 @@ if dir
     if iseq_display
       Disasm.new(iseq).disasm
     end
-    Exec.setup_iseq(iseq) 
-    Exec.exec if exec
+    VM.setup_iseq(iseq) 
+    VM.exec if exec
   rescue e
     LinCAS.lc_bug(e.inspect_with_backtrace)
   end

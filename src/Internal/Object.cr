@@ -28,13 +28,13 @@ module LinCAS::Internal
             return val2bool(num2num(obj1) == num2num(obj2))
         end
         if (lc_obj_responds_to? obj2,"==")
-            return Exec.lc_call_fun(obj2,"==",obj1)
+            return VM.lc_call_fun(obj2,"==",obj1)
         end
         return lcfalse
     end
 
     def self.lc_obj_match(obj1 :  LcVal,obj2 :  LcVal)
-        cmp_result = Exec.lc_call_fun(obj1,"==",obj2)
+        cmp_result = VM.lc_call_fun(obj1,"==",obj2)
         if cmp_result == lctrue
             return cmp_result
         else
@@ -125,7 +125,7 @@ module LinCAS::Internal
     # It ensures a conversion of any object to
     # a lincas string
     def self.lc_obj_any_to_s(obj : LcVal)
-        str = Exec.lc_call_fun(obj, "to_s")
+        str = VM.lc_call_fun(obj, "to_s")
         if str.is_a? LcString
             return str
         end
@@ -182,12 +182,12 @@ module LinCAS::Internal
 
     @[AlwaysInline]
     def self.lc_obj_eqq(obj1 :  LcVal, obj2 :  LcVal)
-        return Exec.lc_call_fun(obj1, "==", obj2)
+        return VM.lc_call_fun(obj1, "==", obj2)
     end
 
     @[AlwaysInline]
     def self.lc_obj_neq(obj1 :  LcVal, obj2 :  LcVal)
-        return val2bool !Exec.lc_call_fun(obj1, "==", obj2)
+        return val2bool !VM.lc_call_fun(obj1, "==", obj2)
     end
 
     @[AlwaysInline]
@@ -252,7 +252,7 @@ module LinCAS::Internal
         argv = lc_cast(argv,Ary)
         method = lc_get_method(obj,argv[0])
         if test(method)
-            return Exec.call_method(method.as(Method),argv.shifted_copy)
+            return VM.call_method(method.as(Method),argv.shifted_copy)
         else
             return method 
         end

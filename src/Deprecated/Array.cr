@@ -97,12 +97,12 @@ module LinCAS::Internal
 
     macro ary_sort_by_m(ary_ptr,length)
         lc_heap_sort({{ary_ptr}},{{length}}) do |v1,v2|
-            if !Exec.block_given?
+            if !VM.block_given?
                 lc_raise(lc_arg_err,"Expected block not found")
                 next nil 
             end
-            r1 = Exec.lc_yield(v1)
-            r2 = Exec.lc_yield(v2)
+            r1 = VM.lc_yield(v1)
+            r2 = VM.lc_yield(v2)
             if r1.is_a? LcNum && r2.is_a? LcNum
                 next (num2num(r1) > num2num(r2) ? 1 : 0)
             elsif r1.is_a? LcString && r2.is_a? LcString
@@ -376,7 +376,7 @@ module LinCAS::Internal
         a_ary_size = ary_size(ary)
         ptr        = ary.as(LcArray).ptr
         ary_iterate(ary) do |el|
-            if test(Exec.lc_call_fun(el,"==",value))
+            if test(VM.lc_call_fun(el,"==",value))
                 return lctrue 
             end 
         end
@@ -448,7 +448,7 @@ module LinCAS::Internal
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
         arylen.times do |i|
-            Exec.lc_yield(ary_at_index(ary,i))
+            VM.lc_yield(ary_at_index(ary,i))
         end
         Null 
     end
@@ -457,7 +457,7 @@ module LinCAS::Internal
         arylen = ary_size(ary)
         tmp    = build_ary_new
         arylen.times do |i|
-            lc_ary_push(tmp,Exec.lc_yield(ary_at_index(ary,i)))
+            lc_ary_push(tmp,VM.lc_yield(ary_at_index(ary,i)))
         end
         return tmp 
     end 
@@ -465,7 +465,7 @@ module LinCAS::Internal
     def self.lc_ary_o_map(ary :  LcVal)
         arylen = ary_size(ary)
         arylen.times do |i|
-            ary_set_index(ary,i,Exec.lc_yield(ary_at_index(ary,i)))
+            ary_set_index(ary,i,VM.lc_yield(ary_at_index(ary,i)))
         end
         return ary 
     end 
@@ -474,7 +474,7 @@ module LinCAS::Internal
         arylen = ary_size(ary)
         ptr    = ary_ptr(ary)
         arylen.times do |i|
-            Exec.lc_yield(ptr[i],num2int(i))
+            VM.lc_yield(ptr[i],num2int(i))
         end
         return Null 
     end
@@ -558,7 +558,7 @@ module LinCAS::Internal
         size = ary_size(ary)
         tmp  = build_ary(size)
         size.times do |i|
-            value = Exec.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
+            value = VM.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
             ary_set_index(tmp,i,value)
         end
         set_ary_size(tmp,size)
@@ -568,7 +568,7 @@ module LinCAS::Internal
     def self.lc_ary_o_map_with_index(ary :  LcVal)
         size = ary_size(ary)
         size.times do |i|
-            value = Exec.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
+            value = VM.lc_yield(ary_at_index(ary,i),num2int(i)).as( LcVal)
             ary_set_index(ary,i,value)
         end
         return ary 

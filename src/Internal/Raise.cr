@@ -96,14 +96,14 @@ module LinCAS
         def self.lc_raise_err(unused,error :  LcVal)
             if error.is_a? LcString 
                 err = build_error(lc_runtime_err,String.new(error.as(LcString).str_ptr),"")
-                Exec.lc_raise(err)
+                VM.lc_raise(err)
                 return Null
             end 
             if !(error.is_a? LcError)
                 lc_raise(lc_type_err,"(Error object expected)")
                 return Null
             end 
-            Exec.lc_raise(error)
+            VM.lc_raise(error)
         end
 
         def self.init_error
@@ -144,7 +144,7 @@ module LinCAS
 
 
         macro lc_raise(error_t,body)
-            Exec.lc_raise({{error_t}},{{body}})
+            VM.lc_raise({{error_t}},{{body}})
         end
 
     end
