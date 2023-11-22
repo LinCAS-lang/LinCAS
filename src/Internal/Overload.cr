@@ -13,16 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-macro expand_for_int
+struct Int32
   {% for sign in {"+", "-", "*", "/", "**"} %}
     def {{sign.id}}(other : BigInt)
       return BigInt.new(self) {{sign.id}} other 
     end
   {% end %}
-end
-
-struct Int32
-  expand_for_int
 end
 
 struct Crystal::Hasher
