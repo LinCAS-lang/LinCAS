@@ -82,7 +82,6 @@ module LinCAS::Internal
     def self.lc_proc_allocate_0(klass :  LcVal)
         klass = klass.as(LcClass)
         proc  = lincas_obj_alloc LCProc, klass
-        proc.id    = proc.object_id
         return proc.as( LcVal)
     end
 

@@ -92,10 +92,9 @@ module LinCAS
 
   abstract class LcBase < LcVal
     @klass  = nil.as LcClass?
-    @id     = 0_u64
     @data   = nil.as IvarTable?
     @flags  : ObjectFlags = ObjectFlags::NONE
-    property id, flags, gc_ref
+    property flags, gc_ref
     property! klass, data
   end
 

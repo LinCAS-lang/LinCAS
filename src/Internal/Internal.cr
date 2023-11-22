@@ -114,9 +114,6 @@ module LinCAS::Internal
     def self.lincas_obj_alloc(type : LcVal.class,klass : LcClass, *args, **opt)
       tmp       = type.new(*args)
       tmp.klass = klass
-      if id = opt[:id]?
-        tmp.id = id.as(UInt64) 
-      end
       tmp.data = opt[:data]? || IvarTable.new
       return tmp
     end

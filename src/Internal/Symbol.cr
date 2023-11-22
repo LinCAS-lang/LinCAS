@@ -40,7 +40,6 @@ module LinCAS::Internal
 
     def self.symbol_new(string : String)
         sym    = lincas_obj_alloc LcSymbol, @@lc_symbol, string 
-        sym.id = sym.object_id
         return lc_obj_freeze(sym)
     end
 
@@ -108,7 +107,7 @@ module LinCAS::Internal
 
     def self.lc_sym_eq(sym :  LcVal, other :  LcVal)
         return lcfalse unless other.is_a? LcSymbol 
-        return val2bool(sym.id == other.id)
+        return val2bool(sym.object_id == other.object_id)
     end
 
     def self.lc_sym_capitalize(sym :  LcVal)

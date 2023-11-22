@@ -155,7 +155,7 @@ module LinCAS::Internal
             buffer_append(buffer,"=>")
             value = entry.value
             if value.is_a? LcHash
-                if (value.id == hash.id) || (origin.includes? value)
+                if (value.object_id == hash.object_id) || (origin.includes? value)
                     buffer_append(buffer,"{...}")
                 else 
                     hash_append(buffer,value,origin)
@@ -205,7 +205,7 @@ module LinCAS::Internal
                     res = value.to_u64!
                 end
             end
-            res = tmp.int(item.id).result if !res
+            res = tmp.int(item.object_id).result if !res
         end
         hasher.value = tmp
         return res
@@ -231,7 +231,7 @@ module LinCAS::Internal
         return false if v1.is_a? Slice || v2.is_a? Slice
         v1 = lc_cast(v1, LcVal)
         v2 = lc_cast(v2, LcVal)
-        return true if v1.id == v2.id 
+        return true if v1.object_id == v2.object_id 
         if lc_obj_has_internal_m?(lc_cast(v1, LcVal),"==") == 0
             if v1.is_a? LcInt 
                 return bool2val(lc_int_eq(v1,v2))
@@ -268,7 +268,6 @@ module LinCAS::Internal
     def self.lc_hash_allocate(klass :  LcVal)
         klass   = lc_cast(klass,LcClass)
         hash    = lincas_obj_alloc LcHash, klass
-        hash.id = hash.object_id
         lc_hash_init(hash)
         return lc_cast(hash, LcVal)
     end
