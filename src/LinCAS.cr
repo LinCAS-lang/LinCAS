@@ -39,7 +39,7 @@ module LinCAS
   {% else %}
     alias Intnum   = IntnumR | BigInt
   {% end %}
-  alias Num  = Intnum  | Floatnum
+  alias Num  = Intnum  | FloatD
   alias NumR = IntnumR | Floatnum
 end
 
