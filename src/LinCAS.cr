@@ -83,9 +83,7 @@ dir = ARGV[0]?
 if dir 
   begin
     at_exit do
-      if Python.Py_IsInitialized
-        Internal.lc_finalize
-      end
+      Internal.lc_finalize
     end
     Internal.lc_initialize
 
