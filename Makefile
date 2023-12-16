@@ -10,7 +10,7 @@ setup:
 python:
 
 build:
-	crystal build --error-trace src/LinCAS.cr --link-flags -lclang --link-flags -L$(LIB) -Duse_lp -D:use_pcre2 -o bin/lincas
+	crystal build --error-trace src/LinCAS.cr --link-flags=-Wl,-lintl -Duse_lp -D:use_pcre2 -o bin/lincas
 
 doc: util/DocGenerator.cr
 	crystal build util/DocGenerator.cr -o bin/doc_generator
