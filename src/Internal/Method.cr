@@ -113,7 +113,7 @@ module LinCAS::Internal
 
   ##
   # Defines a user singleton method  in the given class. 
-  def self.lc_define_singleton_imethod(klass : LcClass, name : String, code : ISeq, visib = FuncVisib::PUBLIC)
+  def self.lc_define_singleton_umethod(klass : LcClass, name : String, code : ISeq, visib = FuncVisib::PUBLIC)
     lc_define_umethod(metaclass_of(klass), name, code, visib)
   end
 
