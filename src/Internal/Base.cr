@@ -104,7 +104,7 @@ module LinCAS
     @type      : SType
     @name      : String
     @parent    : LcClass? = nil
-    @allocator : LcProc?  | Allocator = nil 
+    @allocator : Caller?  | Allocator = nil 
 
     property parent, allocator, gc_ref
     getter methods, namespace, type, name 
@@ -185,7 +185,7 @@ module LinCAS
   class LcMethod
     @@global_serial : Serial = 0
 
-    @code      : ISeq | LcProc | String | Python::PyObject* | ::Nil
+    @code      : ISeq | Caller | String | Python::PyObject* | ::Nil
     @owner     : LcClass?
     @arity     : IntnumR  = 0 # used for internal methods
     @flags     : MethodFlags
@@ -198,7 +198,7 @@ module LinCAS
       @serial = next_serial
     end
 
-    def initialize(@name : String, @code : LcProc, @arity : IntnumR, @owner : LcClass, @visib : FuncVisib)
+    def initialize(@name : String, @code : Caller, @arity : IntnumR, @owner : LcClass, @visib : FuncVisib)
       @flags = MethodFlags::INTERNAL
       @serial = next_serial
     end

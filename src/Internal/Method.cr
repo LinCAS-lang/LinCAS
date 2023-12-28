@@ -72,7 +72,7 @@ module LinCAS::Internal
   ##
   # It defines an internal method (call to crystal)
   @[AlwaysInline]
-  def self.lc_define_imethod(klass : LcClass, name : String, proc : LcProc, arity : Intnum, visib = FuncVisib::PUBLIC)
+  def self.lc_define_imethod(klass : LcClass, name : String, proc : Caller, arity : Intnum, visib = FuncVisib::PUBLIC)
     m = LcMethod.new(name, proc, arity, klass, visib)
     lc_add_method(klass, name, m)
   end
@@ -107,7 +107,7 @@ module LinCAS::Internal
 
   ##
   # Defines an internal singleton method  in the given class. 
-  def self.lc_define_singleton_imethod(klass : LcClass, name : String, proc : LcProc, arity : Intnum, visib = FuncVisib::PUBLIC)
+  def self.lc_define_singleton_imethod(klass : LcClass, name : String, proc : Caller, arity : Intnum, visib = FuncVisib::PUBLIC)
     lc_define_imethod(metaclass_of(klass), name, proc, arity, visib)
   end
 
@@ -122,13 +122,13 @@ module LinCAS::Internal
     lc_add_method(receiver, name, m)
   end
 
-  def self.lc_class_define_method(klass : LcClass, name : String, proc : LcProc, arity : Intnum)
+  def self.lc_class_define_method(klass : LcClass, name : String, proc : Caller, arity : Intnum)
     lc_define_imethod(klass, name, proc, arity)
     lc_define_singleton_imethod(klass, name, proc, arity)
   end
 
   macro wrap(name,argc)
-    LcProc.new do |args|
+    Caller.new do |args|
       next {{name.id}}(*args.as(T{{argc.id}}))
     end
   end
@@ -137,7 +137,7 @@ module LinCAS::Internal
     lc_define_imethod(
       {{klass}},
       {{name}},
-      LcProc.new do |args|
+      Caller.new do |args|
         {% if argc >= 0 %}
           {{ tmp = argc + 1}}
           {{f_name}}(*args.as(T{{tmp}}))
@@ -153,7 +153,7 @@ module LinCAS::Internal
     lc_define_imethod(
       {{klass}},
       {{name}},
-      LcProc.new do |args|
+      Caller.new do |args|
         {% if argc >= 0 %}
           {{ tmp = argc + 1}}
           {{f_name}}(*args.as(T{{tmp}}))
@@ -170,7 +170,7 @@ module LinCAS::Internal
     lc_define_singleton_imethod(
       {{klass}},
       {{name}},
-      LcProc.new do |args|
+      Caller.new do |args|
         {% if argc >= 0 %}
           {% tmp = argc + 1%}
           {{f_name}}(*args.as(T{{tmp}}))

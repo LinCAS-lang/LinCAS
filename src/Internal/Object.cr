@@ -98,7 +98,7 @@ module LinCAS::Internal
             lc_raise(lc_instance_err,"Can't instantiate %s" % klass.name)
             return Null 
         end
-        if allocator.is_a? LcProc
+        if allocator.is_a? Caller
             return allocator.call(klass).as( LcVal)
         end
         lc_raise(lc_instance_err,"Undefined allocator for %s" % class_path(klass))

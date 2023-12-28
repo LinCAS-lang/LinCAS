@@ -39,7 +39,7 @@ module LinCAS
     @id        : UInt64 = 0.to_u64
     @name      : String
     @parent    : LcClass
-    @allocator : LcProc?  | Allocator = nil 
+    @allocator : Caller?  | Allocator = nil 
     @gc_ref    : Internal::PyGC::Ref? = nil
 
     @klass = uninitialized LcClass

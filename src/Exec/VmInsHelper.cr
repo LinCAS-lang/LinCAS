@@ -419,13 +419,13 @@ module LinCAS
     private def call_internal_special(method : LcMethod, argv)
       case method.arity
       when 0
-        method.code.as(LcProc).call(argv[0])
+        method.code.as(Caller).call(argv[0])
       when 2
-        method.code.as(LcProc).call(argv[0], argv[1], argv[2])
+        method.code.as(Caller).call(argv[0], argv[1], argv[2])
       when 3
-        method.code.as(LcProc).call(argv[0], argv[1], argv[2], argv[3])
+        method.code.as(Caller).call(argv[0], argv[1], argv[2], argv[3])
       else
-        method.code.as(LcProc).call(argv[0], argv[1])
+        method.code.as(Caller).call(argv[0], argv[1])
       end
     end
     

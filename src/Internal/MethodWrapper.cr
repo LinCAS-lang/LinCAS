@@ -22,7 +22,7 @@ module LinCAS
 
     alias PV = Proc(Va, LcVal)
 
-    struct LcProc
+    struct Caller
         @proc : PV
         def initialize(&block : Va ->  LcVal)
             @proc = block 

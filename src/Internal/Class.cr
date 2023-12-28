@@ -138,7 +138,7 @@ module LinCAS::Internal
   end
 
   @[AlwaysInline]
-  def self.lc_set_allocator(klass : LcClass,allocator : LcProc)
+  def self.lc_set_allocator(klass : LcClass,allocator : Caller)
     klass.allocator = allocator 
   end
 
@@ -150,7 +150,7 @@ module LinCAS::Internal
   macro define_allocator(klass, f_name)
     lc_set_allocator(
       {{klass}},
-      LcProc.new do |args|
+      Caller.new do |args|
         {{f_name}}(*args.as(T1))
       end
     )
