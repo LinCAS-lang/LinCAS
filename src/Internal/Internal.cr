@@ -19,12 +19,6 @@ module LinCAS::Internal
       module ::LinCAS
         {{exp}}
       end
-    end 
-
-    macro wrap(name,argc)
-      LcProc.new do |args|
-        next {{name.id}}(*args.as(T{{argc.id}}))
-      end
     end
 
     global(
