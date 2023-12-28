@@ -88,7 +88,7 @@ module LinCAS
         puts case ins
         when .pop?, .leave?, .noop?, .push_true?, .push_false?, .push_self?, .push_null?, .dup?
           pattern % {i, ins, nil, line}
-        when .setinstance_v?, .setclass_v?,
+        when .setinstance_v?, .getinstance_v?, .setclass_v?, .getclass_v?,
              .getconst?, .storeconst?
           pattern % {i, ins, @iseq.names[op], line}
         when .setlocal_0?, .getlocal_0?
@@ -102,7 +102,7 @@ module LinCAS
           pattern % {i, ins, "#{op} #{get_var_name(@iseq.symtab, op, op2)}", line}
         when .jump?, .jumpf?, .jumpt?, .jumpf_and_pop?
           pattern % {i, ins, op, line}
-        when .pushobj?
+        when .pushobj?, .obj2_string?
           obj = get_object_str(op)
           pattern % {i, ins, obj, line}
         when .put_class?, .put_module?
@@ -169,11 +169,8 @@ module LinCAS
       when LcInt, LcFloat
         Internal.num2num(obj).to_s
       when LcString
-        String.build do |io|
-          io << '"'
-          io.write_string(obj.str_ptr.to_slice(obj.size))
-          io << '"'
-        end
+        String.build(&.write_string(obj.str_ptr.to_slice(obj.size)))
+        .inspect
       else 
         "at:#{offset}" 
       end
