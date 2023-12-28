@@ -1,6 +1,6 @@
 module Test {
   class Formatter {
-    let push contect               {}
+    let push context               {}
     let pop                        {}
     let before_example description {}
     let report result              {}
