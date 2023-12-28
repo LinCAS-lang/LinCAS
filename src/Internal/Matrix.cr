@@ -649,7 +649,7 @@ module LinCAS::Internal
         return mx 
     end 
 
-    matrix_swap_cls = LcProc.new do |args|
+    matrix_swap_cls = Caller.new do |args|
         next internal.lc_matrix_swap_cls(*args.as(T3))
     end 
 
