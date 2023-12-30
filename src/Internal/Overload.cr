@@ -133,6 +133,21 @@ module Regex::PCRE2
     flag
   end
 
+  def lc_name_table_impl
+    lookup = LinCAS::Internal.build_hash
+    
+    each_capture_group do |capture_number, name_entry|
+      name = LinCAS::Internal.build_string(name_entry.to_unsafe + 2)
+      LinCAS::Internal.lc_hash_set_index(
+        lookup,
+        LinCAS::Internal.num2int(capture_number.to_i64),
+        name
+      )
+    end
+
+    lookup
+  end
+
   module LcMatchData
     def initialize(
       @regex : LinCAS::Internal::LcRegexp, 
@@ -173,5 +188,9 @@ class Regex
     else
       match_impl(str, pos, options)
     end
+  end
+
+  def lc_name_table
+    lc_name_table_impl
   end
 end
