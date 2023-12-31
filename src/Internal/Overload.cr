@@ -93,8 +93,30 @@ module Regex::PCRE2
   end
 
   private def match_data(str : LinCAS::Internal::LcString, byte_index, options)
-    match_data = self.match_data
-    match_count = LibPCRE2.match(@re, str.str_ptr, str.size, byte_index, pcre2_options(options) | LibPCRE2::NO_UTF_CHECK, match_data, PCRE2.match_context)
+    match_data, match_context = 
+    {% if  !PCRE2.methods.select { |m| m.name == "match_data".id && m.args.empty? }
+    .empty? %} # Version >= 1.7.3
+    {
+      self.match_data,
+      PCRE2.match_context
+    }
+    {% else %} # Version < 1.7.3
+    {
+      LibPCRE2.match_data_create_from_pattern(@re, Regex::PCRE2.general_context), 
+      LibPCRE2.match_context_create(nil)
+    }
+    LibPCRE2.jit_stack_assign(match_context, nil, Regex::PCRE2.jit_stack.as(Void*))
+    {% end %}
+
+    match_count = LibPCRE2.match(
+      @re,
+      str.str_ptr,
+      str.size,
+      byte_index,
+      pcre2_options(options) | LibPCRE2::NO_UTF_CHECK,
+      match_data,
+      match_context
+    )
 
     if match_count < 0
       case error = LibPCRE2::Error.new(match_count)
@@ -135,8 +157,13 @@ module Regex::PCRE2
 
   def lc_name_table_impl
     lookup = LinCAS::Internal.build_hash
-    
+    {% begin %}
+
+    {% if PCRE2.methods.map(&.name).includes? "each_named_capture_group".id %}
+    each_named_capture_group do |capture_number, name_entry|
+    {% else %}
     each_capture_group do |capture_number, name_entry|
+    {% end %} 
       name = LinCAS::Internal.build_string(name_entry.to_unsafe + 2)
       LinCAS::Internal.lc_hash_set_index(
         lookup,
@@ -144,6 +171,8 @@ module Regex::PCRE2
         name
       )
     end
+
+    {% end %}
 
     lookup
   end
