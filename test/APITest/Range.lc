@@ -23,7 +23,7 @@ describe Range do {
     }
   }
 
-  describe "#nitialize" {
+  describe "#initialize" {
     it "Creates an inclusive range" do {
       r := new Range 1, 5; assert_range r, 1, 5, true
     }
