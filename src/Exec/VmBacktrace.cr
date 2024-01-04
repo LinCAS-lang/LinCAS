@@ -40,7 +40,7 @@ module LinCAS
         iseq = frame.iseq
         filename = iseq.filename
         line = iseq.start_location
-      elsif !frame.flags.includes? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME)
+      elsif !frame.flags.includes_any? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME)
         dist = frame.pc - frame.pc_bottom
         iseq = frame.iseq
         filename = iseq.filename
@@ -73,7 +73,7 @@ module LinCAS
       when .block_frame?, .proc_frame?
         base_env = env.previous
         level = 0
-        while base_env && base_env.frame_type.includes? (VM::VmFrame.flags(BLOCK_FRAME, PROC_FRAME))
+        while base_env && base_env.frame_type.includes_any? VM::VmFrame.flags(BLOCK_FRAME, PROC_FRAME)
           base_env = base_env.previous
           level += 1
         end

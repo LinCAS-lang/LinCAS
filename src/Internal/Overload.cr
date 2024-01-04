@@ -68,6 +68,12 @@ class Object
 
 end
 
+struct Enum
+  def includes_any?(other : self) : Bool
+    (value & other.value) != 0
+  end
+end
+
 module Regex::PCRE2
   private def match_impl(str : LinCAS::Internal::LcString, byte_index, options)
     _match_impl(str, byte_index, options) { |tpl| tpl[1..-1] }

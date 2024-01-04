@@ -308,7 +308,7 @@ module LinCAS
         # The call is in the format `foo`. If this happens within a user method
         # scope, then we use such lexical scope to search the method. Otherwise,
         # we use the class of the object that is currently executing.
-        if ci.name != Compiler::IdInit && flags.includes? VM::VmFrame.flags(UCALL_FRAME)
+        if ci.name != Compiler::IdInit && flags.includes_any? VM::VmFrame.flags(UCALL_FRAME)
           debug("Dispatching method using context #{context.name}##{ci.name}")
           klass = context.is_class? ? context : find_included_module(_self.klass, context)
         else
@@ -795,7 +795,7 @@ module LinCAS
           end
           i -= 1
         end
-        unless escape_frame && escape_frame.flags.includes? VM::VmFrame.flags(UCALL_FRAME, PROC_FRAME)
+        unless escape_frame && escape_frame.flags.includes_any? VM::VmFrame.flags(UCALL_FRAME, PROC_FRAME)
           lc_raise(Internal.lc_localjmp_err, "Unexpected return")
         end
         # Silent return. It doesn't happen through vm_pop_control_frame
@@ -1063,7 +1063,7 @@ module LinCAS
     @[API]
     def get_current_filedir
       @control_frames.reverse_each do |frame|
-        if !(frame.flags.includes? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME, DUMMY_FRAME))
+        if !(frame.flags.includes_any? VM::VmFrame.flags(ICALL_FRAME, PCALL_FRAME, DUMMY_FRAME))
           return File.dirname(frame.iseq.filename)
         end
       end
