@@ -378,6 +378,9 @@ module LinCAS
               end
             when .obj2_string?
               push vm_obj_to_s pop
+            when .to_regexp?
+              opt = next_is.value.unsafe_as(Regex::Options)
+              push vm_to_regexp pop, opt
             when .throw?
               vm_throw(op, pop)
             when .leave?

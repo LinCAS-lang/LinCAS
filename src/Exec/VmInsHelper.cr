@@ -761,6 +761,14 @@ module LinCAS
       end
     end
 
+    protected def vm_to_regexp(string : LcVal, options : Regex::Options)
+      str = Internal.string2cr(string)
+      if error = Internal.lincas_regex_error? string
+        lc_raise(Internal.lc_syntax_err, "#{error} /#{str}/")
+      end
+      return Internal.lc_new_regexp_literal(str, options)
+    end
+
     #######################################
     #  _____ _   _ ____   _____        __ #
     # |_   _| | | |  _ \ / _ \ \      / / #

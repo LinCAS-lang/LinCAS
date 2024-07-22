@@ -80,6 +80,7 @@ module LinCAS
       NEW_OBJECT_WITH_BLOCK
 
       OBJ2STRING
+      TO_REGEXP
 
       THROW
 

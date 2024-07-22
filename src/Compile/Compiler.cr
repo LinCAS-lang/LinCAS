@@ -93,6 +93,8 @@ module LinCAS
         compile_array(iseq, node)
       when HashLiteral
         compile_hash(iseq, node)
+      when RegexLiteral
+        compile_regex_literal(iseq, node)
       when Self
         compile_self(iseq, node)
       when NewObject
@@ -865,6 +867,19 @@ module LinCAS
     end
 
     def compile_regex_literal(iseq, node : RegexLiteral)
+      string_l = node.value
+      options = node.options
+      if !string_l.interpolated
+        # We can create the object directly
+        set_line(iseq, node.location)
+        obj = Internal.lc_new_regexp_literal string_l.pcs[0].as(String), options
+        index = set_obj_special iseq, obj
+        iseq.encoded << (IS::PUSHOBJ | IS.new(index))
+      else
+        compile_string_literal(iseq, string_l)
+        set_line(iseq, node.location)
+        iseq.encoded << IS::TO_REGEXP << options.unsafe_as(IS)
+      end
     end
     
     def compile_string_atomic(iseq, string : String)
