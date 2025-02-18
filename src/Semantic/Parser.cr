@@ -1137,7 +1137,8 @@ module LinCAS
 
       if has_interpolation
         chunks = combine_interpolation_chunks(chunks, delimiter_t)
-        result = StringLiteral.new chunks, interpolated: true
+        int = chunks.size > 1 || chunks.first.is_a? String
+        result = StringLiteral.new chunks, interpolated: int
       else
         chunk = combine_chunks(chunks, delimiter_t)
         result = StringLiteral.new chunk, interpolated: false
