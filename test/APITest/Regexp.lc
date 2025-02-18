@@ -1,0 +1,110 @@
+import "unit_test"
+
+describe Regexp do {
+  describe "::union" do {
+    it "constructs a regexp that matches what any of its arguments match" do {
+      re := Regexp.union(/foo/i, "bar")
+      assert_eq("Foo", re.match("Foo")[0])
+      assert_eq("bar", re.match("bar")[0])
+    }
+
+    it "returns a regexp that matches the passed arguments" do {
+      assert_eq(/foo/, Regexp.union("foo"))
+      assert_eq(/foo|bar/, Regexp.union("foo", "bar"))
+      assert_eq(/(?-imsx:foo)|(?i-msx:bar)/, Regexp.union(/foo/, /bar/i))
+    }
+
+    it "quotes any string arguments" do {
+      assert_eq(/n|\./, Regexp.union("n", "."))
+    }
+
+    it "combines Regexp objects in the same way as Regexp#+" do {
+      assert_eq(/foo/i + /bar/, Regexp.union(/foo/i, /bar/))
+    }
+  }
+
+  it "::escape" do {
+    assert_eq(
+      "\\ \\.\\\\\\+\\*\\?\\[\\^\\]\\$\\(\\)\\{\\}\\=\\!\\<\\>\\|\\:\\-hello",
+      Regexp.escape(" .\\+*?[^]$(){}=!<>|:-hello")
+    )
+  }
+
+  describe "::union_part" do {
+    it "behaves like Regexp::escape" do {
+      assert_eq(
+        Regexp.escape(" .\\+*?[^]$(){}=!<>|:-hello"), 
+        Regexp.union_part(" .\\+*?[^]$(){}=!<>|:-hello")
+      )
+    }
+
+    it "behaves as Regexp#to_s" do {
+      assert_eq(/foo\./i.to_s, Regexp.union_part(/foo\./i))
+    }
+  }
+
+  it "::error?" do {
+    assert_null(Regexp.error? "(foo|bar)")
+    assert_eq("missing closing parenthesis at 8", Regexp.error? "(foo|bar")
+  }
+
+  describe "Literal" do {
+    assert_eq(new Regexp("foo"), /foo/)
+  }
+
+  describe "#initialize" do {
+    assert_eq(/foo/, new Regexp("foo"))
+  }
+
+  describe "#to_s" do {
+    it "has options" {
+      assert_eq("(?-imsx:(foo|bar))", /(foo|bar)/.to_s)
+      assert_eq("(?ims-x:(foo|bar))", /(foo|bar)/im.to_s)
+      assert_eq("(?imsx-:(foo|bar))", /(foo|bar)/imx.to_s)
+    }
+
+    it "is interpolated" do {
+      regexp := /(?<foo>R)/i
+      assert_eq(/(?<bar>C)(?i-msx:(?<foo>R))/, /(?<bar>C)#{regexp}/)
+      assert_eq(/(?<bar>C)(?i-msx:(?<foo>R))/i, /(?<bar>C)#{regexp}/i)
+    }
+  }
+
+  it "#origin" do {
+    regexp := /foo/
+    assert_true regexp.origin.is_a? String
+    assert_eq("foo", regexp.origin)
+  }
+
+  describe "#inspect" do {
+    it "has options" {
+      assert_eq("/foo/", /foo/.inspect)
+      assert_eq("/foo/im", /foo/im.inspect)
+      assert_eq("/foo/imx", /foo/imx.inspect)
+    }
+
+    it "escapes" {
+      assert_eq("/\\//", /\//.inspect)
+    }
+  }
+
+  describe "#match" do {
+    it "return matchdata" {
+      md := /(?<bar>.)(?<foo>.)/.match("Lincas")
+      assert_false md.null?
+      assert_eq("Li", md[0])
+    }
+
+    it "returns null on non-match" {
+      assert_null /foo/.match "bar"
+    }
+  }
+
+  describe "#+" do {}
+
+  describe "#==" do {}
+
+  describe "#name_table" do {}
+
+  describe "#clone" do {}
+}
