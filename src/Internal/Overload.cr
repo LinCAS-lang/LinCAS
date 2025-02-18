@@ -1,5 +1,5 @@
 
-# Copyright (c) 2017-2023 Massimiliano Dal Mas
+# Copyright (c) 2017-2024 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -192,6 +192,39 @@ module Regex::PCRE2
       @ovector : LibC::SizeT*, 
       @group_size : Int32
     )
+    end
+
+    # Directly copied from the implementation.
+    # We need this as is, but public.
+    def byte_range(n, &)
+      n += size if n < 0
+      range = Range.new(@ovector[n * 2].to_i32!, @ovector[n * 2 + 1].to_i32!, exclusive: true)
+      if range.begin < 0 || range.end < 0
+        yield n
+      else
+        range
+      end
+    end
+
+    # Adapted from the implementation.
+    def fetch_impl(group_name : LinCAS::Internal::LcString, &)
+      selected_range = nil
+      exists = false
+      @regex.regexp.each_capture_group do |number, name_entry|
+        if name_entry[2, group_name.bytesize]? == group_name.to_slice && name_entry[2 + group_name.bytesize].zero?
+          exists = true
+          range = byte_range(number) { nil }
+          if (range && selected_range && range.begin > selected_range.begin) || !selected_range
+            selected_range = range
+          end
+        end
+      end
+
+      if selected_range
+        LinCAS::Internal.str_index_range(@string, selected_range.begin, selected_range.end, inclusive: false)
+      else
+        yield exists
+      end
     end
   end
 end
