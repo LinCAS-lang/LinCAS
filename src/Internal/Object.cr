@@ -279,7 +279,7 @@ module LinCAS::Internal
         define_method(@@lc_object,"<=>",lc_obj_cmp,        1)
         define_method(@@lc_object,"freeze",lc_obj_freeze,  0)
         define_method(@@lc_object,"frozen?",lc_obj_frozen, 0)
-        define_method(@@lc_object,"is_null",lc_obj_null,   0)
+        define_method(@@lc_object,"null?",lc_obj_null,     0)
         define_method(@@lc_object,"inspect",lc_obj_to_s,   0)
         alias_method_str(@@lc_object,"inspect","to_s"       )
         define_method(@@lc_object,"to_m",lc_obj_to_m,      0)
