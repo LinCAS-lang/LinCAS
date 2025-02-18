@@ -40,6 +40,22 @@ module LinCAS::Internal
             @size    = IntD.new(0)
         end
         property str_ptr, size
+
+        def to_s(io)
+            io.write @str_ptr.to_slice(@size)
+        end
+
+        ########################
+        # Regexp compatibility #
+        ########################
+        
+        def bytesize
+            return @size
+        end
+
+        def to_slice
+            @str_ptr.to_slice(@size)
+        end
     end 
 
     macro ptr_init(ptr,length)
@@ -463,23 +479,26 @@ module LinCAS::Internal
         return internal.build_string(str)
     end
 
-    private def self.str_index_range(str : LcString,left : Intnum,right : Intnum,inclusive = true)
+    def self.str_index_range(str : LcString,left : Intnum,right : Intnum,inclusive = true)
         strlen = str_size(str)
         return Null if strlen < left
-        return CHAR_PTR.null if strlen == left
-        range_size = right - left + (inclusive ? 1 : 0)
-        if strlen < left + range_size -1 
-            range_size = str_size(str) - left 
-        end
-        ptr     = CHAR_PTR.malloc(range_size + 1)
-        ptr_init(ptr,range_size + 1)
-        str_ptr = pointer_of(str)
-        i     = 0
-        while i < range_size
-            ptr[i] = str_ptr[left + i]
-            i += 1
-        end  
-        return ptr
+        if !(strlen == left)
+            range_size = right - left + (inclusive ? 1 : 0)
+            if strlen < left + range_size -1 
+                range_size = str_size(str) - left 
+            end
+            ptr     = CHAR_PTR.malloc(range_size + 1)
+            ptr_init(ptr,range_size + 1)
+            str_ptr = pointer_of(str)
+            i     = 0
+            while i < range_size
+                ptr[i] = str_ptr[left + i]
+                i += 1
+            end 
+        else
+            ptr = CHAR_PTR.null 
+        end 
+        return build_string_with_ptr ptr
     end
 
     #$I []
@@ -500,9 +519,7 @@ module LinCAS::Internal
             left    = lc_num_to_cr_i index.left 
             right   = lc_num_to_cr_i index.right
             return Null if left > right 
-            ptr = str_index_range(lc_cast(str,LcString),left,right,index.inclusive)
-            return ptr if ptr.is_a?  LcVal 
-            return build_string_with_ptr(ptr)
+            return str_index_range(lc_cast(str,LcString),left,right,index.inclusive)
         else
             x = internal.lc_num_to_cr_i(index)
             if x 
@@ -701,11 +718,6 @@ module LinCAS::Internal
             if libc.memcmp(beg_ptr,ptr2,len) == 0 || beg_ptr == end_ptr
                 unless i == j
                     str = str_index_range(lc_cast(str1,LcString),j,i,false)
-                    if str.is_a? CHAR_PTR
-                        str = build_string_with_ptr(str)
-                    else
-                        str = Null 
-                    end
                     lc_ary_push(ary,str)
                 end
                 unless beg_ptr > end_ptr
