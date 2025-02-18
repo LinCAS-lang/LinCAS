@@ -1,4 +1,4 @@
-# Copyright (c) 2017-2023 Massimiliano Dal Mas
+# Copyright (c) 2017-2024 Massimiliano Dal Mas
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,10 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# Regexp class implementation
-#
-# The algorithm bases on https://github.com/crystal-lang/crystal/blob/master/src/regex.cr
 module LinCAS
   module Internal
 
@@ -36,7 +32,11 @@ module LinCAS
       lincas_obj_alloc LcRegexp, @@lc_regexp, regexp
     end
 
-    def self.lc_new_regexp_literal()
+    # Used by compiler and VM to construct a
+    # literal LinCAS regexp. No check to see if the pattern
+    # is correct is done.
+    def self.lc_new_regexp_literal(regexp : String, options : Regex::Options)
+      return lc_new_regexp(Regex.new(regexp, options))
     end
 
     def self.lc_regex_allocate(klass :  LcVal)
@@ -79,9 +79,13 @@ module LinCAS
       lc_raise(lc_type_err,"Argument must be Regexp or String (#{lc_typeof(value)} given)")
     end
 
+    def self.lincas_regex_error?(string : LcVal)
+      Regex.error? pointer_of(string).to_slice str_size(string)
+    end
+
     def self.lc_regex_error(unused, string :  LcVal)
       str_check(string)
-      if error = Regex.error? pointer_of(string).to_slice str_size(string)
+      if error = lincas_regex_error? string
         return build_string_recycle error
       end
       Null
