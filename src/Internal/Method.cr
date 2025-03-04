@@ -216,7 +216,7 @@ module LinCAS::Internal
         method = nil
         m_missing_reason = 0
       when method.flags.function? || method.name == "__new__"
-        if !is_pymodule(receiver.methods.py_obj)
+        if !is_pymodule(klass.methods.py_obj)
           method.flags |= MethodFlags::WANTS_SELF
         end
       end
