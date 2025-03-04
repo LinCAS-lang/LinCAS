@@ -185,9 +185,6 @@ module LinCAS::Internal
   end
 
   def self.lc_find_allocator(klass : LcClass)
-    alloc = klass.allocator 
-    return alloc if alloc
-    klass = klass.parent
     while klass
       alloc = klass.allocator 
       return alloc if alloc
