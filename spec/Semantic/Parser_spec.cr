@@ -17,7 +17,7 @@ require "./ParserHelper"
 
 # for reference only
 class VM
-  def lc_raise_syntax_error(*args)
+  def self.lc_raise_syntax_error(*args)
   end
 end
 
@@ -133,6 +133,8 @@ describe Parser do
                       "if / / then / / elsif / / then / / else / /"], If.new(regex(" "), Body.new << regex(" "), Body.new << If.new(regex(" "), Body.new << regex(" "), Body.new << regex(" ")))
   it_parses_single "[/ /, / /]", ArrayLiteral.new([regex(" "), regex(" ")] of Node)
   it_parses_single "/ / / / /", Call.new(regex(" "), "/", [regex(" ")] of Node)
+  it_parses_multiple ["foo(/abc/)", "foo /abc/"], Call.new(nil, "foo", [regex("abc")] of Node)
+  assert_syntax_error "foo := 0; foo /abc/", "Unexpected end of file"
 
   it_parses_multiple ["1 + 2", "1 +\n2", "1 +2"], Call.new(1.int, "+", [2.int] of Node)
   it_parses_multiple ["1 -2", "1 - 2", "1 - \n2"], Call.new(1.int, "-", [2.int] of Node)

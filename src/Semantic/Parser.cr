@@ -1022,7 +1022,7 @@ module LinCAS
       disable_regex
       next_token
 
-      if @token.type == :SPACE?
+      if @token.type == :SPACE
         @regex_enabled = !is_var
       end
 
@@ -1540,7 +1540,7 @@ module LinCAS
         next_token_skip_space
         return CallArgs.new args.empty? ? nil : args, nil, nil, nil, true, false
       when :SPACE 
-        disable_regex
+        slash_is_not_regex!
         next_token
         if stop_on_do_after_space && @token.keyword? :do 
           return CallArgs.new nil, nil, nil, nil, false, true
