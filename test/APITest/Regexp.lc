@@ -57,7 +57,7 @@ describe Regexp do {
   }
 
   describe "#to_s" do {
-    it "has options" {
+    it "has options" do {
       assert_eq("(?-imsx:(foo|bar))", /(foo|bar)/.to_s)
       assert_eq("(?ims-x:(foo|bar))", /(foo|bar)/im.to_s)
       assert_eq("(?imsx-:(foo|bar))", /(foo|bar)/imx.to_s)
@@ -89,14 +89,30 @@ describe Regexp do {
   }
 
   describe "#match" do {
-    it "return matchdata" {
+    it "return matchdata" do {
       md := /(?<bar>.)(?<foo>.)/.match("Lincas")
       assert_false md.null?
       assert_eq("Li", md[0])
     }
 
-    it "returns null on non-match" {
+    it "returns null on non-match" do {
       assert_null /foo/.match "bar"
+    }
+
+    describe "with pos" do {
+      it "positive" do {
+        assert      /foo/.match("foo", 0)
+        assert_null /foo/.match("foo", 1)
+        assert      /foo/.match(".foo", 1)
+        assert      /foo/.match("..foo", 1)
+        
+        assert_null /foo/.match("bar", 0)
+        assert_null /foo/.match("bar", 1)
+      }
+
+      it "char index" do {
+        assert /bar/.match("äbar", 1)
+      }
     }
   }
 
